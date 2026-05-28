@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('job_title')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
@@ -42,6 +43,12 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('tags');
+        Schema::dropIfExists('post_categories');
+        Schema::dropIfExists('posts');
+        Schema::dropIfExists('post_tags');
+        Schema::dropIfExists('post_users');
+
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
