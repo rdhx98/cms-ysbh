@@ -26,6 +26,15 @@
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
+
+    /* Menambahkan warna pastel baru untuk Yayasan Sinar Bhakti Husada */
+    --color-sage-soft: #D2E7DF;
+    --color-cream-pale: #FFF2B2;
+    --color-coral-muted: #FAD2D2;
+
+    /* Menambahkan warna kontras & tombol aksi */
+    --color-forest: #073324;
+    --color-terracotta: #C0392B;
 }
 
 @layer theme {
