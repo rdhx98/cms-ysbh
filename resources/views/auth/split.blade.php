@@ -1,3 +1,4 @@
+@props(['title' => null]) {{-- [!code highlight] --}}
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Blade;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        // 1. Daftarkan folder 'layouts' (Jalur: resources/views/layouts)
+        Blade::anonymousComponentPath(resource_path('views/layouts'), 'layouts'); // [!code highlight]
+
+        // 2. Daftarkan folder 'auth' (Jalur: resources/views/auth)
+        Blade::anonymousComponentPath(resource_path('views/auth'), 'auth'); // [!code highlight]
     }
 
     /**

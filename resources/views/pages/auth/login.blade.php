@@ -1,4 +1,4 @@
-<x-layouts.auth :title="__('Log in')" >
+<x-layouts::auth :title="__('Log in')" >
     {{-- CETAKAN SVG LUBANG KUSTOM (objectBoundingBox) --}}
 
     <div class="w-full h-screen flex flex-col md:flex-row-reverse overflow-hidden relative">
@@ -9,6 +9,9 @@
             {{-- [clip-path:ellipse(100%_100%_at_50%_115%)] --}}
             <div
             class="bg-sage-soft w-full h-full md:max-w-none md:h-full flex flex-col justify-center items-center p-8">
+            <div class="font-montserrat">
+                Yayasan Sinar Bhakti Husada
+            </div>
                 <form method="POST" action="{{ route('login.store') }}" class=" ">
                     @csrf
 
@@ -76,11 +79,15 @@
                         </button>
                     </div>
 
-                    <!-- Remember Me -->
-                    <input type="checkbox" name="remember" :label="__('Remember me')" :checked="old('remember')" />
+                    <div class="flex items-center mt-4">
+                        <input type="checkbox" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }} class="rounded-lg w-4 h-4 accent-forest border-2 border-forest rounded focus:ring-forest">
+                        <label for="remember" class="ml-2 text-sm text-forest/80 cursor-pointer select-none">
+                                {{ __('Remember me') }}
+                        </label>
+                    </div>
 
-                    <div class="flex items-center justify-end">
-                        <button variant="primary" type="submit" class="w-full" data-test="login-button">
+                    <div class="flex items-center justify-end mt-4">
+                        <button variant="primary" type="submit" class="bg-forest p-4 rounded-2xl w-full text-white" data-test="login-button">
                             {{ __('Log in') }}
                         </button>
                     </div>
@@ -105,4 +112,4 @@
     </div>
 
 
-</x-layouts.auth>
+</x-layouts::auth>

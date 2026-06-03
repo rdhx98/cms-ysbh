@@ -2,16 +2,14 @@
 
 use Livewire\Component;
 
-
-
 new class extends Component
 {
     //
+
 };
 ?>
 
 <div>
-    <!-- @slot('title', 'Halaman Utama Dashboard') -->
      <x-slot:title>Halaman Utama Dashboard</x-slot:title>
      <x-slot:tequila>Wakumba</x-slot:tequila>
 

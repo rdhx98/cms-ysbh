@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import '../../vendor/livewire/flux/dist/flux.css';
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -29,7 +30,7 @@
 
     /* Menambahkan warna pastel baru untuk Yayasan Sinar Bhakti Husada */
     --color-sage-soft: #D2E7DF;
-    --color-cream-pale: #FFF2B2;
+    --color-pale-yellow: #FFF2B2;
     --color-coral-muted: #FAD2D2;
 
     /* Menambahkan warna kontras & tombol aksi */
