@@ -31,6 +31,8 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/dashboard', 'dashboard')->name('dashboard');
+    Route::livewire('/article', 'article')->name('article');
+    Route::livewire('/documentation', 'documentation')->name('documentation');
 });
 
 require __DIR__.'/settings.php';

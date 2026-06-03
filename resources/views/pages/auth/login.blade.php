@@ -86,8 +86,12 @@
                         </label>
                     </div>
 
-                    <div class="flex items-center justify-end mt-4">
-                        <button variant="primary" type="submit" class="bg-forest p-4 rounded-2xl w-full text-white" data-test="login-button">
+                    <div class="flex items-center  justify-end mt-4">
+                        <button
+                        variant="primary"
+                        type="submit"
+                        class="bg-forest p-4 rounded-2xl w-full text-white cursor-pointer"
+                        data-test="login-button">
                             {{ __('Log in') }}
                         </button>
                     </div>
