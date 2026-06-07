@@ -27,7 +27,8 @@ new class extends Component
     public function uploadImage()
     {
         $this->validate([
-            'photo' => 'image|max:2048', // Batas validasi gambar maks 2MB
+            'photo' => 'image|max:5120', // Batas validasi gambar maks 2MB
+            // 'photo' => 'image|max:2048', // Batas validasi gambar maks 2MB
         ]);
 
         // Simpan file ke folder 'storage/app/public/articles'
@@ -51,25 +52,26 @@ new class extends Component
         >
             <div
                 x-ref="imageBubbleMenu"
-                class="flex items-center gap-1 bg-zinc-900 text-white p-1.5 rounded-lg shadow-xl border border-zinc-700/50 absolute z-50 invisible opacity-0 transition-opacity duration-200"
-                :class="{ 'invisible opacity-0': !isActive('image', {}, updatedAt) }"
-                x-show="isActive('image', {}, updatedAt)"
+                class="bg-zinc-900 text-white p-1.5 rounded-lg shadow-xl border border-zinc-700/50 z-50 text-xs font-medium flex items-center gap-1"
+                x-show="isActive('image')"
+                style="display: none;"
             >
-                <button type="button" @click="setImageAlignment('left')" class="px-2 py-1 rounded text-xs hover:bg-zinc-700">Format Kiri</button>
-                <button type="button" @click="setImageAlignment('center')" class="px-2 py-1 rounded text-xs hover:bg-zinc-700">Tengah</button>
-                <button type="button" @click="setImageAlignment('right')" class="px-2 py-1 rounded text-xs hover:bg-zinc-700">Kanan</button>
-
+                <button type="button" @click="setImageAlignment('left')" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">Format Kiri</button>
+                <button type="button" @click="setImageAlignment('center')" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">Tengah</button>
+                <button type="button" @click="setImageAlignment('right')" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">Kanan</button>
                 <div class="h-4 w-[1px] bg-zinc-700 mx-1"></div>
-
-                <button type="button" @click="setImageWidth(25)" class="px-2 py-1 rounded text-xs hover:bg-zinc-700">25%</button>
-                <button type="button" @click="setImageWidth(50)" class="px-2 py-1 rounded text-xs hover:bg-zinc-700">50%</button>
-                <button type="button" @click="setImageWidth(100)" class="px-2 py-1 rounded text-xs hover:bg-zinc-700">100%</button>
+                <button type="button" @click="setImageWidth(25)" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">25%</button>
+                <button type="button" @click="setImageWidth(50)" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">50%</button>
+                <button type="button" @click="setImageWidth(100)" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">100%</button>
             </div>
 
-            <div x-ref="bubbleMenuElement" class="flex items-center gap-1 bg-zinc-900 dark:bg-zinc-800 text-white p-1.5 rounded-lg shadow-xl border border-zinc-700/50 absolute z-50 invisible opacity-0 transition-opacity duration-200">
-                <button type="button" @click="runCommand('toggleBold')" :class="{ 'bg-zinc-700 text-white': isActive('bold', {}, updatedAt) }" class="px-2 py-1 rounded font-bold text-xs hover:bg-zinc-700 transition">B</button>
-                <button type="button" @click="runCommand('toggleItalic')" :class="{ 'bg-zinc-700 text-white': isActive('italic', {}, updatedAt) }" class="px-2 py-1 rounded italic text-xs hover:bg-zinc-700 transition">I</button>
-                <button type="button" @click="runCommand('setLink')" :class="{ 'bg-zinc-700 text-white': isActive('link', {}, updatedAt) }" class="px-2 py-1 rounded text-xs hover:bg-zinc-700 transition">🔗 Link</button>
+            <div
+                x-ref="bubbleMenuElement"
+                class="bg-zinc-900 dark:bg-zinc-800 text-white p-1.5 rounded-lg shadow-xl border border-zinc-700/50 z-50 flex items-center gap-1"
+                style="display: none;"
+            >
+                <button type="button" @click="runCommand('toggleBold')" :class="{ 'bg-zinc-700': isActive('bold') }" class="px-2 py-1 rounded font-bold text-xs hover:bg-zinc-700 transition">B</button>
+                <button type="button" @click="runCommand('toggleItalic')" :class="{ 'bg-zinc-700': isActive('italic') }" class="px-2 py-1 rounded italic text-xs hover:bg-zinc-700 transition">I</button>
             </div>
 
             <div class="flex flex-wrap items-center gap-1 bg-zinc-50 dark:bg-zinc-800 p-2 border-b border-zinc-200 dark:border-zinc-700 sticky top-0 z-10 select-none">
@@ -147,6 +149,22 @@ new class extends Component
 </div>
 
 <style>
+    /* KUNCI UTAMA: Sembunyikan bubble menu secara mutlak sebelum diaktifkan oleh posisi tippy.js */
+    /* [x-ref="bubbleMenuElement"],
+    [x-ref="imageBubbleMenu"] {
+        display: none !important; Menggunakan none agar tidak memakan ruang di layout utama *
+        position: absolute;
+        visibility: hidden;
+        opacity: 0;
+    } */
+
+    /* Ketika tippy mendeteksi kondisi aktif, dia otomatis diberi atribut data-state="visible" */
+    [x-ref="bubbleMenuElement"][data-state="visible"],
+    [x-ref="imageBubbleMenu"][data-state="visible"] {
+        display: flex !important; /* Ubah kembali ke flex saat aktif */
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
     /* Style CSS bawaan kamu tetap dipertahankan di sini semisal placeholder & task list... */
     .tiptap p.is-editor-empty:first-child::before { color: #a1a1aa; content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
     .tiptap ul[data-type="taskList"] { list-style: none !important; padding-left: 0.5rem !important; margin-top: 1rem !important; margin-bottom: 1rem !important; }
@@ -158,6 +176,6 @@ new class extends Component
     .tiptap ul[data-type="taskList"] input[type="checkbox"]::before { content: ""; width: 0.55rem; height: 0.35rem; transform: scale(0) rotate(-45deg); transform-origin: center; transition: 100ms transform ease-in-out; box-shadow: inset 0.15rem -0.15rem 0px 0px white; }
     .tiptap ul[data-type="taskList"] input[type="checkbox"]:checked::before { transform: scale(1) rotate(-45deg) translate(0.05rem, -0.05rem); }
     .tiptap ul[data-type="taskList"] li > div { flex: 1 1 auto; margin: 0 !important; }
-    [x-ref="bubbleMenuElement"] { display: flex !important; position: absolute; visibility: hidden; opacity: 0; }
-    [x-ref="bubbleMenuElement"][data-state="visible"], .tippy-box[data-theme="tiptap"] { visibility: visible !important; opacity: 1 !important; }
+    /* [x-ref="bubbleMenuElement"] { display: flex !important; position: absolute; visibility: hidden; opacity: 0; } */
+    /* [x-ref="bubbleMenuElement"][data-state="visible"], .tippy-box[data-theme="tiptap"] { visibility: visible !important; opacity: 1 !important; } */
 </style>

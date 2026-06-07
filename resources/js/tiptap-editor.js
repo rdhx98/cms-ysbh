@@ -8,18 +8,19 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 import Placeholder from '@tiptap/extension-placeholder'
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import Image from '@tiptap/extension-image'
 import BubbleMenu from '@tiptap/extension-bubble-menu'
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 
 // Pustaka Pewarnaan Kode Sintaksis
 import { createLowlight, common } from 'lowlight'
 const lowlight = createLowlight(common)
 
 document.addEventListener('alpine:init', () => {
-    window.setupEditor = function (wireModelName, wireComponent) {
-        let editor // Terisolasi aman dari Proxy Alpine demi mencegah mismatched transaction
+    // KUNCI UTAMA: Amankan instance editor di luar objek reactive Alpine
+    let _rawEditor = null;
 
+    window.setupEditor = function (wireModelName, wireComponent) {
         return {
             updatedAt: Date.now(),
 
@@ -27,13 +28,13 @@ document.addEventListener('alpine:init', () => {
                 const _this = this
                 const initialContent = wireComponent.get(wireModelName) || ''
 
-                editor = new Editor({
+                // Buat instance murni tanpa terkena Proxy dari return Alpine
+                _rawEditor = new Editor({
                     element: this.$refs.editorElement,
                     extensions: [
-                        // MATIKAN fitur bawaan yang akan kita timpa secara manual
                         StarterKit.configure({
-                            codeBlock: false, // Menghilangkan duplikasi 'codeBlock'
-                            link: false, // Tambahkan ini HANYA jika peringatan 'link' masih membandel muncul, karena kita akan menggantinya dengan konfigurasi Link yang lebih lengkap di bawah
+                            codeBlock: false,
+                            link: false,
                         }),
 
                         Link.configure({
@@ -41,14 +42,16 @@ document.addEventListener('alpine:init', () => {
                             HTMLAttributes: { class: 'text-forest underline cursor-pointer' }
                         }),
 
-                        Image.extend({
-                            name: 'customImage', // <-- Beri nama unik agar tidak bentrok dengan ekstensi 'image' bawaan
+                        Image.configure({
+                            inline: false,
+                            allowBase64: true,
+                            HTMLAttributes: {
+                                class: 'rounded-lg max-w-full my-4 mx-auto shadow-md transition-all block',
+                            },
+                        }).extend({
                             addAttributes() {
                                 return {
                                     ...this.parent?.(),
-                                    src: { default: null },
-                                    alt: { default: null },
-                                    title: { default: null },
                                     style: {
                                         default: null,
                                         parseHTML: element => element.getAttribute('style'),
@@ -59,11 +62,6 @@ document.addEventListener('alpine:init', () => {
                                     }
                                 }
                             }
-                        }).configure({
-                            inline: false,
-                            HTMLAttributes: {
-                                class: 'rounded-lg max-w-full my-4 mx-auto shadow-md transition-all'
-                            },
                         }),
 
                         Table.configure({
@@ -81,9 +79,7 @@ document.addEventListener('alpine:init', () => {
                         TaskList,
                         TaskItem.configure({
                             nested: true,
-                            HTMLAttributes: {
-                                class: 'flex items-center gap-3 my-2 list-none'
-                            }
+                            HTMLAttributes: { class: 'flex items-center gap-3 my-2 list-none' }
                         }),
 
                         Placeholder.configure({
@@ -91,36 +87,24 @@ document.addEventListener('alpine:init', () => {
                             emptyEditorClass: 'is-editor-empty'
                         }),
 
-                        // Ini yang menggantikan peran codeBlock bawaan StarterKit secara sempurna:
                         CodeBlockLowlight.configure({
                             lowlight,
                             HTMLAttributes: { class: 'rounded-lg bg-zinc-950 text-zinc-100 p-4 font-mono text-xs my-4 overflow-x-auto' }
                         }),
 
-                        // 1. BUBBLE MENU UTAMA (UNTUK TEKS BIASA)
                         BubbleMenu.configure({
                             element: this.$refs.bubbleMenuElement,
-                            tippyOptions: {
-                                duration: 150,
-                                moveTransition: 'transform 0.1s ease-out'
-                            },
+                            tippyOptions: { duration: 150, moveTransition: 'transform 0.1s ease-out' },
                             shouldShow: ({ editor, from, to }) => {
                                 if (from === to) return false
-                                if (editor.isActive('image')) return false // Sembunyikan jika yang diklik adalah gambar
+                                if (editor.isActive('image')) return false
                                 return true
                             }
                         }),
 
-                        // 2. BUBBLE MENU KUSTOM (UNTUK GAMBAR) -> Ganti nama agar tidak konflik
-                        BubbleMenu.extend({
-                            name: 'imageBubbleMenu', // <-- TRIKNYA DI SINI: Ubah nama internal ekstensinya
-                        }).configure({
+                        BubbleMenu.extend({ name: 'imageBubbleMenu' }).configure({
                             element: this.$refs.imageBubbleMenu,
-                            tippyOptions: {
-                                placement: 'top',
-                                duration: 150,
-                                animation: 'fade',
-                            },
+                            tippyOptions: { placement: 'top', duration: 150, animation: 'fade' },
                             shouldShow: ({ editor }) => {
                                 return editor.isActive('image')
                             }
@@ -128,22 +112,18 @@ document.addEventListener('alpine:init', () => {
                     ],
                     content: initialContent,
 
-                    // ====== IMPLEMENTASI FILE HANDLER GRATIS ======
                     editorProps: {
-                        // Menangani file yang ditarik-lepas (Drag & Drop) ke dalam area mengetik
                         handleDrop(view, event, slice, moved) {
-                            if (!moved && event.dataTransfer?.files?.[0]) {
-                                _this.handleImageUpload(event.dataTransfer.files[0])
-                                return true // Blokir aksi default drop bawaan browser
+                            if (!moved && event.dataTransfer?.files?.length > 0) {
+                                _this.handleMultipleImageUpload(event.dataTransfer.files)
+                                return true
                             }
                             return false
                         },
-                        // Menangani file gambar hasil salinan dari clipboard (Paste / Ctrl+V)
                         handlePaste(view, event) {
-                            if (event.clipboardData?.files?.[0]) {
-                                // _this.handleImageUpload(event.clipboardData.files[0])
+                            if (event.clipboardData?.files?.length > 0) {
                                 _this.handleMultipleImageUpload(event.clipboardData.files)
-                                return true // Blokir aksi default paste bawaan browser
+                                return true
                             }
                             return false
                         }
@@ -158,131 +138,118 @@ document.addEventListener('alpine:init', () => {
                 })
 
                 this.$watch(`$wire.${wireModelName}`, (newContent) => {
-                    if (!editor || editor.isFocused || newContent === editor.getHTML()) return
-                    editor.commands.setContent(newContent || '', false)
+                    if (!_rawEditor || _rawEditor.isFocused || newContent === _rawEditor.getHTML()) return
+                    _rawEditor.commands.setContent(newContent || '', false)
                 })
             },
 
-            // Fungsi Logika Pengolah File Gambar
-            // handleImageUpload(file) {
-            //     if (!file.type.startsWith('image/')) {
-            //         alert('Hanya file gambar yang diperbolehkan!')
-            //         return
-            //     }
+            // ===== LOGIKA AMAN UPLOAD TANPA PROXY INTERFERENSI =====
+            // async handleMultipleImageUpload(files) {
+            //     const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'))
+            //     if (imageFiles.length === 0) return
 
-            //     const reader = new FileReader()
-            //     reader.onload = () => {
-            //         // Masukkan string Base64 gambar langsung ke dalam posisi kursor aktif saat ini
-            //         editor.chain().focus().setImage({ src: reader.result }).run()
-            //     }
-            //     reader.readAsDataURL(file)
-            // },
+            //     console.log(`[Tiptap Upload] Memulai antrean unggah untuk ${imageFiles.length} gambar.`);
 
-            // ====== LOGIKA UPLOAD GAMBAR BARU (SERVER-SIDE) V2 ======
-            // handleImageUpload(file) {
-            //     if (!file.type.startsWith('image/')) {
-            //         alert('Hanya file gambar yang diperbolehkan!')
-            //         return
-            //     }
+            //     for (let i = 0; i < imageFiles.length; i++) {
+            //         const file = imageFiles[i];
+            //         console.log(`%c[Antrean ${i + 1}/${imageFiles.length}] Memproses file: ${file.name}`, 'color: #3b82f6; font-weight: bold;');
 
-            //     this.isUploading = true;
+            //         try {
+            //             await new Promise((resolve, reject) => {
+            //                 wireComponent.upload('photo', file, resolve, reject);
+            //             });
 
-            //     // Menggunakan API upload bawaan Livewire
-            //     wireComponent.upload(
-            //         'photo', // Mengarah ke public $photo di server
-            //         file,
-            //         // Callback Berhasil
-            //         async () => {
-            //             // Jalankan method di backend untuk memproses penyimpanan dan mengambil URL publik
             //             const imageUrl = await wireComponent.uploadImage();
 
-            //             if (imageUrl) {
-            //                 // Masukkan URL gambar asli hasil upload ke posisi kursor editor
-            //                 editor.chain().focus().setImage({ src: imageUrl }).run();
+            //             if (imageUrl && _rawEditor) {
+            //                 console.log(`%c   ✅ Berhasil diunggah! URL Server: ${imageUrl}`, 'color: #10b981; font-weight: bold;');
+
+            //                 // Gunakan _rawEditor secara langsung untuk memintas Proxy Alpine
+            //                 _rawEditor.chain()
+            //                     .focus()
+            //                     .setImage({ src: imageUrl })
+            //                     .run();
+
             //                 this.updatedAt = Date.now();
+            //                 console.log("Isi HTML Editor Saat Ini:", _rawEditor.getHTML());
             //             }
-            //             this.isUploading = false;
-            //         },
-            //         // Callback Gagal
-            //         () => {
-            //             alert('Gagal mengunggah gambar. Pastikan ukuran di bawah 2MB.');
-            //             this.isUploading = false;
+            //         } catch (error) {
+            //             console.error(`❌ Gagal memproses gambar (${file.name}):`, error);
+            //             alert(`Gagal mengunggah gambar [${file.name}].`);
+            //             continue;
             //         }
-            //     );
+            //     }
             // },
 
-            // 3. LOGIKA UNTUK MENANGANI BEBERAPA GAMBAR SEKALIGUS (LOOPING MULTIPLE UPLOAD)
+            // ===== PERBAIKAN LOGIKA ANTREAN DAN MOVEMENT KURSOR =====
             async handleMultipleImageUpload(files) {
                 const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'))
-
                 if (imageFiles.length === 0) return
 
-                // Proses upload satu per satu secara asynchronous bergantian
-                for (const file of imageFiles) {
+                console.log(`[Tiptap Upload] Memulai antrean unggah untuk ${imageFiles.length} gambar.`);
+
+                for (let i = 0; i < imageFiles.length; i++) {
+                    const file = imageFiles[i];
+
                     try {
-                        // Upload file ke temporary Livewire storage
-                        await wireComponent.upload('photo', file)
+                        // Tambahkan jeda sejenak agar request asinkron Livewire tidak tumpang tindih
+                        await new Promise(resolve => setTimeout(resolve, 150));
 
-                        // Eksekusi method backend untuk memindahkan ke public storage & dapatkan URL-nya
-                        const imageUrl = await wireComponent.uploadImage()
+                        await new Promise((resolve, reject) => {
+                            wireComponent.upload('photo', file, resolve, reject);
+                        });
 
-                        if (imageUrl) {
-                            // Masukkan gambar ke editor di posisi kursor aktif
-                            editor.chain().focus().setImage({ src: imageUrl }).run()
-                            this.updatedAt = Date.now()
+                        const imageUrl = await wireComponent.uploadImage();
+
+                        if (imageUrl && _rawEditor) {
+                            // MASUKKAN GAMBAR, LALU BUAT PARAGRAF BARU DI BAWAHNYA, DAN PINDAHKAN FOKUS KURSOR KESANA
+                            _rawEditor.chain()
+                                .focus()
+                                .setImage({ src: imageUrl })
+                                .insertContent('<p></p>') // Membuat penampung baris baru agar loop berikutnya tidak menimpa gambar ini
+                                .run();
+
+                            // Paksa Alpine memperbarui state visual UI
+                            this.updatedAt = Date.now();
                         }
                     } catch (error) {
-                        alert(`Gagal mengunggah gambar: ${file.name}`)
+                        console.error(`❌ Gagal memproses gambar (${file.name}):`, error);
+                        continue;
                     }
                 }
             },
 
-            // Fungsi pembantu jika user ingin klik tombol toolbar (bukan drag/paste)
             triggerFileSelect() {
-                this.$refs.fileInput.click();
+                this.$refs.fileInput.click()
             },
-            // 4. KONTROL UKURAN & POSISI VIA JAVASCRIPT COMMANDS
+
             setImageAlignment(alignment) {
-                // Tiptap Image secara default menggunakan textAlign atau manipulasi class Tailwind
-                let marginClass = 'mx-auto block' // Default Center
+                if (!_rawEditor) return
+                let marginClass = 'mx-auto block'
                 if (alignment === 'left') marginClass = 'mr-auto ml-0 block'
                 if (alignment === 'right') marginClass = 'ml-auto mr-0 block'
 
-                editor.chain().focus().updateAttributes('image', { class: `rounded-lg max-w-full my-4 shadow-md transition-all ${marginClass}` }).run()
+                _rawEditor.chain().focus().updateAttributes('image', { class: `rounded-lg max-w-full my-4 shadow-md transition-all ${marginClass}` }).run()
                 this.updatedAt = Date.now()
             },
 
             setImageWidth(percentage) {
-                // Menyuntikkan style width langsung ke atribut gambar yang sedang aktif
-                editor.chain().focus().updateAttributes('image', { style: `width: ${percentage}%` }).run()
+                if (!_rawEditor) return
+                _rawEditor.chain().focus().updateAttributes('image', { style: `width: ${percentage}%` }).run()
                 this.updatedAt = Date.now()
-
-                // editor.chain().focus().updateAttributes('image', { style: `width: ${percentage}%` }).run()
-                // this.updatedAt = Date.now()
-            },
-
-            // Pembantu pengecekan node aktif
-            isNodeActive(type, attrs = {}) {
-                return editor ? editor.isActive(type, attrs) : false
             },
 
             isActive(type, opts = {}) {
-                return editor ? editor.isActive(type, opts) : false
+                this.updatedAt; // Memaksa re-evaluasi saat properti ini diakses
+                return _rawEditor ? _rawEditor.isActive(type, opts) : false
             },
 
             runCommand(command, args = null) {
-                if (!editor) return
-                editor.view.focus()
-
-                if (command === 'toggleHeading') {
-                    editor.chain().focus().toggleHeading({ level: args }).run()
-                } else if (command === 'setLink') {
-                    const url = prompt('Masukkan URL tautan:', 'https://')
-                    if (url) editor.chain().focus().setLink({ href: url }).run()
-                } else if (command === 'insertTable') {
-                    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+                if (!_rawEditor) return
+                if (args !== null) {
+                    _rawEditor.chain().focus()[command](args).run()
                 } else {
-                    editor.chain().focus()[command]().run()
+                    _rawEditor.chain().focus()[command]().run()
                 }
                 this.updatedAt = Date.now()
             }
