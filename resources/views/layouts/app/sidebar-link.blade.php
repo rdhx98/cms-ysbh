@@ -7,18 +7,18 @@
 <a href="{{ $route }}"
    wire:navigate
    {{ $attributes->merge([
-       'class' => 'flex items-center rounded-xl group  whitespace-nowrap transition-all duration-300 ease-in-out h-11 ' .
+       'class' => 'flex items-center rounded-xl group  whitespace-nowrap transition-all duration-300 easew-full-in-out h-9 ' .
         ($active
             ? 'bg-forest text-white font-semibold shadow-sm '
             : 'text-forest hover:bg-forest/80 hover:text-white ')
    ]) }}
-   :class="isExpanded ? '' : 'w-11'"
+   :class="isExpanded ? 'w-full' : 'w-9'"
 >
-    <div class="flex items-center justify-center w-11 h-11 shrink-0 transition-transform duration-200 group-hover:scale-105 {{ $active ? 'text-aurum' : 'text-forest group-hover:text-aurum' }}">
+    <div class="flex items-center justify-center w-9 h-9 shrink-0 transition-transform duration-200 group-hover:scale-105 {{ $active ? 'text-aurum' : 'text-forest group-hover:text-aurum' }}">
         @if($icon)
             <x-dynamic-component
                 :component="'lucide-' . $icon"
-                class="h-5 w-5"
+                class="h-4 w-4"
                 stroke-width="2"
             />
         @else
@@ -33,7 +33,7 @@
           x-transition:leave="transition ease-in duration-100"
           x-transition:leave-start="opacity-100"
           x-transition:leave-end="opacity-0"
-          class="pl-2 text-sm font-medium tracking-wide">
+          class="text-xs md:text-sm font-medium tracking-wide">
         {{ $title ?? $slot }}
     </span>
 </a>

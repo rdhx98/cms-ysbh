@@ -1,27 +1,26 @@
 <aside
 {{ $attributes->merge([
     'class' => '
-    fixed top-0 left-0 z-50 w-64 -translate-x-full h-screen md:h-[calc(100vh-1rem)]
+    fixed top-0 left-0 z-50 -translate-x-full h-screen md:h-[calc(100vh-1rem)]
 
     md:relative md:translate-x-0
 
-    transform-gpu transition-all duration-300 ease-in-out overflow-x-hidden flex flex-col justify-start bg-white text-white p-4 md:m-2 md:rounded-lg max-h-dvh'
+    transform-gpu transition-all duration-300 ease-in-out overflow-x-hidden flex flex-col items-start bg-white text-white p-1 md:mx-1.5  md:my-2 md:rounded-lg max-h-dvh'
     ]) }}
 {{-- :class="isExpanded ? 'w-64' : 'w-20'" --}}
 :class="{
     'translate-x-0': isExpanded,
     '-translate-x-full md:translate-x-0': !isExpanded,
     'md:w-64': isExpanded,
-    'md:w-20': !isExpanded
+    'md:w-11': !isExpanded
 }"
 >
-
-    <div class="flex items-center justify-start mb-2 h-11">
+    {{-- top row expand button and title --}}
+    <div class="flex items-center h-11 w-full whitespace-nowrap">
         <button
-        @click="isExpanded = !isExpanded"
-
-        class="p-2 hiden md:block hover:bg-sage-soft text-forest rounded-lg focus:outline-none">
-             <div class="relative flex items-center justify-center w-5 h-5">
+            @click="isExpanded = !isExpanded"
+            class=" hover:bg-sage-soft text-forest rounded-lg focus:outline-none h-9 items-center justify-center transition-colors duration-300 shrink-0">
+             <div class="relative flex items-center justify-center w-9 h-5">
                 <span x-cloak
                     :class="isExpanded ? 'rotate-45 translate-y-0' : '-translate-y-1.5'"
                     class="absolute block h-0.5 w-5 bg-current transition-all duration-300">
@@ -49,8 +48,10 @@
         {{-- :class="isExpanded ? 'block' : 'hidden'"  --}}
         class="w-full text-forest text-center delay-300 text-xl font-bold tracking-wide whitespace-nowrap">CMS YSBH</h2>
     </div>
+
     <div class="border-t border-forest my-2"></div>
-    <nav class="flex flex-col space-y-2">
+    <nav class="flex flex-col w-full space-y-2">
+
         <x-layouts::app.sidebar-link
         route="{{ route('dashboard') }}"
         :active="request()->routeIs('dashboard')"
@@ -59,8 +60,8 @@
         </x-layouts.app.sidebar-link>
 
         <x-layouts::app.sidebar-link
-        route="{{ route('article') }}"
-        :active="request()->routeIs('article')"
+        route="{{ route('article.index') }}"
+        :active="request()->routeIs('article.*')"
         icon="square-pen">
             {{ __('Articles') }}
         </x-layouts.app.sidebar-link>
@@ -69,22 +70,54 @@
     {{-- <div class="border-t-2 border-forest my-2"></div> --}}
     <div class="flex-1 grow"></div>
     {{-- <div class="border-t-2 border-forest my-2"></div> --}}
-    <nav flex flex-col space-y-2>
+    <nav class="flex w-full flex-col space-y-2 mb-2">
         <x-layouts::app.sidebar-link
             route="{{ route('documentation') }}"
             :active="request()->routeIs('documentation')"
             icon="book-open-text">
             {{ __('Documentation') }}
         </x-layouts.app.sidebar-link>
-        {{-- <flux:sidebar.item icon="newspaper" :href="route('cms.articles')" :current="request()->routeIs('cms.articles*')" wire:navigate>
-                        {{ __('Articles') }}
-                    </flux:sidebar.item> --}}
-
-        {{-- <form method="POST" action="{{ route('logout') }}" class="block pt-4 border-t border-slate-800">
-            @csrf
-            <button type="submit" class="text-red-400 hover:text-red-300 w-full text-left px-4 cursor-pointer">
-                Logout
-            </button>
-        </form> --}}
     </nav>
+    <!-- <nav class="flex w-full flex-col space-y-2">
+        <button
+        {/{ $attributes->merge([
+            'class' => 'cursor-pointer flex items-center rounded-xl group  whitespace-nowrap transition-all duration-300 easew-full-in-out h-9 bg-terracotta text-white font-semibold shadow-sm '
+
+        ]) }}
+        /class="isExpanded ? 'w-full' : 'w-9'"
+        >
+            <div class="flex items-center justify-center w-9 h-9 shrink-0 transition-transform duration-200 group-hover:scale-105 ">
+                @/if(auth()->user()->avatar)
+                    {{-- avatar here --}}
+                @/els/e
+                    <x-dynamic-component
+                        :/component="'lucide-circle-user'"
+                        class="h-4 w-4"
+                        stroke-width="2"
+                    />
+                @/endi/f
+            </div>
+
+            <span x-show="isExpanded"
+                x-transition:/enter="transition ease-out duration-200 delay-150"
+                x-transition:/enter-start="opacity-0 translate-x-[-10px]"
+                x-transition:/enter-end="opacity-100 translate-x-0"
+                x-transition:/leave="transition ease-in duration-100"
+                x-transition:/leave-start="opacity-100"
+                x-transition:/leave-end="opacity-0"
+                class="text-xs md:text-sm font-medium tracking-wide">
+                {/{ auth()->user()->name }/}
+            </span>
+        </a>
+    </nav> -->
+    {{-- <flux:sidebar.item icon="newspaper" :href="route('cms.articles')" :current="request()->routeIs('cms.articles*')" wire:navigate>
+                    {{ __('Articles') }}
+                </flux:sidebar.item> --}}
+
+    {{-- <form method="POST" action="{{ route('logout') }}" class="block pt-4 border-t border-slate-800">
+        @csrf
+        <button type="submit" class="text-red-400 hover:text-red-300 w-full text-left px-4 cursor-pointer">
+            Logout
+        </button>
+    </form> --}}
 </aside>

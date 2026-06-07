@@ -20,4 +20,8 @@
 @fonts
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
-@fluxAppearance
+@livewireStyles
+{{-- @fluxAppearance --}}
+<script>
+    console.log('✅ Vite Assets from HEAD Loaded Successfully!');
+</script>
