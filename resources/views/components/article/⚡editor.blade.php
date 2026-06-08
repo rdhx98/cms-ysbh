@@ -7,7 +7,6 @@ new class extends Component
 {
     use WithFileUploads;
 
-
     public int $user_id;
 
     public $category_id;
@@ -23,7 +22,7 @@ new class extends Component
     public function mount()
     {
         // Mengatur default value ke tanggal hari ini saat halaman pertama kali dimuat
-        $this->publish_date = now()->format('Y-m-d');
+        $this->published_at = now()->format('Y-m-d');
     }
 
     public function save()
@@ -66,6 +65,7 @@ new class extends Component
                 <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                     <input
                         type="date"
+                        wire:model="published_at"
                         placeholder="Kategori (pisahkan dengan koma)"
                         class="w-full p-1.5 text-sm border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 dark:bg-transparent md:mb-0 mb-4 md:w-1/2"
                     /></input>
