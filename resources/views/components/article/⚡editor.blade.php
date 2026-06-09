@@ -83,17 +83,35 @@ new class extends Component
                 wire:ignore>
                 <div
                     x-ref="imageBubbleMenu"
-                    class="absolute invisible opacity-0 bg-zinc-900 text-white p-1.5 rounded-lg shadow-xl border border-zinc-700/50 z-50 text-xs font-medium flex items-center gap-1"
+                    class="absolute invisible opacity-0 bg-sage-soft  p-1.5 rounded-lg shadow-xl border border-zinc-700/50 z-50 text-xs font-medium flex items-center gap-1"
                 >
-                    <button type="button" @click="setImageAlignment('left')" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">Bungkus Kiri</button>
-                    <button type="button" @click="setImageAlignment('center')" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">Baris Baru (Tengah)</button>
-                    <button type="button" @click="setImageAlignment('right')" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">Bungkus Kanan</button>
+                    <button type="button" @click="setImageAlignment('left')" class="px-2 py-1 rounded hover:bg-forest text-forest hover:text-white transition cursor-pointer">
+                        <x-dynamic-component
+                            :component="'lucide-align-start-vertical'"
+                            class="h-5 w-5"
+                            stroke-width="2"
+                        />
+                    </button>
+                    <button type="button" @click="setImageAlignment('center')" class="px-2 py-1 rounded hover:bg-forest text-forest hover:text-white transition cursor-pointer">
+                        <x-dynamic-component
+                            :component="'lucide-align-center-vertical'"
+                            class="h-5 w-5"
+                            stroke-width="2"
+                        />
+                    </button>
+                    <button type="button" @click="setImageAlignment('right')" class="px-2 py-1 rounded hover:bg-forest text-forest hover:text-white transition cursor-pointer">
+                        <x-dynamic-component
+                            :component="'lucide-align-end-vertical'"
+                            class="h-5 w-5"
+                            stroke-width="2"
+                        />
+                    </button>
 
-                    <div class="h-4 w-[1px] bg-zinc-700 mx-1"></div>
+                    <div class="h-4 w-px bg-zinc-700 mx-1"></div>
 
-                    <button type="button" @click="setImageWidth(25)" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">25%</button>
-                    <button type="button" @click="setImageWidth(50)" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">50%</button>
-                    <button type="button" @click="setImageWidth(100)" class="px-2 py-1 rounded hover:bg-zinc-800 transition cursor-pointer">100%</button>
+                    <button type="button" @click="setImageWidth(25)" class="px-2 py-1 rounded hover:bg-forest hover:text-white text-forest transition cursor-pointer">25%</button>
+                    <button type="button" @click="setImageWidth(50)" class="px-2 py-1 rounded hover:bg-forest hover:text-white text-forest transition cursor-pointer">50%</button>
+                    <button type="button" @click="setImageWidth(100)" class="px-2 py-1 rounded hover:bg-forest hover:text-white text-forest transition cursor-pointer">100%</button>
                 </div>
 
                 <div

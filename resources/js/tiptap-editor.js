@@ -30,6 +30,25 @@ document.addEventListener('alpine:init', () => {
                 const _this = this
                 const initialContent = wireComponent.get(wireModelName) || ''
 
+                // Taruh ini di dalam fungsi init() Alpine komponen editor Anda
+                window.addEventListener('unhandledrejection', (event) => {
+                    // Cek apakah error disebabkan oleh kegagalan upload file Livewire
+                    if (this.isUploading && event.reason && event.reason.message && event.reason.message.includes('JSON')) {
+                        console.warn("%c[Sistem Penyelamat] Mendeteksi fatal crash pada Livewire Upload. Memulihkan antrean...", "color: #f59e0b; font-weight: bold;");
+
+                        // Lewati file yang rusak/terlalu besar ini
+                        event.preventDefault();
+
+                        // Paksa reset input file Livewire dan jalankan antrean berikutnya
+                        wireComponent.set('photo', null);
+
+                        setTimeout(() => {
+                            this.isUploading = false;
+                            this.processNextInQueue();
+                        }, 500); // Beri jeda setengah detik untuk pemulihan browser
+                    }
+                });
+
                 window.tiptapEditor = new Editor({
                     element: this.$refs.editorElement,
                     extensions: [
@@ -235,250 +254,6 @@ document.addEventListener('alpine:init', () => {
                     _this.processNextInQueue();
                 });
             },
-
-            // async processNextInQueue() {
-            //     const _this = this;
-
-            //     if (this.uploadQueue.length === 0) {
-            //         this.isUploading = false;
-            //         console.log(`[Tiptap Upload] Seluruh antrean selesai diproses!`);
-            //         this.updatedAt = Date.now();
-            //         return;
-            //     }
-
-            //     this.isUploading = true;
-            //     const nextFile = this.uploadQueue.shift();
-            //     console.log(`%c[Antrean] Mengunggah fisik file ke Livewire: ${nextFile.name}`, 'color: #3b82f6; font-weight: bold;');
-
-            //     wireComponent.upload('photo', nextFile, async () => {
-            //         console.log(`%c   -> Temp upload sukses. Menyimpan secara permanen...`, 'color: #9333ea;');
-
-            //         try {
-            //             const finalUrl = await wireComponent.uploadImage();
-
-            //             if (finalUrl && window.tiptapEditor) {
-            //                 console.log(`%c   -> URL Diterima Tiptap Direct: ${finalUrl}`, 'color: #10b981; font-weight: bold;');
-
-            //                 // 1. Matikan isUploading sejenak agar $watch Alpine tidak memblokir incoming HTML dari Livewire
-            //                 _this.isUploading = false;
-
-            //                 // 2. Ambil HTML terbaru yang sudah dimodifikasi oleh PHP backend secara paksa
-            //                 const freshHtmlFromLivewire = wireComponent.get(wireModelName);
-
-            //                 // 3. Perbarui konten Tiptap secara langsung menggunakan data sah dari server
-            //                 window.tiptapEditor.commands.setContent(freshHtmlFromLivewire, false);
-
-            //                 // 4. Pindahkan kursor ke bagian paling akhir setelah gambar
-            //                 window.tiptapEditor.commands.focus('end');
-
-            //                 // 5. Gulirkan area kerja ke bawah
-            //                 setTimeout(() => {
-            //                     const editorElement = _this.$refs.editorElement;
-            //                     if (editorElement) {
-            //                         editorElement.scrollTo({
-            //                             top: editorElement.scrollHeight,
-            //                             behavior: 'smooth'
-            //                         });
-            //                     }
-            //                 }, 50);
-            //             }
-            //         } catch (err) {
-            //             console.error("Gagal mengeksekusi uploadImage di server:", err);
-            //         } finally {
-            //             _this.updatedAt = Date.now();
-
-            //             // Beri sedikit jeda sebelum mengeksekusi antrean gambar berikutnya
-            //             setTimeout(() => {
-            //                 _this.processNextInQueue();
-            //             }, 100);
-            //         }
-            //     }, (err) => {
-            //         console.error("Gagal mengunggah ke temporary Livewire:", err);
-            //         _this.isUploading = false;
-            //         _this.processNextInQueue();
-            //     });
-            // },
-            // async processNextInQueue() {
-            //     const _this = this;
-
-            //     if (this.uploadQueue.length === 0) {
-            //         this.isUploading = false;
-
-            //         // KITA HAPUS wireComponent.set dari sini karena backend PHP sudah menyimpannya dengan aman!
-            //         console.log(`[Tiptap Upload] Seluruh antrean selesai diproses!`);
-            //         this.updatedAt = Date.now();
-            //         return;
-            //     }
-
-            //     this.isUploading = true;
-            //     const nextFile = this.uploadQueue.shift();
-            //     console.log(`%c[Antrean] Mengunggah fisik file ke Livewire: ${nextFile.name}`, 'color: #3b82f6; font-weight: bold;');
-
-            //     wireComponent.upload('photo', nextFile, async () => {
-            //         console.log(`%c   -> Temp upload sukses. Menyimpan secara permanen...`, 'color: #9333ea;');
-
-            //         try {
-            //             const finalUrl = await wireComponent.uploadImage();
-
-            //             if (finalUrl && window.tiptapEditor) {
-            //                 console.log(`%c   -> URL Diterima Tiptap Direct: ${finalUrl}`, 'color: #10b981; font-weight: bold;');
-
-            //                 // Masukkan ke editor secara lokal untuk kenyamanan visual instant
-            //                 window.tiptapEditor.commands.focus();
-            //                 window.tiptapEditor.chain()
-            //                     .setImage({ src: finalUrl })
-            //                     .insertContent('<p></p>')
-            //                     .run();
-
-            //                 // Gulirkan editor ke bawah
-            //                 const editorElement = _this.$refs.editorElement;
-            //                 if (editorElement) {
-            //                     editorElement.scrollTo({
-            //                         top: editorElement.scrollHeight,
-            //                         behavior: 'smooth'
-            //                     });
-            //                 }
-            //             }
-            //         } catch (err) {
-            //             console.error("Gagal mengeksekusi uploadImage di server:", err);
-            //         } finally {
-            //             _this.updatedAt = Date.now();
-            //             _this.processNextInQueue();
-            //         }
-            //     }, (err) => {
-            //         console.error("Gagal mengunggah ke temporary Livewire:", err);
-            //         _this.isUploading = false;
-            //         _this.processNextInQueue();
-            //     });
-            // },
-            // async processNextInQueue() {
-            //     const _this = this;
-
-            //     if (this.uploadQueue.length === 0) {
-            //         // SELESAI MASALAH: Begitu seluruh antrean benar-benar habis, baru kita sinkronisasikan HTML final ke Livewire
-            //         this.isUploading = false;
-
-            //         if (window.tiptapEditor) {
-            //             console.log(`%c[Antrean] Sinkronisasi HTML Final ke Livewire...`, 'color: #10b981; font-weight: bold;');
-            //             wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
-            //         }
-
-            //         console.log(`[Tiptap Upload] Seluruh antrean selesai diproses!`);
-            //         this.updatedAt = Date.now();
-            //         return;
-            //     }
-
-            //     this.isUploading = true;
-            //     const nextFile = this.uploadQueue.shift();
-            //     console.log(`%c[Antrean] Mengunggah fisik file ke Livewire: ${nextFile.name}`, 'color: #3b82f6; font-weight: bold;');
-
-            //     wireComponent.upload('photo', nextFile, async () => {
-            //         console.log(`%c   -> Temp upload sukses. Menyimpan secara permanen...`, 'color: #9333ea;');
-
-            //         try {
-            //             const finalUrl = await wireComponent.uploadImage();
-
-            //             if (finalUrl && window.tiptapEditor) {
-            //                 console.log(`%c   -> URL Diterima Tiptap Direct: ${finalUrl}`, 'color: #10b981; font-weight: bold;');
-
-            //                 window.tiptapEditor.commands.focus();
-
-            //                 window.tiptapEditor.chain()
-            //                     .setImage({ src: finalUrl })
-            //                     .run();
-
-            //                 // Berikan jeda agar DOM Prosemirror stabil mendahului siklus request Livewire
-            //                 await new Promise(resolve => setTimeout(resolve, 100));
-
-            //                 window.tiptapEditor.chain()
-            //                     .insertContent('<p></p>')
-            //                     .blur()
-            //                     .focus()
-            //                     .run();
-
-            //                 const editorElement = _this.$refs.editorElement;
-            //                 if (editorElement) {
-            //                     editorElement.scrollTo({
-            //                         top: editorElement.scrollHeight,
-            //                         behavior: 'smooth'
-            //                     });
-            //                 }
-            //             }
-            //         } catch (err) {
-            //             console.error("Gagal mengeksekusi uploadImage di server:", err);
-            //         } finally {
-            //             _this.updatedAt = Date.now();
-            //             // Lanjut ke antrean berikutnya atau selesaikan proses upload
-            //             _this.processNextInQueue();
-            //         }
-            //     }, (err) => {
-            //         console.error("Gagal mengunggah ke temporary Livewire:", err);
-            //         _this.isUploading = false;
-            //         _this.processNextInQueue();
-            //     });
-            // },
-
-            // async processNextInQueue() {
-            //     if (this.uploadQueue.length === 0) {
-            //         this.isUploading = false;
-            //         console.log(`[Tiptap Upload] Seluruh antrean selesai diproses!`);
-            //         return;
-            //     }
-
-            //     this.isUploading = true;
-            //     const nextFile = this.uploadQueue.shift();
-            //     console.log(`%c[Antrean] Mengunggah fisik file ke Livewire: ${nextFile.name}`, 'color: #3b82f6; font-weight: bold;');
-
-            //     // Gunakan properti aslinya
-            //     wireComponent.upload('photo', nextFile, async () => {
-            //         console.log(`%c   -> Temp upload sukses. Menyimpan secara permanen...`, 'color: #9333ea;');
-
-            //         try {
-            //             const finalUrl = await wireComponent.uploadImage();
-
-            //             if (finalUrl && window.tiptapEditor) {
-            //                 console.log(`%c   -> URL Diterima Tiptap Direct: ${finalUrl}`, 'color: #10b981; font-weight: bold;');
-
-            //                 // 1. Pastikan editor mendapatkan fokus utama kembali
-            //                 window.tiptapEditor.commands.focus();
-
-            //                 // 2. Sisipkan gambar menggunakan command rantai murni Prosemirror
-            //                 window.tiptapEditor.chain()
-            //                     .setImage({ src: finalUrl })
-            //                     .run();
-
-            //                 // 3. Paksa penambahan paragraf baru di bawahnya dan geser view
-            //                 setTimeout(() => {
-            //                     if (window.tiptapEditor) {
-            //                         window.tiptapEditor.chain()
-            //                             .insertContent('<p></p>')
-            //                             .blur() // Trigger hilangkan fokus sejenak agar Alpine merefresh state
-            //                             .focus() // Kembalikan fokus ke paragraf baru
-            //                             .run();
-
-            //                         // 4. Otomatis gulirkan (scroll) editor ke posisi paling bawah tempat gambar baru berada
-            //                         const editorElement = _this.$refs.editorElement;
-            //                         if (editorElement) {
-            //                             editorElement.scrollTo({
-            //                                 top: editorElement.scrollHeight,
-            //                                 behavior: 'smooth'
-            //                             });
-            //                         }
-            //                     }
-            //                 }, 80); // Jeda dinaikkan ke 80ms untuk memberi waktu kalkulasi calc() CSS viewport
-            //             }
-            //         } catch (err) {
-            //             console.error("Gagal mengeksekusi uploadImage di server:", err);
-            //         } finally {
-            //             this.updatedAt = Date.now();
-            //             this.processNextInQueue();
-            //         }
-            //     }, (err) => {
-            //         console.error("Gagal mengunggah ke temporary Livewire:", err);
-            //         this.isUploading = false;
-            //         this.processNextInQueue();
-            //     });
-            // },
 
             triggerFileSelect() { this.$refs.fileInput.click() },
 

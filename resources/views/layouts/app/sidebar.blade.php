@@ -78,46 +78,4 @@
             {{ __('Documentation') }}
         </x-layouts.app.sidebar-link>
     </nav>
-    <!-- <nav class="flex w-full flex-col space-y-2">
-        <button
-        {/{ $attributes->merge([
-            'class' => 'cursor-pointer flex items-center rounded-xl group  whitespace-nowrap transition-all duration-300 easew-full-in-out h-9 bg-terracotta text-white font-semibold shadow-sm '
-
-        ]) }}
-        /class="isExpanded ? 'w-full' : 'w-9'"
-        >
-            <div class="flex items-center justify-center w-9 h-9 shrink-0 transition-transform duration-200 group-hover:scale-105 ">
-                @/if(auth()->user()->avatar)
-                    {{-- avatar here --}}
-                @/els/e
-                    <x-dynamic-component
-                        :/component="'lucide-circle-user'"
-                        class="h-4 w-4"
-                        stroke-width="2"
-                    />
-                @/endi/f
-            </div>
-
-            <span x-show="isExpanded"
-                x-transition:/enter="transition ease-out duration-200 delay-150"
-                x-transition:/enter-start="opacity-0 translate-x-[-10px]"
-                x-transition:/enter-end="opacity-100 translate-x-0"
-                x-transition:/leave="transition ease-in duration-100"
-                x-transition:/leave-start="opacity-100"
-                x-transition:/leave-end="opacity-0"
-                class="text-xs md:text-sm font-medium tracking-wide">
-                {/{ auth()->user()->name }/}
-            </span>
-        </a>
-    </nav> -->
-    {{-- <flux:sidebar.item icon="newspaper" :href="route('cms.articles')" :current="request()->routeIs('cms.articles*')" wire:navigate>
-                    {{ __('Articles') }}
-                </flux:sidebar.item> --}}
-
-    {{-- <form method="POST" action="{{ route('logout') }}" class="block pt-4 border-t border-slate-800">
-        @csrf
-        <button type="submit" class="text-red-400 hover:text-red-300 w-full text-left px-4 cursor-pointer">
-            Logout
-        </button>
-    </form> --}}
 </aside>
