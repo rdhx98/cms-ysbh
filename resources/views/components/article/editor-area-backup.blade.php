@@ -332,26 +332,6 @@
                 {{-- EDITOR's AREA --}}
                 <div class="flex-1 flex flex-col min-h-0 relative bg-white dark:bg-zinc-900">
                     
-                    {{-- 🌌 ZONA DROP OVERLAY GLOBAL (SUNTIKAN PASIF SAH) --}}
-                    <div x-data="{ isLocalDrag: false }"
-                        @dragenter.window.prevent="isLocalDrag = true"
-                        @dragover.window.prevent="isLocalDrag = true"
-                        @dragleave.window.prevent="event.clientX === 0 && event.clientY === 0 ? isLocalDrag = false : null"
-                        @drop.window="isLocalDrag = false"
-                        x-show="isLocalDrag" 
-                        x-transition
-                        class="absolute inset-0 bg-sage-soft/80 dark:bg-zinc-800/90 z-50 p-4 flex items-center justify-center pointer-events-none"
-                        style="display: none;">
-                        <div class="border-2 border-dashed border-forest dark:border-amber-500 rounded-xl w-full h-full flex flex-col items-center justify-center gap-3 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xs shadow-inner">
-                            <div class="p-4 bg-white dark:bg-zinc-800 rounded-full shadow-md text-forest dark:text-amber-500 animate-bounce">
-                                <x-dynamic-component :component="'lucide-image-plus'" class="h-8 w-8" stroke-width="2" />
-                            </div>
-                            <div class="text-center">
-                                <h3 class="text-sm font-bold text-forest dark:text-zinc-100 tracking-wide">Lepaskan Gambar di Sini</h3>
-                                <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Berkas otomatis diunggah ke server Yayasan SBH</p>
-                            </div>
-                        </div>
-                    </div>
 
                     {{-- MODAL INPUT LINK: Sekarang posisinya mutlak di tengah atas AREA TEKS saja --}}
                     <div x-show="isLinkOpen" x-transition:enter="transition ease-out duration-200"

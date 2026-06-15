@@ -13,6 +13,7 @@ import Image from '@tiptap/extension-image'
 import BubbleMenu from '@tiptap/extension-bubble-menu'
 import TextAlign from '@tiptap/extension-text-align'
 import { createLowlight, common } from 'lowlight'
+import { Node, mergeAttributes } from '@tiptap/core'
 
 import { TextStyle } from '@tiptap/extension-text-style'
 import { FontFamily } from '@tiptap/extension-font-family'
@@ -23,7 +24,9 @@ import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
-const ALLOWED_FONTS = ['Arial', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta    Sans'];
+
+
+const ALLOWED_FONTS = ['Arial', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
 
 const lowlight = createLowlight(common)
 
@@ -78,7 +81,7 @@ const LinkBackspaceHandler = Extension.create({
                         }
 
                         return false;
-                    }
+                    },
                 }
             })
         ];
@@ -171,7 +174,7 @@ const HiddenMarks = Extension.create({
                         const { doc } = state;
 
                         doc.descendants((node, pos) => {
-                            // 1. PERBAIKAN PARAGRAF (¶) - DIKUNCI AGAR TIDAK TURUN
+                            // 1. PERBAIKAN PARAGRAF (¶) - DIKUNCI AGAR TIDAK TURUN top: -0.35em !important; /* Tarik ke atas secara murni dari koordinat relatifnya */
                             if (node.type.name === 'paragraph') {
                                 const endPos = pos + node.nodeSize - 1;
                                 decorations.push(
@@ -189,7 +192,7 @@ const HiddenMarks = Extension.create({
                                             /* --- 🛠️ RACIKAN BARU PENYEIMBANG POSISI --- */
                                             vertical-align: middle !important; /* Gunakan middle sebagai jangkar pusat teks */
                                             position: relative !important;
-                                            top: -0.35em !important; /* Tarik ke atas secara murni dari koordinat relatifnya */
+                                            
 
                                             font-family: var(--font-mono) !important;
                                             font-size: 0.85em !important;
@@ -321,6 +324,29 @@ const ParagraphIndent = Extension.create({
     },
 });
 
+const MediaPlaceholder = Node.create({
+    name: 'mediaPlaceholder',
+    group: 'block',
+    atom: true, 
+
+    parseHTML() {
+        return [{ tag: 'div[data-type="media-placeholder"]' }]
+    },
+
+    renderHTML({ HTMLAttributes }) {
+        return [
+            'div', 
+            mergeAttributes(HTMLAttributes, { 'data-type': 'media-placeholder', class: 'media-placeholder-zone' }),
+            [
+                'div', { class: 'placeholder-content' },
+                ['span', { class: 'placeholder-text' }, 'Tarik & lepas gambar ke sini atau '],
+                // Gunakan fungsi pembuka modal/picker yang Anda miliki
+                ['button', { type: 'button', class: 'placeholder-btn', onclick: 'window.triggerLocalFilePicker()' }, 'Cari Berkas']
+            ]
+        ]
+    }
+});
+
 document.addEventListener('alpine:init', () => {
     // Simpan instance murni global agar terbebas dari Proxy Observer Alpine
     window.tiptapEditor = null;
@@ -341,6 +367,12 @@ document.addEventListener('alpine:init', () => {
             init() {
                 const _this = this
                 const initialContent = wireComponent.get(wireModelName) || ''
+
+                window.triggerLocalFilePicker = () => {
+                    if (_this.$refs.fileInput) {
+                        _this.$refs.fileInput.click();
+                    }
+                };
 
                 // Taruh ini di dalam fungsi init() Alpine komponen editor Anda
                 window.addEventListener('unhandledrejection', (event) => {
@@ -462,13 +494,6 @@ document.addEventListener('alpine:init', () => {
                                 return !editor.isActive('image')
                             }
                         }),
-
-                        // BUBBLE MENU GAMBAR
-                        // BubbleMenu.extend({ name: 'imageBubbleMenu' }).configure({
-                        //     element: this.$refs.imageBubbleMenu,
-                        //     tippyOptions: { placement: 'top', duration: 150, zIndex: 99 },
-                        //     shouldShow: ({ editor }) => editor.isActive('image')
-                        // }),
                         BubbleMenu.extend({ name: 'imageBubbleMenu' }).configure({
                             element: this.$refs.imageBubbleMenu,
                             tippyOptions: { 
@@ -483,18 +508,6 @@ document.addEventListener('alpine:init', () => {
                                 return editor.isActive('image');
                             }
                         }),
-                        // BubbleMenu.extend({ name: 'imageBubbleMenu' }).configure({
-                        //     element: this.$refs.imageBubbleMenu,
-                        //     tippyOptions: { 
-                        //         placement: 'top', 
-                        //         duration: 150, 
-                        //         zIndex: 99,
-                        //         // 💡 KUNCI EMAS: Mencegah menu menutup otomatis saat tombol di dalamnya diklik
-                        //         hideOnClick: false, 
-                        //     },
-                        //     // Menu hanya akan muncul jika kursor atau seleksi aktif berada di atas node image
-                        //     shouldShow: ({ editor }) => editor.isActive('image')
-                        // }),
                         TextStyle, // Wajib diisi karena FontFamily bergantung pada TextStyle
                         FontFamily.extend({
                             parseHTML() {
@@ -541,7 +554,89 @@ document.addEventListener('alpine:init', () => {
                                 }
                             },
                         }),
+                        MediaPlaceholder,
                     ],
+
+                    // 🛡️ PROSEMIRROR CORE INTERCEPTION HANDLER
+                    editorProps: {
+                        handleDrop: (view, event, slice, moved) => {
+                            if (moved) return false;
+                            const files = event.dataTransfer ? event.dataTransfer.files : [];
+                            let imageFound = false;
+
+                            for (const file of files) {
+                                if (file.type.startsWith('image/')) {
+                                    imageFound = true;
+                                    
+                                    // 💡 KUNCI AMAN: Masukkan langsung ke objek komponen global window
+                                    if (window.tiptapComponent) {
+                                        window.tiptapComponent.uploadQueue.push(file);
+                                    }
+                                }
+                            }
+
+                            if (imageFound) {
+                                event.preventDefault(); // Matikan mutlak aksi buka tab baru browser!
+                                
+                                if (window.tiptapComponent) {
+                                    window.tiptapComponent.isUploading = true;
+                                    window.tiptapComponent.processNextInQueue();
+                                }
+                                return true; 
+                            }
+                            return false;
+                        }
+                    },
+
+                    // editorProps: {
+                    //     handleDrop: (view, event, slice, moved) => {
+                    //         if (moved) return false;
+                    //         const files = event.dataTransfer ? event.dataTransfer.files : [];
+                    //         let imageFound = false;
+
+                    //         for (const file of files) {
+                    //             if (file.type.startsWith('image/')) {
+                    //                 imageFound = true;
+                                    
+                    //                 // 💡 PERBAIKAN: Gunakan _this (referensi instans Alpine yang dikunci di awal init)
+                    //                 _this.uploadQueue.push(file); 
+                    //             }
+                    //         }
+
+                    //         if (imageFound) {
+                    //             event.preventDefault();
+                                
+                    //             // 💡 PERBAIKAN: Picu fungsi pemroses antrean milik instans editor Anda secara langsung
+                    //             _this.isUploading = true;
+                    //             _this.processNextInQueue();
+                    //             return true; 
+                    //         }
+                    //         return false;
+                    //     }
+                    // },
+
+                    // editorProps: {
+                    //     handleDrop: (view, event, slice, moved) => {
+                    //         if (moved) return false;
+                    //         const files = event.dataTransfer ? event.dataTransfer.files : [];
+                    //         let imageFound = false;
+
+                    //         for (const file of files) {
+                    //             if (file.type.startsWith('image/')) {
+                    //                 imageFound = true;
+                    //                 _this.uploadQueue.push(file); // Masuk ke antrean upload kustom Anda
+                    //             }
+                    //         }
+
+                    //         if (imageFound) {
+                    //             event.preventDefault();
+                    //             _this.processNextInQueue();
+                    //             return true; 
+                    //         }
+                    //         return false;
+                    //     }
+                    // },
+
                     content: initialContent,
 
                     onUpdate({ editor }) {
@@ -612,6 +707,7 @@ document.addEventListener('alpine:init', () => {
 
                             // 2. Sisipkan Gambar TEPAT di posisi kursor aktif beserta spasi paragraf baru di bawahnya
                             window.tiptapEditor.chain()
+                                .deleteSelection()
                                 .insertContent({
                                     type: 'image',
                                     attrs: {
@@ -650,6 +746,16 @@ document.addEventListener('alpine:init', () => {
 
             triggerFileSelect() { this.$refs.fileInput.click() },
 
+            insertMediaPlaceholder() {
+                if (!window.tiptapEditor) return;
+                
+                window.tiptapEditor.chain()
+                    .focus()
+                    .insertContent({ type: 'mediaPlaceholder' })
+                    .run();
+                this.updatedAt = Date.now();
+            },
+
             setImageAlignment(alignment) {
                 if (!window.tiptapEditor || !window.tiptapEditor.isActive('image')) return;
 
@@ -687,72 +793,6 @@ document.addEventListener('alpine:init', () => {
                 this.updatedAt = Date.now();
             },
 
-
-            //this is working
-            // setImageAlignment(alignment) {
-            //     if (!window.tiptapEditor) return
-
-            //     const currentAttributes = window.tiptapEditor.getAttributes('image');
-            //     const currentStyle = currentAttributes.style || '';
-
-            //     const widthMatch = currentStyle.match(/width:\s*\d+%/);
-            //     const existingWidth = widthMatch ? widthMatch[0] + ';' : '';
-
-            //     let alignmentStyles = ''
-            //     if (alignment === 'left') {
-            //         // Masukkan !important pada display agar menang melawan CSS global
-            //         alignmentStyles = 'float: left; margin-right: 1.5rem; margin-bottom: 0.5rem; display: inline !important;'
-            //     } else if (alignment === 'right') {
-            //         alignmentStyles = 'float: right; margin-left: 1.5rem; margin-bottom: 0.5rem; display: inline !important;'
-            //     } else {
-            //         // Jika tengah (center), paksa menjadi BLOCK !important agar margin:auto aktif bekerja
-            //         alignmentStyles = 'display: block !important; margin-left: auto !important; margin-right: auto !important; float: none !important;'
-            //     }
-
-            //     window.tiptapEditor.chain()
-            //         .focus()
-            //         .updateAttributes('image', {
-            //             style: `${existingWidth} ${alignmentStyles}`.trim()
-            //         })
-            //         .run()
-
-            //     this.updatedAt = Date.now()
-            // },
-
-
-            // setImageAlignment(alignment) {
-            //     if (!window.tiptapEditor) return
-
-            //     // 1. Ambil atribut style yang saat ini sedang aktif di gambar tersebut
-            //     const currentAttributes = window.tiptapEditor.getAttributes('image');
-            //     const currentStyle = currentAttributes.style || '';
-
-            //     // 2. Ekstrak nilai width (misal: "width: 25%") jika ada menggunakan Regex
-            //     const widthMatch = currentStyle.match(/width:\s*\d+%/);
-            //     const existingWidth = widthMatch ? widthMatch[0] + ';' : '';
-
-            //     // 3. Tentukan gaya alignment baru
-            //     let alignmentStyles = ''
-            //     if (alignment === 'left') {
-            //         alignmentStyles = 'float: left; margin-right: 1.5rem; margin-bottom: 0.5rem; display: inline;'
-            //     } else if (alignment === 'right') {
-            //         alignmentStyles = 'float: right; margin-left: 1.5rem; margin-bottom: 0.5rem; display: inline;'
-            //     } else {
-            //         // Jika tengah (center), matikan float agar kembali berlagak seperti block
-            //         alignmentStyles = 'display: block; margin-left: auto; margin-right: auto; float: none;'
-            //     }
-
-            //     // 4. Gabungkan width lama dengan alignment baru
-            //     window.tiptapEditor.chain()
-            //         .focus()
-            //         .updateAttributes('image', {
-            //             style: `${existingWidth} ${alignmentStyles}`.trim()
-            //         })
-            //         .run()
-
-            //     this.updatedAt = Date.now()
-            // },
-            // HELPER: Cek status alignment gambar aktif secara kustom lewat pencarian style teks
             isImageAlignActive(alignment) {
                 this.updatedAt; // Trigger reaktivitas visual UI
                 if (!window.tiptapEditor || !window.tiptapEditor.isActive('image')) return false;
@@ -809,56 +849,11 @@ document.addEventListener('alpine:init', () => {
 
                 this.updatedAt = Date.now();
             },
-            // setImageWidth(percentage) {
-            //     if (!window.tiptapEditor) return
-
-            //     // 1. Ambil atribut style yang saat ini sedang aktif di gambar
-            //     const currentAttributes = window.tiptapEditor.getAttributes('image');
-            //     const currentStyle = currentAttributes.style || '';
-
-            //     // 2. Bersihkan nilai width lama dari string style agar tidak double
-            //     // Kita hilangkan bagian "width: X%;" dari string lama
-            //     let remainingStyle = currentStyle.replace(/width:\s*\d+%;?/, '').trim();
-
-            //     // 3. Gabungkan width baru dengan sisa gaya alignment yang ada
-            //     window.tiptapEditor.chain()
-            //         .focus()
-            //         .updateAttributes('image', {
-            //             style: `width: ${percentage}%; ${remainingStyle}`.trim()
-            //         })
-            //         .run()
-
-            //     this.updatedAt = Date.now()
-            // },
 
             isActive(type, opts = {}) {
                 this.updatedAt; // Trigger reaktivitas visual UI Alpine
                 return window.tiptapEditor ? window.tiptapEditor.isActive(type, opts) : false;
             },
-
-            // toggleHiddenMarks() {
-            //     if (!window.tiptapEditor) return;
-
-            //     // 1. Balik nilai state Alpine terlebih dahulu
-            //     this.showMarks = !this.showMarks;
-
-            //     // 2. Jalankan command Tiptap
-            //     window.tiptapEditor.commands.toggleHiddenMarks();
-
-            //     // 3. Paksa ProseMirror gambar ulang class pembungkusnya
-            //     const { state, view } = window.tiptapEditor;
-            //     if (view) {
-            //         view.dispatch(state.tr.setMeta('hiddenMarksTrigger', Date.now()));
-            //     }
-
-                
-            //     this.updatedAt = Date.now();
-
-            //     // Hapus atau komentari bagian sinkronisasi storage yang menimpa nilai tadi
-            //     console.log('Status showMarks saat ini:', this.showMarks);
-            // },// Di dalam x-data / object Alpine.js Anda:
-
-            // Di dalam x-data / object Alpine.js Anda:
 
             toggleHeading(level) {
                 if (!window.tiptapEditor) return;
@@ -1010,6 +1005,7 @@ document.addEventListener('alpine:init', () => {
                 const attributes = window.tiptapEditor.getAttributes('textStyle');
                 return attributes.fontFamily || 'default';
             },
+
             // ➕ TAMBAHKAN HELPER METHOD LIST INI:
             toggleCustomOrderedList(type) {
                 if (!window.tiptapEditor) return;
@@ -1023,22 +1019,7 @@ document.addEventListener('alpine:init', () => {
                 }
                 this.updatedAt = Date.now();
             },
-            // checkButtonActive(name, params = {}, type = 'default') {
-            //     switch (type) {
-            //         case 'heading':
-            //             return this.isActive('heading', { level: parseInt(name) });
-                        
-            //         case 'textAlign':
-            //             // ➕ Pemicu Reaktivitas: Panggil properti ini agar Alpine mendeteksi perubahan state visual
-            //             this.updatedAt; 
-                        
-            //             // Kembalikan pengecekan langsung ke Tiptap core
-            //             return window.tiptapEditor ? window.tiptapEditor.isActive(params) : false;
-                        
-            //         default:
-            //             return this.isActive(name, params);
-            //     }
-            // },
+
             toggleHiddenMarks() {
                 if (!window.tiptapEditor) return;
 
