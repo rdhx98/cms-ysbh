@@ -195,7 +195,7 @@
     --color-terracotta: #C85A32; /* FIX: Diisi agar compiler tidak macet */
     --color-aurum: #E5C423;
 }
-/* 
+/*
 .tiptap {
   font-family: var(--font-jakarta);
   font-size: 1rem;
@@ -255,12 +255,11 @@
     height: 0;
     pointer-events: none;
 }
-
 /* ==========================================================================
-   2. MEDIA & SCROLLBAR STYLING
+   2. MEDIA & SCROLLBAR STYLING (VERSI AMAN: ALIGNMENT KEMBALI NORMAL)
    ========================================================================== */
 .tiptap img {
-    display: inline-block; /* 💡 HAPUS !important DI SINI agar inline-style JavaScript bisa bekerja */
+    display: inline-block; /* Tetap inline-block agar inline-style JS bisa menimpa */
     max-width: 100% !important;
     height: auto !important;
     min-height: 50px;
@@ -268,15 +267,30 @@
     border: 2px solid transparent;
     transition: border-color 0.2s;
 }
-   /* .tiptap img {
+
+/* 💡 JALUR AMAN: Amankan paragraf yang berisi gambar rata tengah agar min-height 24px bawaan tidak membuat gap */
+.tiptap p:has(img[style*="margin-left: auto !important"]) {
+    min-height: 0 !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
+}
+
+/* 🔒 PENJINAK ELEMEN HANTU TANPA MERUSAK ALIGNMENT
+   Kita buat separator dan trailing break melayang (absolute) dengan ukuran 0px
+   supaya tidak memakan ruang tinggi di bawah gambar, baik kiri, tengah, maupun kanan */
+.tiptap p:has(img.tiptap-uploaded-image) .ProseMirror-separator,
+.tiptap p:has(img.tiptap-uploaded-image) .ProseMirror-trailingBreak {
+    position: absolute !important;
     display: inline-block !important;
-    max-width: 100% !important;
-    height: auto !important;
-    min-height: 50px;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: border-color 0.2s;
-} */
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
+    pointer-events: none !important;
+}
 
 /* Highlight saat gambar aktif klik */
 .tiptap img.ProseMirror-selectednode {
@@ -510,6 +524,10 @@
 }
 /* Gaya visual blok zona drop internal Tiptap */
 .tiptap .media-placeholder-zone {
+    position: relative !important;
+    z-index: 60 !important; /* 👈 LEBIH TINGGI dari z-50 milik overlay besar, agar dia mengisolasi diri saat didekati kursor */
+    pointer-events: auto !important; /* Menjamin dia tetap responsif menerima drop biner */
+
     background-color: #f4f4f5 !important;
     border: 2px dashed #cbd5e1 !important;
     padding: 2rem 1rem !important;
@@ -554,3 +572,28 @@
     background-color: #073324 !important;
     color: #ffffff !important;
 }
+.tiptap .media-placeholder-zone.ProseMirror-selectednode {
+    outline: 3px solid #10b981 !important; /* Warna emerald/forest menyala */
+    outline-offset: 2px !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* Update selektor media-placeholder-zone yang sudah ada di app.css Anda */
+/* .tiptap .media-placeholder-zone {
+    position: relative !important;
+    z-index: 60 !important; /* 👈 LEBIH TINGGI dari z-50 milik overlay besar, agar dia mengisolasi diri saat didekati kursor *
+    pointer-events: auto !important; /* Menjamin dia tetap responsif menerima drop biner *
+    background-color: #f4f4f5 !important;
+    border: 2px dashed #cbd5e1 !important;
+    padding: 2.5rem 1rem !important;
+    border-radius: 0.5rem !important;
+    margin-top: 1rem !important;
+    margin-bottom: 1rem !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+} */

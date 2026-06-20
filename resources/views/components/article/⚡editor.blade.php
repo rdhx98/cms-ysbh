@@ -1,87 +1,147 @@
-    <?php
+<?php
 
-    use Livewire\Component;
-    use Livewire\WithFileUploads;
+use Livewire\Component;
+use Livewire\WithFileUploads;
 
-    new class extends Component {
-        use WithFileUploads;
+new class extends Component {
+    use WithFileUploads;
 
-        public int $user_id;
+    public int $user_id;
 
-        public $category_id;
-        public $title;
-        public $slug;
-        public string $content = '';
-        public $featured_image;
-        public $status;
-        public $published_at;
+    public $category_id;
+    public $title;
+    public $slug;
+    public string $content = '';
+    public $featured_image;
+    public $status;
+    public $published_at;
 
-        public $photo;
+    public $photo;
 
-        public function mount()
-        {
-            // Mengatur default value ke tanggal hari ini saat halaman pertama kali dimuat
-            $this->published_at = now()->format('Y-m-d');
-        }
+    public function mount()
+    {
+        // Mengatur default value ke tanggal hari ini saat halaman pertama kali dimuat
+        $this->published_at = now()->format('Y-m-d');
+    }
 
-        public function save()
-        {
-            $this->validate([
-                'content' => 'required|min:10',
-            ]);
-            // 1. Jika ini proses UPDATE (Artikel sudah ada di database sebelumnya)
-            if (isset($this->articleId)) { 
-                // Ambil isi konten lama dari database sebelum di-overwrite
-                $oldContent = DB::table('articles')->where('id', $this->articleId)->value('content');
+    public function save()
+    {
+        $this->validate([
+            'content' => 'required|min:10',
+        ]);
+        // 1. Jika ini proses UPDATE (Artikel sudah ada di database sebelumnya)
+        if (isset($this->articleId)) {
+            // Ambil isi konten lama dari database sebelum di-overwrite
+            $oldContent = DB::table('articles')->where('id', $this->articleId)->value('content');
 
-                if ($oldContent) {
-                    // Ekstrak semua URL gambar dari konten lama
-                    preg_match_all('/<img[^>]+src="([^">]+)"/', $oldContent, $oldMatches);
-                    $oldImages = $oldMatches[1] ?? [];
+            if ($oldContent) {
+                // Ekstrak semua URL gambar dari konten lama
+                preg_match_all('/<img[^>]+src="([^">]+)"/', $oldContent, $oldMatches);
+                $oldImages = $oldMatches[1] ?? [];
 
-                    // Ekstrak semua URL gambar dari konten baru yang siap disimpan
-                    preg_match_all('/<img[^>]+src="([^">]+)"/', $this->content, $newMatches);
-                    $newImages = $newMatches[1] ?? [];
+                // Ekstrak semua URL gambar dari konten baru yang siap disimpan
+                preg_match_all('/<img[^>]+src="([^">]+)"/', $this->content, $newMatches);
+                $newImages = $newMatches[1] ?? [];
 
-                    // Cari tahu gambar mana saja yang ada di konten lama tapi hilang di konten baru
-                    $deletedImages = array_diff($oldImages, $newImages);
+                // Cari tahu gambar mana saja yang ada di konten lama tapi hilang di konten baru
+                $deletedImages = array_diff($oldImages, $newImages);
 
-                    foreach ($deletedImages as $imageUrl) {
-                        // Konversi URL absolute browser menjadi path internal storage Laravel
-                        // Contoh: http://localhost/storage/articles/abc.jpg -> public/articles/abc.jpg
-                        if (str_contains($imageUrl, 'storage/articles/')) {
-                            $filename = basename($imageUrl);
-                            $storagePath = 'articles/' . $filename;
+                foreach ($deletedImages as $imageUrl) {
+                    // Konversi URL absolute browser menjadi path internal storage Laravel
+                    // Contoh: http://localhost/storage/articles/abc.jpg -> public/articles/abc.jpg
+                    if (str_contains($imageUrl, 'storage/articles/')) {
+                        $filename = basename($imageUrl);
+                        $storagePath = 'articles/' . $filename;
 
-                            if (Storage::disk('public')->exists($storagePath)) {
-                                Storage::disk('public')->delete($storagePath);
-                                Log::info("[Tiptap Cleaner] Berhasil menghapus file usang dari storage: " . $storagePath);
-                            }
+                        if (Storage::disk('public')->exists($storagePath)) {
+                            Storage::disk('public')->delete($storagePath);
+                            Log::info("[Tiptap Cleaner] Berhasil menghapus file usang dari storage: " . $storagePath);
                         }
                     }
                 }
             }
-
-            // 2. Lanjutkan proses penyimpanan data artikel Anda ke MariaDB...
-            // DB::table('articles')->updateOrInsert([...]);
-
-            // session()->flash('message', 'Artikel berhasil disimpan dan storage dibersihkan!');
-
-            session()->flash('message', 'Artikel berhasil disimpan!');
         }
 
-        public function uploadImage()
-        {
-            $this->validate([
-                'photo' => 'image|max:5120',
-            ]);
+        // 2. Lanjutkan proses penyimpanan data artikel Anda ke MariaDB...
+        // DB::table('articles')->updateOrInsert([...]);
 
-            // Hanya simpan file dan return URL murninya
-            $path = $this->photo->store('articles', 'public');
-            return asset('storage/' . $path);
+        // session()->flash('message', 'Artikel berhasil disimpan dan storage dibersihkan!');
+
+        session()->flash('message', 'Artikel berhasil disimpan!');
+    }
+    public function uploadImage()
+    {
+        // 1. Validasi standar untuk mengamankan server
+        $this->validate([
+            'photo' => 'image|max:15360', // Batas aman 15MB
+        ]);
+
+        $tempPath = $this->photo->getRealPath();
+        $extension = strtolower($this->photo->getClientOriginalExtension());
+        $filename = 'article-' . uniqid() . '.webp';
+        $savePath = storage_path('app/public/articles/' . $filename);
+
+        // 💡 STRATEGI HIBRIDA: Cek apakah ekstensi Imagick benar-benar aktif di server
+        if ($extension === 'gif' && class_exists('\Imagick')) {
+            try {
+                // Jalur ini hanya akan dieksekusi jika Imagick terpasang sempurna (seperti di Hostinger nanti)
+                \Intervention\Image\Laravel\Facades\Image::withDriver(new \Intervention\Image\Drivers\Imagick\Driver())
+                    ->read($tempPath)
+                    ->scale(width: 1000) // Pangkas resolusi agar hemat storage
+                    ->toWebp(70)        // Kompres menjadi Animated WebP
+                    ->save($savePath);
+
+                return asset('storage/articles/' . $filename);
+            } catch (\Exception $e) {
+                // Jika terjadi kegagalan tak terduga, langsung lompat ke jalur aman (fallback)
+                Log::warning('Gagal kompresi GIF di backend, menggunakan file asli: ' . $e->getMessage());
+            }
         }
-    };
-    ?>
+
+        // 💡 JALUR AMAN (FALLBACK):
+        // Digunakan di laptop lokal (karena Imagick Herd error) DAN untuk file JPG/PNG biasa.
+        // File disimpan murni dan orisinal tanpa memicu error 500!
+        $path = $this->photo->store('articles', 'public');
+        return asset('storage/' . $path);
+    }
+
+    // public function uploadImage()
+    // {
+    //     $this->validate([
+    //         'photo' => 'image|max:15360', // Batas aman 15MB
+    //     ]);
+
+    //     $tempPath = $this->photo->getRealPath();
+    //     $extension = strtolower($this->photo->getClientOriginalExtension());
+    //     $filename = 'article-' . uniqid() . '.webp';
+    //     $savePath = storage_path('app/public/articles/' . $filename);
+
+    //     // 💡 JALUR UTAMA: KOMPRESI GIF TO ANIMATED WEBP
+    //     if ($extension === 'gif') {
+    //         try {
+    //             // Kita panggil Driver Imagick secara eksplisit untuk menangani animasi frame
+    //             \Intervention\Image\Laravel\Facades\Image::withDriver(new \Intervention\Image\Drivers\Imagick\Driver())
+    //                 ->read($tempPath)
+    //                 ->scale(width: 1000) // Pangkas lebar ke 1000px agar ukuran file turun drastis
+    //                 ->toWebp(50)        // Ubah ke format WebP animasi dengan kualitas 70%
+    //                 ->save($savePath);
+
+    //             return asset('storage/articles/' . $filename);
+    //         } catch (\Exception $e) {
+    //             // Jika server Anda ternyata tidak mendukung Imagick, dia akan otomatis pakai fallback ini:
+    //             Log::warning('Imagick tidak aktif, mengunggah GIF asli sebagai fallback: ' . $e->getMessage());
+    //             $path = $this->photo->store('articles', 'public');
+    //             return asset('storage/' . $path);
+    //         }
+    //     }
+
+    //     // Untuk JPG/PNG (yang sudah dikompres di frontend oleh JavaScript)
+    //     $path = $this->photo->store('articles', 'public');
+    //     return asset('storage/' . $path);
+    // }
+
+};
+?>
 
 <div class="max-w-5xl mx-auto p-6">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
@@ -100,6 +160,23 @@
                 </div>
             </div>
 
+            @if (session()->has('error'))
+                <div x-data="{ show: true }" x-show="show" x-transition
+                    class="p-4 rounded-lg bg-red-50 dark:bg-zinc-800 border border-red-200 dark:border-red-900/50 flex items-start gap-3 select-none">
+                    <div class="p-1 bg-white dark:bg-zinc-700 rounded-md text-red-600 shadow-sm shrink-0">
+                        <x-dynamic-component :component="'lucide-alert-triangle'" class="h-5 w-5" stroke-width="2.5" />
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-bold text-zinc-800 dark:text-zinc-100">Gagal Memproses Gambar</h4>
+                        <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">{{ session('error') }}</p>
+                    </div>
+                    <button type="button" @click="show = false"
+                        class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition cursor-pointer text-xs font-bold pl-2">
+                        ✕
+                    </button>
+                </div>
+            @endif
+
             <div x-data="setupEditor('content', $wire)" @buka-modal-link.window="isLinkOpen = true"
                 class="flex-1 flex flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-900 shadow-sm relative"
                 wire:ignore>
@@ -108,7 +185,7 @@
                 {{-- IMAGE BUBBLE MENU --}}
                 <div x-ref="imageBubbleMenu"
                     class="absolute invisible opacity-0 bg-white dark:bg-zinc-800 p-1.5 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-700/50 z-50 text-xs font-medium flex items-center gap-1">
-                    
+
                     {{-- BUTTON ALIGN LEFT --}}
                     <button type="button" @click="setImageAlignment('left')"
                         :class="isImageAlignActive('left') ? 'bg-sage-soft text-forest font-semibold border-forest shadow-sm' : 'text-zinc-600 dark:text-zinc-400 border-transparent'"
@@ -331,14 +408,16 @@
 
                 {{-- EDITOR's AREA --}}
                 <div class="flex-1 flex flex-col min-h-0 relative bg-white dark:bg-zinc-900">
-                    
+
                     {{-- 🌌 ZONA DROP OVERLAY GLOBAL (SUNTIKAN PASIF SAH) --}}
+
                     <div x-data="{ isLocalDrag: false }"
-                        @dragenter.window.prevent="isLocalDrag = true"
-                        @dragover.window.prevent="isLocalDrag = true"
+                        {{-- 💡 KUNCI MATI: Jika di dalam editor sedang AKTIF (.isActive) node mediaPlaceholder, overlay besar DIPAKSA tidak bereaksi (null / false) --}}
+                        @dragenter.window.prevent="isUploading || isLinkOpen || (window.tiptapEditor && window.tiptapEditor.isActive('mediaPlaceholder')) ? (isLocalDrag = false) : (isLocalDrag = $event.dataTransfer.types.includes('Files'))"
+                        @dragover.window.prevent="isUploading || isLinkOpen || (window.tiptapEditor && window.tiptapEditor.isActive('mediaPlaceholder')) ? (isLocalDrag = false) : (isLocalDrag = $event.dataTransfer.types.includes('Files'))"
                         @dragleave.window.prevent="event.clientX === 0 && event.clientY === 0 ? isLocalDrag = false : null"
-                        @drop.window="isLocalDrag = false"
-                        x-show="isLocalDrag" 
+                        @drop.window.prevent="isLocalDrag = false; handleMultipleImageUpload($event.dataTransfer.files);"
+                        x-show="isLocalDrag"
                         x-transition
                         class="absolute inset-0 bg-sage-soft/80 dark:bg-zinc-800/90 z-50 p-4 flex items-center justify-center pointer-events-none"
                         style="display: none;">
@@ -352,6 +431,47 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- <div x-data="{ isLocalDrag: false }"
+                        {{-- 💡 PERBAIKAN: Overlay besar HANYA boleh muncul jika kursor tidak sedang berada di atas/mengincar area placeholder kecil --
+                        @dragenter.window.prevent="isUploading || isLinkOpen ? null : ($event.target.closest('.media-placeholder-zone') ? (isLocalDrag = false) : (isLocalDrag = $event.dataTransfer.types.includes('Files')))"
+                        @dragover.window.prevent="isUploading || isLinkOpen ? null : ($event.target.closest('.media-placeholder-zone') ? (isLocalDrag = false) : (isLocalDrag = $event.dataTransfer.types.includes('Files')))"
+                        @dragleave.window.prevent="event.clientX === 0 && event.clientY === 0 ? isLocalDrag = false : null"
+                        @drop.window.prevent="isLocalDrag = false; handleMultipleImageUpload($event.dataTransfer.files);"
+                        x-show="isLocalDrag"
+                        x-transition
+                        class="absolute inset-0 bg-sage-soft/80 dark:bg-zinc-800/90 z-50 p-4 flex items-center justify-center pointer-events-none"
+                        style="display: none;">
+                        <div class="border-2 border-dashed border-forest dark:border-amber-500 rounded-xl w-full h-full flex flex-col items-center justify-center gap-3 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xs shadow-inner">
+                            <div class="p-4 bg-white dark:bg-zinc-800 rounded-full shadow-md text-forest dark:text-amber-500 animate-bounce">
+                                <x-dynamic-component :component="'lucide-image-plus'" class="h-8 w-8" stroke-width="2" />
+                            </div>
+                            <div class="text-center">
+                                <h3 class="text-sm font-bold text-forest dark:text-zinc-100 tracking-wide">Lepaskan Gambar di Sini</h3>
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Berkas otomatis diunggah ke server Yayasan SBH</p>
+                            </div>
+                        </div>
+                    </div> --}}
+
+                    {{-- <div x-data="{ isLocalDrag: false }"
+                        @dragenter.window.prevent="isLocalDrag = true"
+                        @dragover.window.prevent="isLocalDrag = true"
+                        @dragleave.window.prevent="event.clientX === 0 && event.clientY === 0 ? isLocalDrag = false : null"
+                        @drop.window="isLocalDrag = false"
+                        x-show="isLocalDrag"
+                        x-transition
+                        class="absolute inset-0 bg-sage-soft/80 dark:bg-zinc-800/90 z-50 p-4 flex items-center justify-center pointer-events-none"
+                        style="display: none;">
+                        <div class="border-2 border-dashed border-forest dark:border-amber-500 rounded-xl w-full h-full flex flex-col items-center justify-center gap-3 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xs shadow-inner">
+                            <div class="p-4 bg-white dark:bg-zinc-800 rounded-full shadow-md text-forest dark:text-amber-500 animate-bounce">
+                                <x-dynamic-component :component="'lucide-image-plus'" class="h-8 w-8" stroke-width="2" />
+                            </div>
+                            <div class="text-center">
+                                <h3 class="text-sm font-bold text-forest dark:text-zinc-100 tracking-wide">Lepaskan Gambar di Sini</h3>
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Berkas otomatis diunggah ke server Yayasan SBH</p>
+                            </div>
+                        </div>
+                    </div> --}}
 
                     {{-- MODAL INPUT LINK: Sekarang posisinya mutlak di tengah atas AREA TEKS saja --}}
                     <div x-show="isLinkOpen" x-transition:enter="transition ease-out duration-200"
