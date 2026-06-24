@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Post;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -8,6 +9,7 @@ new class extends Component {
 
     public int $user_id;
 
+    public $article_id;
     public $category_id;
     public $title;
     public $slug;
@@ -18,10 +20,171 @@ new class extends Component {
 
     public $photo;
 
-    public function mount()
-    {
+    // Properti baru untuk mendukung fitur seleksi gambar
+    public array $extracted_images = []; // Menyimpan daftar semua URL gambar dari editor
+    public ?string $selected_image_url = null; // Menyimpan URL gambar yang dipilih penulis
+
+    public function mount(){
         // Mengatur default value ke tanggal hari ini saat halaman pertama kali dimuat
         $this->published_at = now()->format('Y-m-d');
+    }
+
+    /**
+     * Fungsi untuk memindai editor dan mengumpulkan semua URL gambar yang ada.
+     * Dipanggil tepat saat penulis membuka modal / bottom sheet.
+     */
+    // public function scanEditorImages()
+    // {
+    //     $this->extracted_images = [];
+
+    //     if (!empty($this->content)) {
+    //         // Ekstrak semua URL dari tag img di dalam konten
+    //         preg_match_all('/<img[^>]+src="([^">]+)"/', $this->content, $matches);
+    //         if (!empty($matches[1])) {
+    //             $this->extracted_images = $matches[1];
+    //         }
+    //     }
+
+    //     // Jalur Default: Jika penulis belum memilih apapun secara manual,
+    //     // dan belum ada file kustom ($photo), otomatis arahkan ke gambar pertama editor.
+    //     if (empty($this->selected_image_url) && empty($this->featured_image) && !empty($this->extracted_images) && empty($this->photo)) {
+    //         $this->selected_image_url = $this->extracted_images[0];
+    //         $this->featured_image = basename($this->extracted_images[0]);
+    //     }
+    // }
+
+    public function scanEditorImages()
+    {
+        $this->extracted_images = [];
+
+        if (!empty($this->content)) {
+            // Naikkan batas backtrack regex PHP secara dinamis khusus untuk method ini
+            // agar PHP tidak menyerah saat membaca string Base64 yang sangat panjang
+            ini_set('pcre.backtrack_limit', '5000000');
+
+            // Ambil semua URL gambar dari tag <img>
+            preg_match_all('/<img[^>]+src="([^">]+)"/', $this->content, $matches);
+            if (!empty($matches[1])) {
+                $this->extracted_images = $matches[1];
+            }
+        }
+
+        // Tentukan default ke gambar pertama jika belum ada pilihan
+        if (empty($this->selected_image_url) && empty($this->featured_image) && !empty($this->extracted_images) && empty($this->photo)) {
+            $this->selected_image_url = $this->extracted_images[0];
+            $this->featured_image = basename($this->extracted_images[0]);
+        }
+    }
+
+    // NOT TESTED
+    // public function scanEditorImages()
+    // {
+    //     $this->extracted_images = [];
+
+    //     if (!empty($this->content)) {
+    //         // Jaring pengaman backend: Jika kedapatan base64 ikut terkirim secara liar,
+    //         // kita bersihkan dulu memorinya sebelum regex berjalan agar PHP tidak kehabisan RAM.
+    //         preg_match_all('/<img[^>]+src="([^">]+)"/', $this->content, $matches);
+    //         if (!empty($matches[1])) {
+    //             $this->extracted_images = $matches[1];
+    //         }
+    //     }
+
+    //     if (empty($this->selected_image_url) && empty($this->featured_image) && !empty($this->extracted_images) && empty($this->photo)) {
+    //         $this->selected_image_url = $this->extracted_images[0];
+    //         $this->featured_image = basename($this->extracted_images[0]);
+    //     }
+    // }
+
+    /**
+     * Fungsi ketika penulis mengklik/memilih salah satu gambar dari editor
+     */
+    public function selectImageFromEditor($url)
+    {
+        $this->photo = null; // Batalkan file upload kustom jika ada
+        $this->selected_image_url = $url;
+        $this->featured_image = basename($url); // Ambil nama filenya saja untuk database
+    }
+
+    /**
+     * Lifecycle hook Livewire: Otomatis berjalan ketika penulis mengunggah file kustom lewat input file
+     */
+    public function updatedPhoto()
+    {
+        $this->validate([
+            'photo' => 'image|max:15360',
+        ]);
+
+        // Reset pilihan gambar dari editor karena penulis beralih ke upload kustom
+        $this->selected_image_url = null;
+        // featured_image sementara diisi nama file aslinya untuk pratinjau local temporaryUrl()
+        $this->featured_image = $this->photo->getClientOriginalName();
+    }
+
+    private function processAndTrimImages($htmlContent){
+        if (empty($htmlContent)) return $htmlContent;
+
+        // Gunakan DOMDocument untuk membaca HTML secara aman di sisi Backend
+        $dom = new \DOMDocument();
+
+        // Libatkan libxml_use_internal_errors agar tidak memicu warning jika ada tag HTML5 kustom
+        libxml_use_internal_errors(true);
+        // Muat string HTML dengan encoding UTF-8
+        $dom->loadHTML(mb_convert_encoding($htmlContent, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+
+        $images = $dom->getElementsByTagName('img');
+        $hasChanges = false;
+
+        foreach ($images as $img) {
+            $src = $img->getAttribute('src');
+
+            // 🚀 DETEKSI & POTONG (TRIM) HANYA GAMBAR BASE64
+            if (Str::startsWith($src, 'data:image/')) {
+                try {
+                    // Memecah format data:image/png;base64,XXXXXX
+                    $parts = explode(',', $src);
+                    if (count($parts) < 2) continue;
+
+                    $metadata = $parts[0]; // data:image/png;base64
+                    $base64Data = $parts[1]; // data biner murni
+
+                    // Ambil ekstensi file (png, jpeg, webp, dll)
+                    $extension = 'png';
+                    if (preg_match('/data:image\/(?<mime>.*?);/', $metadata, $groups)) {
+                        $extension = $groups['mime'];
+                    }
+
+                    // Decode string base64 menjadi biner fisik
+                    $decodedImage = base64_decode($base64Data);
+
+                    // 🌟 DISELARASKAN: Gunakan folder 'articles' agar sinkron dengan sistem Cleaner Anda
+                    $filename = 'article-' . Str::uuid() . '.' . $extension;
+                    $storagePath = 'articles/' . $filename;
+
+                    // Simpan file ke folder storage publik public/articles/...
+                    Storage::disk('public')->put($storagePath, $decodedImage);
+
+                    // Dapatkan URL publik gambar tersebut
+                    $fileUrl = asset('storage/' . $storagePath);
+
+                    // 🌟 SULAP: Ganti src Base64 raksasa dengan URL gambar server yang ringan!
+                    $img->setAttribute('src', $fileUrl);
+
+                    // Tambahkan class kustom untuk styling frontend Anda
+                    $img->setAttribute('class', 'rounded-lg max-w-full my-2 inline-block tiptap-trimmed-image');
+
+                    $hasChanges = true;
+                } catch (\Exception $e) {
+                    // Jika gagal di-decode, hapus tag gambarnya agar database tidak bengkak
+                    $img->parentNode->removeChild($img);
+                    $hasChanges = true;
+                }
+            }
+        }
+
+        // Jika ada gambar yang berhasil diproses, kembalikan HTML yang sudah bersih, jika tidak kembalikan apa adanya
+        return $hasChanges ? $dom->saveHTML() : $htmlContent;
     }
 
     public function save()
@@ -29,10 +192,11 @@ new class extends Component {
         $this->validate([
             'content' => 'required|min:10',
         ]);
+        $this->content = $this->processAndTrimImages($this->content);
         // 1. Jika ini proses UPDATE (Artikel sudah ada di database sebelumnya)
-        if (isset($this->articleId)) {
+        if (isset($this->article_id)) {
             // Ambil isi konten lama dari database sebelum di-overwrite
-            $oldContent = DB::table('articles')->where('id', $this->articleId)->value('content');
+            $oldContent = DB::table('articles')->where('id', $this->article_id)->value('content');
 
             if ($oldContent) {
                 // Ekstrak semua URL gambar dari konten lama
@@ -61,11 +225,26 @@ new class extends Component {
                 }
             }
         }
+        // === TAHAP 3: EKSEKUSI PENYIMPANAN DATA UTAMA VIA ELOQUENT ===
+        // ✅ Otomatis mendeteksi CREATE jika article_id null, dan UPDATE jika article_id memiliki nilai
+        $article = Post::updateOrCreate(
+            ['id' => $this->article_id ?? null],
+            [
+                'user_id'           => auth()->id() ?? $this->user_id, // Fallback ke properti jika auth kosong
+                'category_id'       => $this->category_id,
+                'title'             => $this->title,
+                'slug'              => $this->slug,
+                'content'           => $this->content, // HTML bersih, ringan, bebas base64
+                'featured_image'    => $this->featured_image,
+                'status'            => $this->status,
+                'published_at'      => $this->published_at,
+            ]
+        );
 
-        // 2. Lanjutkan proses penyimpanan data artikel Anda ke MariaDB...
-        // DB::table('articles')->updateOrInsert([...]);
-
-        // session()->flash('message', 'Artikel berhasil disimpan dan storage dibersihkan!');
+        // Jika ini adalah artikel baru yang baru dibuat, ikat ID-nya ke properti komponen
+        if (!isset($this->article_id)) {
+            $this->article_id = $article->id;
+        }
 
         session()->flash('message', 'Artikel berhasil disimpan!');
     }
@@ -147,6 +326,19 @@ new class extends Component {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <div class="h-[calc(100vh-120px)] flex flex-col justify-between">
 
+        <div x-data="{ show: false, message: '' }"
+            x-on:saved.window="show = true; message = $event.detail.message; setTimeout(() => show = false, 3000)"
+            class="fixed bottom-5 right-5 z-50">
+
+            @if (session()->has('message'))
+                <div x-data="{ init() { setTimeout(() => $el.remove(), 3000) } }"
+                    class="bg-slate-900 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span>{{ session('message') }}</span>
+                </div>
+            @endif
+        </div>
+
         <form wire:submit.prevent="save" class="flex-1 flex flex-col min-h-0 space-y-4">
             {{-- judul dan tags --}}
             <div class="">
@@ -160,10 +352,11 @@ new class extends Component {
                 </div>
             </div>
 
+            {{-- PESAN GALAT --}}
             @if (session()->has('error'))
                 <div x-data="{ show: true }" x-show="show" x-transition
                     class="p-4 rounded-lg bg-red-50 dark:bg-zinc-800 border border-red-200 dark:border-red-900/50 flex items-start gap-3 select-none">
-                    <div class="p-1 bg-white dark:bg-zinc-700 rounded-md text-red-600 shadow-sm shrink-0">
+                    <div class="p-1 bg-white dark:bg-zinc-700 rounded-md text-red-600 shadow-sm  shrink-0">
                         <x-dynamic-component :component="'lucide-alert-triangle'" class="h-5 w-5" stroke-width="2.5" />
                     </div>
                     <div class="flex-1">
@@ -396,6 +589,16 @@ new class extends Component {
                         <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
                     </button>
 
+                    {{-- PREVIEW THUMBNAIL BUTTOn --}}
+                    <button type="button"
+                        wire:click="scanEditorImages"
+                        @click="$dispatch('buka-featured-modal')"
+                        {{-- :class="checkButtonActive('mediaPlaceholder', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'" --}}
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent"
+                        title="Sisipkan Kotak Penampung Media">
+                        <x-dynamic-component :component="'lucide-view'" class="h-4 w-4" stroke-width="2" />
+                    </button>
+
                     {{-- <button type="button" @click="triggerFileSelect()"
                         :class="checkButtonActive('link', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' :
                             'text-gray-600'"
@@ -558,6 +761,87 @@ new class extends Component {
                     {{ __('Simpan Artikel') }}
                 </button>
             </div>
+
+            <!-- AREA MODAL -->
+            <div x-data="{ isOpen: false }"
+                @buka-featured-modal.window="isOpen = true"
+                class="relative" >
+                <div
+                    x-show="isOpen"
+                    class="hidden md:flex fixed inset-0 z-50 items-center justify-center overflow-x-hidden overflow-y-auto"
+                    style="display: none;"
+                >
+                    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="isOpen = false"></div>
+
+                    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border w-full max-w-3xl max-h-[85vh] flex flex-col z-10 overflow-hidden">
+                        <div class="p-4 border-b flex items-center justify-between bg-white dark:bg-gray-900">
+                            <h3 class="text-base font-bold text-gray-900 dark:text-white">Pilih Gambar Sampul</h3>
+                            <button type="button" @click="isOpen = false" class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+
+                        <div class="p-6 overflow-y-auto grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-950 flex-1 min-h-[250px]">
+                            <div class="relative aspect-video rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 text-center overflow-hidden">
+                                <input type="file" wire:model="photo" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept="image/*" />
+                                <span class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300">Upload File Baru</span>
+                                <div wire:loading wire:target="photo" class="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center">
+                                    <span class="text-xs">Memuat...</span>
+                                </div>
+                            </div>
+
+                            @foreach($extracted_images as $imgUrl)
+                                <div
+                                    wire:click="selectImageFromEditor('{{ $imgUrl }}')"
+                                    class="relative aspect-video rounded-xl overflow-hidden cursor-pointer border-2 {{ $selected_image_url === $imgUrl ? 'border-blue-600 ring-4 ring-blue-500/20' : 'border-transparent' }}"
+                                >
+                                    <img src="{{ $imgUrl }}" class="w-full h-full object-cover">
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <div class="p-4 border-t flex justify-end bg-gray-50 dark:bg-gray-900">
+                            <button type="button" @click="isOpen = false" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-sm">
+                                Selesai
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div
+                    x-show="isOpen"
+                    class="flex md:hidden fixed inset-0 z-50 items-end justify-center"
+                    style="display: none;"
+                >
+                    <div class="fixed inset-0 bg-black/60" @click="isOpen = false"></div>
+                    <div class="bg-white dark:bg-gray-900 w-full rounded-t-2xl max-h-[75vh] flex flex-col z-10 overflow-hidden shadow-2xl">
+                        <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto my-3 dark:bg-gray-700" @click="isOpen = false"></div>
+
+                        <div class="p-4 overflow-y-auto space-y-4 bg-gray-50 dark:bg-gray-950 flex-1">
+                            <div class="relative w-full py-3 px-4 rounded-xl border-2 border-dashed border-gray-300 bg-white flex items-center justify-center space-x-2">
+                                <input type="file" wire:model="photo" class="absolute inset-0 w-full h-full opacity-0 z-10" accept="image/*" />
+                                <span class="text-xs font-semibold text-gray-700">Ambil Foto / Upload Gambar</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                @foreach($extracted_images as $imgUrl)
+                                    <div wire:click="selectImageFromEditor('{{ $imgUrl }}')" class="relative aspect-video rounded-xl overflow-hidden border-2 {{ $selected_image_url === $imgUrl ? 'border-blue-600' : 'border-transparent' }}">
+                                        <img src="{{ $imgUrl }}" class="w-full h-full object-cover">
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-white dark:bg-gray-900 border-t">
+                            <button type="button" @click="isOpen = false" class="w-full bg-blue-600 text-white py-3 rounded-xl text-xs font-bold text-center">
+                                Terapkan Gambar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </form>
 
     </div>
