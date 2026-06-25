@@ -278,7 +278,14 @@ const ParagraphIndent = Extension.create({
                 attributes: {
                     indent: {
                         default: null,
-                        parseHTML: element => element.style.textIndent ? true : null,
+                        // 🌟 FIX INDENTASI WORD ONLINE: Cek apakah nilainya valid dan lebih besar dari 0
+                        parseHTML: element => {
+                            const style = element.style.textIndent || '';
+                            const value = parseFloat(style);
+                            // Jika ada text-indent dan nilainya lebih dari 0 (misal 24pt, 1cm, dll), anggap true.
+                            // Jika 0pt atau tidak ada, berikan null (normal).
+                            return (style && value > 0) ? true : null;
+                        },
                         renderHTML: attributes => {
                             if (!attributes.indent) return {}
                             return { style: 'text-indent: 2rem;' }
@@ -288,6 +295,7 @@ const ParagraphIndent = Extension.create({
             },
         ]
     },
+
 
     addCommands() {
         return {
@@ -454,6 +462,12 @@ document.addEventListener('alpine:init', () => {
                                         default: null,
                                         parseHTML: element => element.getAttribute('style'),
                                         renderHTML: attributes => attributes.style ? { style: attributes.style } : {}
+                                    },
+                                    // 🌟 TAMBAHKAN INI: Izinkan TipTap membaca token pelacak kursor paste
+                                    'data-token': {
+                                        default: null,
+                                        parseHTML: element => element.getAttribute('data-token'),
+                                        renderHTML: attrs => attrs['data-token'] ? { 'data-token': attrs['data-token'] } : {}
                                     }
                                 }
                             }
@@ -576,7 +590,7 @@ document.addEventListener('alpine:init', () => {
                     // ... kode ekstensi atas Anda tetap sama ...
 
 
-                    
+
                     editorProps: {
                         handleDragOver: (view, event) => {
                             event.preventDefault();
@@ -610,7 +624,6 @@ document.addEventListener('alpine:init', () => {
                             return false;
                         },
 
-                        // 🟢 SOLUSI PERBAIKAN: Gunakan fungsi biasa untuk menjaga stabilitas kursor dokumen
                         transformPastedHTML(html) {
                             if (!html) return html;
 
@@ -619,30 +632,21 @@ document.addEventListener('alpine:init', () => {
 
                             const parser = new DOMParser();
                             const doc = parser.parseFromString(html, 'text/html');
-                            
-                            // 🌟 FIX INDENTASI WORD ONLINE: Saring paragraf agar tidak semua terkena indentasi liar
-                            const paragraphs = doc.querySelectorAll('p');
-                            paragraphs.forEach(p => {
-                                const style = p.getAttribute('style') || '';
-                                // Jika paragraf dari Word Online membawa margin/indentasi bawaan yang tidak signifikan, bersihkan!
-                                if (style.includes('text-indent') || style.includes('margin-left')) {
-                                    // Hanya izinkan indentasi jika nilainya cukup besar (berarti user sengaja menekan Tab di Word)
-                                    const indentMatch = style.match(/text-indent:\s*(-?\d+(\.\d+)?)\w+/);
-                                    if (!indentMatch || parseFloat(indentMatch[1]) <= 0) {
-                                        p.style.textIndent = '';
-                                        p.style.marginLeft = '';
-                                    }
-                                }
-                            });
 
-                            const images = doc.querySelectorAll('img, v\\:imagedata, o\\:Graphic');
+                            const images = doc.querySelectorAll('img, v\\:imagedata, o\\:Graphic, v\\:shape img');
                             let base64ImageCount = 0;
 
                             images.forEach((img, index) => {
-                                const src = img.getAttribute('src') || '';
+                                let src = img.getAttribute('src') || img.getAttribute('v:src') || '';
 
-                                // 🚀 SKENARIO A: Mencegat Gambar Base64 (Word Online & Desktop)
-                                if (src.startsWith('data:image/') && alpineData) {
+                                const isBase64 = src.startsWith('data:image/');
+                                const isIncompatible = src.startsWith('file:///') ||
+                                                    src.startsWith('blob:') ||
+                                                    html.includes('msohtmlclip') ||
+                                                    img.tagName.toLowerCase().includes('imagedata') ||
+                                                    (src !== '' && !isBase64 && !src.startsWith('http') && !src.startsWith('https'));
+
+                                if (isBase64 && alpineData) {
                                     base64ImageCount++;
                                     const uniqueToken = `pasted-token-${Date.now()}-${index}`;
 
@@ -663,49 +667,45 @@ document.addEventListener('alpine:init', () => {
                                         file.targetToken = uniqueToken;
                                         alpineData.uploadQueue.push(file);
 
-                                        // 🌟 FIX POSISI GAMBAR: Gunakan format atribut src alt yang valid agar lolos dari seleksi skema parser TipTap
-                                        img.setAttribute('src', 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100" height="100"><rect width="100%" height="100%" fill="%23f4f4f5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="8" fill="%23a1a1aa">Uploading...</text></svg>');
-                                        img.setAttribute('alt', uniqueToken); 
-                                        img.setAttribute('data-token', uniqueToken); // Tambahkan atribut penanda data-token khusus
-                                        img.className = 'animate-pulse bg-zinc-200 rounded-lg aspect-video w-1/4 inline-block my-2';
-                                        
+                                        // 🌟 KUNCI 1: Gunakan 'title' untuk menitipkan token, pasti lolos sensor TipTap!
+                                        img.outerHTML = `<img src="https://upload.wikimedia.org/wikipedia/commons/c/ca/1x1.png" title="${uniqueToken}" alt="⏳ Mengunggah..." class="animate-pulse bg-zinc-200 rounded-lg aspect-video w-1/4 inline-block my-2" />`;
+
                                     } catch (e) {
                                         console.error('[Base64 Extractor] Gagal memparsing gambar inline:', e);
                                     }
-                                }
-                                
-                                // 🚀 SKENARIO B: Tautan lokal komputer (file:///)
-                                else if (src.startsWith('file:///') || src.includes('msohtmlclip') || src.trim() === '') {
+                                } else if (isIncompatible) {
                                     const placeholderDom = doc.createElement('div');
-                                    placeholderDom.setAttribute('data-type', 'mediaPlaceholder');
+                                    placeholderDom.setAttribute('data-type', 'media-placeholder');
                                     placeholderDom.className = 'media-placeholder-zone';
-                                    
+
                                     const innerDiv = doc.createElement('div');
                                     innerDiv.className = 'placeholder-content';
-                                    
+
                                     const span = doc.createElement('span');
                                     span.className = 'placeholder-text';
                                     span.innerText = `Tarik & lepas gambar ke sini atau `;
-                                    
+
                                     const button = doc.createElement('button');
                                     button.setAttribute('type', 'button');
                                     button.className = 'placeholder-btn';
                                     button.setAttribute('onclick', 'window.triggerLocalFilePicker()');
                                     button.innerText = 'Cari Berkas';
-                                    
+
                                     innerDiv.appendChild(span);
                                     innerDiv.appendChild(button);
                                     placeholderDom.appendChild(innerDiv);
 
                                     if (img.parentNode) {
                                         img.parentNode.replaceChild(placeholderDom, img);
+                                    } else {
+                                        img.outerHTML = placeholderDom.outerHTML;
                                     }
                                 }
                             });
 
                             if (base64ImageCount > 0 && alpineData) {
                                 alpineData.isUploading = true;
-                                setTimeout(() => { alpineData.processNextInQueue(); }, 50);
+                                setTimeout(() => { alpineData.processNextInQueue(); }, 150);
                             }
 
                             return doc.body.innerHTML;
@@ -741,199 +741,6 @@ document.addEventListener('alpine:init', () => {
                         },
                     },
 
-                    
-                    // editorProps: {
-                    //     // 1. CEGAT SAAT FILE BERADA DI ATAS EDITOR
-                    //     handleDragOver: (view, event) => {
-                    //         event.preventDefault();
-                    //         event.stopPropagation();
-                    //         return true;
-                    //     },
-
-                    //     // 2. CEGAT MUTLAK SAAT FILE DILEPAS (DROP)
-                    //     handleDrop: (view, event, slice, moved) => {
-                    //         if (moved) return false;
-
-                    //         // Paksa browser berhenti melakukan aksi bawaan sejak baris pertama
-                    //         event.preventDefault();
-                    //         event.stopPropagation();
-
-                    //         // Ambil data transfer file biner dari desktop
-                    //         const files = event.dataTransfer ? event.dataTransfer.files : [];
-                    //         let imageFound = false;
-
-                    //         for (const file of files) {
-                    //             if (file.type.startsWith('image/')) {
-                    //                 imageFound = true;
-
-                    //                 // Masukkan file langsung ke antrean upload Alpine via referensi aman _this
-                    //                 _this.uploadQueue.push(file);
-                    //             }
-                    //         }
-
-                    //         if (imageFound) {
-                    //             // Nyalakan state loading dan jalankan mesin upload Livewire Herd Anda
-                    //             _this.isUploading = true;
-                    //             _this.processNextInQueue();
-
-                    //             return true; // Selesai ditangani secara kustom, hentikan ProseMirror bubble-up
-                    //         }
-
-                    //         return false;
-                    //     },
-
-                    //     transformPastedHTML(html) {
-                    //     // transformPastedHTML: (html) => {
-                    //         if (!html) return html;
-
-                    //         const _this = this; // Pastikan referensi ke scope Alpine/TipTap aman
-                    //         const parser = new DOMParser();
-                    //         const doc = parser.parseFromString(html, 'text/html');
-                    //         const images = doc.querySelectorAll('img, v\\:imagedata, o\\:Graphic');
-
-                    //         let localImageCount = 0;
-                    //         let base64ImageCount = 0;
-
-                    //         images.forEach((img) => {
-                    //             const src = img.getAttribute('src') || '';
-
-                    //             // 🚀 SKENARIO A: Jika terdeteksi gambar Base64 (Word Online / GDocs)
-                    //             if (src.startsWith('data:image/')) {
-                    //                 base64ImageCount++;
-
-                    //                 try {
-                    //                     // 1. Konversi string Base64 menjadi File Biner asli di browser frontend
-                    //                     const parts = src.split(',');
-                    //                     const mime = parts[0].match(/:(.*?);/)[1];
-                    //                     const bstr = atob(parts[1]);
-                    //                     let n = bstr.length;
-                    //                     const u8arr = new Uint8Array(n);
-
-                    //                     while (n--) {
-                    //                         u8arr[n] = bstr.charCodeAt(n);
-                    //                     }
-
-                    //                     const extension = mime.split('/')[1] || 'png';
-                    //                     const file = new File([u8arr], `pasted-inline-${Date.now()}-${base64ImageCount}.${extension}`, { type: mime });
-
-                    //                     // 2. Suntikkan file biner ringkas ini langsung ke antrean upload WebP Anda!
-                    //                     _this.uploadQueue.push(file);
-
-                    //                     // 3. Sulap tag img lama agar tidak membawa data teks raksasa ke database
-                    //                     // Kita ganti dengan placeholder sementara yang ringan sampai proses upload antrean selesai
-                    //                     const tempPlaceholder = doc.createElement('div');
-                    //                     tempPlaceholder.setAttribute('data-type', 'media-placeholder');
-                    //                     tempPlaceholder.className = 'media-placeholder-zone animate-pulse';
-                    //                     tempPlaceholder.innerText = `⏳ Mengompres & Mengunggah Gambar...`;
-
-                    //                     if (img.parentNode) {
-                    //                         img.parentNode.replaceChild(tempPlaceholder, img);
-                    //                     }
-                    //                 } catch (e) {
-                    //                     console.error('[Base64 Extractor] Gagal memparsing gambar inline:', e);
-                    //                 }
-                    //             }
-
-                    //             // 🚀 SKENARIO B: Jika link terkunci di drive komputer lokal pembaca (file:///)
-                    //             else if (src.startsWith('file:///') || src.includes('msohtmlclip') || src.trim() === '') {
-                    //                 localImageCount++;
-
-                    //                 const placeholderDom = doc.createElement('div');
-                    //                 placeholderDom.setAttribute('data-type', 'media-placeholder');
-                    //                 placeholderDom.className = 'media-placeholder-zone';
-                    //                 placeholderDom.setAttribute('data-alt-fallback', img.getAttribute('alt') || `Gambar Lokal ${localImageCount}`);
-
-                    //                 if (img.parentNode) {
-                    //                     img.parentNode.replaceChild(placeholderDom, img);
-                    //                 }
-                    //             }
-                    //         });
-
-                    //         // Jika ada gambar Base64 yang berhasil dicegat, langsung jalankan mesin antrean upload Anda
-                    //         if (base64ImageCount > 0) {
-                    //             console.log(`[CMS Interceptor] Berhasil mencegat ${base64ImageCount} Base64 raksasa & melemparnya ke WebP Upload Queue.`);
-                    //             _this.isUploading = true;
-                    //             // Jalankan function antrean upload milik Anda
-                    //             setTimeout(() => { _this.processNextInQueue(); }, 50);
-                    //             return doc.body.innerHTML;
-                    //         }
-
-                    //         if (localImageCount > 0) {
-                    //             console.log(`[CMS Fallback] Berhasil menyulap ${localImageCount} gambar file:/// menjadi mediaPlaceholder.`);
-                    //             return doc.body.innerHTML;
-                    //         }
-
-                    //         return html;
-                    //     },
-
-                    //     handlePaste: (view, event, slice) => {
-                    //         // Ambil data dari clipboard item
-                    //         const items = (event.clipboardData || event.originalEvent.clipboardData).items;
-                    //         let imageFound = false;
-
-                    //         for (const item of items) {
-                    //             // Cek apakah item yang di-paste adalah file gambar fisik/tangkapan layar
-                    //             if (item.type.indexOf('image') === 0) {
-                    //                 const file = item.getAsFile();
-
-                    //                 if (file) {
-                    //                     imageFound = true;
-
-                    //                     // Paksa browser berhenti merender string Base64 bawaannya
-                    //                     event.preventDefault();
-                    //                     event.stopPropagation();
-
-                    //                     // Masukkan gambar langsung ke antrean upload Alpine yang sama dengan drop
-                    //                     _this.uploadQueue.push(file);
-                    //                 }
-                    //             }
-                    //         }
-
-                    //         if (imageFound) {
-                    //             // Picu mesin antrean upload Livewire Anda untuk berjalan
-                    //             _this.isUploading = true;
-                    //             _this.processNextInQueue();
-
-                    //             return true; // Sukses ditangani, instruksikan ProseMirror agar tidak meloloskan teks Base64
-                    //         }
-
-                    //         return false; // Jika yang di-paste teks biasa, biarkan berjalan normal
-                    //     },
-
-
-
-
-                    //     // Pastikan fungsi handlePaste Anda mengizinkan proses bawaan berjalan
-                    //     // handlePaste: (view, event) => {
-                    //     //     const clipboardData = event.clipboardData || window.clipboardData;
-                    //     //     if (!clipboardData) return false;
-
-                    //     //     const htmlData = clipboardData.getData('text/html');
-                    //     //     const items = clipboardData.items;
-
-                    //     //     // Jalur screenshot biner murni (Ctrl + V gambar langsung dari Snipping Tool / OS)
-                    //     //     if (!htmlData) {
-                    //     //         let imageFound = false;
-                    //     //         for (const item of items) {
-                    //     //             if (item.kind === 'file' && item.type.startsWith('image/')) {
-                    //     //                 const file = item.getAsFile();
-                    //     //                 if (file) {
-                    //     //                     imageFound = true;
-                    //     //                     _this.uploadQueue.push(file);
-                    //     //                 }
-                    //     //             }
-                    //     //         }
-                    //     //         if (imageFound) {
-                    //     //             _this.isUploading = true;
-                    //     //             _this.processNextInQueue();
-                    //     //             return true;
-                    //     //         }
-                    //     //     }
-
-                    //     //     return false; // Biarkan core TipTap memproses HTML hasil filter dari transformPastedHTML
-                    //     // }
-
-                    // },
                     content: initialContent,
 
                     onUpdate({ editor }) {
@@ -1007,31 +814,29 @@ document.addEventListener('alpine:init', () => {
                 this.isUploading = true;
                 const originalFile = this.uploadQueue.shift();
 
-                // 💡 JALUR KHUSUS GIF: Jika file adalah GIF, langsung bypass ke server
                 if (originalFile.type === 'image/gif') {
-                    console.log(`[GIF Route] Mengirim GIF asli ke server untuk kompresi backend.`);
                     _this.executeLivewireUpload(originalFile, _this);
                     return;
                 }
 
-                console.log(`[WebP Compressor] Memproses otomatis: ${originalFile.name}`);
-
-                // Fungsi konversi WebP di sisi Frontend Browser
                 const convertToWebp = (file) => {
                     return new Promise((resolve) => {
                         const reader = new FileReader();
                         reader.readAsDataURL(file);
                         reader.onload = (event) => {
-                            const img = new window.Image(); // ◄ Aman dari bentrokan nama import
+                            const img = new window.Image();
                             img.src = event.target.result;
                             img.onload = () => {
                                 const canvas = document.createElement('canvas');
-                                let width = img.width;
-                                let height = img.height;
 
-                                if (width > 1200) {
-                                    height = Math.round((height * 1200) / width);
-                                    width = 1200;
+                                // 🌟 KUNCI 2: Gunakan naturalWidth (resolusi asli file), BUKAN width tampilan CSS
+                                let width = img.naturalWidth || img.width;
+                                let height = img.naturalHeight || img.height;
+
+                                // Longgarkan batas maksimal gambar menjadi resolusi Full HD
+                                if (width > 1920) {
+                                    height = Math.round((height * 1920) / width);
+                                    width = 1920;
                                 }
 
                                 canvas.width = width;
@@ -1039,6 +844,7 @@ document.addEventListener('alpine:init', () => {
                                 const ctx = canvas.getContext('2d');
                                 ctx.drawImage(img, 0, 0, width, height);
 
+                                // 🌟 KUNCI 3: Naikkan kualitas WebP ke 0.90 agar teks tidak buram
                                 canvas.toBlob((blob) => {
                                     const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
                                     const compressedFile = new File([blob], newFileName, {
@@ -1046,7 +852,7 @@ document.addEventListener('alpine:init', () => {
                                         lastModified: Date.now()
                                     });
                                     resolve(compressedFile);
-                                }, "image/webp", 0.75);
+                                }, "image/webp", 0.90);
                             };
                         };
                     });
@@ -1054,16 +860,22 @@ document.addEventListener('alpine:init', () => {
 
                 try {
                     const webpFile = await convertToWebp(originalFile);
-                    console.log(`[WebP Compressor] Berhasil!`);
 
-                    // Gunakan _this agar aman dari error scope 'is not a function'
+                    // 🌟 KUNCI PENYELESAIAN: Pindahkan token dari file asli ke file WebP baru
+                    if (originalFile.targetToken) {
+                        webpFile.targetToken = originalFile.targetToken;
+                    }
+
                     _this.executeLivewireUpload(webpFile, _this);
-
                 } catch (compressError) {
-                    console.error('[WebP Compressor] Gagal kompresi, fallback ke file asli:', compressError);
+                    console.error('[WebP Compressor] Gagal kompresi:', compressError);
                     _this.executeLivewireUpload(originalFile, _this);
                 }
+
             },
+
+
+            // 🟢 SOLUSI 2: Perbaikan executeLivewireUpload dengan Sinkronisasi Posisi
 
             executeLivewireUpload(targetFile, _this) {
                 const editorWrapper = document.querySelector('[x-data*="setupEditor"]');
@@ -1074,37 +886,29 @@ document.addEventListener('alpine:init', () => {
                         const finalUrl = await wireComponent.uploadImage();
 
                         if (finalUrl && window.tiptapEditor) {
-                            let penandaKetemu = false;
 
-                            if (targetFile.targetToken) {
-                                // 🌟 KUNCI EMAS: Scan dokumen secara mendalam berdasarkan token unik jangkar kita
-                                window.tiptapEditor.state.doc.descendants((node, pos) => {
-                                    if (node.type.name === 'image' && (node.attrs.alt === targetFile.targetToken || node.attrs.title === targetFile.targetToken)) {
-                                        
-                                        // Update node gambar di koordinat (pos) aslinya tanpa menggeser teks di atasnya!
-                                        window.tiptapEditor.chain()
-                                            .focus()
-                                            .setNodeSelection(pos)
-                                            .updateAttributes('image', {
-                                                src: finalUrl,
-                                                alt: targetFile.name,
-                                                title: targetFile.name,
-                                                style: 'width: 25%; display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;',
-                                                class: 'rounded-lg max-w-full my-2 transition-all cursor-pointer tiptap-uploaded-image inline-block'
-                                            })
-                                            .run();
-                                        
-                                        penandaKetemu = true;
-                                        return false; // Berhenti memindai karena target sudah diganti
-                                    }
-                                });
-                            }
+                            // Helper: Timpa langsung gambar dummy di tempat dengan gambar asli
+                            const replaceImageNode = (pos) => {
+                                window.tiptapEditor.chain()
+                                    .focus()
+                                    .setNodeSelection(pos) // Kunci target ke node dummy
+                                    .deleteSelection()     // 🧹 HAPUS dummy-nya secara eksplisit
+                                    .insertContent({       // 📥 Masukkan gambar asli tepat di posisi kursor kosong tersebut
+                                        type: 'image',
+                                        attrs: {
+                                            src: finalUrl,
+                                            alt: targetFile.name,
+                                            title: targetFile.name,
+                                            style: 'width: 25%; display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;',
+                                            class: 'rounded-lg max-w-full my-2 transition-all cursor-pointer tiptap-uploaded-image inline-block'
+                                        }
+                                    })
+                                    .run();
+                            };
 
-                            // Jalur Penyelamat jika file di-drop manual dari file manager OS Anda
-                            if (!penandaKetemu) {
+                            const fallbackInsert = () => {
                                 window.tiptapEditor.commands.focus();
                                 window.tiptapEditor.chain()
-                                    .deleteSelection()
                                     .insertContent({
                                         type: 'image',
                                         attrs: {
@@ -1117,38 +921,95 @@ document.addEventListener('alpine:init', () => {
                                     })
                                     .insertContent('<p></p>')
                                     .run();
+                            };
 
-                                setTimeout(() => { 
-                                    window.tiptapEditor.commands.scrollIntoView(); 
-                                }, 50);
+                            if (targetFile.targetToken) {
+                                // Cari token berdasarkan atribut 'title'
+                                const findToken = () => {
+                                    let foundPos = null;
+                                    window.tiptapEditor.state.doc.descendants((node, pos) => {
+                                        if (node.type.name === 'image' && node.attrs.title === targetFile.targetToken) {
+                                            foundPos = pos;
+                                            return false; // Ditemukan! Berhenti mencari.
+                                        }
+                                    });
+                                    return foundPos;
+                                };
+
+                                let actualPos = findToken();
+
+                                // Loop tunggu (maksimal 1.5 detik) jika TipTap belum selesai render HTML
+                                if (actualPos === null) {
+                                    let retries = 0;
+                                    const interval = setInterval(() => {
+                                        actualPos = findToken();
+                                        if (actualPos !== null) {
+                                            clearInterval(interval);
+                                            replaceImageNode(actualPos);
+                                        }
+
+                                        retries++;
+                                        if (retries > 15) {
+                                            clearInterval(interval);
+                                            fallbackInsert();
+                                        }
+                                    }, 100);
+                                } else {
+                                    replaceImageNode(actualPos);
+                                }
+                            } else {
+                                window.tiptapEditor.chain().deleteSelection().run();
+                                fallbackInsert();
                             }
                         }
                     } catch (error) {
-                        console.error('[Upload Error] Gagal memproses gambar di backend:', error);
+                        console.error('[Upload Error]', error);
                     } finally {
-                        if (alpineData) {
-                            alpineData.processNextInQueue();
-                        }
+                        if (alpineData) alpineData.processNextInQueue();
                     }
                 }, (error) => {
-                    console.error('[Livewire Error] Gagal upload temporary ke Livewire:', error);
-                    if (alpineData) {
-                        alpineData.processNextInQueue();
-                    }
+                    console.error('[Livewire Error]', error);
+                    if (alpineData) alpineData.processNextInQueue();
                 });
             },
 
-
-            // 💡 HELPER FUNCTION: Pastikan blok paling bawah tertulis 'finally' diganti sementara karena masalah gambar disisipkan ke tempat yang tidak tepat
             // executeLivewireUpload(targetFile, _this) {
+            //     const editorWrapper = document.querySelector('[x-data*="setupEditor"]');
+            //     const alpineData = editorWrapper && window.Alpine ? window.Alpine.$data(editorWrapper) : _this;
+
             //     wireComponent.upload('photo', targetFile, async (uploadedUrl) => {
             //         try {
             //             const finalUrl = await wireComponent.uploadImage();
 
-            //             if (finalUrl) {
-            //                 if (window.tiptapEditor) {
-            //                     window.tiptapEditor.commands.focus();
+            //             if (finalUrl && window.tiptapEditor) {
+            //                 let penandaKetemu = false;
 
+            //                 if (targetFile.targetToken) {
+            //                     // 🌟 PINDAI DENGAN DATA-TOKEN KUSTOM: Pasti ketemu karena node tidak di-drop oleh TipTap
+            //                     window.tiptapEditor.state.doc.descendants((node, pos) => {
+            //                         if (node.type.name === 'image' && node.attrs['data-token'] === targetFile.targetToken) {
+
+            //                             window.tiptapEditor.chain()
+            //                                 .focus()
+            //                                 .setNodeSelection(pos) // Kunci posisi aslinya di tengah teks dokumen
+            //                                 .updateAttributes('image', {
+            //                                     src: finalUrl,
+            //                                     alt: targetFile.name,
+            //                                     title: targetFile.name,
+            //                                     'data-token': null, // Bersihkan token karena upload selesai
+            //                                     style: 'width: 25%; display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;',
+            //                                     class: 'rounded-lg max-w-full my-2 transition-all cursor-pointer tiptap-uploaded-image inline-block'
+            //                                 })
+            //                                 .run();
+
+            //                             penandaKetemu = true;
+            //                             return false;
+            //                         }
+            //                     });
+            //                 }
+
+            //                 if (!penandaKetemu) {
+            //                     window.tiptapEditor.commands.focus();
             //                     window.tiptapEditor.chain()
             //                         .deleteSelection()
             //                         .insertContent({
@@ -1163,18 +1024,16 @@ document.addEventListener('alpine:init', () => {
             //                         })
             //                         .insertContent('<p></p>')
             //                         .run();
-
-            //                     setTimeout(() => { window.tiptapEditor.commands.scrollIntoView(); }, 50);
             //                 }
             //             }
             //         } catch (error) {
-            //             console.error('[Upload Error] Gagal memproses di backend:', error);
-            //         } finally { // ◄ ✅ PASTIKAN TERTULIS 'finally', BUKAN 'final'
-            //             _this.processNextInQueue();
+            //             console.error('[Upload Error] Gagal memproses gambar di backend:', error);
+            //         } {
+            //             if (alpineData) alpineData.processNextInQueue();
             //         }
             //     }, (error) => {
-            //         console.error('[Livewire Error] Gagal upload temporary:', error);
-            //         _this.processNextInQueue();
+            //         console.error('[Livewire Error] Gagal upload temporary ke Livewire:', error);
+            //         if (alpineData) alpineData.processNextInQueue();
             //     });
             // },
 
