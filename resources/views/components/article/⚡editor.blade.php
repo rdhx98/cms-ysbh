@@ -29,30 +29,6 @@ new class extends Component {
         $this->published_at = now()->format('Y-m-d');
     }
 
-    /**
-     * Fungsi untuk memindai editor dan mengumpulkan semua URL gambar yang ada.
-     * Dipanggil tepat saat penulis membuka modal / bottom sheet.
-     */
-    // public function scanEditorImages()
-    // {
-    //     $this->extracted_images = [];
-
-    //     if (!empty($this->content)) {
-    //         // Ekstrak semua URL dari tag img di dalam konten
-    //         preg_match_all('/<img[^>]+src="([^">]+)"/', $this->content, $matches);
-    //         if (!empty($matches[1])) {
-    //             $this->extracted_images = $matches[1];
-    //         }
-    //     }
-
-    //     // Jalur Default: Jika penulis belum memilih apapun secara manual,
-    //     // dan belum ada file kustom ($photo), otomatis arahkan ke gambar pertama editor.
-    //     if (empty($this->selected_image_url) && empty($this->featured_image) && !empty($this->extracted_images) && empty($this->photo)) {
-    //         $this->selected_image_url = $this->extracted_images[0];
-    //         $this->featured_image = basename($this->extracted_images[0]);
-    //     }
-    // }
-
     public function scanEditorImages()
     {
         $this->extracted_images = [];
@@ -75,26 +51,6 @@ new class extends Component {
             $this->featured_image = basename($this->extracted_images[0]);
         }
     }
-
-    // NOT TESTED
-    // public function scanEditorImages()
-    // {
-    //     $this->extracted_images = [];
-
-    //     if (!empty($this->content)) {
-    //         // Jaring pengaman backend: Jika kedapatan base64 ikut terkirim secara liar,
-    //         // kita bersihkan dulu memorinya sebelum regex berjalan agar PHP tidak kehabisan RAM.
-    //         preg_match_all('/<img[^>]+src="([^">]+)"/', $this->content, $matches);
-    //         if (!empty($matches[1])) {
-    //             $this->extracted_images = $matches[1];
-    //         }
-    //     }
-
-    //     if (empty($this->selected_image_url) && empty($this->featured_image) && !empty($this->extracted_images) && empty($this->photo)) {
-    //         $this->selected_image_url = $this->extracted_images[0];
-    //         $this->featured_image = basename($this->extracted_images[0]);
-    //     }
-    // }
 
     /**
      * Fungsi ketika penulis mengklik/memilih salah satu gambar dari editor
@@ -284,40 +240,6 @@ new class extends Component {
         return asset('storage/' . $path);
     }
 
-    // public function uploadImage()
-    // {
-    //     $this->validate([
-    //         'photo' => 'image|max:15360', // Batas aman 15MB
-    //     ]);
-
-    //     $tempPath = $this->photo->getRealPath();
-    //     $extension = strtolower($this->photo->getClientOriginalExtension());
-    //     $filename = 'article-' . uniqid() . '.webp';
-    //     $savePath = storage_path('app/public/articles/' . $filename);
-
-    //     // 💡 JALUR UTAMA: KOMPRESI GIF TO ANIMATED WEBP
-    //     if ($extension === 'gif') {
-    //         try {
-    //             // Kita panggil Driver Imagick secara eksplisit untuk menangani animasi frame
-    //             \Intervention\Image\Laravel\Facades\Image::withDriver(new \Intervention\Image\Drivers\Imagick\Driver())
-    //                 ->read($tempPath)
-    //                 ->scale(width: 1000) // Pangkas lebar ke 1000px agar ukuran file turun drastis
-    //                 ->toWebp(50)        // Ubah ke format WebP animasi dengan kualitas 70%
-    //                 ->save($savePath);
-
-    //             return asset('storage/articles/' . $filename);
-    //         } catch (\Exception $e) {
-    //             // Jika server Anda ternyata tidak mendukung Imagick, dia akan otomatis pakai fallback ini:
-    //             Log::warning('Imagick tidak aktif, mengunggah GIF asli sebagai fallback: ' . $e->getMessage());
-    //             $path = $this->photo->store('articles', 'public');
-    //             return asset('storage/' . $path);
-    //         }
-    //     }
-
-    //     // Untuk JPG/PNG (yang sudah dikompres di frontend oleh JavaScript)
-    //     $path = $this->photo->store('articles', 'public');
-    //     return asset('storage/' . $path);
-    // }
 
 };
 ?>
