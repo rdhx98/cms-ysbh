@@ -1,0 +1,121 @@
+<!-- BENJAMIN BUTTONS -->
+<div class="flex flex-wrap items-center gap-1 bg-zinc-50 dark:bg-zinc-800 p-2 border-b border-zinc-200 dark:border-zinc-700 sticky top-0 z-10 select-none">
+
+    {{-- BOLD | ITALIC | STRIKE | UNDERLINE --}}
+    <div class="flex items-center gap-1 ">
+
+        <x-layouts::app.editor-toolbar-btn command="toggleBold" activeName="bold" title="Tebal (Ctrl+B)" icon="bold" />
+
+        <x-layouts::app.editor-toolbar-btn command="toggleItalic" activeName="italic" title="Miring (Ctrl+I)" icon="italic" />
+
+        <x-layouts::app.editor-toolbar-btn command="toggleStrike" activeName="strike" title="Coretan (Ctrl+⇑+X)" icon="strikethrough" />
+
+        <x-layouts::app.editor-toolbar-btn command="toggleUnderline" activeName="underline" title="Garis Bawah (Ctrl+U)" icon="underline" />
+    </div>
+
+    {{-- FONT FAMILY --}}
+    <div class="flex flex-wrap items-center gap-4 p-2 bg-gray-50 border-l border-gray-200">
+        <div class="flex items-center gap-2">
+            <select id="font-family-select" :value="getCurrentFont()" :disabled="isUploading" @change="changeFontFamily($event.target.value)" class="block w-48 px-3 py-1.5 truncate pr-4 text-sm bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors duration-200 ">
+
+                <option value="default" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px;">Plus Jakarta Sans (Default)</option>
+                <option value="Arial" style="font-family: Arial, sans-serif; font-size: 142x;">Arial</option>
+                <option value="Jetbrains Mono" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">JetBrains Mono</option>
+                <option value="Open Sans" style="font-family: 'Open Sans', sans-serif; font-size: 12px;">Open Sans</option>
+                <option value="Roboto" style="font-family: 'Roboto', sans-serif; font-size: 12px;">Roboto</option>
+                <option value="Times New Roman" style="font-family: 'Times New Roman', serif; font-size: 12px;">Times New Roman</option>
+            </select>
+        </div>
+    </div>
+
+    {{-- <x-layouts::app.editor-toolbar-btn command="toggleHiddenMarks" activeName="" activeParams="{}" activeType="alpine" title="Tampilkan pilcrow" icon="pilcrow"> --}}
+
+        <x-layouts::app.editor-toolbar-btn command="toggleHiddenMarks()" activeName="showMarks" activeParams="{}" activeType="alpine" title="Tampilkan Tanda Baca Terselubung" icon="pilcrow" />
+
+        {{-- INDENTATION --}}
+        <div class="flex items-center gap-1 border-l border-zinc-300 dark:border-zinc-700 pl-2 ml-1">
+
+            <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="left" {{-- Kirim string murninya ke sini --}} activeParams="{ textAlign: 'left' }" activeType="textAlign" title="Rata Kiri" icon="align-left" />
+
+            <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="center" activeParams="{ textAlign: 'center' }" activeType="textAlign" title="Rata Tengah" icon="align-center" />
+
+            <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="right" activeParams="{ textAlign: 'right' }" activeType="textAlign" title="Rata Kanan" icon="align-right" />
+
+            <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="justify" activeParams="{ textAlign: 'justify' }" activeType="textAlign" title="Rata Kiri Kanan" icon="align-justify" />
+
+            <x-layouts::app.editor-toolbar-btn command="toggleIndent" activeName="paragraph" activeParams="{ indent: true }" activeType="default" title="Menjorokkan Baris Pertama (Tab)" icon="list-indent-increase" />
+
+        </div>
+
+        <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-1"></div>
+
+        {{-- HEADINGs --}}
+        <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="1" activeParams="{ level: 1 }" activeType="heading" title="Heading 1" icon="heading-1" />
+
+        <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="2" activeParams="{ level: 2 }" activeType="heading" title="Heading 2" icon="heading-2" />
+
+        <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="3" activeParams="{ level: 3 }" activeType="heading" title="Heading 3" icon="heading-3" />
+
+        {{-- END OF HEADINGS --}}
+
+
+        <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-1"></div>
+
+        {{-- TASK LIST BUTTON --}}
+        <x-layouts::app.editor-toolbar-btn command="toggleBulletList" activeName="" activeParams="{}" activeType="heading" title="Bullet list" icon="list" />
+
+        {{-- Tombol Daftar Tugas (Task List) --}}
+        <x-layouts::app.editor-toolbar-btn command="toggleTaskList" activeName="taskList" title="Daftar Tugas" icon="list-todo" />
+
+        {{-- Tombol Daftar Angka (1.) --}}
+        <x-layouts::app.editor-toolbar-btn command="none" {{-- Diabaikan karena activeType orderedList langsung menembak helper kustom Anda --}} activeName="number" activeParams="{ listStyle: 'number' }" activeType="orderedList" title="Daftar Angka (1 -> a -> i)" icon="list-tree">
+            <span class="text-xs font-bold ml-0.5">1.</span>
+        </x-layouts::app.editor-toolbar-btn>
+
+        {{-- Tombol Daftar Kapital (A.) --}}
+        <x-layouts::app.editor-toolbar-btn command="none" activeName="alpha" activeParams="{ listStyle: 'alpha' }" activeType="orderedList" title="Daftar Kapital (A -> 1 -> i)" icon="list-tree">
+            <span class="text-xs font-bold ml-0.5">A.</span>
+        </x-layouts::app.editor-toolbar-btn>
+
+        <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-1"></div>
+
+        {{-- Tombol Kutipan (Blockquote) --}}
+        <x-layouts::app.editor-toolbar-btn command="toggleBlockquote" activeName="blockquote" title="Kutipan (Blockquote)" icon="quote" />
+
+        {{-- Tombol Blok Kode (Code Block) --}}
+        <x-layouts::app.editor-toolbar-btn command="toggleCodeBlock" activeName="codeBlock" title="Blok Kode (Code Block)" icon="code-xml" />
+
+        <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-1"></div>
+
+        {{-- OPEN URL MODAL --}}
+        <button type="button" @click="openLinkModal(); $dispatch('buka-modal-link');" :disabled="isUploading" :class="checkButtonActive('link', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' :
+                            'text-gray-600'" class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50" title="Sisipkan Tautan">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+        </button>
+        {{-- OPEN UPLOAD IMAGE DIALOG --}}
+        <button type="button" @click="insertMediaPlaceholder()" :disabled="isUploading" :class="checkButtonActive('mediaPlaceholder', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'" class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50" title="Sisipkan Kotak Penampung Media">
+            <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
+        </button>
+
+        {{-- PREVIEW THUMBNAIL BUTTOn --}}
+        <button type="button" wire:click="scanEditorImages" :disabled="isUploading" @click="$dispatch('buka-featured-modal')" {{-- :class="checkButtonActive('mediaPlaceholder', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'" --}} class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50" title="Sisipkan Kotak Penampung Media">
+            <x-dynamic-component :component="'lucide-view'" class="h-4 w-4" stroke-width="2" />
+        </button>
+
+        {{-- TABLES DO NOT REMOVED--}}
+        {{--
+        <button type="button" @click="runCommand('insertTable')" class="px-2.5 py-1.5 rounded text-xs cursor-pointer text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700">📊
+            +Table</button>
+
+        <template x-if="isActive('table', {}, updatedAt)">
+            <div class="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-700 p-1 rounded ml-2">
+                <button type="button" @click="runCommand('addColumnAfter')" class="px-1.5 py-0.5 text-[10px] bg-white dark:bg-zinc-600 border border-zinc-300 rounded hover:bg-zinc-50">+Col</button>
+                <button type="button" @click="runCommand('addRowAfter')" class="px-1.5 py-0.5 text-[10px] bg-white dark:bg-zinc-600 border border-zinc-300 rounded hover:bg-zinc-50">+Row</button>
+                <button type="button" @click="runCommand('deleteTable')" class="px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded hover:bg-red-600">Hapus</button>
+            </div>
+        </template>
+        --}}
+
+</div>

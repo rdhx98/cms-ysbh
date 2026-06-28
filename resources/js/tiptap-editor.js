@@ -371,6 +371,8 @@ document.addEventListener('alpine:init', () => {
             isLinkOpen: false,
             wordCount: 0,
             isLocalDrag: false,
+            syncTimeout: null,
+            isFullscreen: false,
 
 
 
@@ -765,20 +767,39 @@ document.addEventListener('alpine:init', () => {
                     content: initialContent,
 
                     onUpdate({ editor }) {
-                        _this.updatedAt = Date.now()
-
+                        _this.updatedAt = Date.now();
                         
-                        // 🌟 LOGIKA PENGHITUNG KATA 🌟
-                        // Mengambil teks murni, menghapus spasi ekstra, lalu menghitung array kata
                         const text = editor.getText();
                         _this.wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
                         
-                        // JANGAN kirim data ke Livewire jika sedang ada proses upload gambar di latar belakang
                         if (_this.isUploading) return;
                         
-                        // wireComponent.set(wireModelName, editor.getHTML(), false)
-                        wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
+                        // 🌟 2. PERBAIKAN PERFORMA: Debounce sinkronisasi
+                        // Bersihkan antrean waktu sebelumnya jika user masih mengetik
+                        clearTimeout(_this.syncTimeout);
+                        
+                        // Tunggu 500 milidetik setelah user berhenti mengetik, baru kirim HTML ke Livewire
+                        _this.syncTimeout = setTimeout(() => {
+                            if (window.tiptapEditor) {
+                                wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
+                            }
+                        }, 500); 
                     },
+                    // onUpdate({ editor }) {
+                    //     _this.updatedAt = Date.now()
+
+                        
+                    //     // 🌟 LOGIKA PENGHITUNG KATA 🌟
+                    //     // Mengambil teks murni, menghapus spasi ekstra, lalu menghitung array kata
+                    //     const text = editor.getText();
+                    //     _this.wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+                        
+                    //     // JANGAN kirim data ke Livewire jika sedang ada proses upload gambar di latar belakang
+                    //     if (_this.isUploading) return;
+                        
+                    //     // wireComponent.set(wireModelName, editor.getHTML(), false)
+                    //     wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
+                    // },
                     onSelectionUpdate() {
                         _this.updatedAt = Date.now()
                     }
@@ -801,19 +822,39 @@ document.addEventListener('alpine:init', () => {
                     }
                 });
 
-                // Gunakan fungsi penangkap (Capture Phase)
+                // 🌟 OPTIMASI: Jangan cegat keydown secara global jika tidak sedang upload!
                 const blockEvent = (event) => {
                     if (_this.isUploading) {
+                        // Jika pengguna menekan tombol ketik saat sedang upload, baru kita kunci
+                        if (event.type === 'keydown') {
+                            // Izinkan tombol navigasi (panah, backspace) agar tidak beku total
+                            const allowedKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backspace'];
+                            if (allowedKeys.includes(event.key)) return;
+                        }
                         event.preventDefault();
                         event.stopImmediatePropagation();
                         return false;
                     }
                 };
 
-                // Pasang listener di level DOM elemen editor dengan capture: true
-                editorElement.addEventListener('paste', blockEvent, true);
-                editorElement.addEventListener('keydown', blockEvent, true);
-                editorElement.addEventListener('drop', blockEvent, true); // Tambahan untuk drop
+                // Pasang listener secara pasif agar tidak merusak frame rate ketikan browser
+                editorElement.addEventListener('paste', blockEvent, { capture: true, passive: false });
+                editorElement.addEventListener('keydown', blockEvent, { capture: true, passive: false });
+                editorElement.addEventListener('drop', blockEvent, { capture: true, passive: false });
+
+                // // Gunakan fungsi penangkap (Capture Phase)
+                // const blockEvent = (event) => {
+                //     if (_this.isUploading) {
+                //         event.preventDefault();
+                //         event.stopImmediatePropagation();
+                //         return false;
+                //     }
+                // };
+
+                // // Pasang listener di level DOM elemen editor dengan capture: true
+                // editorElement.addEventListener('paste', blockEvent, true);
+                // editorElement.addEventListener('keydown', blockEvent, true);
+                // editorElement.addEventListener('drop', blockEvent, true); // Tambahan untuk drop
 
                 //this is old lines
                 this.$watch(`$wire.${wireModelName}`, (newContent) => {
@@ -902,26 +943,6 @@ document.addEventListener('alpine:init', () => {
                     console.error('[Processor Error]', compressError);
                     this.executeLivewireUpload(originalFile);
                 }
-
-                // try {
-                //     let finalFile;
-                    
-                //     // Alur khusus GIF agar tidak kehilangan animasi
-                //     if (originalFile.type === 'image/gif') {
-                //         finalFile = await this.optimizeGif(originalFile);
-                //     } else {
-                //         finalFile = await this.convertToWebp(originalFile);
-                //     }
-
-                //     if (originalFile.targetToken) {
-                //         finalFile.targetToken = originalFile.targetToken;
-                //     }
-
-                //     this.executeLivewireUpload(finalFile);
-                // } catch (compressError) {
-                //     console.error('[Processor Error] Gagal optimasi:', compressError);
-                //     this.executeLivewireUpload(originalFile);
-                // }
             },
 
             // 3. Eksekusi Livewire

@@ -246,7 +246,8 @@ new class extends Component {
 
 <div class="max-w-5xl mx-auto p-6" >
     <x-slot:title>{{ __('Write Article') }}</x-slot:title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+
+    {{-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"> --}}
     <div class="h-[calc(100vh-120px)] flex flex-col justify-between">
 
         <div x-data="{ show: false, message: '' }"
@@ -264,7 +265,89 @@ new class extends Component {
 
         <form wire:submit.prevent="save" class="flex-1 flex flex-col min-h-0 space-y-4">
             {{-- judul dan tags --}}
-            <div class="">
+            {{-- ========================================================================= --}}
+            {{-- 📝 JUDUL & PENGATURAN DOKUMEN (HYBRID LAYOUT)                             --}}
+            {{-- ========================================================================= --}}
+            <div x-data="{ isMetaOpen: false }" class="shrink-0 relative mb-2 md:mb-4">
+                
+                {{-- TAMPILAN UTAMA --}}
+                <div class="p-2 md:p-0">
+                    <input type="text" wire:model="title" placeholder="Judul Artikel..."
+                        class="w-full p-1.5 text-2xl md:text-3xl font-bold border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 pb-2 dark:bg-transparent" />
+                    
+                    <div class="mt-2 flex items-center justify-between md:hidden">
+                        <button @click="isMetaOpen = true" type="button" 
+                            class="text-xs font-medium text-zinc-500 hover:text-forest dark:text-zinc-400 flex items-center gap-1.5 p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                            <span>⚙️ Pengaturan Dokumen (Tanggal & Tags)</span>
+                        </button>
+                    </div>
+
+                    <div class="hidden md:flex flex-row items-center gap-4 mt-4">
+                        <input type="date" wire:model="published_at"
+                            class="w-full p-1.5 text-sm border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 dark:bg-transparent md:w-1/2" />
+                        <input type="text" placeholder="Tags (pisahkan dengan koma)"
+                            class="w-full p-1.5 text-sm border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 dark:bg-transparent md:w-1/2" />
+                    </div>
+                </div>
+
+
+                {{-- ========================================================================= --}}
+                {{-- 📱 LAYOUT BOTTOM SHEET MATA-DATA: KHUSUS MOBILE (md:hidden)               --}}
+                {{-- ========================================================================= --}}
+                <div x-show="isMetaOpen"
+                    class="flex md:hidden fixed inset-0 z-999 items-end justify-center"
+                    style="display: none;">
+                    
+                    {{-- Animasi Overlay --}}
+                    <div x-show="isMetaOpen"
+                        x-transition:enter="transition-opacity ease-out duration-300"
+                        x-transition:enter-start="opacity-0"
+                        x-transition:enter-end="opacity-100"
+                        x-transition:leave="transition-opacity ease-in duration-300"
+                        x-transition:leave-start="opacity-100"
+                        x-transition:leave-end="opacity-0"
+                        class="fixed inset-0 bg-black/60 backdrop-blur-xs" @click="isMetaOpen = false"></div>
+                    
+                    {{-- Laci Bottom Sheet Meluncur --}}
+                    <div x-show="isMetaOpen"
+                        x-transition:enter="transition ease-out duration-300 transform"
+                        x-transition:enter-start="translate-y-full"
+                        x-transition:enter-end="translate-y-0"
+                        x-transition:leave="transition ease-in duration-200 transform"
+                        x-transition:leave-start="translate-y-0"
+                        x-transition:leave-end="translate-y-full"
+                        class="bg-white dark:bg-gray-900 w-full rounded-t-2xl max-h-[80vh] flex flex-col z-10 overflow-hidden shadow-2xl relative">
+                        
+                        {{-- Handle Drag (Indikator visual) --}}
+                        <div class="w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-3" @click="isMetaOpen = false"></div>     
+                        
+                        {{-- Konten Input Modal --}}
+                        <div class="p-4 overflow-y-auto space-y-4 bg-gray-50 dark:bg-gray-950 flex-1">
+                            <h4 class="text-xs font-bold text-zinc-400 dark:text-zinc-500 mb-2 tracking-wide uppercase">Detail Dokumen</h4>
+
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tanggal Publikasi</label>
+                                <input type="date" wire:model="published_at"
+                                    class="w-full p-2.5 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-forest/20 focus:border-forest" />
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tags</label>
+                                <input type="text" placeholder="Kategori (pisahkan dengan koma)"
+                                    class="w-full p-2.5 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-forest/20 focus:border-forest" />
+                            </div>
+                        </div>
+
+                        {{-- Tombol Tutup --}}
+                        <div class="p-4 bg-white dark:bg-gray-900 border-t border-zinc-100 dark:border-zinc-800 shadow-inner">
+                            <button type="button" @click="isMetaOpen = false" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-xs font-bold text-center transition-colors cursor-pointer shadow-sm">
+                                Selesai
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{-- <div class="">
                 <input type="text" placeholder="Judul Artikel..."
                     class="w-full p-1.5 text-3xl font-bold border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 pb-2 mb-4 dark:bg-transparent" />
                 <div class="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -273,7 +356,79 @@ new class extends Component {
                     <input type="text" placeholder="Tags (pisahkan dengan koma)"
                         class="w-full p-1.5 text-sm border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 dark:bg-transparent md:w-1/2" />
                 </div>
-            </div>
+            </div> --}}
+
+            {{-- <div x-data="{ openDrawer: false }" class="relative min-h-screen">
+                <div class="p-4">
+                    <input type="text" placeholder="Judul Artikel..."
+                        class="w-full p-1.5 text-3xl font-bold border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 pb-2 dark:bg-transparent" />
+                    
+                    <div class="mt-2 flex items-center justify-between">
+                        <button @click="openDrawer = true" type="button" 
+                            class="text-xs font-medium text-zinc-500 hover:text-forest dark:text-zinc-400 flex items-center gap-1.5 p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                            <span>⚙️ Pengaturan Dokumen (Tanggal & Tags)</span>
+                        </button>
+                    </div>
+
+                    <div class="mt-6">
+                        <textarea placeholder="Mulai menulis konten di sini..." 
+                            class="w-full min-h-[50vh] p-1 border-0 focus:ring-0 dark:bg-transparent resize-none"></textarea>
+                    </div>
+                </div>
+
+                <div x-show="openDrawer" 
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-end="opacity-0"
+                    @click="openDrawer = false"
+                    class="fixed inset-0 bg-black/40 z-40 backdrop-blur-xs">
+                </div>
+
+                <div x-show="openDrawer"
+                    x-trap.noscript="openDrawer"
+                    x-transition:enter="transition ease-out duration-300 transform"
+                    x-transition:enter-start="translate-x-full"
+                    x-transition:enter-end="translate-x-0"
+                    x-transition:leave="transition ease-in duration-200 transform"
+                    x-transition:leave-end="translate-x-full"
+                    class="fixed inset-y-0 right-0 w-full sm:w-80 bg-white dark:bg-zinc-900 shadow-xl z-50 border-l border-zinc-200 dark:border-zinc-800 flex flex-col">
+                    
+                    <div class="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50">
+                        <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                            <span>⚙️ Opsi Artikel</span>
+                        </h3>
+                        <button @click="openDrawer = false" type="button" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="p-4 space-y-4 flex-1 overflow-y-auto">
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tanggal Publikasi</label>
+                            <input type="date" wire:model="published_at"
+                                class="w-full p-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 focus:ring-2 focus:ring-forest/20 focus:border-forest dark:bg-zinc-800" />
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tags</label>
+                            <input type="text" placeholder="Kategori (pisahkan dengan koma)"
+                                class="w-full p-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 focus:ring-2 focus:ring-forest/20 focus:border-forest dark:bg-zinc-800" />
+                        </div>
+                    </div>
+
+                    <div class="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 flex justify-end">
+                        <button @click="openDrawer = false" type="button" 
+                            class="px-4 py-1.5 bg-forest text-white text-xs font-medium rounded-lg hover:bg-forest/90 transition-colors">
+                            Selesai
+                        </button>
+                    </div>
+                </div>
+
+            </div> --}}
+
+           
 
             {{-- PESAN GALAT --}}
             <div x-data="{ 
@@ -296,30 +451,30 @@ new class extends Component {
                     ✕
                 </button>
             </div>
-            {{-- @if (session()->has('error'))
-                <div x-data="{ show: true }" x-show="show" x-transition
-                    class="p-4 rounded-lg bg-red-50 dark:bg-zinc-800 border border-red-200 dark:border-red-900/50 flex items-start gap-3 select-none">
-                    <div class="p-1 bg-white dark:bg-zinc-700 rounded-md text-red-600 shadow-sm  shrink-0">
-                        <x-dynamic-component :component="'lucide-alert-triangle'" class="h-5 w-5" stroke-width="2.5" />
-                    </div>
-                    <div class="flex-1">
-                        <h4 class="text-sm font-bold text-zinc-800 dark:text-zinc-100">Gagal Memproses Gambar</h4>
-                        <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">{{ session('error') }}</p>
-                    </div>
-                    <button type="button" @click="show = false"
-                        class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition cursor-pointer text-xs font-bold pl-2">
-                        ✕
-                    </button>
-                </div>
-            @endif --}}
 
+            {{-- INIT --}}
             <div x-data="setupEditor('content', $wire)" @buka-modal-link.window="isLinkOpen = true"
-                {{-- @drop.prevent="handleMultipleImageUpload($event.dataTransfer.files);" --}}
+
                 :style="isUploading ? { cursor: 'wait !important' } : {}"
-                :class="{ 'tiptap-locked': isUploading }"
-                class="flex-1 flex flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-900 shadow-sm relative"
+                {{-- :class="{ 'tiptap-locked': isUploading }"
+                class="flex-1 flex flex-col-reverse md:flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-900 shadow-sm relative" --}}
+                {{-- 🌟 KUNCI LAYAR PENUH: Jika isFullscreen true, elemen ini akan menutupi seluruh layar (fixed inset-0) dengan z-index 100 --}}
+                :class="isFullscreen 
+                    ? 'fixed inset-0 z-100 bg-white dark:bg-zinc-950 flex flex-col-reverse md:flex-col' 
+                    : 'flex-1 flex flex-col-reverse md:flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-900 shadow-sm relative'"
+                class="transition-all duration-300 ease-in-out"
                 wire:ignore>
 
+                {{-- 🌟 TOMBOL SIMPAN MELAYANG (Hanya muncul saat Layar Penuh) --}}
+                {{-- Kita gunakan $wire.save() karena tombol ini berada di dalam area wire:ignore --}}
+                {{-- <div x-show="isFullscreen" x-transition
+                     class="absolute bottom-20 right-4 md:bottom-auto md:top-4 md:right-8 z-50" style="display: none;">
+                    <button type="button" @click="$wire.save()"
+                        class="px-5 py-2.5 bg-forest hover:bg-forest/90 text-white font-medium rounded-full shadow-2xl flex items-center gap-2 cursor-pointer border border-white/20 transition-transform hover:scale-105">
+                        <x-dynamic-component :component="'lucide-save'" class="h-4 w-4" stroke-width="2.5" />
+                        <span class="text-sm font-bold tracking-wide">Simpan</span>
+                    </button>
+                </div> --}}
 
                 {{-- IMAGE BUBBLE MENU --}}
                 <div x-ref="imageBubbleMenu"
@@ -387,179 +542,154 @@ new class extends Component {
                         title="Garis Bawah (Ctrl+⇑+X)" icon="underline" />
                 </div>
 
-                <!-- BENJAMIN BUTTONS -->
-                <div
-                    class="flex flex-wrap items-center gap-1 bg-zinc-50 dark:bg-zinc-800 p-2 border-b border-zinc-200 dark:border-zinc-700 sticky top-0 z-10 select-none">
+                {{-- BENJAMIN BUTTONS V2 --}}
+                <div 
+                    x-data="{ expanded: false }" 
+                    class="bg-zinc-50 dark:bg-zinc-800 border-t md:border-t-0 md:border-b border-zinc-200 dark:border-zinc-700 z-10 select-none shadow-[0_-4px_10px_rgba(0,0,0,0.02)] md:shadow-none transition-all">
+                    
+                    <div class="flex items-start md:items-center w-full">
+                        
+                        {{-- Kontainer Utama: Scroll Horizontal di Mobile, Wrap di Desktop & saat Expanded --}}
+                        {{-- <div :class="expanded ? 'flex-wrap max-h-[45vh] overflow-y-auto' : 'flex-nowrap overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden'" 
+                            class="flex flex-1 md:flex-wrap items-center gap-1.5 p-2 md:overflow-visible transition-all scroll-smooth"> --}}
+                        {{-- <div :class="expanded ? 'flex-wrap max-h-[45vh] overflow-y-auto' : 'flex-nowrap overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden'" 
+                            class="flex flex-1 items-center gap-1.5 p-2 transition-all scroll-smooth
+                                    /* Gaya Desktop Biasa (Hanya aktif jika menggunakan Mouse/Pointer Halus) */
+                                    pointer-fine:md:flex-wrap 
+                                    pointer-fine:md:overflow-visible
+                                    
+                                    /* Gaya Mobile (Tetap dipertahankan saat Layar Sentuh / Touchscreen) */
+                                    pointer-coarse:flex-nowrap 
+                                    pointer-coarse:overflow-x-auto"> --}}
+                        {{-- <div :class="expanded 
+                            ? 'flex-wrap max-h-[45vh] overflow-y-auto' 
+                            : 'flex-nowrap overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [@media(pointer:coarse)]:flex-nowrap [@media(pointer:coarse)]:overflow-x-auto'" 
+                            class="flex flex-1 items-center gap-1.5 p-2 transition-all scroll-smooth [@media(pointer:fine)]:md:flex-wrap [@media(pointer:fine)]:md:overflow-visible"> --}}
+                        <div x-data="{ isMobile: window.matchMedia('(pointer: coarse)').matches }"
+                                @resize.window.debounce.100ms="isMobile = window.matchMedia('(pointer: coarse)').matches"
+                                :class="isMobile 
+                                    ? (expanded ? 'flex-wrap max-h-[45vh] overflow-y-auto' : 'flex-nowrap overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden') 
+                                    : (expanded ? 'flex-wrap max-h-[45vh] overflow-y-auto' : 'md:flex-wrap md:overflow-visible items-center')" 
+                                class="flex flex-1 gap-1.5 p-2 transition-all scroll-smooth">
+                            
+                            {{-- BOLD | ITALIC | STRIKE | UNDERLINE --}}
+                            <div class="flex items-center gap-1 shrink-0">
+                                <x-layouts::app.editor-toolbar-btn command="toggleBold" activeName="bold" title="Tebal (Ctrl+B)" icon="bold" />
+                                <x-layouts::app.editor-toolbar-btn command="toggleItalic" activeName="italic" title="Miring (Ctrl+I)" icon="italic" />
+                                <x-layouts::app.editor-toolbar-btn command="toggleStrike" activeName="strike" title="Coretan (Ctrl+⇑+X)" icon="strikethrough" />
+                                <x-layouts::app.editor-toolbar-btn command="toggleUnderline" activeName="underline" title="Garis Bawah (Ctrl+U)" icon="underline" />
+                            </div>
 
-                    {{-- BOLD | ITALIC | STRIKE | UNDERLINE --}}
-                    <div class="flex items-center gap-1 ">
+                            {{-- FONT FAMILY (Disembunyikan di Mobile agar bersih) --}}
+                            <div class="hidden md:flex items-center gap-4 p-1 bg-gray-50 border-l border-gray-200 shrink-0 rounded">
+                                <select id="font-family-select" :value="getCurrentFont()" @change="changeFontFamily($event.target.value)"
+                                    class="block w-48 px-3 py-1 text-sm bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-forest transition-colors">
+                                    <option value="default" style="font-family: 'Plus Jakarta Sans', sans-serif;">Plus Jakarta Sans (Default)</option>
+                                    <option value="Arial" style="font-family: Arial, sans-serif;">Arial</option>
+                                    <option value="Jetbrains Mono" style="font-family: 'JetBrains Mono', monospace;">JetBrains Mono</option>
+                                    <option value="Open Sans" style="font-family: 'Open Sans', sans-serif;">Open Sans</option>
+                                    <option value="Roboto" style="font-family: 'Roboto', sans-serif;">Roboto</option>
+                                    <option value="Times New Roman" style="font-family: 'Times New Roman', serif;">Times New Roman</option>
+                                </select>
+                            </div>
 
-                        <x-layouts::app.editor-toolbar-btn command="toggleBold" activeName="bold" title="Tebal (Ctrl+B)"
-                            icon="bold" />
+                            {{-- PILCROW --}}
+                            <div class="shrink-0 flex items-center">
+                                <x-layouts::app.editor-toolbar-btn command="toggleHiddenMarks()" activeName="showMarks" activeParams="{}" activeType="alpine" title="Tampilkan Tanda Baca Terselubung" icon="pilcrow" />
+                            </div>
 
-                        <x-layouts::app.editor-toolbar-btn command="toggleItalic" activeName="italic"
-                            title="Miring (Ctrl+I)" icon="italic" />
+                            {{-- INDENTATION --}}
+                            <div class="flex items-center gap-1 md:border-l md:border-zinc-300 md:dark:border-zinc-700 md:pl-2 shrink-0">
+                                <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="left" activeParams="{ textAlign: 'left' }" activeType="textAlign" title="Rata Kiri" icon="align-left" />
+                                <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="center" activeParams="{ textAlign: 'center' }" activeType="textAlign" title="Rata Tengah" icon="align-center" />
+                                <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="right" activeParams="{ textAlign: 'right' }" activeType="textAlign" title="Rata Kanan" icon="align-right" />
+                                <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="justify" activeParams="{ textAlign: 'justify' }" activeType="textAlign" title="Rata Kiri Kanan" icon="align-justify" />
+                                <x-layouts::app.editor-toolbar-btn command="toggleIndent" activeName="paragraph" activeParams="{ indent: true }" activeType="default" title="Menjorokkan Baris (Tab)" icon="list-indent-increase" />
+                            </div>
 
-                        <x-layouts::app.editor-toolbar-btn command="toggleStrike" activeName="strike"
-                            title="Coretan (Ctrl+⇑+X)" icon="strikethrough" />
+                            <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
 
-                        <x-layouts::app.editor-toolbar-btn command="toggleUnderline" activeName="underline"
-                            title="Garis Bawah (Ctrl+U)" icon="underline" />
-                    </div>
+                            {{-- HEADINGs --}}
+                            <div class="flex items-center gap-1 shrink-0">
+                                <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="1" activeParams="{ level: 1 }" activeType="heading" title="Heading 1" icon="heading-1" />
+                                <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="2" activeParams="{ level: 2 }" activeType="heading" title="Heading 2" icon="heading-2" />
+                                <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="3" activeParams="{ level: 3 }" activeType="heading" title="Heading 3" icon="heading-3" />
+                            </div>
 
-                    {{-- FONT FAMILY --}}
-                    <div class="flex flex-wrap items-center gap-4 p-2 bg-gray-50 border-l border-gray-200">
-                        <div class="flex items-center gap-2">
-                            <select id="font-family-select" :value="getCurrentFont()"
-                                :disabled="isUploading"
-                                @change="changeFontFamily($event.target.value)"
-                                class="block w-48 px-3 py-1.5 truncate pr-4 text-sm bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors duration-200 ">
+                            <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
 
-                                <option value="default" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px;">Plus Jakarta Sans (Default)</option>
-                                <option value="Arial" style="font-family: Arial, sans-serif; font-size: 142x;">Arial</option>
-                                <option value="Jetbrains Mono" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">JetBrains Mono</option>
-                                <option value="Open Sans" style="font-family: 'Open Sans', sans-serif; font-size: 12px;">Open Sans</option>
-                                <option value="Roboto" style="font-family: 'Roboto', sans-serif; font-size: 12px;">Roboto</option>
-                                <option value="Times New Roman" style="font-family: 'Times New Roman', serif; font-size: 12px;">Times New Roman</option>
-                            </select>
+                            {{-- LISTS --}}
+                            <div class="flex items-center gap-1 shrink-0">
+                                <x-layouts::app.editor-toolbar-btn command="toggleBulletList" activeName="" activeParams="{}" activeType="heading" title="Bullet list" icon="list" />
+                                <x-layouts::app.editor-toolbar-btn command="toggleTaskList" activeName="taskList" title="Daftar Tugas" icon="list-todo" />
+                                <x-layouts::app.editor-toolbar-btn command="none" activeName="number" activeParams="{ listStyle: 'number' }" activeType="orderedList" title="Daftar Angka" icon="list-tree">
+                                    <span class="text-[10px] font-bold ml-0.5">1.</span>
+                                </x-layouts::app.editor-toolbar-btn>
+                                <x-layouts::app.editor-toolbar-btn command="none" activeName="alpha" activeParams="{ listStyle: 'alpha' }" activeType="orderedList" title="Daftar Kapital" icon="list-tree">
+                                    <span class="text-[10px] font-bold ml-0.5">A.</span>
+                                </x-layouts::app.editor-toolbar-btn>
+                                
+                            </div>
+
+                            <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
+
+                            {{-- QUOTES --}}
+                            <div class="flex items-center gap-1 shrink-0">
+                                <x-layouts::app.editor-toolbar-btn command="toggleBlockquote" activeName="blockquote" title="Kutipan" icon="quote" />
+                                <x-layouts::app.editor-toolbar-btn command="toggleCodeBlock" activeName="codeBlock" title="Blok Kode" icon="code-xml" />
+                            </div>
+
+                            {{-- TABLES DO NOT REMOVED--}}
+                                    {{-- 
+                                    <button type="button" @click="runCommand('insertTable')"
+                                        class="px-2.5 py-1.5 rounded text-xs cursor-pointer text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700">📊
+                                        +Table</button>
+
+                                    <template x-if="isActive('table', {}, updatedAt)">
+                                        <div class="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-700 p-1 rounded ml-2">
+                                            <button type="button" @click="runCommand('addColumnAfter')"
+                                                class="px-1.5 py-0.5 text-[10px] bg-white dark:bg-zinc-600 border border-zinc-300 rounded hover:bg-zinc-50">+Col</button>
+                                            <button type="button" @click="runCommand('addRowAfter')"
+                                                class="px-1.5 py-0.5 text-[10px] bg-white dark:bg-zinc-600 border border-zinc-300 rounded hover:bg-zinc-50">+Row</button>
+                                            <button type="button" @click="runCommand('deleteTable')"
+                                                class="px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded hover:bg-red-600">Hapus</button>
+                                        </div>
+                                    </template> 
+                                    --}}
+                            <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
+
+                            {{-- MEDIA & LINK --}}
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button type="button" @click="openLinkModal(); $dispatch('buka-modal-link');" :disabled="isUploading"
+                                    :class="checkButtonActive('link', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
+                                    class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                                </button>
+                                <button type="button" @click="insertMediaPlaceholder()" :disabled="isUploading"
+                                    :class="checkButtonActive('mediaPlaceholder', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
+                                    class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
+                                    <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
+                                </button>
+                                <button type="button" wire:click="scanEditorImages" :disabled="isUploading" @click="$dispatch('buka-featured-modal')"
+                                    class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
+                                    <x-dynamic-component :component="'lucide-view'" class="h-4 w-4" stroke-width="2" />
+                                </button>
+                                <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
+
+                                
+                            </div>
                         </div>
+
+                        {{-- TOMBOL EXPAND (MENU PANEL NAIK DARI BAWAH KHUSUS HP) --}}
+                        <button type="button" @click="expanded = !expanded" 
+                            class="md:hidden m-2 p-1.5 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700 shrink-0 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                            <x-dynamic-component x-show="!expanded" :component="'lucide-chevron-up'" class="h-5 w-5" stroke-width="2.5" />
+                            <x-dynamic-component x-show="expanded" :component="'lucide-chevron-down'" class="h-5 w-5" stroke-width="2.5" style="display: none;" />
+                        </button>
+                        
                     </div>
-
-                    {{-- <x-layouts::app.editor-toolbar-btn command="toggleHiddenMarks" activeName="" activeParams="{}"
-                        activeType="alpine" title="Tampilkan pilcrow" icon="pilcrow" > --}}
-
-                    <x-layouts::app.editor-toolbar-btn command="toggleHiddenMarks()" activeName="showMarks"
-                        activeParams="{}" activeType="alpine" title="Tampilkan Tanda Baca Terselubung"
-                        icon="pilcrow" />
-
-                    {{-- INDENTATION --}}
-                    <div class="flex items-center gap-1 border-l border-zinc-300 dark:border-zinc-700 pl-2 ml-1">
-
-                        <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="left"
-                            {{-- Kirim string murninya ke sini --}} activeParams="{ textAlign: 'left' }" activeType="textAlign"
-                            title="Rata Kiri" icon="align-left" />
-
-                        <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="center"
-                            activeParams="{ textAlign: 'center' }" activeType="textAlign" title="Rata Tengah"
-                            icon="align-center" />
-
-                        <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="right"
-                            activeParams="{ textAlign: 'right' }" activeType="textAlign" title="Rata Kanan"
-                            icon="align-right" />
-
-                        <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="justify"
-                            activeParams="{ textAlign: 'justify' }" activeType="textAlign" title="Rata Kiri Kanan"
-                            icon="align-justify" />
-
-                        <x-layouts::app.editor-toolbar-btn command="toggleIndent" activeName="paragraph"
-                            activeParams="{ indent: true }" activeType="default"
-                            title="Menjorokkan Baris Pertama (Tab)" icon="list-indent-increase" />
-
-                    </div>
-
-                    <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-1"></div>
-
-                    {{-- HEADINGs --}}
-                    <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="1"
-                        activeParams="{ level: 1 }" activeType="heading" title="Heading 1" icon="heading-1" />
-
-                    <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="2"
-                        activeParams="{ level: 2 }" activeType="heading" title="Heading 2" icon="heading-2" />
-
-                    <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="3"
-                        activeParams="{ level: 3 }" activeType="heading" title="Heading 3" icon="heading-3" />
-
-                    {{-- END OF HEADINGS --}}
-
-
-                    <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-1"></div>
-
-                    {{-- TASK LIST BUTTON --}}
-                    <x-layouts::app.editor-toolbar-btn command="toggleBulletList" activeName="" activeParams="{}"
-                        activeType="heading" title="Bullet list" icon="list" />
-
-                    {{-- Tombol Daftar Tugas (Task List) --}}
-                    <x-layouts::app.editor-toolbar-btn command="toggleTaskList" activeName="taskList"
-                        title="Daftar Tugas" icon="list-todo" />
-
-                    {{-- Tombol Daftar Angka (1.) --}}
-                    <x-layouts::app.editor-toolbar-btn command="none" {{-- Diabaikan karena activeType orderedList langsung menembak helper kustom Anda --}} activeName="number"
-                        activeParams="{ listStyle: 'number' }" activeType="orderedList"
-                        title="Daftar Angka (1 -> a -> i)" icon="list-tree">
-                        <span class="text-xs font-bold ml-0.5">1.</span>
-                    </x-layouts::app.editor-toolbar-btn>
-
-                    {{-- Tombol Daftar Kapital (A.) --}}
-                    <x-layouts::app.editor-toolbar-btn command="none" activeName="alpha"
-                        activeParams="{ listStyle: 'alpha' }" activeType="orderedList"
-                        title="Daftar Kapital (A -> 1 -> i)" icon="list-tree">
-                        <span class="text-xs font-bold ml-0.5">A.</span>
-                    </x-layouts::app.editor-toolbar-btn>
-
-                    <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-1"></div>
-
-                    {{-- Tombol Kutipan (Blockquote) --}}
-                    <x-layouts::app.editor-toolbar-btn command="toggleBlockquote" activeName="blockquote"
-                        title="Kutipan (Blockquote)" icon="quote" />
-
-                    {{-- Tombol Blok Kode (Code Block) --}}
-                    <x-layouts::app.editor-toolbar-btn command="toggleCodeBlock" activeName="codeBlock"
-                        title="Blok Kode (Code Block)" icon="code-xml" />
-
-                    <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-1"></div>
-
-                    {{-- OPEN URL MODAL --}}
-                    <button type="button" @click="openLinkModal(); $dispatch('buka-modal-link');"
-                        :disabled="isUploading"
-                        :class="checkButtonActive('link', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' :
-                            'text-gray-600'"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
-                        title="Sisipkan Tautan">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                    </button>
-                    {{-- OPEN UPLOAD IMAGE DIALOG --}}
-                    <button type="button" @click="insertMediaPlaceholder()"
-                        :disabled="isUploading"
-                        :class="checkButtonActive('mediaPlaceholder', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
-                        title="Sisipkan Kotak Penampung Media">
-                        <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
-                    </button>
-
-                    {{-- PREVIEW THUMBNAIL BUTTOn --}}
-                    <button type="button"
-                        wire:click="scanEditorImages"
-                        :disabled="isUploading"
-                        @click="$dispatch('buka-featured-modal')"
-                        {{-- :class="checkButtonActive('mediaPlaceholder', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'" --}}
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
-                        title="Sisipkan Kotak Penampung Media">
-                        <x-dynamic-component :component="'lucide-view'" class="h-4 w-4" stroke-width="2" />
-                    </button>
-
-                    {{-- TABLES DO NOT REMOVED--}}
-                    {{-- 
-                    <button type="button" @click="runCommand('insertTable')"
-                        class="px-2.5 py-1.5 rounded text-xs cursor-pointer text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700">📊
-                        +Table</button>
-
-                    <template x-if="isActive('table', {}, updatedAt)">
-                        <div class="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-700 p-1 rounded ml-2">
-                            <button type="button" @click="runCommand('addColumnAfter')"
-                                class="px-1.5 py-0.5 text-[10px] bg-white dark:bg-zinc-600 border border-zinc-300 rounded hover:bg-zinc-50">+Col</button>
-                            <button type="button" @click="runCommand('addRowAfter')"
-                                class="px-1.5 py-0.5 text-[10px] bg-white dark:bg-zinc-600 border border-zinc-300 rounded hover:bg-zinc-50">+Row</button>
-                            <button type="button" @click="runCommand('deleteTable')"
-                                class="px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded hover:bg-red-600">Hapus</button>
-                        </div>
-                    </template> 
-                    --}}
-
                 </div>
+                
 
                 {{-- EDITOR's AREA --}}
                 <div class="flex-1 flex flex-col min-h-0 relative bg-white dark:bg-zinc-900">
@@ -633,8 +763,8 @@ new class extends Component {
                         </div>
                     </div>
 
-                    {{-- UPLOADING IMAGES INDICATOR --}}
-                    <div x-show="isUploading" x-transition wire:loading  class="absolute left-1/2 top-4 -translate-x-1/2 z-40" style="display: none;">
+                    {{-- UPLOADING IMAGES INDICATOR wire:loading --}}
+                    <div x-show="isUploading" x-transition class="absolute left-1/2 top-4 -translate-x-1/2 z-40" style="display: none;">
 
                         {{-- Box styling dibuat senada dengan komponen Sage-Soft & Amber Alert --}}
                         <div
@@ -662,11 +792,18 @@ new class extends Component {
 
                 </div>
 
-                <input type="file" x-ref="fileInput" accept="image/*" multiple class="hidden"
-                    @change="handleMultipleImageUpload($event.target.files); $event.target.value = ''" />
+                <input type="file" x-ref="fileInput" accept="image/*" multiple class="hidden"  @change="handleMultipleImageUpload($event.target.files); $event.target.value = ''" />
 
-                <div class="px-6 py-2 text-xs text-zinc-500 dark:text-zinc-400 font-medium bg-zinc-50 dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-700">
-                    <span x-text="wordCount"></span> kata
+
+                <div class="px-6 py-2 text-xs text-zinc-500 dark:text-zinc-400 font-medium bg-zinc-50 dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-700 flex justify-between items-center z-50">
+                    <span x-text="`${wordCount} kata`"></span>
+                    {{-- 🌟 TOMBOL FULLSCREEN --}}
+                    <button type="button" @click="isFullscreen = !isFullscreen"
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent text-zinc-600 dark:text-zinc-400"
+                        title="Layar Penuh">
+                        <x-dynamic-component x-show="!isFullscreen" :component="'lucide-maximize'" class="h-4 w-4" stroke-width="2" />
+                        <x-dynamic-component x-show="isFullscreen" :component="'lucide-minimize'" class="h-4 w-4" stroke-width="2" style="display: none;" />
+                    </button>
                 </div>
 
             </div>
@@ -678,77 +815,75 @@ new class extends Component {
                 </button>
             </div>
 
-            <!-- AREA MODAL THUMBNAIL -->
+            {{-- THuMBNAIL SELECTOR --}}
             <div x-data="{ isOpen: false }"
                 @buka-featured-modal.window="isOpen = true"
-                class="relative" >
-                <div
-                    x-show="isOpen"
-                    class="hidden md:flex fixed inset-0 z-50 items-center justify-center overflow-x-hidden overflow-y-auto"
-                    style="display: none;"
-                >
+                class="relative">
+                
+                {{-- ========================================================================= --}}
+                {{-- 💻 LAYOUT MODAL THUMBNAIL: DESKTOP (md:flex)                              --}}
+                {{-- ========================================================================= --}}
+                <div x-show="isOpen"
+                    class="hidden md:flex fixed inset-0 z-999 items-center justify-center overflow-x-hidden overflow-y-auto"
+                    style="display: none;">
+                    
                     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="isOpen = false"></div>
 
-                    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border w-full max-w-3xl max-h-[85vh] flex flex-col z-10 overflow-hidden">
-                        <div class="p-4 border-b flex items-center justify-between bg-white dark:bg-gray-900">
+                    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 w-full max-w-3xl max-h-[85vh] flex flex-col z-10 overflow-hidden">
+                        {{-- Header Modal --}}
+                        <div class="p-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-gray-900">
                             <h3 class="text-base font-bold text-gray-900 dark:text-white">Pilih Gambar Sampul</h3>
-                            <button type="button" @click="isOpen = false" class="text-gray-400 hover:text-gray-600">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <button type="button" @click="isOpen = false" class="text-gray-400 hover:text-red-500 transition cursor-pointer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
                             </button>
                         </div>
 
+                        {{-- Area Konten Gambar --}}
                         <div class="p-6 overflow-y-auto grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-950 flex-1 min-h-62.5">
-                            <div class="relative aspect-video rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-2 text-center overflow-hidden">
+                            {{-- KOTAK PREVIEW / UNGGAH UTAMA DESKTOP --}}
+                            <div class="relative aspect-video rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col items-center justify-center text-center overflow-hidden group">
                                 <input type="file" wire:model="photo" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept="image/*" />
                                 
                                 @if ($photo)
                                     <img src="{{ $photo->temporaryUrl() }}" class="w-full h-full object-cover">
+                                @elseif ($selected_image_url)
+                                    <img src="{{ $selected_image_url }}" class="w-full h-full object-cover opacity-90 group-hover:opacity-50 transition-opacity">
+                                    <div class="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                        <x-dynamic-component :component="'lucide-upload-cloud'" class="h-6 w-6 text-zinc-700 dark:text-zinc-300 drop-shadow-sm" />
+                                        <span class="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mt-1">Ganti Berkas</span>
+                                    </div>
                                 @else
-                                    <span class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300">Klik untuk Ganti Foto</span>
+                                    <div class="flex flex-col items-center justify-center pointer-events-none p-2">
+                                        <x-dynamic-component :component="'lucide-camera'" class="h-5 w-5 text-zinc-400 mb-1" />
+                                        <span class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300">Klik / Seret Foto</span>
+                                    </div>
                                 @endif
                                 
-                                <div wire:loading wire:target="photo" class="absolute inset-0 bg-white/80 flex items-center justify-center z-20">
-                                    <span class="text-xs font-bold text-blue-600">Memproses...</span>
+                                <div wire:loading wire:target="photo" class="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center z-20">
+                                    <span class="text-xs font-bold text-blue-600 animate-pulse">Memproses...</span>
                                 </div>
                             </div>
 
+                            {{-- LOOP GAMBAR DARI EDITOR --}}
                             @foreach($extracted_images as $imgUrl)
-                                <div
-                                    wire:click="selectImageFromEditor('{{ $imgUrl }}')"
-                                    class="relative aspect-video rounded-xl overflow-hidden cursor-pointer border-2 {{ $selected_image_url === $imgUrl ? 'border-blue-600 ring-4 ring-blue-500/20' : 'border-transparent' }}"
-                                >
+                                <div wire:click="selectImageFromEditor('{{ $imgUrl }}')"
+                                    class="relative aspect-video rounded-xl overflow-hidden cursor-pointer border-2 {{ $selected_image_url === $imgUrl ? 'border-blue-600 ring-4 ring-blue-500/20' : 'border-transparent hover:border-zinc-400' }} transition-all">
                                     <img src="{{ $imgUrl }}" class="w-full h-full object-cover">
                                     
                                     @if($selected_image_url === $imgUrl)
-                                        <div class="absolute top-1 right-1 bg-blue-600 text-white rounded-full p-0.5">
-                                            <x-dynamic-component :component="'lucide-check'" class="h-3 w-3" />
+                                        <div class="absolute top-1 right-1 bg-blue-600 text-white rounded-full p-0.5 shadow-md animate-scale-in">
+                                            <x-dynamic-component :component="'lucide-check'" class="h-3 w-3" stroke-width="3" />
                                         </div>
                                     @endif
                                 </div>
                             @endforeach
                         </div>
 
-                        {{-- <div class="p-6 overflow-y-auto grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-950 flex-1 min-h-[250px]">
-                            <div class="relative aspect-video rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 text-center overflow-hidden">
-                                <input type="file" wire:model="photo" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept="image/*" />
-                                <span class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300">Upload File Baru</span>
-                                <div wire:loading wire:target="photo" class="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center">
-                                    <span class="text-xs">Memuat...</span>
-                                </div>
-                            </div>
-
-                            @foreach($extracted_images as $imgUrl)
-                                <div
-                                    wire:click="selectImageFromEditor('{{ $imgUrl }}')"
-                                    class="relative aspect-video rounded-xl overflow-hidden cursor-pointer border-2 {{ $selected_image_url === $imgUrl ? 'border-blue-600 ring-4 ring-blue-500/20' : 'border-transparent' }}"
-                                >
-                                    <img src="{{ $imgUrl }}" class="w-full h-full object-cover">
-                                </div>
-                            @endforeach
-                        </div> --}}
-
-                        <div class="p-4 border-t flex justify-end bg-gray-50 dark:bg-gray-900">
-                            <button type="button" @click="isOpen = false" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-sm">
+                        {{-- Footer Modal --}}
+                        <div class="p-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-end bg-gray-50 dark:bg-gray-900">
+                            <button type="button" @click="isOpen = false" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-sm transition cursor-pointer">
                                 Selesai
                             </button>
                         </div>
@@ -756,38 +891,100 @@ new class extends Component {
                 </div>
 
 
-                <div
-                    x-show="isOpen"
-                    class="flex md:hidden fixed inset-0 z-50 items-end justify-center"
-                    style="display: none;"
-                >
-                    <div class="fixed inset-0 bg-black/60" @click="isOpen = false"></div>
-                    <div class="bg-white dark:bg-gray-900 w-full rounded-t-2xl max-h-[75vh] flex flex-col z-10 overflow-hidden shadow-2xl">
-                        <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto my-3 dark:bg-gray-700" @click="isOpen = false"></div>
-
+                {{-- ========================================================================= --}}
+                {{-- 📱 LAYOUT MODAL THUMBNAIL: MOBILE (md:hidden)                              --}}
+                {{-- ========================================================================= --}}
+                {{-- <div x-show="isOpen"
+                    class="flex md:hidden fixed inset-0 z-999 items-end justify-center"
+                    style="display: none;">
+                    
+                    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs" @click="isOpen = false"></div>
+                    
+                    <div class="bg-white dark:bg-gray-900 w-full rounded-t-2xl max-h-[80vh] flex flex-col z-10 overflow-hidden shadow-2xl">
+                        {{-- Handle Drag Modal Mobile --
+                        <div class="w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-3" @click="isOpen = false"></div> --}}
+                <div x-show="isOpen"
+                    class="flex md:hidden fixed inset-0 z-999 items-end justify-center"
+                    style="display: none;">
+                    
+                    {{-- Animasi Overlay: Fade In / Fade Out --}}
+                    <div x-show="isOpen"
+                        x-transition:enter="transition-opacity ease-out duration-300"
+                        x-transition:enter-start="opacity-0"
+                        x-transition:enter-end="opacity-100"
+                        x-transition:leave="transition-opacity ease-in duration-300"
+                        x-transition:leave-start="opacity-100"
+                        x-transition:leave-end="opacity-0"
+                        class="fixed inset-0 bg-black/60 backdrop-blur-xs" @click="isOpen = false"></div>
+                    
+                    {{-- Animasi Laci: Meluncur dari bawah (translate-y-full) ke atas (translate-y-0) --}}
+                    <div x-show="isOpen"
+                        x-transition:enter="transition ease-out duration-300 transform"
+                        x-transition:enter-start="translate-y-full"
+                        x-transition:enter-end="translate-y-0"
+                        x-transition:leave="transition ease-in duration-200 transform"
+                        x-transition:leave-start="translate-y-0"
+                        x-transition:leave-end="translate-y-full"
+                        class="bg-white dark:bg-gray-900 w-full rounded-t-2xl max-h-[80vh] flex flex-col z-10 overflow-hidden shadow-2xl relative">
+                        
+                        {{-- Handle Drag Modal Mobile --}}
+                        <div class="w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-3" @click="isOpen = false"></div>     
                         <div class="p-4 overflow-y-auto space-y-4 bg-gray-50 dark:bg-gray-950 flex-1">
-                            <div class="relative w-full py-3 px-4 rounded-xl border-2 border-dashed border-gray-300 bg-white flex items-center justify-center space-x-2">
-                                <input type="file" wire:model="photo" class="absolute inset-0 w-full h-full opacity-0 z-10" accept="image/*" />
-                                <span class="text-xs font-semibold text-gray-700">Ambil Foto / Upload Gambar</span>
+                            {{-- KOTAK PREVIEW / UNGGAH UTAMA MOBILE --}}
+                            <div class="relative w-full aspect-video rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-gray-900 flex flex-col items-center justify-center overflow-hidden transition-all">
+                                <input type="file" wire:model="photo" class="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" accept="image/*" />
+                                
+                                @if ($photo)
+                                    <img src="{{ $photo->temporaryUrl() }}" class="w-full h-full object-cover">
+                                @elseif ($selected_image_url)
+                                    <img src="{{ $selected_image_url }}" class="w-full h-full object-cover">
+                                    <div class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded backdrop-blur-xs pointer-events-none">
+                                        Ketuk untuk mengganti
+                                    </div>
+                                @else
+                                    <div class="flex flex-col items-center justify-center pointer-events-none">
+                                        <x-dynamic-component :component="'lucide-camera'" class="h-6 w-6 text-zinc-400 mb-1" />
+                                        <span class="text-xs font-semibold text-zinc-600 dark:text-zinc-400">Unggah / Ambil Foto</span>
+                                    </div>
+                                @endif
+
+                                <div wire:loading wire:target="photo" class="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center z-20">
+                                    <span class="text-xs font-bold text-blue-600 animate-pulse">Memproses...</span>
+                                </div>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-3">
-                                @foreach($extracted_images as $imgUrl)
-                                    <div wire:click="selectImageFromEditor('{{ $imgUrl }}')" class="relative aspect-video rounded-xl overflow-hidden border-2 {{ $selected_image_url === $imgUrl ? 'border-blue-600' : 'border-transparent' }}">
-                                        <img src="{{ $imgUrl }}" class="w-full h-full object-cover">
+                            {{-- DAFTAR PILIHAN GAMBAR UTUK MOBILE (YANG TADI HILANG) --}}
+                            @if(count($extracted_images) > 0)
+                                <div class="pt-2">
+                                    <h4 class="text-xs font-bold text-zinc-400 dark:text-zinc-500 mb-2 tracking-wide uppercase">Pilih Gambar Dari Artikel:</h4>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        @foreach($extracted_images as $imgUrl)
+                                            <div wire:click="selectImageFromEditor('{{ $imgUrl }}')" 
+                                                class="relative w-full aspect-video rounded-xl overflow-hidden cursor-pointer border-2 {{ $selected_image_url === $imgUrl ? 'border-blue-600 ring-2 ring-blue-500/10' : 'border-transparent' }} transition-all">
+                                                <img src="{{ $imgUrl }}" class="w-full h-full object-cover">
+                                                
+                                                @if($selected_image_url === $imgUrl)
+                                                    <div class="absolute top-1 right-1 bg-blue-600 text-white rounded-full p-0.5 shadow">
+                                                        <x-dynamic-component :component="'lucide-check'" class="h-3 w-3" stroke-width="3" />
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endforeach
                                     </div>
-                                @endforeach
-                            </div>
+                                </div>
+                            @endif
                         </div>
 
-                        <div class="p-4 bg-white dark:bg-gray-900 border-t">
-                            <button type="button" @click="isOpen = false" class="w-full bg-blue-600 text-white py-3 rounded-xl text-xs font-bold text-center">
-                                Terapkan Gambar
+                        {{-- Tombol Aksi Mobile --}}
+                        <div class="p-4 bg-white dark:bg-gray-900 border-t border-zinc-100 dark:border-zinc-800 shadow-inner">
+                            <button type="button" @click="isOpen = false" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-xs font-bold text-center transition-colors cursor-pointer shadow-sm">
+                                Terapkan Sampul
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
+            
 
         </form>
 

@@ -668,3 +668,16 @@
 .tiptap-locked[contenteditable="true"] {
     cursor: wait !important;
 }
+
+.toolbar-mobile { display: none; }
+.toolbar-desktop { display: block; }
+
+/* Jika perangkatnya adalah layar sentuh (HP/Tablet), paksakan UI Mobile */
+@media (pointer: coarse) {
+    .toolbar-desktop { 
+        display: none !important; 
+    }
+    .toolbar-mobile { 
+        display: flex !important; /* atau block, sesuaikan dengan desain Anda */
+    }
+}
