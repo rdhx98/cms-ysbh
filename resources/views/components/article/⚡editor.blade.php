@@ -74,7 +74,7 @@ new class extends Component {
         // Reset pilihan gambar dari editor karena penulis beralih ke upload kustom
         $this->selected_image_url = null;
         // featured_image sementara diisi nama file aslinya untuk pratinjau local temporaryUrl()
-        $this->featured_image = $this->photo->getClientOriginalName();
+        // $this->featured_image = $this->photo->getClientOriginalName();
     }
 
     private function processAndTrimImages($htmlContent){
@@ -244,7 +244,8 @@ new class extends Component {
 };
 ?>
 
-<div class="max-w-5xl mx-auto p-6">
+<div class="max-w-5xl mx-auto p-6" >
+    <x-slot:title>{{ __('Write Article') }}</x-slot:title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <div class="h-[calc(100vh-120px)] flex flex-col justify-between">
 
@@ -275,7 +276,27 @@ new class extends Component {
             </div>
 
             {{-- PESAN GALAT --}}
-            @if (session()->has('error'))
+            <div x-data="{ 
+                    show: {{ session()->has('error') ? 'true' : 'false' }}, 
+                    pesan: '{{ session('error') ?? '' }}' 
+                }" 
+                @tampilkan-error.window="show = true; pesan = $event.detail; setTimeout(() => show = false, 7000)"
+                x-show="show" x-transition
+                style="display: none;"
+                class="p-4 rounded-lg bg-red-50 dark:bg-zinc-800 border border-red-200 dark:border-red-900/50 flex items-start gap-3 select-none">
+                <div class="p-1 bg-white dark:bg-zinc-700 rounded-md text-red-600 shadow-sm shrink-0">
+                    <x-dynamic-component :component="'lucide-alert-triangle'" class="h-5 w-5" stroke-width="2.5" />
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-sm font-bold text-zinc-800 dark:text-zinc-100">Galat Sistem</h4>
+                    <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5" x-text="pesan"></p>
+                </div>
+                <button type="button" @click="show = false"
+                    class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition cursor-pointer text-xs font-bold pl-2">
+                    ✕
+                </button>
+            </div>
+            {{-- @if (session()->has('error'))
                 <div x-data="{ show: true }" x-show="show" x-transition
                     class="p-4 rounded-lg bg-red-50 dark:bg-zinc-800 border border-red-200 dark:border-red-900/50 flex items-start gap-3 select-none">
                     <div class="p-1 bg-white dark:bg-zinc-700 rounded-md text-red-600 shadow-sm  shrink-0">
@@ -290,9 +311,12 @@ new class extends Component {
                         ✕
                     </button>
                 </div>
-            @endif
+            @endif --}}
 
             <div x-data="setupEditor('content', $wire)" @buka-modal-link.window="isLinkOpen = true"
+                {{-- @drop.prevent="handleMultipleImageUpload($event.dataTransfer.files);" --}}
+                :style="isUploading ? { cursor: 'wait !important' } : {}"
+                :class="{ 'tiptap-locked': isUploading }"
                 class="flex-1 flex flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-900 shadow-sm relative"
                 wire:ignore>
 
@@ -387,14 +411,16 @@ new class extends Component {
                     <div class="flex flex-wrap items-center gap-4 p-2 bg-gray-50 border-l border-gray-200">
                         <div class="flex items-center gap-2">
                             <select id="font-family-select" :value="getCurrentFont()"
+                                :disabled="isUploading"
                                 @change="changeFontFamily($event.target.value)"
-                                class="block w-48 px-3 py-1.5 text-sm bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="default">Plus Jakarta Sans</option>
-                                <option value="Arial">Arial</option>
-                                <option value="Jetbrains Mono">Jetbrains Mono</option>
-                                <option value="Open Sans">Open Sans</option>
-                                <option value="Roboto">Roboto</option>
-                                <option value="Times New Roman">Times New Roman</option>
+                                class="block w-48 px-3 py-1.5 truncate pr-4 text-sm bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-forest focus:border-forest transition-colors duration-200 ">
+
+                                <option value="default" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px;">Plus Jakarta Sans (Default)</option>
+                                <option value="Arial" style="font-family: Arial, sans-serif; font-size: 142x;">Arial</option>
+                                <option value="Jetbrains Mono" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">JetBrains Mono</option>
+                                <option value="Open Sans" style="font-family: 'Open Sans', sans-serif; font-size: 12px;">Open Sans</option>
+                                <option value="Roboto" style="font-family: 'Roboto', sans-serif; font-size: 12px;">Roboto</option>
+                                <option value="Times New Roman" style="font-family: 'Times New Roman', serif; font-size: 12px;">Times New Roman</option>
                             </select>
                         </div>
                     </div>
@@ -433,10 +459,18 @@ new class extends Component {
 
                     <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-1"></div>
 
+                    {{-- HEADINGs --}}
                     <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="1"
                         activeParams="{ level: 1 }" activeType="heading" title="Heading 1" icon="heading-1" />
+
                     <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="2"
                         activeParams="{ level: 2 }" activeType="heading" title="Heading 2" icon="heading-2" />
+
+                    <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="3"
+                        activeParams="{ level: 3 }" activeType="heading" title="Heading 3" icon="heading-3" />
+
+                    {{-- END OF HEADINGS --}}
+
 
                     <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-1"></div>
 
@@ -476,9 +510,10 @@ new class extends Component {
 
                     {{-- OPEN URL MODAL --}}
                     <button type="button" @click="openLinkModal(); $dispatch('buka-modal-link');"
+                        :disabled="isUploading"
                         :class="checkButtonActive('link', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' :
                             'text-gray-600'"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent"
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
                         title="Sisipkan Tautan">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                             stroke="currentColor" stroke-width="2.5">
@@ -486,7 +521,28 @@ new class extends Component {
                                 d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
                     </button>
+                    {{-- OPEN UPLOAD IMAGE DIALOG --}}
+                    <button type="button" @click="insertMediaPlaceholder()"
+                        :disabled="isUploading"
+                        :class="checkButtonActive('mediaPlaceholder', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
+                        title="Sisipkan Kotak Penampung Media">
+                        <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
+                    </button>
 
+                    {{-- PREVIEW THUMBNAIL BUTTOn --}}
+                    <button type="button"
+                        wire:click="scanEditorImages"
+                        :disabled="isUploading"
+                        @click="$dispatch('buka-featured-modal')"
+                        {{-- :class="checkButtonActive('mediaPlaceholder', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'" --}}
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
+                        title="Sisipkan Kotak Penampung Media">
+                        <x-dynamic-component :component="'lucide-view'" class="h-4 w-4" stroke-width="2" />
+                    </button>
+
+                    {{-- TABLES DO NOT REMOVED--}}
+                    {{-- 
                     <button type="button" @click="runCommand('insertTable')"
                         class="px-2.5 py-1.5 rounded text-xs cursor-pointer text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700">📊
                         +Table</button>
@@ -500,34 +556,8 @@ new class extends Component {
                             <button type="button" @click="runCommand('deleteTable')"
                                 class="px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded hover:bg-red-600">Hapus</button>
                         </div>
-                    </template>
-
-
-                    {{-- OPEN UPLOAD IMAGE DIALOG --}}
-                    <button type="button" @click="insertMediaPlaceholder()"
-                        :class="checkButtonActive('mediaPlaceholder', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent"
-                        title="Sisipkan Kotak Penampung Media">
-                        <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
-                    </button>
-
-                    {{-- PREVIEW THUMBNAIL BUTTOn --}}
-                    <button type="button"
-                        wire:click="scanEditorImages"
-                        @click="$dispatch('buka-featured-modal')"
-                        {{-- :class="checkButtonActive('mediaPlaceholder', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'" --}}
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent"
-                        title="Sisipkan Kotak Penampung Media">
-                        <x-dynamic-component :component="'lucide-view'" class="h-4 w-4" stroke-width="2" />
-                    </button>
-
-                    {{-- <button type="button" @click="triggerFileSelect()"
-                        :class="checkButtonActive('link', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' :
-                            'text-gray-600'"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent"
-                        title="Sisipkan Gambar">
-                        <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
-                    </button> --}}
+                    </template> 
+                    --}}
 
                 </div>
 
@@ -536,7 +566,8 @@ new class extends Component {
 
                     {{-- 🌌 ZONA DROP OVERLAY GLOBAL (SUNTIKAN PASIF SAH) --}}
 
-                    <div x-data="{ isLocalDrag: false }"
+                    <div 
+                        {{-- x-data="{ isLocalDrag: false }" --}}
                         {{-- 💡 KUNCI MATI: Jika di dalam editor sedang AKTIF (.isActive) node mediaPlaceholder, overlay besar DIPAKSA tidak bereaksi (null / false) --}}
                         @dragenter.window.prevent="isUploading || isLinkOpen || (window.tiptapEditor && window.tiptapEditor.isActive('mediaPlaceholder')) ? (isLocalDrag = false) : (isLocalDrag = $event.dataTransfer.types.includes('Files'))"
                         @dragover.window.prevent="isUploading || isLinkOpen || (window.tiptapEditor && window.tiptapEditor.isActive('mediaPlaceholder')) ? (isLocalDrag = false) : (isLocalDrag = $event.dataTransfer.types.includes('Files'))"
@@ -556,47 +587,6 @@ new class extends Component {
                             </div>
                         </div>
                     </div>
-
-                    {{-- <div x-data="{ isLocalDrag: false }"
-                        {{-- 💡 PERBAIKAN: Overlay besar HANYA boleh muncul jika kursor tidak sedang berada di atas/mengincar area placeholder kecil --
-                        @dragenter.window.prevent="isUploading || isLinkOpen ? null : ($event.target.closest('.media-placeholder-zone') ? (isLocalDrag = false) : (isLocalDrag = $event.dataTransfer.types.includes('Files')))"
-                        @dragover.window.prevent="isUploading || isLinkOpen ? null : ($event.target.closest('.media-placeholder-zone') ? (isLocalDrag = false) : (isLocalDrag = $event.dataTransfer.types.includes('Files')))"
-                        @dragleave.window.prevent="event.clientX === 0 && event.clientY === 0 ? isLocalDrag = false : null"
-                        @drop.window.prevent="isLocalDrag = false; handleMultipleImageUpload($event.dataTransfer.files);"
-                        x-show="isLocalDrag"
-                        x-transition
-                        class="absolute inset-0 bg-sage-soft/80 dark:bg-zinc-800/90 z-50 p-4 flex items-center justify-center pointer-events-none"
-                        style="display: none;">
-                        <div class="border-2 border-dashed border-forest dark:border-amber-500 rounded-xl w-full h-full flex flex-col items-center justify-center gap-3 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xs shadow-inner">
-                            <div class="p-4 bg-white dark:bg-zinc-800 rounded-full shadow-md text-forest dark:text-amber-500 animate-bounce">
-                                <x-dynamic-component :component="'lucide-image-plus'" class="h-8 w-8" stroke-width="2" />
-                            </div>
-                            <div class="text-center">
-                                <h3 class="text-sm font-bold text-forest dark:text-zinc-100 tracking-wide">Lepaskan Gambar di Sini</h3>
-                                <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Berkas otomatis diunggah ke server Yayasan SBH</p>
-                            </div>
-                        </div>
-                    </div> --}}
-
-                    {{-- <div x-data="{ isLocalDrag: false }"
-                        @dragenter.window.prevent="isLocalDrag = true"
-                        @dragover.window.prevent="isLocalDrag = true"
-                        @dragleave.window.prevent="event.clientX === 0 && event.clientY === 0 ? isLocalDrag = false : null"
-                        @drop.window="isLocalDrag = false"
-                        x-show="isLocalDrag"
-                        x-transition
-                        class="absolute inset-0 bg-sage-soft/80 dark:bg-zinc-800/90 z-50 p-4 flex items-center justify-center pointer-events-none"
-                        style="display: none;">
-                        <div class="border-2 border-dashed border-forest dark:border-amber-500 rounded-xl w-full h-full flex flex-col items-center justify-center gap-3 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xs shadow-inner">
-                            <div class="p-4 bg-white dark:bg-zinc-800 rounded-full shadow-md text-forest dark:text-amber-500 animate-bounce">
-                                <x-dynamic-component :component="'lucide-image-plus'" class="h-8 w-8" stroke-width="2" />
-                            </div>
-                            <div class="text-center">
-                                <h3 class="text-sm font-bold text-forest dark:text-zinc-100 tracking-wide">Lepaskan Gambar di Sini</h3>
-                                <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Berkas otomatis diunggah ke server Yayasan SBH</p>
-                            </div>
-                        </div>
-                    </div> --}}
 
                     {{-- MODAL INPUT LINK: Sekarang posisinya mutlak di tengah atas AREA TEKS saja --}}
                     <div x-show="isLinkOpen" x-transition:enter="transition ease-out duration-200"
@@ -643,8 +633,8 @@ new class extends Component {
                         </div>
                     </div>
 
-                    {{-- UPLOADING IMAGES --}}
-                    <div wire:loading class="absolute left-1/2 top-4 -translate-x-1/2 z-40" style="display: none;">
+                    {{-- UPLOADING IMAGES INDICATOR --}}
+                    <div x-show="isUploading" x-transition wire:loading  class="absolute left-1/2 top-4 -translate-x-1/2 z-40" style="display: none;">
 
                         {{-- Box styling dibuat senada dengan komponen Sage-Soft & Amber Alert --}}
                         <div
@@ -675,6 +665,10 @@ new class extends Component {
                 <input type="file" x-ref="fileInput" accept="image/*" multiple class="hidden"
                     @change="handleMultipleImageUpload($event.target.files); $event.target.value = ''" />
 
+                <div class="px-6 py-2 text-xs text-zinc-500 dark:text-zinc-400 font-medium bg-zinc-50 dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-700">
+                    <span x-text="wordCount"></span> kata
+                </div>
+
             </div>
 
             <div class="flex justify-end">
@@ -684,7 +678,7 @@ new class extends Component {
                 </button>
             </div>
 
-            <!-- AREA MODAL -->
+            <!-- AREA MODAL THUMBNAIL -->
             <div x-data="{ isOpen: false }"
                 @buka-featured-modal.window="isOpen = true"
                 class="relative" >
@@ -703,7 +697,38 @@ new class extends Component {
                             </button>
                         </div>
 
-                        <div class="p-6 overflow-y-auto grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-950 flex-1 min-h-[250px]">
+                        <div class="p-6 overflow-y-auto grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-950 flex-1 min-h-62.5">
+                            <div class="relative aspect-video rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-2 text-center overflow-hidden">
+                                <input type="file" wire:model="photo" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept="image/*" />
+                                
+                                @if ($photo)
+                                    <img src="{{ $photo->temporaryUrl() }}" class="w-full h-full object-cover">
+                                @else
+                                    <span class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300">Klik untuk Ganti Foto</span>
+                                @endif
+                                
+                                <div wire:loading wire:target="photo" class="absolute inset-0 bg-white/80 flex items-center justify-center z-20">
+                                    <span class="text-xs font-bold text-blue-600">Memproses...</span>
+                                </div>
+                            </div>
+
+                            @foreach($extracted_images as $imgUrl)
+                                <div
+                                    wire:click="selectImageFromEditor('{{ $imgUrl }}')"
+                                    class="relative aspect-video rounded-xl overflow-hidden cursor-pointer border-2 {{ $selected_image_url === $imgUrl ? 'border-blue-600 ring-4 ring-blue-500/20' : 'border-transparent' }}"
+                                >
+                                    <img src="{{ $imgUrl }}" class="w-full h-full object-cover">
+                                    
+                                    @if($selected_image_url === $imgUrl)
+                                        <div class="absolute top-1 right-1 bg-blue-600 text-white rounded-full p-0.5">
+                                            <x-dynamic-component :component="'lucide-check'" class="h-3 w-3" />
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+
+                        {{-- <div class="p-6 overflow-y-auto grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-950 flex-1 min-h-[250px]">
                             <div class="relative aspect-video rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 text-center overflow-hidden">
                                 <input type="file" wire:model="photo" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept="image/*" />
                                 <span class="block text-[11px] font-semibold text-gray-700 dark:text-gray-300">Upload File Baru</span>
@@ -720,7 +745,7 @@ new class extends Component {
                                     <img src="{{ $imgUrl }}" class="w-full h-full object-cover">
                                 </div>
                             @endforeach
-                        </div>
+                        </div> --}}
 
                         <div class="p-4 border-t flex justify-end bg-gray-50 dark:bg-gray-900">
                             <button type="button" @click="isOpen = false" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-sm">

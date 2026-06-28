@@ -103,26 +103,20 @@ const HiddenMarks = Extension.create({
             const style = document.createElement('style');
             style.id = 'tiptap-hidden-marks-styles';
             style.textContent = `
+                /* 🌟 SOLUSI ANTI-BUG INDENTASI & JUSTIFY 🌟 */
                 .tiptap-invisible-space {
-                    position: relative !important;
+                    /* Menggambar titik bulat vektor langsung di background spasi */
+                    background-image: radial-gradient(circle, #a1a1aa 1.25px, transparent 1.5px) !important;
+                    
+                    /* Mengunci posisi gambar persis di tengah secara horizontal, dan 55% secara vertikal */
+                    background-position: center 55% !important; 
+                    background-repeat: no-repeat !important;
                 }
+
+                /* Matikan pemanggilan ::before yang lama agar tidak muncul dobel */
                 .tiptap-invisible-space::before {
-                    content: "·" !important;
-                    position: absolute !important;
-                    left: 50% !important;
-
-                    /* --- 🛠️ ADJUSTMENT POSISI VERTIKAL DI SINI --- */
-                    top: 55% !important; /* Diturunkan sedikit dari 50% ke 55% atau 58% */
-                    transform: translate(-50%, -35%) !important; /* Menyeimbangkan posisi Y */
-
-                    /* Alternatif jika ingin mengecilkan ukuran titik agar lebih estetik */
-                    font-size: 1.1em !important;
-                    line-height: 0 !important;
-
-                    color: #a1a1aa !important; /* Zinc-400, tipis dan tidak mencolok */
-                    font-weight: 900 !important;
-                    pointer-events: none !important;
-                    user-select: none !important;
+                    content: none !important;
+                    display: none !important;
                 }
             `;
             document.head.appendChild(style);
@@ -175,7 +169,8 @@ const HiddenMarks = Extension.create({
                         const { doc } = state;
 
                         doc.descendants((node, pos) => {
-                            // 1. PERBAIKAN PARAGRAF (¶) - DIKUNCI AGAR TIDAK TURUN top: -0.35em !important; /* Tarik ke atas secara murni dari koordinat relatifnya */
+                           
+                            // 1. PERBAIKAN PARAGRAF (¶) - DIKUNCI AGAR TIDAK TURUN
                             if (node.type.name === 'paragraph') {
                                 const endPos = pos + node.nodeSize - 1;
                                 decorations.push(
@@ -183,26 +178,6 @@ const HiddenMarks = Extension.create({
                                         const span = document.createElement('span');
                                         span.className = 'tiptap-invisible-para';
                                         span.textContent = '¶';
-                                        span.style.cssText = `
-                                            display: inline-block !important;
-                                            width: 0 !important;
-                                            height: 0 !important;
-                                            line-height: 0 !important;
-                                            overflow: visible !important;
-
-                                            /* --- 🛠️ RACIKAN BARU PENYEIMBANG POSISI --- */
-                                            vertical-align: middle !important; /* Gunakan middle sebagai jangkar pusat teks */
-                                            position: relative !important;
-
-
-                                            font-family: var(--font-mono) !important;
-                                            font-size: 0.85em !important;
-                                            color: #10b981 !important;
-                                            user-select: none !important;
-                                            pointer-events: none !important;
-                                            margin-left: 4px !important;
-                                            top: -0.25em !important;
-                                        `;
                                         return span;
                                     }, { side: 1, stopEvent: () => true })
                                 );
@@ -329,6 +304,27 @@ const ParagraphIndent = Extension.create({
                 }
                 return false
             },
+            // 🌟 TAMBAHKAN KODE BACKSPACE INI 🌟
+            'Backspace': () => {
+                const { selection } = this.editor.state;
+                const { empty, $anchor } = selection;
+
+                // Jika ada teks yang diblok, biarkan backspace menghapus teks tersebut
+                if (!empty) return false;
+
+                // Cek apakah kursor berada tepat di titik paling awal (offset 0) dari sebuah paragraf
+                if ($anchor.parentOffset === 0 && this.editor.isActive('paragraph')) {
+                    const isIndented = this.editor.getAttributes('paragraph').indent;
+                    
+                    // Jika paragraf tersebut memiliki indentasi, hapus indentasinya saja
+                    if (isIndented) {
+                        return this.editor.commands.unsetIndent();
+                    }
+                }
+                
+                // Jika tidak ada indentasi, biarkan backspace bekerja normal (menghapus paragraf)
+                return false;
+            },
         }
     },
 });
@@ -373,11 +369,30 @@ document.addEventListener('alpine:init', () => {
             linkInputText: '',
             hasSelection: false,
             isLinkOpen: false,
+            wordCount: 0,
+            isLocalDrag: false,
 
+
+
+            // Fungsi helper untuk mengecek status
+            shouldDisable() {
+                return this.isUploading;
+            },
+            // Panggil ini saat proses upload gambar dimulai/selesai
+            toggleUploadState(state) {
+                this.isUploading = state;
+            },
 
             init() {
-                const _this = this
-                const initialContent = wireComponent.get(wireModelName) || ''
+                const _this = this;
+                const editorElement = this.$refs.editorElement;
+                const initialContent = wireComponent.get(wireModelName) || '';
+
+                window.addEventListener('offline', () => {
+                    window.dispatchEvent(new CustomEvent('tampilkan-error', { 
+                        detail: "Koneksi internet terputus. Mohon periksa jaringan Anda!" 
+                    }));
+                });
 
                 window.triggerLocalFilePicker = () => {
                     if (_this.$refs.fileInput) {
@@ -587,10 +602,6 @@ document.addEventListener('alpine:init', () => {
                         MediaPlaceholder,
                     ],
 
-                    // ... kode ekstensi atas Anda tetap sama ...
-
-
-
                     editorProps: {
                         handleDragOver: (view, event) => {
                             event.preventDefault();
@@ -601,23 +612,62 @@ document.addEventListener('alpine:init', () => {
                         handleDrop: (view, event, slice, moved) => {
                             if (moved) return false;
 
-                            event.preventDefault();
-                            event.stopPropagation();
-
                             const files = event.dataTransfer ? event.dataTransfer.files : [];
                             let imageFound = false;
-                            const alpineData = window.tiptapEditor ? document.querySelector('[x-data*="setupEditor"]').__x.$data : null;
 
+                            // Cek apakah ada file gambar di dalam drop
                             for (const file of files) {
-                                if (file.type.startsWith('image/') && alpineData) {
+                                if (file.type.startsWith('image/')) {
                                     imageFound = true;
-                                    alpineData.uploadQueue.push(file);
+                                    break;
                                 }
                             }
 
-                            if (imageFound && alpineData) {
-                                alpineData.isUploading = true;
-                                alpineData.processNextInQueue();
+                            if (imageFound) {
+                                // Hentikan propagasi agar Alpine @drop di HTML tidak ikut terpancing (mencegah duplikat)
+                                event.preventDefault();
+                                event.stopPropagation();
+
+                                const editorWrapper = document.querySelector('[x-data*="setupEditor"]');
+                                const alpineData = editorWrapper && window.Alpine ? window.Alpine.$data(editorWrapper) : null;
+
+                                if (alpineData) {
+                                    // 🌟 KUNCI: Lempar file ke fungsi Alpine secara eksklusif
+                                    alpineData.handleMultipleImageUpload(files);
+                                }
+                                return true;
+                            }
+
+                            return false;
+                        },
+
+                        handlePaste(view, event, slice) {
+                            const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+                            let imageFound = false;
+                            let filesToUpload = [];
+
+                            // Kumpulkan semua file gambar yang di-paste
+                            for (const item of items) {
+                                if (item.type.indexOf('image') === 0) {
+                                    const file = item.getAsFile();
+                                    if (file) {
+                                        imageFound = true;
+                                        filesToUpload.push(file);
+                                    }
+                                }
+                            }
+
+                            if (imageFound) {
+                                event.preventDefault();
+                                event.stopPropagation();
+
+                                const editorWrapper = document.querySelector('[x-data*="setupEditor"]');
+                                const alpineData = editorWrapper && window.Alpine ? window.Alpine.$data(editorWrapper) : null;
+
+                                if (alpineData && filesToUpload.length > 0) {
+                                    // 🌟 Lempar juga paste file fisik ke satu pintu utama
+                                    alpineData.handleMultipleImageUpload(filesToUpload);
+                                }
                                 return true;
                             }
 
@@ -710,35 +760,6 @@ document.addEventListener('alpine:init', () => {
 
                             return doc.body.innerHTML;
                         },
-
-                        handlePaste(view, event, slice) {
-                            const items = (event.clipboardData || event.originalEvent.clipboardData).items;
-                            let imageFound = false;
-
-                            const editorWrapper = document.querySelector('[x-data*="setupEditor"]');
-                            const alpineData = editorWrapper && window.Alpine ? window.Alpine.$data(editorWrapper) : null;
-
-                            for (const item of items) {
-                                if (item.type.indexOf('image') === 0) {
-                                    const file = item.getAsFile();
-
-                                    if (file && alpineData) {
-                                        imageFound = true;
-                                        event.preventDefault();
-                                        event.stopPropagation();
-                                        alpineData.uploadQueue.push(file);
-                                    }
-                                }
-                            }
-
-                            if (imageFound && alpineData) {
-                                alpineData.isUploading = true;
-                                alpineData.processNextInQueue();
-                                return true;
-                            }
-
-                            return false;
-                        },
                     },
 
                     content: initialContent,
@@ -746,9 +767,15 @@ document.addEventListener('alpine:init', () => {
                     onUpdate({ editor }) {
                         _this.updatedAt = Date.now()
 
+                        
+                        // 🌟 LOGIKA PENGHITUNG KATA 🌟
+                        // Mengambil teks murni, menghapus spasi ekstra, lalu menghitung array kata
+                        const text = editor.getText();
+                        _this.wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+                        
                         // JANGAN kirim data ke Livewire jika sedang ada proses upload gambar di latar belakang
                         if (_this.isUploading) return;
-
+                        
                         // wireComponent.set(wireModelName, editor.getHTML(), false)
                         wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
                     },
@@ -757,6 +784,38 @@ document.addEventListener('alpine:init', () => {
                     }
                 });
 
+                Alpine.effect(() => {
+                    const loading = _this.isUploading;
+                    const editorElement = _this.$refs.editorElement;
+                    
+                    if (editorElement) {
+                        // Toggle class untuk CSS
+                        editorElement.classList.toggle('tiptap-locked', loading);
+                        
+                        // 🌟 PAKSA INLINE STYLE AGAR MENANG MELAWAN SEMUA CSS
+                        if (loading) {
+                            editorElement.style.setProperty('cursor', 'wait', 'important');
+                        } else {
+                            editorElement.style.removeProperty('cursor');
+                        }
+                    }
+                });
+
+                // Gunakan fungsi penangkap (Capture Phase)
+                const blockEvent = (event) => {
+                    if (_this.isUploading) {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                        return false;
+                    }
+                };
+
+                // Pasang listener di level DOM elemen editor dengan capture: true
+                editorElement.addEventListener('paste', blockEvent, true);
+                editorElement.addEventListener('keydown', blockEvent, true);
+                editorElement.addEventListener('drop', blockEvent, true); // Tambahan untuk drop
+
+                //this is old lines
                 this.$watch(`$wire.${wireModelName}`, (newContent) => {
                     // Cukup cek fokus dan kesamaan konten, jangan kunci dengan isUploading lagi
                     if (!window.tiptapEditor || window.tiptapEditor.isFocused || newContent === window.tiptapEditor.getHTML()) return
@@ -765,43 +824,51 @@ document.addEventListener('alpine:init', () => {
 
             },
 
+            // 1. Pintu Masuk File
             handleMultipleImageUpload(files) {
-                const _this = this;
+                if (files.length === 0) return;
 
-                // 💡 KUNCI PENYEMBUH: Paksa matikan overlay dragging saat file resmi mendarat (drop)
+                const wasUploading = this.isUploading;
+                this.isUploading = true; 
+                this.isLocalDrag = false;
+
                 if (typeof this.isDragging !== 'undefined') {
                     this.isDragging = false;
                 }
-                // Jika Anda menggunakan variabel pendukung lain di Alpine untuk overlay, matikan juga di sini:
-                // _this.isLocalDrag = false;
 
-                // Daftar MIME Type gambar yang sah
                 const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-
-                let hasInvalidFile = false;
-                let invalidFileNames = [];
+                const MAX_SIZE_MB = 15;
+                let errorMessages = [];
 
                 Array.from(files).forEach(file => {
-                    if (allowedTypes.includes(file.type)) {
-                        _this.uploadQueue.push(file);
+                    const isTooBig = file.size > MAX_SIZE_MB * 1024 * 1024;
+                    const isInvalidType = !allowedTypes.includes(file.type);
+
+                    if (isInvalidType) {
+                        errorMessages.push(`Format ${file.name} tidak didukung.`);
+                    } else if (isTooBig) {
+                        errorMessages.push(`${file.name} terlalu besar (>15MB).`);
                     } else {
-                        hasInvalidFile = true;
-                        invalidFileNames.push(file.name);
+                        this.uploadQueue.push(file);
                     }
                 });
 
-                if (hasInvalidFile) {
-                    alert(`⚠️ Format Berkas Tidak Didukung!\n\nEditor ini hanya menerima media gambar (JPG, PNG, WebP, GIF).\n\nBerkas berikut otomatis ditolak:\n- ${invalidFileNames.join('\n- ')}`);
+                if (errorMessages.length > 0) {
+                    window.dispatchEvent(new CustomEvent('tampilkan-error', { 
+                        detail: errorMessages.join(' | ') 
+                    }));
                 }
 
-                if (_this.uploadQueue.length > 0 && !_this.isUploading) {
-                    _this.processNextInQueue();
+                if (this.uploadQueue.length > 0 && !wasUploading) {
+                    this.processNextInQueue();
+                } else if (this.uploadQueue.length === 0) {
+                    this.isUploading = false;
                 }
             },
 
+            // 2. Mesin Antrean
             async processNextInQueue() {
-                const _this = this;
-
+                // 🔑 KUNCI PENYELAMAT: isUploading hanya boleh dimatikan di sini
                 if (this.uploadQueue.length === 0) {
                     this.isUploading = false;
                     if (window.tiptapEditor) {
@@ -814,229 +881,187 @@ document.addEventListener('alpine:init', () => {
                 this.isUploading = true;
                 const originalFile = this.uploadQueue.shift();
 
-                if (originalFile.type === 'image/gif') {
-                    _this.executeLivewireUpload(originalFile, _this);
-                    return;
-                }
-
-                const convertToWebp = (file) => {
-                    return new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.readAsDataURL(file);
-                        reader.onload = (event) => {
-                            const img = new window.Image();
-                            img.src = event.target.result;
-                            img.onload = () => {
-                                const canvas = document.createElement('canvas');
-
-                                // 🌟 KUNCI 2: Gunakan naturalWidth (resolusi asli file), BUKAN width tampilan CSS
-                                let width = img.naturalWidth || img.width;
-                                let height = img.naturalHeight || img.height;
-
-                                // Longgarkan batas maksimal gambar menjadi resolusi Full HD
-                                if (width > 1920) {
-                                    height = Math.round((height * 1920) / width);
-                                    width = 1920;
-                                }
-
-                                canvas.width = width;
-                                canvas.height = height;
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(img, 0, 0, width, height);
-
-                                // 🌟 KUNCI 3: Naikkan kualitas WebP ke 0.90 agar teks tidak buram
-                                canvas.toBlob((blob) => {
-                                    const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
-                                    const compressedFile = new File([blob], newFileName, {
-                                        type: "image/webp",
-                                        lastModified: Date.now()
-                                    });
-                                    resolve(compressedFile);
-                                }, "image/webp", 0.90);
-                            };
-                        };
-                    });
-                };
-
                 try {
-                    const webpFile = await convertToWebp(originalFile);
-
-                    // 🌟 KUNCI PENYELESAIAN: Pindahkan token dari file asli ke file WebP baru
-                    if (originalFile.targetToken) {
-                        webpFile.targetToken = originalFile.targetToken;
+                    let finalFile;
+                    
+                    // 🌟 PERBAIKAN GIF: Biarkan GIF lewat apa adanya! 
+                    // Jangan ubah namanya jadi .webp di sini, agar backend Livewire Anda 
+                    // (yang mengecek if $extension === 'gif') bisa menjalankan Imagick.
+                    if (originalFile.type === 'image/gif') {
+                        finalFile = originalFile;
+                    } else {
+                        finalFile = await this.convertToWebp(originalFile);
                     }
 
-                    _this.executeLivewireUpload(webpFile, _this);
+                    if (originalFile.targetToken) {
+                        finalFile.targetToken = originalFile.targetToken;
+                    }
+
+                    this.executeLivewireUpload(finalFile);
                 } catch (compressError) {
-                    console.error('[WebP Compressor] Gagal kompresi:', compressError);
-                    _this.executeLivewireUpload(originalFile, _this);
+                    console.error('[Processor Error]', compressError);
+                    this.executeLivewireUpload(originalFile);
                 }
 
+                // try {
+                //     let finalFile;
+                    
+                //     // Alur khusus GIF agar tidak kehilangan animasi
+                //     if (originalFile.type === 'image/gif') {
+                //         finalFile = await this.optimizeGif(originalFile);
+                //     } else {
+                //         finalFile = await this.convertToWebp(originalFile);
+                //     }
+
+                //     if (originalFile.targetToken) {
+                //         finalFile.targetToken = originalFile.targetToken;
+                //     }
+
+                //     this.executeLivewireUpload(finalFile);
+                // } catch (compressError) {
+                //     console.error('[Processor Error] Gagal optimasi:', compressError);
+                //     this.executeLivewireUpload(originalFile);
+                // }
             },
 
-
-            // 🟢 SOLUSI 2: Perbaikan executeLivewireUpload dengan Sinkronisasi Posisi
-
-            executeLivewireUpload(targetFile, _this) {
-                const editorWrapper = document.querySelector('[x-data*="setupEditor"]');
-                const alpineData = editorWrapper && window.Alpine ? window.Alpine.$data(editorWrapper) : _this;
-
-                wireComponent.upload('photo', targetFile, async (uploadedUrl) => {
-                    try {
-                        const finalUrl = await wireComponent.uploadImage();
-
-                        if (finalUrl && window.tiptapEditor) {
-
-                            // Helper: Timpa langsung gambar dummy di tempat dengan gambar asli
-                            const replaceImageNode = (pos) => {
-                                window.tiptapEditor.chain()
-                                    .focus()
-                                    .setNodeSelection(pos) // Kunci target ke node dummy
-                                    .deleteSelection()     // 🧹 HAPUS dummy-nya secara eksplisit
-                                    .insertContent({       // 📥 Masukkan gambar asli tepat di posisi kursor kosong tersebut
-                                        type: 'image',
-                                        attrs: {
-                                            src: finalUrl,
-                                            alt: targetFile.name,
-                                            title: targetFile.name,
-                                            style: 'width: 25%; display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;',
-                                            class: 'rounded-lg max-w-full my-2 transition-all cursor-pointer tiptap-uploaded-image inline-block'
-                                        }
-                                    })
-                                    .run();
-                            };
-
-                            const fallbackInsert = () => {
-                                window.tiptapEditor.commands.focus();
-                                window.tiptapEditor.chain()
-                                    .insertContent({
-                                        type: 'image',
-                                        attrs: {
-                                            src: finalUrl,
-                                            alt: targetFile.name,
-                                            title: targetFile.name,
-                                            style: 'width: 25%; display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;',
-                                            class: 'rounded-lg max-w-full my-2 transition-all cursor-pointer tiptap-uploaded-image inline-block'
-                                        }
-                                    })
-                                    .insertContent('<p></p>')
-                                    .run();
-                            };
-
-                            if (targetFile.targetToken) {
-                                // Cari token berdasarkan atribut 'title'
-                                const findToken = () => {
-                                    let foundPos = null;
-                                    window.tiptapEditor.state.doc.descendants((node, pos) => {
-                                        if (node.type.name === 'image' && node.attrs.title === targetFile.targetToken) {
-                                            foundPos = pos;
-                                            return false; // Ditemukan! Berhenti mencari.
-                                        }
-                                    });
-                                    return foundPos;
-                                };
-
-                                let actualPos = findToken();
-
-                                // Loop tunggu (maksimal 1.5 detik) jika TipTap belum selesai render HTML
-                                if (actualPos === null) {
-                                    let retries = 0;
-                                    const interval = setInterval(() => {
-                                        actualPos = findToken();
-                                        if (actualPos !== null) {
-                                            clearInterval(interval);
-                                            replaceImageNode(actualPos);
-                                        }
-
-                                        retries++;
-                                        if (retries > 15) {
-                                            clearInterval(interval);
-                                            fallbackInsert();
-                                        }
-                                    }, 100);
-                                } else {
-                                    replaceImageNode(actualPos);
-                                }
-                            } else {
-                                window.tiptapEditor.chain().deleteSelection().run();
-                                fallbackInsert();
+            // 3. Eksekusi Livewire
+            executeLivewireUpload(targetFile) {
+                if (!navigator.onLine) {
+                    window.dispatchEvent(new CustomEvent('tampilkan-error', { 
+                        detail: "Koneksi internet terputus! Silakan periksa jaringan Anda." 
+                    }));
+                    this.removeDummyImage(targetFile.targetToken);
+                    this.processNextInQueue();
+                    return;
+                }
+                
+                wireComponent.upload('photo', targetFile, 
+                    async (uploadedUrl) => {
+                        try {
+                            const finalUrl = await wireComponent.uploadImage();
+                            if (finalUrl && window.tiptapEditor) {
+                                this.replaceDummyWithImage(targetFile.targetToken, finalUrl, targetFile.name);
                             }
+                        } catch (error) {
+                            console.error('[Upload Error]', error);
+                            this.removeDummyImage(targetFile.targetToken);
+                        } finally {
+                            // 🔑 Lanjut ke antrean berikutnya apa pun yang terjadi
+                            this.processNextInQueue();
                         }
-                    } catch (error) {
-                        console.error('[Upload Error]', error);
-                    } finally {
-                        if (alpineData) alpineData.processNextInQueue();
+                    }, 
+                    (error) => {
+                        console.error('[Livewire Error]', error);
+                        window.dispatchEvent(new CustomEvent('tampilkan-error', { 
+                            detail: `Gagal mengunggah ${targetFile.name}. Periksa koneksi internet Anda.` 
+                        }));
+                        this.removeDummyImage(targetFile.targetToken);
+                        
+                        // 🔑 Lanjut ke antrean berikutnya apa pun yang terjadi
+                        this.processNextInQueue();
                     }
-                }, (error) => {
-                    console.error('[Livewire Error]', error);
-                    if (alpineData) alpineData.processNextInQueue();
+                );
+            },
+
+            // 4. Helper Pemrosesan & Pembersihan
+            removeDummyImage(token) {
+                if (!token || !window.tiptapEditor) return;
+                window.tiptapEditor.state.doc.descendants((node, pos) => {
+                    if (node.type.name === 'image' && node.attrs.title === token) {
+                        window.tiptapEditor.chain().setNodeSelection(pos).deleteSelection().run();
+                        return false;
+                    }
                 });
             },
 
-            // executeLivewireUpload(targetFile, _this) {
-            //     const editorWrapper = document.querySelector('[x-data*="setupEditor"]');
-            //     const alpineData = editorWrapper && window.Alpine ? window.Alpine.$data(editorWrapper) : _this;
+            replaceDummyWithImage(token, finalUrl, fileName) {
+                const insertCommand = {
+                    type: 'image',
+                    attrs: {
+                        src: finalUrl, alt: fileName, title: fileName,
+                        style: 'width: 25%; display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;',
+                        class: 'rounded-lg max-w-full my-2 transition-all cursor-pointer tiptap-uploaded-image inline-block'
+                    }
+                };
 
-            //     wireComponent.upload('photo', targetFile, async (uploadedUrl) => {
-            //         try {
-            //             const finalUrl = await wireComponent.uploadImage();
+                // 🌟 PERBAIKAN DRAG & DROP: 
+                // Jika tidak ada token (berarti dari drag/drop/tombol), langsung sisipkan di kursor!
+                if (!token) {
+                    window.tiptapEditor.chain().focus().insertContent(insertCommand).run();
+                    return;
+                }
 
-            //             if (finalUrl && window.tiptapEditor) {
-            //                 let penandaKetemu = false;
+                // Logika khusus untuk Paste (karena ada token dummy)
+                const findToken = () => {
+                    let foundPos = null;
+                    window.tiptapEditor.state.doc.descendants((node, pos) => {
+                        if (node.type.name === 'image' && node.attrs.title === token) {
+                            foundPos = pos; return false;
+                        }
+                    });
+                    return foundPos;
+                };
 
-            //                 if (targetFile.targetToken) {
-            //                     // 🌟 PINDAI DENGAN DATA-TOKEN KUSTOM: Pasti ketemu karena node tidak di-drop oleh TipTap
-            //                     window.tiptapEditor.state.doc.descendants((node, pos) => {
-            //                         if (node.type.name === 'image' && node.attrs['data-token'] === targetFile.targetToken) {
+                let actualPos = findToken();
+                if (actualPos !== null) {
+                    window.tiptapEditor.chain().focus().setNodeSelection(actualPos).deleteSelection().insertContent(insertCommand).run();
+                } else {
+                    // Fallback jika Tiptap lambat merender dummy
+                    let retries = 0;
+                    const interval = setInterval(() => {
+                        actualPos = findToken();
+                        if (actualPos !== null) {
+                            clearInterval(interval);
+                            window.tiptapEditor.chain().focus().setNodeSelection(actualPos).deleteSelection().insertContent(insertCommand).run();
+                        } else if (retries > 10) {
+                            clearInterval(interval);
+                            // Jika dummy benar-benar hilang/terhapus user, tetap sisipkan gambarnya
+                            window.tiptapEditor.chain().focus().insertContent(insertCommand).run();
+                        }
+                        retries++;
+                    }, 150);
+                }
+            },
 
-            //                             window.tiptapEditor.chain()
-            //                                 .focus()
-            //                                 .setNodeSelection(pos) // Kunci posisi aslinya di tengah teks dokumen
-            //                                 .updateAttributes('image', {
-            //                                     src: finalUrl,
-            //                                     alt: targetFile.name,
-            //                                     title: targetFile.name,
-            //                                     'data-token': null, // Bersihkan token karena upload selesai
-            //                                     style: 'width: 25%; display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;',
-            //                                     class: 'rounded-lg max-w-full my-2 transition-all cursor-pointer tiptap-uploaded-image inline-block'
-            //                                 })
-            //                                 .run();
+            convertToWebp(file) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    
+                    reader.onload = (event) => {
+                        const img = new window.Image();
+                        img.src = event.target.result;
+                        
+                        img.onload = () => {
+                            let width = img.naturalWidth || img.width;
+                            let height = img.naturalHeight || img.height;
 
-            //                             penandaKetemu = true;
-            //                             return false;
-            //                         }
-            //                     });
-            //                 }
+                            if (!width || !height) return resolve(file);
 
-            //                 if (!penandaKetemu) {
-            //                     window.tiptapEditor.commands.focus();
-            //                     window.tiptapEditor.chain()
-            //                         .deleteSelection()
-            //                         .insertContent({
-            //                             type: 'image',
-            //                             attrs: {
-            //                                 src: finalUrl,
-            //                                 alt: targetFile.name,
-            //                                 title: targetFile.name,
-            //                                 style: 'width: 25%; display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;',
-            //                                 class: 'rounded-lg max-w-full my-2 transition-all cursor-pointer tiptap-uploaded-image inline-block'
-            //                             }
-            //                         })
-            //                         .insertContent('<p></p>')
-            //                         .run();
-            //                 }
-            //             }
-            //         } catch (error) {
-            //             console.error('[Upload Error] Gagal memproses gambar di backend:', error);
-            //         } {
-            //             if (alpineData) alpineData.processNextInQueue();
-            //         }
-            //     }, (error) => {
-            //         console.error('[Livewire Error] Gagal upload temporary ke Livewire:', error);
-            //         if (alpineData) alpineData.processNextInQueue();
-            //     });
-            // },
+                            const MAX_DIMENSION = 1920;
+                            if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                                const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+                                width = Math.round(width * ratio);
+                                height = Math.round(height * ratio);
+                            }
 
+                            const canvas = document.createElement('canvas');
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            canvas.toBlob((blob) => {
+                                if (!blob || blob.size === 0) return resolve(file);
+                                const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+                                resolve(new File([blob], newFileName, { type: "image/webp", lastModified: Date.now() }));
+                            }, "image/webp", 0.90);
+                        };
+                        img.onerror = () => resolve(file);
+                    };
+                });
+            },
+            
             triggerFileSelect() { this.$refs.fileInput.click() },
 
             insertMediaPlaceholder() {
@@ -1170,13 +1195,14 @@ document.addEventListener('alpine:init', () => {
             },
 
             runCommand(command, args = null) {
-                if (!window.tiptapEditor) return
+                if (this.shouldDisable()) return;
+                if (!window.tiptapEditor) return;
                 if (args !== null) {
                     window.tiptapEditor.chain().focus()[command](args).run()
                 } else {
                     window.tiptapEditor.chain().focus()[command]().run()
                 }
-                this.updatedAt = Date.now()
+                this.updatedAt = Date.now();
             },
             openLinkModal() {
                 if (!window.tiptapEditor) return;
@@ -1369,6 +1395,7 @@ document.addEventListener('alpine:init', () => {
                 if (!editor) return;
 
                 // Masukkan langsung ke posisi kursor aktif saat ini (karena kursor tidak lagi dipaksa melompat)
+                this.toggleUploadState(false); //enable tombol lagi
                 editor.chain().focus().setImage({ src: cloudUrl }).run();
             }
         }
