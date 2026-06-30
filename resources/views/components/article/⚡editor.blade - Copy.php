@@ -283,91 +283,49 @@ new class extends Component {
             {{-- 📝 JUDUL & PENGATURAN DOKUMEN (HYBRID LAYOUT)                             --}}
             {{-- ========================================================================= --}}
             <div x-data="{
-                    isMetaOpen: false,
-                    title: @entangle('title'),
-                    categoryId: @entangle('category_id'),
-                    selectedTags: @entangle('tags'),
-                    publishedAt: @entangle('published_at'),
-                }"
-                class="shrink-0 relative mb-2 md:mb-4 z-20">
+                            isMetaOpen: false,
+                            title:title,
+                            categoryId: category_id,
+                            tagidContainer: tags,
+                            publishedAt: published_at,
+                        }"
+                class="shrink-0 relative mb-2 md:mb-4">
 
-                {{-- ================== TAMPILAN UTAMA (DESKTOP) ================== --}}
+                {{-- TAMPILAN UTAMA --}}
                 <div class="p-2 md:p-0">
                     <div class="mt-2 flex items-center justify-between md:hidden">
+                        <input type="text" wire:model="title" placeholder="Judul Artikel..." class="w-full p-1.5 text-2xl md:text-3xl font-bold border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 pb-2 dark:bg-transparent" />
                         <button @click="isMetaOpen = true" type="button"
                             class="text-xs font-medium text-zinc-500 hover:text-forest dark:text-zinc-400 flex items-center gap-1.5 p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
-                            <span>⚙️ Judul dan Meta data</span>
+                            <span>⚙️ Pengaturan Dokumen (Tanggal & Tags)</span>
                         </button>
                     </div>
-                    <div class="hidden md:flex flex-col items-center gap-4 mt-4 z-50">
-                        <input type="text" x-model="title" placeholder="Judul Artikel..." class="w-full p-1.5 text-2xl md:text-3xl font-bold border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 pb-2 dark:bg-transparent" />
-                        <div class="hidden w-full md:flex flex-row items-center gap-4 mt-4">
-                            {{-- Tanggal Publikasi Desktop --}}
-                            <input type="date" x-model="publishedAt"
-                                class="w-full p-1.5 text-sm border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 dark:bg-transparent md:w-1/3" />
 
-                            {{-- Kategori (Desktop) --}}
-                            <div class="w-full md:w-1/3" wire:ignore
-                                x-data="{
-                                    tom: null,
-                                    init() {
-                                        this.tom = new window.TomSelect(this.$refs.catDesktop, {
-                                            create: false,
-                                            placeholder: 'Pilih Kategori...'
-                                        });
-                                        // 1. Set nilai awal dari Livewire
-                                        this.tom.setValue(this.categoryId, true);
-                                        // 2. Saat user memilih, update state Alpine
-                                        this.tom.on('change', val => this.categoryId = val);
-                                        // 3. Sinkronisasi jika state Alpine berubah (misal diubah dari Mobile)
-                                        this.$watch('categoryId', val => {
-                                            if (this.tom.getValue() !== val) this.tom.setValue(val, true);
-                                        });
-                                    }
-                                }">
-                                <select x-ref="catDesktop" class="text-sm">
-                                    <option value="">Pilih Kategori...</option>
-                                    @foreach(\App\Models\Category::all() as $cat)
-                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            {{-- Tags (Desktop) --}}
-                            <div class="w-full md:w-1/3" wire:ignore
-                                x-data="{
-                                    tom: null,
-                                    init() {
-                                        this.tom = new window.TomSelect(this.$refs.tagDesktop, {
-                                            create: true,
-                                            plugins: ['remove_button'],
-                                            placeholder: 'Ketik atau Cari Tags...'
-                                        });
-                                        this.tom.setValue(this.selectedTags, true);
-                                        this.tom.on('change', val => this.selectedTags = val);
-                                        this.$watch('selectedTags', val => {
-                                            // Karena val adalah array, kita gunakan JSON.stringify untuk perbandingan
-                                            if (JSON.stringify(this.tom.getValue()) !== JSON.stringify(val)) this.tom.setValue(val, true);
-                                        });
-                                    }
-                                }">
-                                <select x-ref="tagDesktop" multiple class="text-sm">
-                                    @foreach(\App\Models\Tag::all() as $tag)
-                                        <option value="{{ $tag->name }}">{{ $tag->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
+                    <div class="hidden md:flex flex-row items-center gap-4 mt-4">
+                        <input type="date" wire:model="published_at"
+                            class="w-full p-1.5 text-sm border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 dark:bg-transparent md:w-1/2" />
+                        <input type="text" placeholder="Tags (pisahkan dengan koma)"
+                            class="w-full p-1.5 text-sm border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 dark:bg-transparent md:w-1/2" />
                     </div>
-
                 </div>
 
 
-                {{-- ================== LAYOUT BOTTOM SHEET (MOBILE) ================== --}}
-                <div x-show="isMetaOpen" class="flex md:hidden fixed inset-0 z-999 items-end justify-center" style="display: none;">
+                {{-- ========================================================================= --}}
+                {{-- 📱 LAYOUT BOTTOM SHEET MATA-DATA: KHUSUS MOBILE (md:hidden)               --}}
+                {{-- ========================================================================= --}}
+                <div x-show="isMetaOpen"
+                    class="flex md:hidden fixed inset-0 z-999 items-end justify-center"
+                    style="display: none;">
 
                     {{-- Animasi Overlay --}}
-                    <div x-show="isMetaOpen" x-transition.opacity class="fixed inset-0 bg-black/60 backdrop-blur-xs" @click="isMetaOpen = false"></div>
+                    <div x-show="isMetaOpen"
+                        x-transition:enter="transition-opacity ease-out duration-300"
+                        x-transition:enter-start="opacity-0"
+                        x-transition:enter-end="opacity-100"
+                        x-transition:leave="transition-opacity ease-in duration-300"
+                        x-transition:leave-start="opacity-100"
+                        x-transition:leave-end="opacity-0"
+                        class="fixed inset-0 bg-black/60 backdrop-blur-xs" @click="isMetaOpen = false"></div>
 
                     {{-- Laci Bottom Sheet Meluncur --}}
                     <div x-show="isMetaOpen"
@@ -379,70 +337,27 @@ new class extends Component {
                         x-transition:leave-end="translate-y-full"
                         class="bg-white dark:bg-gray-900 w-full rounded-t-2xl max-h-[80vh] flex flex-col z-10 overflow-hidden shadow-2xl relative">
 
+                        {{-- Handle Drag (Indikator visual) --}}
                         <div class="w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-3" @click="isMetaOpen = false"></div>
 
                         {{-- Konten Input Modal --}}
                         <div class="p-4 overflow-y-auto space-y-4 bg-gray-50 dark:bg-gray-950 flex-1">
                             <h4 class="text-xs font-bold text-zinc-400 dark:text-zinc-500 mb-2 tracking-wide uppercase">Detail Dokumen</h4>
-                            <input type="text" x-model="title" placeholder="Judul Artikel..." class="w-full p-1.5 text-2xl md:text-3xl font-bold border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 pb-2 dark:bg-transparent" />
-                            {{-- Input Tanggal --}}
+
                             <div class="space-y-1">
                                 <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tanggal Publikasi</label>
-                                <input type="date" x-model="publishedAt"
+                                <input type="date" wire:model="published_at"
                                     class="w-full p-2.5 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-forest/20 focus:border-forest" />
                             </div>
 
-                            {{-- Kategori (Mobile) --}}
-                            <div class="space-y-1" wire:ignore
-                                x-data="{
-                                    tom: null,
-                                    init() {
-                                        this.tom = new window.TomSelect(this.$refs.catMobile, {
-                                            create: false,
-                                            placeholder: 'Pilih Kategori...'
-                                        });
-                                        this.tom.setValue(this.categoryId, true);
-                                        this.tom.on('change', val => this.categoryId = val);
-                                        this.$watch('categoryId', val => {
-                                            if (this.tom.getValue() !== val) this.tom.setValue(val, true);
-                                        });
-                                    }
-                                }">
-                                <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Kategori</label>
-                                <select x-ref="catMobile">
-                                    <option value="">Pilih Kategori...</option>
-                                    @foreach(\App\Models\Category::all() as $cat)
-                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            {{-- Tags (Mobile) --}}
-                            <div class="space-y-1" wire:ignore
-                                x-data="{
-                                    tom: null,
-                                    init() {
-                                        this.tom = new window.TomSelect(this.$refs.tagMobile, {
-                                            create: true,
-                                            plugins: ['remove_button'],
-                                            placeholder: 'Ketik atau Cari Tags...'
-                                        });
-                                        this.tom.setValue(this.selectedTags, true);
-                                        this.tom.on('change', val => this.selectedTags = val);
-                                        this.$watch('selectedTags', val => {
-                                            if (JSON.stringify(this.tom.getValue()) !== JSON.stringify(val)) this.tom.setValue(val, true);
-                                        });
-                                    }
-                                }">
+                            <div class="space-y-1">
                                 <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tags</label>
-                                <select x-ref="tagMobile" multiple>
-                                    @foreach(\App\Models\Tag::all() as $tag)
-                                        <option value="{{ $tag->name }}">{{ $tag->name }}</option>
-                                    @endforeach
-                                </select>
+                                <input type="text" placeholder="Kategori (pisahkan dengan koma)"
+                                    class="w-full p-2.5 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-forest/20 focus:border-forest" />
                             </div>
                         </div>
 
+                        {{-- Tombol Tutup --}}
                         <div class="p-4 bg-white dark:bg-gray-900 border-t border-zinc-100 dark:border-zinc-800 shadow-inner">
                             <button type="button" @click="isMetaOpen = false" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-xs font-bold text-center transition-colors cursor-pointer shadow-sm">
                                 Selesai

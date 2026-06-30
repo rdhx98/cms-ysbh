@@ -25,5 +25,6 @@
     </div>
 
     {{-- @livewireScripts --}}
+    <x-layouts::app.floating-notifications mobileTop="top-16" />
 </body>
 </html>

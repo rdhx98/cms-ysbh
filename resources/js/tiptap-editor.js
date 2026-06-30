@@ -107,9 +107,9 @@ const HiddenMarks = Extension.create({
                 .tiptap-invisible-space {
                     /* Menggambar titik bulat vektor langsung di background spasi */
                     background-image: radial-gradient(circle, #a1a1aa 1.25px, transparent 1.5px) !important;
-                    
+
                     /* Mengunci posisi gambar persis di tengah secara horizontal, dan 55% secara vertikal */
-                    background-position: center 55% !important; 
+                    background-position: center 55% !important;
                     background-repeat: no-repeat !important;
                 }
 
@@ -169,7 +169,7 @@ const HiddenMarks = Extension.create({
                         const { doc } = state;
 
                         doc.descendants((node, pos) => {
-                           
+
                             // 1. PERBAIKAN PARAGRAF (¶) - DIKUNCI AGAR TIDAK TURUN
                             if (node.type.name === 'paragraph') {
                                 const endPos = pos + node.nodeSize - 1;
@@ -315,13 +315,13 @@ const ParagraphIndent = Extension.create({
                 // Cek apakah kursor berada tepat di titik paling awal (offset 0) dari sebuah paragraf
                 if ($anchor.parentOffset === 0 && this.editor.isActive('paragraph')) {
                     const isIndented = this.editor.getAttributes('paragraph').indent;
-                    
+
                     // Jika paragraf tersebut memiliki indentasi, hapus indentasinya saja
                     if (isIndented) {
                         return this.editor.commands.unsetIndent();
                     }
                 }
-                
+
                 // Jika tidak ada indentasi, biarkan backspace bekerja normal (menghapus paragraf)
                 return false;
             },
@@ -391,8 +391,8 @@ document.addEventListener('alpine:init', () => {
                 const initialContent = wireComponent.get(wireModelName) || '';
 
                 window.addEventListener('offline', () => {
-                    window.dispatchEvent(new CustomEvent('tampilkan-error', { 
-                        detail: "Koneksi internet terputus. Mohon periksa jaringan Anda!" 
+                    window.dispatchEvent(new CustomEvent('tampilkan-error', {
+                        detail: "Koneksi internet terputus. Mohon periksa jaringan Anda!"
                     }));
                 });
 
@@ -768,35 +768,35 @@ document.addEventListener('alpine:init', () => {
 
                     onUpdate({ editor }) {
                         _this.updatedAt = Date.now();
-                        
+
                         const text = editor.getText();
                         _this.wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-                        
+
                         if (_this.isUploading) return;
-                        
+
                         // 🌟 2. PERBAIKAN PERFORMA: Debounce sinkronisasi
                         // Bersihkan antrean waktu sebelumnya jika user masih mengetik
                         clearTimeout(_this.syncTimeout);
-                        
+
                         // Tunggu 500 milidetik setelah user berhenti mengetik, baru kirim HTML ke Livewire
                         _this.syncTimeout = setTimeout(() => {
                             if (window.tiptapEditor) {
                                 wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
                             }
-                        }, 500); 
+                        }, 500);
                     },
                     // onUpdate({ editor }) {
                     //     _this.updatedAt = Date.now()
 
-                        
+
                     //     // 🌟 LOGIKA PENGHITUNG KATA 🌟
                     //     // Mengambil teks murni, menghapus spasi ekstra, lalu menghitung array kata
                     //     const text = editor.getText();
                     //     _this.wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-                        
+
                     //     // JANGAN kirim data ke Livewire jika sedang ada proses upload gambar di latar belakang
                     //     if (_this.isUploading) return;
-                        
+
                     //     // wireComponent.set(wireModelName, editor.getHTML(), false)
                     //     wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
                     // },
@@ -808,11 +808,11 @@ document.addEventListener('alpine:init', () => {
                 Alpine.effect(() => {
                     const loading = _this.isUploading;
                     const editorElement = _this.$refs.editorElement;
-                    
+
                     if (editorElement) {
                         // Toggle class untuk CSS
                         editorElement.classList.toggle('tiptap-locked', loading);
-                        
+
                         // 🌟 PAKSA INLINE STYLE AGAR MENANG MELAWAN SEMUA CSS
                         if (loading) {
                             editorElement.style.setProperty('cursor', 'wait', 'important');
@@ -870,7 +870,7 @@ document.addEventListener('alpine:init', () => {
                 if (files.length === 0) return;
 
                 const wasUploading = this.isUploading;
-                this.isUploading = true; 
+                this.isUploading = true;
                 this.isLocalDrag = false;
 
                 if (typeof this.isDragging !== 'undefined') {
@@ -895,8 +895,8 @@ document.addEventListener('alpine:init', () => {
                 });
 
                 if (errorMessages.length > 0) {
-                    window.dispatchEvent(new CustomEvent('tampilkan-error', { 
-                        detail: errorMessages.join(' | ') 
+                    window.dispatchEvent(new CustomEvent('tampilkan-error', {
+                        detail: errorMessages.join(' | ')
                     }));
                 }
 
@@ -924,9 +924,9 @@ document.addEventListener('alpine:init', () => {
 
                 try {
                     let finalFile;
-                    
-                    // 🌟 PERBAIKAN GIF: Biarkan GIF lewat apa adanya! 
-                    // Jangan ubah namanya jadi .webp di sini, agar backend Livewire Anda 
+
+                    // 🌟 PERBAIKAN GIF: Biarkan GIF lewat apa adanya!
+                    // Jangan ubah namanya jadi .webp di sini, agar backend Livewire Anda
                     // (yang mengecek if $extension === 'gif') bisa menjalankan Imagick.
                     if (originalFile.type === 'image/gif') {
                         finalFile = originalFile;
@@ -948,15 +948,15 @@ document.addEventListener('alpine:init', () => {
             // 3. Eksekusi Livewire
             executeLivewireUpload(targetFile) {
                 if (!navigator.onLine) {
-                    window.dispatchEvent(new CustomEvent('tampilkan-error', { 
-                        detail: "Koneksi internet terputus! Silakan periksa jaringan Anda." 
+                    window.dispatchEvent(new CustomEvent('tampilkan-error', {
+                        detail: "Koneksi internet terputus! Silakan periksa jaringan Anda."
                     }));
                     this.removeDummyImage(targetFile.targetToken);
                     this.processNextInQueue();
                     return;
                 }
-                
-                wireComponent.upload('photo', targetFile, 
+
+                wireComponent.upload('photo', targetFile,
                     async (uploadedUrl) => {
                         try {
                             const finalUrl = await wireComponent.uploadImage();
@@ -970,14 +970,14 @@ document.addEventListener('alpine:init', () => {
                             // 🔑 Lanjut ke antrean berikutnya apa pun yang terjadi
                             this.processNextInQueue();
                         }
-                    }, 
+                    },
                     (error) => {
                         console.error('[Livewire Error]', error);
-                        window.dispatchEvent(new CustomEvent('tampilkan-error', { 
-                            detail: `Gagal mengunggah ${targetFile.name}. Periksa koneksi internet Anda.` 
+                        window.dispatchEvent(new CustomEvent('tampilkan-error', {
+                            detail: `Gagal mengunggah ${targetFile.name}. Periksa koneksi internet Anda.`
                         }));
                         this.removeDummyImage(targetFile.targetToken);
-                        
+
                         // 🔑 Lanjut ke antrean berikutnya apa pun yang terjadi
                         this.processNextInQueue();
                     }
@@ -1005,7 +1005,7 @@ document.addEventListener('alpine:init', () => {
                     }
                 };
 
-                // 🌟 PERBAIKAN DRAG & DROP: 
+                // 🌟 PERBAIKAN DRAG & DROP:
                 // Jika tidak ada token (berarti dari drag/drop/tombol), langsung sisipkan di kursor!
                 if (!token) {
                     window.tiptapEditor.chain().focus().insertContent(insertCommand).run();
@@ -1048,11 +1048,11 @@ document.addEventListener('alpine:init', () => {
                 return new Promise((resolve) => {
                     const reader = new FileReader();
                     reader.readAsDataURL(file);
-                    
+
                     reader.onload = (event) => {
                         const img = new window.Image();
                         img.src = event.target.result;
-                        
+
                         img.onload = () => {
                             let width = img.naturalWidth || img.width;
                             let height = img.naturalHeight || img.height;
@@ -1082,7 +1082,7 @@ document.addEventListener('alpine:init', () => {
                     };
                 });
             },
-            
+
             triggerFileSelect() { this.$refs.fileInput.click() },
 
             insertMediaPlaceholder() {
@@ -1244,6 +1244,7 @@ document.addEventListener('alpine:init', () => {
                     this.linkInputUrl = '';
                 }
             },
+
 
             submitLink() {
                 if (!window.tiptapEditor) return;
@@ -1418,6 +1419,17 @@ document.addEventListener('alpine:init', () => {
                 // Masukkan langsung ke posisi kursor aktif saat ini (karena kursor tidak lagi dipaksa melompat)
                 this.toggleUploadState(false); //enable tombol lagi
                 editor.chain().focus().setImage({ src: cloudUrl }).run();
+            },
+
+            notifyTheUser(message, type) {
+                console.log('faggotron released', message, type);
+                // error, success, warning, info
+                window.dispatchEvent(new CustomEvent('tampilkan-notifikasi', {
+                    detail: {
+                        message: message || 'Faggotron 2000',
+                        type: type || 'success'
+                    }
+                }));
             }
         }
     }

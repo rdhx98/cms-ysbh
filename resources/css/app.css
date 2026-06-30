@@ -222,23 +222,23 @@
 /* ==========================================================================
    NORMALISASI HEADING DARI TAILWIND TYPOGRAPHY
    ========================================================================== */
-.tiptap h1, 
-.tiptap h2, 
+.tiptap h1,
+.tiptap h2,
 .tiptap h3 {
     color: inherit !important;
     font-weight: 700 !important;
 }
 
 .tiptap h1 {
-    font-size: 2rem !important;          
-    margin-top: 1.75rem !important;      
-    margin-bottom: 0.5rem !important;    
+    font-size: 2rem !important;
+    margin-top: 1.75rem !important;
+    margin-bottom: 0.5rem !important;
     line-height: 1.25 !important;
 }
 
 .tiptap h2 {
     font-size: 1.5rem !important;
-    margin-top: 1.5rem !important;       
+    margin-top: 1.5rem !important;
     margin-bottom: 0.4rem !important;
     line-height: 1.3 !important;
 }
@@ -510,14 +510,14 @@
     height: 0 !important;
     line-height: 0 !important;
     overflow: visible !important;
-    
+
     /* Gunakan relative, bukan static, agar top dan left berfungsi */
-    position: relative !important; 
+    position: relative !important;
     vertical-align: middle !important;
     top: -0.25em !important;
-    
+
     /* Kunci utama agar pilcrow tidak ikut terdorong indentasi */
-    text-indent: 0px !important; 
+    text-indent: 0px !important;
     font-family: Arial, Helvetica, sans-serif !important;
     /* font-family: monospace !important; */
     font-size: 0.85em !important;
@@ -644,7 +644,7 @@
 }
 
 /* Pastikan ini ada di paling bawah app.css */
-/* .tiptap-locked, 
+/* .tiptap-locked,
 .tiptap-locked * {
     cursor: wait !important;
     pointer-events: none !important;
@@ -657,9 +657,9 @@
     opacity: 0.7;
 }
  /* Menargetkan semua elemen di dalam editor yang mungkin memiliki cursor: text bawaan */
-.tiptap-locked, 
-.tiptap-locked *, 
-.tiptap-locked .ProseMirror, 
+.tiptap-locked,
+.tiptap-locked *,
+.tiptap-locked .ProseMirror,
 .tiptap-locked .ProseMirror * {
     cursor: wait !important;
 }
@@ -674,10 +674,71 @@
 
 /* Jika perangkatnya adalah layar sentuh (HP/Tablet), paksakan UI Mobile */
 @media (pointer: coarse) {
-    .toolbar-desktop { 
-        display: none !important; 
+    .toolbar-desktop {
+        display: none !important;
     }
-    .toolbar-mobile { 
+    .toolbar-mobile {
         display: flex !important; /* atau block, sesuaikan dengan desain Anda */
     }
+}
+/* ==========================================================================
+   KUSTOMISASI TOM SELECT (Menyesuaikan Tema Editor)
+   ========================================================================== */
+
+/* 1. Kotak Input Utama (Control) */
+.ts-wrapper .ts-control {
+    @apply border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-gray-900 text-zinc-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm shadow-sm transition-colors cursor-pointer;
+}
+
+/* 2. Saat Input Sedang Fokus / Diklik */
+.ts-wrapper.focus .ts-control {
+    @apply border-forest ring-2 ring-forest/20 shadow-none;
+}
+
+/* 3. Kotak Dropdown (Laci Pilihan) */
+.ts-wrapper .ts-dropdown {
+    @apply bg-white dark:bg-gray-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl mt-1 text-sm overflow-hidden z-50;
+}
+
+/* 4. Teks Pilihan di dalam Dropdown */
+.ts-wrapper .ts-dropdown .option {
+    @apply px-4 py-2 cursor-pointer text-zinc-700 dark:text-zinc-300 transition-colors;
+}
+
+/* 5. Saat Opsi Disorot (Hover pakai Mouse / Navigasi Keyboard) */
+.ts-wrapper .ts-dropdown .active {
+    @apply bg-sage-soft text-forest dark:bg-zinc-800 dark:text-white font-medium;
+}
+
+/* ==========================================================================
+   KUSTOMISASI KHUSUS TAGS (Multi-Select)
+   ========================================================================== */
+
+/* Item/Pill Tag yang sudah dipilih */
+.ts-wrapper.multi .ts-control > div {
+    @apply bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 rounded px-2 py-0.5 m-1 text-xs font-medium flex items-center gap-1;
+}
+
+/* Tombol silang (X) untuk menghapus tag */
+.ts-wrapper.multi .ts-control > div .remove {
+    @apply text-zinc-500 hover:text-red-500 dark:hover:text-red-400 border-l border-zinc-300 dark:border-zinc-600 pl-1 ml-1 cursor-pointer transition-colors;
+}
+
+/* ==========================================================================
+   EFEK HOVER TAMBAHAN UNTUK TOM SELECT
+   ========================================================================== */
+
+/* 1. Hover pada kotak input utama (saat belum diklik/fokus) */
+.ts-wrapper:not(.focus):hover .ts-control {
+    @apply border-forest/50 dark:border-forest/50 shadow-md;
+}
+
+/* 2. Hover pada opsi di dalam dropdown (sebagai pelengkap class .active) */
+.ts-wrapper .ts-dropdown .option:hover {
+    @apply bg-sage-soft/70 text-forest dark:bg-zinc-800/70 dark:text-zinc-100 transition-colors;
+}
+
+/* 3. Hover pada pil/item Tag yang sudah terpilih */
+.ts-wrapper.multi .ts-control > div:hover {
+    @apply bg-zinc-200 dark:bg-zinc-700 border-zinc-300 dark:border-zinc-600 transition-colors shadow-sm;
 }

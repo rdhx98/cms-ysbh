@@ -73,7 +73,14 @@ class CMSdbSeeder extends Seeder
         $user5->assignRole(['writer']);
 
         // 2. Buat Kategori
-        $category = Category::firstOrCreate(['name' => 'Kesehatan'], ['slug' => 'kesehatan']);
+        $category = Category::firstOrCreate(['name' => 'Berita'], ['slug' => 'berita']);
+        $category = Category::firstOrCreate(['name' => 'Siaran Pers'], ['slug' => 'siaran-pers']);
+        $category = Category::firstOrCreate(['name' => 'Pengumuman'], ['slug' => 'pengumuman']);
+        $category = Category::firstOrCreate(['name' => 'Program & Kampanye'], ['slug' => 'program']);
+        $category = Category::firstOrCreate(['name' => 'Kisah Inspiratif'], ['slug' => 'cerita']);
+        $category = Category::firstOrCreate(['name' => 'Laporan & Transparansi'], ['slug' => 'laporan']);
+        $category = Category::firstOrCreate(['name' => 'Tulisan Edukasi'], ['slug' => 'blog']);
+        $category = Category::firstOrCreate(['name' => 'Acara & Kegiatan'], ['slug' => 'events']);
         //artikel
         //melaporkan [penelitian dan laporan]
 
