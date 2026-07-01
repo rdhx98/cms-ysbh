@@ -278,8 +278,9 @@ new class extends Component {
         </div>
 
         <form wire:submit.prevent="save" class="flex-1 flex flex-col min-h-0 space-y-4">
+            {{-- judul dan tags --}}
             {{-- ========================================================================= --}}
-            {{-- 📝 JUDUL & PENGATURAN DOKUMEN (MINIMALIST UI DENGAN UNIVERSAL MODAL)      --}}
+            {{-- 📝 JUDUL & PENGATURAN DOKUMEN (HYBRID LAYOUT)                             --}}
             {{-- ========================================================================= --}}
             <div x-data="{
                     isMetaOpen: false,
@@ -290,89 +291,41 @@ new class extends Component {
                 }"
                 class="shrink-0 relative mb-2 md:mb-4 z-20">
 
-                {{-- ================== TAMPILAN UTAMA (HANYA JUDUL & TOMBOL) ================== --}}
-                <div class="flex flex-col md:flex-row md:items-center justify-between border-0 border-b border-zinc-200 dark:border-zinc-800 pb-2 md:pb-4 gap-2">
-                    
-                    {{-- Input Judul --}}
-                    <input type="text" x-model="title" placeholder="Judul Artikel..." 
-                        class="w-full p-1 text-2xl md:text-3xl font-bold border-0 bg-transparent focus:ring-0 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600" />
-                    
-                    {{-- Tombol Buka Pengaturan --}}
-                    <button @click="isMetaOpen = true" type="button"
-                        class="shrink-0 md:ml-4 p-2 px-3 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700" 
-                        title="Pengaturan Artikel">
-                        <span>⚙️</span>
-                        <span>Pengaturan Dokumen</span>
-                    </button>
-                </div>
+                {{-- ================== TAMPILAN UTAMA (DESKTOP) ================== --}}
+                <div class="p-2 md:p-0">
+                    <div class="mt-2 flex items-center justify-between md:hidden">
+                        <button @click="isMetaOpen = true" type="button"
+                            class="text-xs font-medium text-zinc-500 hover:text-forest dark:text-zinc-400 flex items-center gap-1.5 p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                            <span>⚙️ Judul dan Meta data</span>
+                        </button>
+                    </div>
+                    <div class="hidden md:flex flex-col items-center gap-4 mt-4 z-50">
+                        <input type="text" x-model="title" placeholder="Judul Artikel..." class="w-full p-1.5 text-2xl md:text-3xl font-bold border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 pb-2 dark:bg-transparent" />
+                        <div class="hidden w-full md:flex flex-row items-center gap-4 mt-4">
+                            {{-- Tanggal Publikasi Desktop --}}
+                            <input type="date" x-model="publishedAt"
+                                class="w-full p-1.5 text-sm border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 dark:bg-transparent md:w-1/3" />
 
-
-                {{-- ================== UNIVERSAL MODAL / BOTTOM SHEET ================== --}}
-                {{-- Trik Tailwind: items-end untuk HP (Bottom Sheet), md:items-center untuk Desktop (Modal Tengah) --}}
-                <div x-show="isMetaOpen" 
-                    class="fixed inset-0 z-999 flex items-end justify-center md:items-center p-0 md:p-4" 
-                    style="display: none;">
-
-                    {{-- Overlay Backdrop --}}
-                    <div x-show="isMetaOpen" 
-                        x-transition:enter="transition-opacity ease-out duration-300"
-                        x-transition:enter-start="opacity-0"
-                        x-transition:enter-end="opacity-100"
-                        x-transition:leave="transition-opacity ease-in duration-300"
-                        x-transition:leave-start="opacity-100"
-                        x-transition:leave-end="opacity-0"
-                        class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="isMetaOpen = false"></div>
-
-                    {{-- Konten Modal --}}
-                    {{-- Meluncur dari bawah di HP, Fade & Scale di Desktop --}}
-                    <div x-show="isMetaOpen"
-                        x-transition:enter="transition ease-out duration-300 transform"
-                        x-transition:enter-start="translate-y-full md:translate-y-4 md:opacity-0 md:scale-95"
-                        x-transition:enter-end="translate-y-0 md:opacity-100 md:scale-100"
-                        x-transition:leave="transition ease-in duration-200 transform"
-                        x-transition:leave-start="translate-y-0 md:opacity-100 md:scale-100"
-                        x-transition:leave-end="translate-y-full md:translate-y-4 md:opacity-0 md:scale-95"
-                        class="relative bg-white dark:bg-zinc-900 w-full md:w-[500px] rounded-t-2xl md:rounded-2xl max-h-[85vh] md:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl z-10">
-
-                        {{-- Handle Drag (Hanya terlihat di Mobile) --}}
-                        <div class="md:hidden w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-3" @click="isMetaOpen = false"></div>
-
-                        {{-- Header Modal (Desktop) --}}
-                        <div class="hidden md:flex p-4 border-b border-zinc-100 dark:border-zinc-800 items-center justify-between">
-                            <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100 tracking-wide">Pengaturan Meta Dokumen</h3>
-                            <button type="button" @click="isMetaOpen = false" class="text-zinc-400 hover:text-red-500 transition cursor-pointer">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
-
-                        {{-- Konten Input Modal --}}
-                        <div class="p-5 md:p-6 overflow-y-auto space-y-5 bg-zinc-50 dark:bg-zinc-950 flex-1">
-                            <div class="md:hidden">
-                                <h4 class="text-xs font-bold text-zinc-400 dark:text-zinc-500 mb-2 tracking-wide uppercase">Detail Dokumen</h4>
-                            </div>
-
-                            {{-- Input Tanggal --}}
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tanggal Publikasi</label>
-                                <input type="date" x-model="publishedAt"
-                                    class="w-full p-2.5 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-forest/20 focus:border-forest text-zinc-800 dark:text-zinc-200" />
-                            </div>
-                            
-                            {{-- Kategori --}}
-                            <div class="space-y-1.5" wire:ignore
+                            {{-- Kategori (Desktop) --}}
+                            <div class="w-full md:w-1/3" wire:ignore
                                 x-data="{
                                     tom: null,
                                     init() {
-                                        this.tom = new window.TomSelect(this.$refs.catInput, {
+                                        this.tom = new window.TomSelect(this.$refs.catDesktop, {
                                             create: false,
                                             placeholder: 'Pilih Kategori...'
                                         });
+                                        // 1. Set nilai awal dari Livewire
                                         this.tom.setValue(this.categoryId, true);
+                                        // 2. Saat user memilih, update state Alpine
                                         this.tom.on('change', val => this.categoryId = val);
+                                        // 3. Sinkronisasi jika state Alpine berubah (misal diubah dari Mobile)
+                                        this.$watch('categoryId', val => {
+                                            if (this.tom.getValue() !== val) this.tom.setValue(val, true);
+                                        });
                                     }
                                 }">
-                                <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Kategori</label>
-                                <select x-ref="catInput">
+                                <select x-ref="catDesktop" class="text-sm">
                                     <option value="">Pilih Kategori...</option>
                                     @foreach(\App\Models\Category::all() as $cat)
                                         <option value="{{ $cat->id }}">{{ $cat->name }}</option>
@@ -380,22 +333,109 @@ new class extends Component {
                                 </select>
                             </div>
 
-                            {{-- Tags --}}
-                            <div class="space-y-1.5" wire:ignore
+                            {{-- Tags (Desktop) --}}
+                            <div class="w-full md:w-1/3" wire:ignore
                                 x-data="{
                                     tom: null,
                                     init() {
-                                        this.tom = new window.TomSelect(this.$refs.tagInput, {
+                                        this.tom = new window.TomSelect(this.$refs.tagDesktop, {
                                             create: true,
                                             plugins: ['remove_button'],
                                             placeholder: 'Ketik atau Cari Tags...'
                                         });
                                         this.tom.setValue(this.selectedTags, true);
                                         this.tom.on('change', val => this.selectedTags = val);
+                                        this.$watch('selectedTags', val => {
+                                            // Karena val adalah array, kita gunakan JSON.stringify untuk perbandingan
+                                            if (JSON.stringify(this.tom.getValue()) !== JSON.stringify(val)) this.tom.setValue(val, true);
+                                        });
+                                    }
+                                }">
+                                <select x-ref="tagDesktop" multiple class="text-sm">
+                                    @foreach(\App\Models\Tag::all() as $tag)
+                                        <option value="{{ $tag->name }}">{{ $tag->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                {{-- ================== LAYOUT BOTTOM SHEET (MOBILE) ================== --}}
+                <div x-show="isMetaOpen" class="flex md:hidden fixed inset-0 z-999 items-end justify-center" style="display: none;">
+
+                    {{-- Animasi Overlay --}}
+                    <div x-show="isMetaOpen" x-transition.opacity class="fixed inset-0 bg-black/60 backdrop-blur-xs" @click="isMetaOpen = false"></div>
+
+                    {{-- Laci Bottom Sheet Meluncur --}}
+                    <div x-show="isMetaOpen"
+                        x-transition:enter="transition ease-out duration-300 transform"
+                        x-transition:enter-start="translate-y-full"
+                        x-transition:enter-end="translate-y-0"
+                        x-transition:leave="transition ease-in duration-200 transform"
+                        x-transition:leave-start="translate-y-0"
+                        x-transition:leave-end="translate-y-full"
+                        class="bg-white dark:bg-gray-900 w-full rounded-t-2xl max-h-[80vh] flex flex-col z-10 overflow-hidden shadow-2xl relative">
+
+                        <div class="w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-3" @click="isMetaOpen = false"></div>
+
+                        {{-- Konten Input Modal --}}
+                        <div class="p-4 overflow-y-auto space-y-4 bg-gray-50 dark:bg-gray-950 flex-1">
+                            <h4 class="text-xs font-bold text-zinc-400 dark:text-zinc-500 mb-2 tracking-wide uppercase">Detail Dokumen</h4>
+                            <input type="text" x-model="title" placeholder="Judul Artikel..." class="w-full p-1.5 text-2xl md:text-3xl font-bold border-0 border-b border-zinc-300 dark:border-zinc-700 focus:ring-0 focus:border-forest/70 pb-2 dark:bg-transparent" />
+                            {{-- Input Tanggal --}}
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tanggal Publikasi</label>
+                                <input type="date" x-model="publishedAt"
+                                    class="w-full p-2.5 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-forest/20 focus:border-forest" />
+                            </div>
+
+                            {{-- Kategori (Mobile) --}}
+                            <div class="space-y-1" wire:ignore
+                                x-data="{
+                                    tom: null,
+                                    init() {
+                                        this.tom = new window.TomSelect(this.$refs.catMobile, {
+                                            create: false,
+                                            placeholder: 'Pilih Kategori...'
+                                        });
+                                        this.tom.setValue(this.categoryId, true);
+                                        this.tom.on('change', val => this.categoryId = val);
+                                        this.$watch('categoryId', val => {
+                                            if (this.tom.getValue() !== val) this.tom.setValue(val, true);
+                                        });
+                                    }
+                                }">
+                                <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Kategori</label>
+                                <select x-ref="catMobile">
+                                    <option value="">Pilih Kategori...</option>
+                                    @foreach(\App\Models\Category::all() as $cat)
+                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- Tags (Mobile) --}}
+                            <div class="space-y-1" wire:ignore
+                                x-data="{
+                                    tom: null,
+                                    init() {
+                                        this.tom = new window.TomSelect(this.$refs.tagMobile, {
+                                            create: true,
+                                            plugins: ['remove_button'],
+                                            placeholder: 'Ketik atau Cari Tags...'
+                                        });
+                                        this.tom.setValue(this.selectedTags, true);
+                                        this.tom.on('change', val => this.selectedTags = val);
+                                        this.$watch('selectedTags', val => {
+                                            if (JSON.stringify(this.tom.getValue()) !== JSON.stringify(val)) this.tom.setValue(val, true);
+                                        });
                                     }
                                 }">
                                 <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tags</label>
-                                <select x-ref="tagInput" multiple>
+                                <select x-ref="tagMobile" multiple>
                                     @foreach(\App\Models\Tag::all() as $tag)
                                         <option value="{{ $tag->name }}">{{ $tag->name }}</option>
                                     @endforeach
@@ -403,11 +443,9 @@ new class extends Component {
                             </div>
                         </div>
 
-                        {{-- Tombol Tutup Modal --}}
-                        <div class="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                            <button type="button" @click="isMetaOpen = false" 
-                                class="w-full bg-forest hover:bg-forest/90 text-white py-2.5 rounded-xl text-sm font-bold text-center transition-colors cursor-pointer shadow-sm">
-                                Terapkan & Selesai
+                        <div class="p-4 bg-white dark:bg-gray-900 border-t border-zinc-100 dark:border-zinc-800 shadow-inner">
+                            <button type="button" @click="isMetaOpen = false" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-xs font-bold text-center transition-colors cursor-pointer shadow-sm">
+                                Selesai
                             </button>
                         </div>
                     </div>
@@ -427,6 +465,17 @@ new class extends Component {
                     : 'flex-1 flex flex-col-reverse md:flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-900 shadow-sm relative'"
                 class="transition-all duration-300 ease-in-out"
                 wire:ignore>
+
+                {{-- 🌟 TOMBOL SIMPAN MELAYANG (Hanya muncul saat Layar Penuh) --}}
+                {{-- Kita gunakan $wire.save() karena tombol ini berada di dalam area wire:ignore --}}
+                {{-- <div x-show="isFullscreen" x-transition
+                     class="absolute bottom-20 right-4 md:bottom-auto md:top-4 md:right-8 z-50" style="display: none;">
+                    <button type="button" @click="$wire.save()"
+                        class="px-5 py-2.5 bg-forest hover:bg-forest/90 text-white font-medium rounded-full shadow-2xl flex items-center gap-2 cursor-pointer border border-white/20 transition-transform hover:scale-105">
+                        <x-dynamic-component :component="'lucide-save'" class="h-4 w-4" stroke-width="2.5" />
+                        <span class="text-sm font-bold tracking-wide">Simpan</span>
+                    </button>
+                </div> --}}
 
                 {{-- IMAGE BUBBLE MENU --}}
                 <div x-ref="imageBubbleMenu"
@@ -637,33 +686,13 @@ new class extends Component {
                                 </button>
                             </div>
                         </div>
-                        
-                        {{-- ================= AKSI KANAN TOOLBAR ================= --}}
-                        <div class="flex items-center gap-1.5 p-2 pl-3 border-l border-zinc-200 dark:border-zinc-700 shrink-0 bg-zinc-50 dark:bg-zinc-800 z-10 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] md:shadow-none">
-
-                            {{-- 🌟 TOMBOL LAYAR PENUH (Sekarang aman di dalam scope editor) --}}
-                            <button type="button" @click="isFullscreen = !isFullscreen"
-                                class="p-1.5 text-zinc-500 hover:text-forest dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors cursor-pointer"
-                                title="Layar Penuh">
-                                <x-dynamic-component x-show="!isFullscreen" :component="'lucide-maximize'" class="h-5 w-5 md:h-4 md:w-4" stroke-width="2" />
-                                <x-dynamic-component x-show="isFullscreen" :component="'lucide-minimize'" class="h-5 w-5 md:h-4 md:w-4" stroke-width="2" style="display: none;" />
-                            </button>
-
-                            {{-- TOMBOL EXPAND (KHUSUS HP) --}}
-                            <button type="button" @click="expanded = !expanded"
-                                class="md:hidden p-1.5 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer">
-                                <x-dynamic-component x-show="!expanded" :component="'lucide-chevron-up'" class="h-5 w-5" stroke-width="2.5" />
-                                <x-dynamic-component x-show="expanded" :component="'lucide-chevron-down'" class="h-5 w-5" stroke-width="2.5" style="display: none;" />
-                            </button>
-                            
-                        </div>
 
                         {{-- TOMBOL EXPAND (MENU PANEL NAIK DARI BAWAH KHUSUS HP) --}}
-                        {{-- <button type="button" @click="expanded = !expanded"
+                        <button type="button" @click="expanded = !expanded"
                             class="md:hidden m-2 p-1.5 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700 shrink-0 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
                             <x-dynamic-component x-show="!expanded" :component="'lucide-chevron-up'" class="h-5 w-5" stroke-width="2.5" />
                             <x-dynamic-component x-show="expanded" :component="'lucide-chevron-down'" class="h-5 w-5" stroke-width="2.5" style="display: none;" />
-                        </button> --}}
+                        </button>
 
                     </div>
                 </div>
@@ -768,27 +797,21 @@ new class extends Component {
                         class="prose prose-zinc dark:prose-invert max-w-none p-6 flex-1 overflow-y-auto dark:text-zinc-100 focus:outline-none">
                     </div>
 
-                    {{-- 🌟 WORD COUNTER MELAYANG (FLOATING) --}}
-                    <div class="absolute bottom-2 right-3 md:bottom-4 md:right-4 pointer-events-none z-10">
-                        <div class="bg-zinc-100/90 dark:bg-zinc-800/90 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 text-[10px] md:text-xs px-2.5 py-1 rounded-md shadow-sm font-medium tracking-wide">
-                            <span x-text="`${wordCount} kata`"></span>
-                        </div>
-                    </div>
-
                 </div>
 
                 <input type="file" x-ref="fileInput" accept="image/*" multiple class="hidden"  @change="handleMultipleImageUpload($event.target.files); $event.target.value = ''" />
 
 
-                {{-- <div class="px-6 py-2 text-xs text-zinc-500 dark:text-zinc-400 font-medium bg-zinc-50 dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-700 flex justify-between items-center z-20">
+                <div class="px-6 py-2 text-xs text-zinc-500 dark:text-zinc-400 font-medium bg-zinc-50 dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-700 flex justify-between items-center z-20">
                     <span x-text="`${wordCount} kata`"></span>
+                    {{-- 🌟 TOMBOL FULLSCREEN --}}
                     <button type="button" @click="isFullscreen = !isFullscreen"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent text-zinc-600 dark:text-zinc-400"
                         title="Layar Penuh">
                         <x-dynamic-component x-show="!isFullscreen" :component="'lucide-maximize'" class="h-4 w-4" stroke-width="2" />
                         <x-dynamic-component x-show="isFullscreen" :component="'lucide-minimize'" class="h-4 w-4" stroke-width="2" style="display: none;" />
                     </button>
-                </div> --}}
+                </div>
 
             </div>
 
