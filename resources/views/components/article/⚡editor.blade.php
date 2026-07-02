@@ -4,6 +4,12 @@ use App\Models\Post;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
 new class extends Component {
     use WithFileUploads;
 
@@ -28,6 +34,7 @@ new class extends Component {
     public function mount(){
         // Mengatur default value ke tanggal hari ini saat halaman pertama kali dimuat
         $this->published_at = now()->format('Y-m-d');
+        $this->user_id = auth()->id() ?? $this->user_id;
     }
 
     public function scanEditorImages()
@@ -147,26 +154,54 @@ new class extends Component {
     protected function rules()
     {
         return [
+            'category_id' => 'required|numeric',
             'title' => [
                 'required',
-                Rule::unique('posts')->ignore($this->post),
+                Rule::unique('posts')->ignore($this->article_id),
+            ],
+            'slug' => [
+                'required',
+                Rule::unique('posts')->ignore($this->article_id),
             ],
             'content' => 'required|min:5',
+            'featured_image' => 'required',
         ];
+    }
+
+    public function makeSlug(string $title) {
+        // 1. Ubah semua huruf menjadi huruf kecil
+        $slug = strtolower($title);
+
+        // 2. Ganti karakter non-alfanumerik (termasuk spasi) dengan tanda hubung (-)
+        $slug = preg_replace('/[^a-z0-9]+/i', '-', $slug);
+
+        // 3. Hapus tanda hubung di awal dan akhir string (jika ada)
+        $slug = trim($slug, '-');
+
+        return $slug;
     }
 
     public function save()
     {
-        // console.log('svae');
-        dd('putangina');
-        $this->validate([
-            'content' => 'required|min:10',
-        ]);
         $this->content = $this->processAndTrimImages($this->content);
+
+        // 3. AUTO SCAN: Paksa sistem mencari gambar di dalam editor secara otomatis (di belakang layar)
+        $this->scanEditorImages();
+
+        // 4. FALLBACK DEFAULT URL: Jika ternyata penulis tidak upload foto kustom DAN editor murni teks saja
+        if (empty($this->featured_image) && empty($this->photo)) {
+            // Ganti 'default.jpg' dengan nama file gambar default Anda yang ada di storage/public
+            $this->featured_image = 'default.webp';
+            $this->selected_image_url = asset('storage/articles/default.webp');
+        }
+
+        // $this->validate();
+
+        // $this->content = $this->processAndTrimImages($this->content);
         // 1. Jika ini proses UPDATE (Artikel sudah ada di database sebelumnya)
         if (isset($this->article_id)) {
             // Ambil isi konten lama dari database sebelum di-overwrite
-            $oldContent = DB::table('articles')->where('id', $this->article_id)->value('content');
+            $oldContent = DB::table('posts')->where('id', $this->article_id)->value('content');
 
             if ($oldContent) {
                 // Ekstrak semua URL gambar dari konten lama
@@ -197,10 +232,29 @@ new class extends Component {
         }
         // === TAHAP 3: EKSEKUSI PENYIMPANAN DATA UTAMA VIA ELOQUENT ===
         // ✅ Otomatis mendeteksi CREATE jika article_id null, dan UPDATE jika article_id memiliki nilai
+
+        $slugContainer = $this->title;
+        $slug = $this->makeSlug($slugContainer);
+        $this->slug = $slug;
+        $this->status = 'pending';
+
+        $dumpTruck = [
+            'id user' => $this->user_id,
+            'id kategori' => $this->category_id,
+            'tags' => $this->tags,
+            'title' => $this->title,
+            'slug' => $this->slug,
+            'url thumbnail' => $this->featured_image,
+            'status' => $this->status,
+            'tanggal dibuat' => $this->published_at,
+        ];
+        dd($dumpTruck);
+
+
         $article = Post::updateOrCreate(
             ['id' => $this->article_id ?? null],
             [
-                'user_id'           => auth()->id() ?? $this->user_id, // Fallback ke properti jika auth kosong
+                // 'user_id'           => auth()->id() ?? $this->user_id, // Fallback ke properti jika auth kosong
                 'category_id'       => $this->category_id,
                 'title'             => $this->title,
                 'slug'              => $this->slug,
@@ -292,126 +346,186 @@ new class extends Component {
 
                 {{-- ================== TAMPILAN UTAMA (HANYA JUDUL & TOMBOL) ================== --}}
                 <div class="flex flex-col md:flex-row md:items-center justify-between border-0 border-b border-zinc-200 dark:border-zinc-800 pb-2 md:pb-4 gap-2">
-                    
+
                     {{-- Input Judul --}}
-                    <input type="text" x-model="title" placeholder="Judul Artikel..." 
+                    <input type="text" x-model="title" placeholder="Judul Artikel..."
                         class="w-full p-1 text-2xl md:text-3xl font-bold border-0 bg-transparent focus:ring-0 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600" />
-                    
+
+                    {{-- 🌟 TOMBOL BUKA MODAL THUMBNAIL (Dipindah ke sini) --}}
+                    <div class="flex items-center gap-2 shrink-0 md:ml-4">
+                        <button type="button" wire:click="scanEditorImages" @click="$dispatch('buka-featured-modal')"
+                            class="shrink-0 p-2 px-3 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer"
+                            title="Pilih Gambar Sampul">
+                            <x-dynamic-component :component="'lucide-image'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
+                            <span class="hidden md:inline">Sampul Artikel</span>
+                            <span class="md:hidden">Sampul</span>
+                        </button>
+
+                        {{-- Tombol Buka Pengaturan Meta --}}
+                        <button type="button" @click="isMetaOpen = true"
+                            class="shrink-0 p-2 px-3 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer"
+                            title="Pengaturan Artikel">
+                            <span>⚙️</span>
+                            <span class="hidden md:inline">Pengaturan Dokumen</span>
+                            <span class="md:hidden">Pengaturan</span>
+                        </button>
+
+                    </div>
                     {{-- Tombol Buka Pengaturan --}}
-                    <button @click="isMetaOpen = true" type="button"
-                        class="shrink-0 md:ml-4 p-2 px-3 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700" 
+                    {{-- <button @click="isMetaOpen = true" type="button"
+                        class="shrink-0 cursor-pointer md:ml-4 p-2 px-3 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700"
                         title="Pengaturan Artikel">
                         <span>⚙️</span>
                         <span>Pengaturan Dokumen</span>
-                    </button>
+                    </button> --}}
                 </div>
 
 
                 {{-- ================== UNIVERSAL MODAL / BOTTOM SHEET ================== --}}
                 {{-- Trik Tailwind: items-end untuk HP (Bottom Sheet), md:items-center untuk Desktop (Modal Tengah) --}}
-                <div x-show="isMetaOpen" 
-                    class="fixed inset-0 z-999 flex items-end justify-center md:items-center p-0 md:p-4" 
-                    style="display: none;">
-
-                    {{-- Overlay Backdrop --}}
-                    <div x-show="isMetaOpen" 
-                        x-transition:enter="transition-opacity ease-out duration-300"
-                        x-transition:enter-start="opacity-0"
-                        x-transition:enter-end="opacity-100"
-                        x-transition:leave="transition-opacity ease-in duration-300"
-                        x-transition:leave-start="opacity-100"
-                        x-transition:leave-end="opacity-0"
-                        class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="isMetaOpen = false"></div>
-
-                    {{-- Konten Modal --}}
-                    {{-- Meluncur dari bawah di HP, Fade & Scale di Desktop --}}
+                <template x-teleport="body">
                     <div x-show="isMetaOpen"
-                        x-transition:enter="transition ease-out duration-300 transform"
-                        x-transition:enter-start="translate-y-full md:translate-y-4 md:opacity-0 md:scale-95"
-                        x-transition:enter-end="translate-y-0 md:opacity-100 md:scale-100"
-                        x-transition:leave="transition ease-in duration-200 transform"
-                        x-transition:leave-start="translate-y-0 md:opacity-100 md:scale-100"
-                        x-transition:leave-end="translate-y-full md:translate-y-4 md:opacity-0 md:scale-95"
-                        class="relative bg-white dark:bg-zinc-900 w-full md:w-[500px] rounded-t-2xl md:rounded-2xl max-h-[85vh] md:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl z-10">
+                        class="fixed inset-0 z-999 flex items-end justify-center md:items-center p-0 md:p-4"
+                        style="display: none;">
 
-                        {{-- Handle Drag (Hanya terlihat di Mobile) --}}
-                        <div class="md:hidden w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-3" @click="isMetaOpen = false"></div>
+                        {{-- Overlay Backdrop --}}
+                        <div x-show="isMetaOpen"
+                            x-transition:enter="transition-opacity ease-out duration-300"
+                            x-transition:enter-start="opacity-0"
+                            x-transition:enter-end="opacity-100"
+                            x-transition:leave="transition-opacity ease-in duration-300"
+                            x-transition:leave-start="opacity-100"
+                            x-transition:leave-end="opacity-0"
+                            class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="isMetaOpen = false"></div>
 
-                        {{-- Header Modal (Desktop) --}}
-                        <div class="hidden md:flex p-4 border-b border-zinc-100 dark:border-zinc-800 items-center justify-between">
-                            <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100 tracking-wide">Pengaturan Meta Dokumen</h3>
-                            <button type="button" @click="isMetaOpen = false" class="text-zinc-400 hover:text-red-500 transition cursor-pointer">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
+                        {{-- Konten Modal --}}
+                        {{-- Meluncur dari bawah di HP, Fade & Scale di Desktop --}}
+                        <div x-show="isMetaOpen"
+                            x-transition:enter="transition ease-out duration-300 transform"
+                            x-transition:enter-start="translate-y-full md:translate-y-4 md:opacity-0 md:scale-95"
+                            x-transition:enter-end="translate-y-0 md:opacity-100 md:scale-100"
+                            x-transition:leave="transition ease-in duration-200 transform"
+                            x-transition:leave-start="translate-y-0 md:opacity-100 md:scale-100"
+                            x-transition:leave-end="translate-y-full md:translate-y-4 md:opacity-0 md:scale-95"
+                            class="relative bg-white dark:bg-zinc-900 w-full md:w-[500px] rounded-t-2xl md:rounded-2xl h-[85vh] md:h-[90vh] flex flex-col overflow-hidden shadow-2xl z-10">
 
-                        {{-- Konten Input Modal --}}
-                        <div class="p-5 md:p-6 overflow-y-auto space-y-5 bg-zinc-50 dark:bg-zinc-950 flex-1">
-                            <div class="md:hidden">
-                                <h4 class="text-xs font-bold text-zinc-400 dark:text-zinc-500 mb-2 tracking-wide uppercase">Detail Dokumen</h4>
+                            {{-- Handle Drag (Hanya terlihat di Mobile) --}}
+                            <div class="md:hidden w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-3" @click="isMetaOpen = false"></div>
+
+                            {{-- Header Modal (Desktop) --}}
+                            <div class="hidden md:flex p-4 border-b border-zinc-100 dark:border-zinc-800 items-center justify-between">
+                                <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100 tracking-wide">Pengaturan Meta Dokumen</h3>
+                                <button type="button" @click="isMetaOpen = false" class="text-zinc-400 hover:text-red-500 transition cursor-pointer">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
                             </div>
 
-                            {{-- Input Tanggal --}}
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tanggal Publikasi</label>
-                                <input type="date" x-model="publishedAt"
-                                    class="w-full p-2.5 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-forest/20 focus:border-forest text-zinc-800 dark:text-zinc-200" />
-                            </div>
-                            
-                            {{-- Kategori --}}
-                            <div class="space-y-1.5" wire:ignore
-                                x-data="{
-                                    tom: null,
-                                    init() {
-                                        this.tom = new window.TomSelect(this.$refs.catInput, {
-                                            create: false,
-                                            placeholder: 'Pilih Kategori...'
-                                        });
-                                        this.tom.setValue(this.categoryId, true);
-                                        this.tom.on('change', val => this.categoryId = val);
-                                    }
-                                }">
-                                <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Kategori</label>
-                                <select x-ref="catInput">
-                                    <option value="">Pilih Kategori...</option>
-                                    @foreach(\App\Models\Category::all() as $cat)
-                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                    @endforeach
-                                </select>
+                            {{-- Konten Input Modal --}}
+                            <div class="p-5 md:p-6 overflow-y-auto space-y-5 bg-zinc-50 dark:bg-zinc-950 flex-1">
+                                <div class="md:hidden">
+                                    <h4 class="text-xs font-bold text-zinc-400 dark:text-zinc-500 mb-2 tracking-wide uppercase">Detail Dokumen</h4>
+                                </div>
+
+                                {{-- Input Tanggal --}}
+                                <div class="space-y-1.5">
+                                    <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tanggal Dibuat</label>
+                                    <input type="date" x-model="publishedAt"
+                                        class="w-full p-2.5 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-forest/20 focus:border-forest text-zinc-800 dark:text-zinc-200" />
+                                </div>
+
+                                {{-- Kategori --}}
+                                <div class="space-y-1.5" wire:ignore
+                                    x-data="{
+                                        tom: null,
+                                        init() {
+                                            this.tom = new window.TomSelect(this.$refs.catInput, {
+                                                create: false,
+                                                placeholder: 'Pilih Kategori...'
+                                            });
+                                            this.tom.setValue(this.categoryId, true);
+                                            this.tom.on('change', val => this.categoryId = val);
+                                        }
+                                    }">
+                                    <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Kategori</label>
+                                    <select x-ref="catInput">
+                                        <option value="">Pilih Kategori...</option>
+                                        @foreach(\App\Models\Category::all() as $cat)
+                                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Tags --}}
+                                <div class="space-y-1.5" wire:ignore
+                                    x-data="{
+                                        tom: null,
+                                        init() {
+                                            this.tom = new window.TomSelect(this.$refs.tagInput, {
+                                                create: true,
+                                                plugins: ['remove_button'],
+                                                maxItems: null, // 🌟 KUNCI 1: Paksa mode multi-select (tak terbatas)
+                                                placeholder: 'Ketik atau Cari Tags...'
+                                            });
+
+                                            // Set nilai awal saat halaman dimuat
+                                            this.tom.setValue(this.selectedTags, true);
+
+                                            // 🌟 KUNCI 2: Cegat data sebelum dikirim ke Livewire
+                                            this.tom.on('change', val => {
+                                                if (!val) {
+                                                    // Jika kosong, kirim array kosong
+                                                    this.selectedTags = [];
+                                                } else if (typeof val === 'string') {
+                                                    // Jika TomSelect mengembalikan string ber-koma (tag1,tag2), pecah jadi Array!
+                                                    this.selectedTags = val.split(',');
+                                                } else {
+                                                    // Jika sudah berupa Array, pastikan ter-copy dengan aman
+                                                    this.selectedTags = Array.isArray(val) ? val : [val];
+                                                }
+                                            });
+                                        }
+                                    }">
+                                    <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tags</label>
+                                    <select x-ref="tagInput" multiple>
+                                        @foreach(\App\Models\Tag::all() as $tag)
+                                            <option value="{{ $tag->name }}">{{ $tag->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Tags --}}
+                                {{-- <div class="space-y-1.5" wire:ignore
+                                    x-data="{
+                                        tom: null,
+                                        init() {
+                                            this.tom = new window.TomSelect(this.$refs.tagInput, {
+                                                create: true,
+                                                plugins: ['remove_button'],
+                                                placeholder: 'Ketik atau Cari Tags...'
+                                            });
+                                            this.tom.setValue(this.selectedTags, true);
+                                            this.tom.on('change', val => this.selectedTags = val);
+                                        }
+                                    }">
+                                    <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tags</label>
+                                    <select x-ref="tagInput" multiple>
+                                        @foreach(\App\Models\Tag::all() as $tag)
+                                            <option value="{{ $tag->name }}">{{ $tag->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div> --}}
                             </div>
 
-                            {{-- Tags --}}
-                            <div class="space-y-1.5" wire:ignore
-                                x-data="{
-                                    tom: null,
-                                    init() {
-                                        this.tom = new window.TomSelect(this.$refs.tagInput, {
-                                            create: true,
-                                            plugins: ['remove_button'],
-                                            placeholder: 'Ketik atau Cari Tags...'
-                                        });
-                                        this.tom.setValue(this.selectedTags, true);
-                                        this.tom.on('change', val => this.selectedTags = val);
-                                    }
-                                }">
-                                <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tags</label>
-                                <select x-ref="tagInput" multiple>
-                                    @foreach(\App\Models\Tag::all() as $tag)
-                                        <option value="{{ $tag->name }}">{{ $tag->name }}</option>
-                                    @endforeach
-                                </select>
+                            {{-- Tombol Tutup Modal --}}
+                            <div class="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                                <button type="button" @click="isMetaOpen = false"
+                                    class="w-full bg-forest hover:bg-forest/90 text-white py-2.5 rounded-xl text-sm font-bold text-center transition-colors cursor-pointer shadow-sm">
+                                    Terapkan & Selesai
+                                </button>
                             </div>
-                        </div>
-
-                        {{-- Tombol Tutup Modal --}}
-                        <div class="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                            <button type="button" @click="isMetaOpen = false" 
-                                class="w-full bg-forest hover:bg-forest/90 text-white py-2.5 rounded-xl text-sm font-bold text-center transition-colors cursor-pointer shadow-sm">
-                                Terapkan & Selesai
-                            </button>
                         </div>
                     </div>
-                </div>
+                </template>
             </div>
 
 
@@ -605,16 +719,16 @@ new class extends Component {
                                     class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
                                     <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
                                 </button>
-                                <button type="button" wire:click="scanEditorImages" :disabled="isUploading" @click="$dispatch('buka-featured-modal')"
+                                {{-- <button type="button" wire:click="scanEditorImages" :disabled="isUploading" @click="$dispatch('buka-featured-modal')"
                                     class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
                                     <x-dynamic-component :component="'lucide-view'" class="h-4 w-4" stroke-width="2" />
-                                </button>
+                                </button> --}}
                                 <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
 
 
                             </div>
                             {{-- NOTIFY  BUTTONs --}}
-                            <div class="flex items-center gap-1 shrink-0">
+                            {{-- <div class="flex items-center gap-1 shrink-0">
                                 <button type="button" @click="notifyTheUser('putangina','warning');" :disabled="isUploading"
                                     :class="checkButtonActive('link', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
                                     class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
@@ -635,9 +749,9 @@ new class extends Component {
                                     class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
                                     <x-dynamic-component :component="'lucide-bell'" class="h-5 w-5" stroke-width="2.5" />
                                 </button>
-                            </div>
+                            </div> --}}
                         </div>
-                        
+
                         {{-- ================= AKSI KANAN TOOLBAR ================= --}}
                         <div class="flex items-center gap-1.5 p-2 pl-3 border-l border-zinc-200 dark:border-zinc-700 shrink-0 bg-zinc-50 dark:bg-zinc-800 z-10 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] md:shadow-none">
 
@@ -655,7 +769,7 @@ new class extends Component {
                                 <x-dynamic-component x-show="!expanded" :component="'lucide-chevron-up'" class="h-5 w-5" stroke-width="2.5" />
                                 <x-dynamic-component x-show="expanded" :component="'lucide-chevron-down'" class="h-5 w-5" stroke-width="2.5" style="display: none;" />
                             </button>
-                            
+
                         </div>
 
                         {{-- TOMBOL EXPAND (MENU PANEL NAIK DARI BAWAH KHUSUS HP) --}}
@@ -779,17 +893,6 @@ new class extends Component {
 
                 <input type="file" x-ref="fileInput" accept="image/*" multiple class="hidden"  @change="handleMultipleImageUpload($event.target.files); $event.target.value = ''" />
 
-
-                {{-- <div class="px-6 py-2 text-xs text-zinc-500 dark:text-zinc-400 font-medium bg-zinc-50 dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-700 flex justify-between items-center z-20">
-                    <span x-text="`${wordCount} kata`"></span>
-                    <button type="button" @click="isFullscreen = !isFullscreen"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent text-zinc-600 dark:text-zinc-400"
-                        title="Layar Penuh">
-                        <x-dynamic-component x-show="!isFullscreen" :component="'lucide-maximize'" class="h-4 w-4" stroke-width="2" />
-                        <x-dynamic-component x-show="isFullscreen" :component="'lucide-minimize'" class="h-4 w-4" stroke-width="2" style="display: none;" />
-                    </button>
-                </div> --}}
-
             </div>
 
             <div class="flex justify-end">
@@ -799,7 +902,7 @@ new class extends Component {
                 </button>
             </div>
 
-            {{-- THuMBNAIL SELECTOR --}}
+            {{-- THuMBNAIL SELECTOR MODAL--}}
             <div x-data="{ isOpen: false }"
                 @buka-featured-modal.window="isOpen = true"
                 class="relative">
@@ -813,6 +916,7 @@ new class extends Component {
 
                     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="isOpen = false"></div>
 
+                    {{-- THUMBNAIL MODAL AREA --}}
                     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 w-full max-w-3xl max-h-[85vh] flex flex-col z-10 overflow-hidden">
                         {{-- Header Modal --}}
                         <div class="p-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-gray-900">
@@ -867,7 +971,7 @@ new class extends Component {
 
                         {{-- Footer Modal --}}
                         <div class="p-4 border-t border-zinc-100 dark:border-zinc-800 flex justify-end bg-gray-50 dark:bg-gray-900">
-                            <button type="button" @click="isOpen = false" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-sm transition cursor-pointer">
+                            <button type="button" @click="isOpen = false" class="bg-forest hover:bg-forest text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-sm transition cursor-pointer">
                                 Selesai
                             </button>
                         </div>
@@ -878,15 +982,6 @@ new class extends Component {
                 {{-- ========================================================================= --}}
                 {{-- 📱 LAYOUT MODAL THUMBNAIL: MOBILE (md:hidden)                              --}}
                 {{-- ========================================================================= --}}
-                {{-- <div x-show="isOpen"
-                    class="flex md:hidden fixed inset-0 z-999 items-end justify-center"
-                    style="display: none;">
-
-                    <div class="fixed inset-0 bg-black/60 backdrop-blur-xs" @click="isOpen = false"></div>
-
-                    <div class="bg-white dark:bg-gray-900 w-full rounded-t-2xl max-h-[80vh] flex flex-col z-10 overflow-hidden shadow-2xl">
-                        {{-- Handle Drag Modal Mobile --
-                        <div class="w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-3" @click="isOpen = false"></div> --}}
                 <div x-show="isOpen"
                     class="flex md:hidden fixed inset-0 z-999 items-end justify-center"
                     style="display: none;">

@@ -6,10 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
+
+#[Table('post')]
 class Post extends Model
 {
     //
     use HasFactory;
+
+
 
     // Field yang boleh diisi massal
     protected $fillable = [
