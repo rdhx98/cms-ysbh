@@ -10,10 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 #[Table('post')]
 class Post extends Model
 {
-    //
     use HasFactory;
-
-
 
     // Field yang boleh diisi massal
     protected $fillable = [
@@ -24,7 +21,9 @@ class Post extends Model
         'content',
         'featured_image',
         'status',
-        'published_at'
+        'created_at',
+        'updated_at',
+        'published_at',
     ];
 
     // Mengubah string tanggal menjadi objek Carbon/Datetime secara otomatis

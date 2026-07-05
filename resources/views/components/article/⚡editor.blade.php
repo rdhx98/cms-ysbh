@@ -1,8 +1,12 @@
 <?php
 
 use App\Models\Post;
+use App\Models\Tag;
+use App\Models\Category;
+
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use App\Livewire\Traits\WithNotifications; // Import trait-nya
 
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
@@ -12,18 +16,20 @@ use Illuminate\Support\Facades\Log;
 
 new class extends Component {
     use WithFileUploads;
+    use WithNotifications;
 
     public int $user_id;
 
-    public $article_id;
-    public $category_id;
-    public $tags = [];
-    public $title;
-    public $slug;
-    public string $content = '';
-    public $featured_image;
-    public $status;
-    public $published_at;
+    public int $article_id;
+    public int $category_id;
+    public array $tags;
+    public string $title;
+    public string $slug;
+    public string $content;
+    public string $featured_image;
+    public string $status;
+    public string $published_at;
+    public string $created_at;
 
     public $photo;
 
@@ -33,8 +39,14 @@ new class extends Component {
 
     public function mount(){
         // Mengatur default value ke tanggal hari ini saat halaman pertama kali dimuat
-        $this->published_at = now()->format('Y-m-d');
+        // $this->published_at = now()->format('Y-m-d');
+        $this->created_at = now()->format('Y-m-d');
         $this->user_id = auth()->id() ?? $this->user_id;
+        $this->content = '';
+        $this->title = '';
+        $this->slug = '';
+        $this->featured_image = 'default.webp'; // Gambar default jika penulis tidak memilih
+        $this->status = 'draft'; // review | published | scheduled | archived | rejected 
     }
 
     public function scanEditorImages()
@@ -168,19 +180,6 @@ new class extends Component {
         ];
     }
 
-    public function makeSlug(string $title) {
-        // 1. Ubah semua huruf menjadi huruf kecil
-        $slug = strtolower($title);
-
-        // 2. Ganti karakter non-alfanumerik (termasuk spasi) dengan tanda hubung (-)
-        $slug = preg_replace('/[^a-z0-9]+/i', '-', $slug);
-
-        // 3. Hapus tanda hubung di awal dan akhir string (jika ada)
-        $slug = trim($slug, '-');
-
-        return $slug;
-    }
-
     public function save()
     {
         $this->content = $this->processAndTrimImages($this->content);
@@ -197,7 +196,6 @@ new class extends Component {
 
         // $this->validate();
 
-        // $this->content = $this->processAndTrimImages($this->content);
         // 1. Jika ini proses UPDATE (Artikel sudah ada di database sebelumnya)
         if (isset($this->article_id)) {
             // Ambil isi konten lama dari database sebelum di-overwrite
@@ -230,13 +228,11 @@ new class extends Component {
                 }
             }
         }
+
         // === TAHAP 3: EKSEKUSI PENYIMPANAN DATA UTAMA VIA ELOQUENT ===
         // ✅ Otomatis mendeteksi CREATE jika article_id null, dan UPDATE jika article_id memiliki nilai
-
-        $slugContainer = $this->title;
-        $slug = $this->makeSlug($slugContainer);
-        $this->slug = $slug;
-        $this->status = 'pending';
+        $this->slug = Str::slug($this->title);
+        $this->status = 'draft';
 
         $dumpTruck = [
             'id user' => $this->user_id,
@@ -246,22 +242,22 @@ new class extends Component {
             'slug' => $this->slug,
             'url thumbnail' => $this->featured_image,
             'status' => $this->status,
-            'tanggal dibuat' => $this->published_at,
+            'tanggal dibuat' => $this->created_at,
         ];
-        dd($dumpTruck);
+        // dd($dumpTruck);
 
 
         $article = Post::updateOrCreate(
             ['id' => $this->article_id ?? null],
             [
-                // 'user_id'           => auth()->id() ?? $this->user_id, // Fallback ke properti jika auth kosong
+                'user_id'           => $this->user_id, // Fallback ke properti jika auth kosong
                 'category_id'       => $this->category_id,
                 'title'             => $this->title,
                 'slug'              => $this->slug,
                 'content'           => $this->content, // HTML bersih, ringan, bebas base64
                 'featured_image'    => $this->featured_image,
                 'status'            => $this->status,
-                'published_at'      => $this->published_at,
+                'created_at'        => $this->created_at,
             ]
         );
 
@@ -270,7 +266,42 @@ new class extends Component {
             $this->article_id = $article->id;
         }
 
-        session()->flash('message', 'Artikel berhasil disimpan!');
+        if (!isset($this->article_id)) {
+            $this->article_id = $article->id;
+        }
+
+        // =======================================================
+        // 🌟 TAHAP 4: PROSES PENYIMPANAN & PEMBUATAN TAGS BARU
+        // =======================================================
+        $finalTagIds = []; // Wadah untuk mengumpulkan semua ID Tag (baik lama maupun baru)
+
+        if (!empty($this->tags)) {
+            foreach ($this->tags as $tagInput) {
+                // Cek apakah inputannya hanya berupa angka (berarti ID Tag lama)
+                if (is_numeric($tagInput)) {
+                    $finalTagIds[] = (int) $tagInput;
+                } 
+                // Jika berupa teks/string (berarti Tag baru yang diketik user)
+                else {
+                    // Gunakan firstOrCreate agar tidak ada tag duplikat jika user salah ketik
+                    // Pastikan Anda sudah mengimpor use App\Models\Tag; di atas
+                    $newTag = \App\Models\Tag::firstOrCreate([
+                        'name' => trim($tagInput),
+                        'slug' => Str::slug($tagInput),
+                    ]);
+                    
+                    // Masukkan ID dari tag yang baru saja dibuat ke dalam wadah
+                    $finalTagIds[] = $newTag->id;
+                }
+            }
+        }
+
+        // Hubungkan (sync) semua ID tag yang terkumpul ke artikel ini
+        // Asumsinya Anda sudah punya relasi tags() di model Post Anda
+        $article->tags()->sync($finalTagIds);
+
+        $this->notify('Artikel disimpan!', 'success');
+        // session()->flash('message', 'Artikel berhasil disimpan!');
     }
     public function uploadImage()
     {
@@ -340,7 +371,7 @@ new class extends Component {
                     title: @entangle('title'),
                     categoryId: @entangle('category_id'),
                     selectedTags: @entangle('tags'),
-                    publishedAt: @entangle('published_at'),
+                    createdAt: @entangle('created_at'),
                 }"
                 class="shrink-0 relative mb-2 md:mb-4 z-20">
 
@@ -349,12 +380,12 @@ new class extends Component {
 
                     {{-- Input Judul --}}
                     <input type="text" x-model="title" placeholder="Judul Artikel..."
-                        class="w-full p-1 text-2xl md:text-3xl font-bold border-0 bg-transparent focus:ring-0 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600" />
+                        class="w-full p-2.5 text-2xl md:text-3xl font-bold border-0 bg-transparent focus:ring-0 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600" />
 
                     {{-- 🌟 TOMBOL BUKA MODAL THUMBNAIL (Dipindah ke sini) --}}
-                    <div class="flex items-center gap-2 shrink-0 md:ml-4">
+                    <div class="flex items-center justify-between gap-2 shrink-0 md:ml-4">
                         <button type="button" wire:click="scanEditorImages" @click="$dispatch('buka-featured-modal')"
-                            class="shrink-0 p-2 px-3 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer"
+                            class="shrink-0 p-2 px-3 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer w-[45%] md:w-auto"
                             title="Pilih Gambar Sampul">
                             <x-dynamic-component :component="'lucide-image'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
                             <span class="hidden md:inline">Sampul Artikel</span>
@@ -363,7 +394,7 @@ new class extends Component {
 
                         {{-- Tombol Buka Pengaturan Meta --}}
                         <button type="button" @click="isMetaOpen = true"
-                            class="shrink-0 p-2 px-3 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer"
+                            class="shrink-0 p-2 px-3 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer w-[45%] md:w-auto"
                             title="Pengaturan Artikel">
                             <span>⚙️</span>
                             <span class="hidden md:inline">Pengaturan Dokumen</span>
@@ -371,13 +402,6 @@ new class extends Component {
                         </button>
 
                     </div>
-                    {{-- Tombol Buka Pengaturan --}}
-                    {{-- <button @click="isMetaOpen = true" type="button"
-                        class="shrink-0 cursor-pointer md:ml-4 p-2 px-3 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700"
-                        title="Pengaturan Artikel">
-                        <span>⚙️</span>
-                        <span>Pengaturan Dokumen</span>
-                    </button> --}}
                 </div>
 
 
@@ -407,7 +431,7 @@ new class extends Component {
                             x-transition:leave="transition ease-in duration-200 transform"
                             x-transition:leave-start="translate-y-0 md:opacity-100 md:scale-100"
                             x-transition:leave-end="translate-y-full md:translate-y-4 md:opacity-0 md:scale-95"
-                            class="relative bg-white dark:bg-zinc-900 w-full md:w-[500px] rounded-t-2xl md:rounded-2xl h-[85vh] md:h-[90vh] flex flex-col overflow-hidden shadow-2xl z-10">
+                            class="relative bg-white dark:bg-zinc-900 w-full md:w-125 rounded-t-2xl md:rounded-2xl h-[85vh] md:h-[90vh] flex flex-col overflow-hidden shadow-2xl z-10">
 
                             {{-- Handle Drag (Hanya terlihat di Mobile) --}}
                             <div class="md:hidden w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-3" @click="isMetaOpen = false"></div>
@@ -429,7 +453,7 @@ new class extends Component {
                                 {{-- Input Tanggal --}}
                                 <div class="space-y-1.5">
                                     <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tanggal Dibuat</label>
-                                    <input type="date" x-model="publishedAt"
+                                    <input type="date" x-model="createdAt"
                                         class="w-full p-2.5 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-forest/20 focus:border-forest text-zinc-800 dark:text-zinc-200" />
                                 </div>
 
@@ -463,57 +487,35 @@ new class extends Component {
                                             this.tom = new window.TomSelect(this.$refs.tagInput, {
                                                 create: true,
                                                 plugins: ['remove_button'],
-                                                maxItems: null, // 🌟 KUNCI 1: Paksa mode multi-select (tak terbatas)
+                                                maxItems: null,
                                                 placeholder: 'Ketik atau Cari Tags...'
                                             });
-
-                                            // Set nilai awal saat halaman dimuat
-                                            this.tom.setValue(this.selectedTags, true);
-
-                                            // 🌟 KUNCI 2: Cegat data sebelum dikirim ke Livewire
+                                            
+                                            // Set nilai awal saat halaman dimuat menggunakan data dari Livewire
+                                            this.tom.setValue(@js($tags));
+                                            
+                                            // 🌟 KUNCI: Tembak data langsung ke PHP backend setiap ada perubahan
                                             this.tom.on('change', val => {
-                                                if (!val) {
-                                                    // Jika kosong, kirim array kosong
-                                                    this.selectedTags = [];
-                                                } else if (typeof val === 'string') {
-                                                    // Jika TomSelect mengembalikan string ber-koma (tag1,tag2), pecah jadi Array!
-                                                    this.selectedTags = val.split(',');
-                                                } else {
-                                                    // Jika sudah berupa Array, pastikan ter-copy dengan aman
-                                                    this.selectedTags = Array.isArray(val) ? val : [val];
+                                                let tagsArray = [];
+                                                
+                                                if (val) {
+                                                    // Pastikan datanya benar-benar Array sebelum dikirim
+                                                    tagsArray = Array.isArray(val) ? val : val.split(',');
                                                 }
+                                                
+                                                // Gunakan $wire.set() untuk meng-overwrite variabel $this->tags di PHP
+                                                $wire.set('tags', tagsArray);
                                             });
                                         }
                                     }">
                                     <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tags</label>
                                     <select x-ref="tagInput" multiple>
                                         @foreach(\App\Models\Tag::all() as $tag)
-                                            <option value="{{ $tag->name }}">{{ $tag->name }}</option>
+                                            <option value="{{ $tag->id }}">{{ $tag->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
 
-                                {{-- Tags --}}
-                                {{-- <div class="space-y-1.5" wire:ignore
-                                    x-data="{
-                                        tom: null,
-                                        init() {
-                                            this.tom = new window.TomSelect(this.$refs.tagInput, {
-                                                create: true,
-                                                plugins: ['remove_button'],
-                                                placeholder: 'Ketik atau Cari Tags...'
-                                            });
-                                            this.tom.setValue(this.selectedTags, true);
-                                            this.tom.on('change', val => this.selectedTags = val);
-                                        }
-                                    }">
-                                    <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tags</label>
-                                    <select x-ref="tagInput" multiple>
-                                        @foreach(\App\Models\Tag::all() as $tag)
-                                            <option value="{{ $tag->name }}">{{ $tag->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div> --}}
                             </div>
 
                             {{-- Tombol Tutup Modal --}}

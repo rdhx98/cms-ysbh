@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             CMSdbSeeder::class,
+            PostSeeder::class,
         ]);
         // User::factory(10)->create();
 

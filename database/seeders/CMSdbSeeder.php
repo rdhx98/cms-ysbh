@@ -85,31 +85,40 @@ class CMSdbSeeder extends Seeder
         //melaporkan [penelitian dan laporan]
 
         // 3. Buat beberapa Tag
-        $tags = collect(['Nutrisi', 'Lansia', 'Posyandu', 'Jayapura'])->map(function ($tagName) {
+        $tags = collect([
+            'Nutrisi', 
+            'Lansia', 
+            'Posyandu', 
+            'Kota Jayapura',
+            'Kab. Jayapura',
+            'Kuda Menjangan',
+            'Aku Papua',
+            'Edo Kondologit',
+            ])->map(function ($tagName) {
             return Tag::firstOrCreate(['name' => $tagName], ['slug' => Str::slug($tagName)]);
         });
 
         // 4. Buat Artikel
-        $post = Post::create([
-            'user_id' => $user4->id, // Penulis utama (di tabel posts)
-            'category_id' => $category->id,
-            'title' => 'Panduan Gizi Sehat untuk Lansia di Papua',
-            'slug' => Str::slug('Panduan Gizi Sehat untuk Lansia di Papua'),
-            'content' => 'Isi konten artikel yang sangat bermanfaat...',
-            'featured_image' => 'covers/gizi-lansia.jpg',
-            'status' => 'published',
-            'published_at' => now(),
-        ]);
+        // $post = Post::create([
+        //     'user_id' => $user4->id, // Penulis utama (di tabel posts)
+        //     'category_id' => $category->id,
+        //     'title' => 'Panduan Gizi Sehat untuk Lansia di Papua',
+        //     'slug' => Str::slug('Panduan Gizi Sehat untuk Lansia di Papua'),
+        //     'content' => 'Isi konten artikel yang sangat bermanfaat...',
+        //     'featured_image' => 'covers/gizi-lansia.jpg',
+        //     'status' => 'published',
+        //     'published_at' => now(),
+        // ]);
 
         // 5. Hubungkan Multiple Writers (Sitasi)
         // Kita hubungkan penulis utama dan penulis pembantu ke tabel pivot post_user
-        $post->authors()->sync([
-            $user3->id => ['is_primary' => true],
-            $user4->id => ['is_primary' => false],
-            // $user3->id => ['is_primary' => false]
-        ]);
+        // $post->authors()->sync([
+        //     $user3->id => ['is_primary' => true],
+        //     $user4->id => ['is_primary' => false],
+        //     // $user3->id => ['is_primary' => false]
+        // ]);
 
-        // 6. Hubungkan Multiple Tags
-        $post->tags()->sync($tags->pluck('id'));
+        // // 6. Hubungkan Multiple Tags
+        // $post->tags()->sync($tags->pluck('id'));
     }
 }

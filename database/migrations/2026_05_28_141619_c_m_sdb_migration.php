@@ -30,11 +30,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Relasi ke Penulis
             $table->foreignId('category_id')->constrained()->onDelete('cascade'); // Relasi ke Kategori
-            $table->string('title');
+            $table->string('title')->unique();
             $table->string('slug')->unique();
             $table->longText('content');
             $table->string('featured_image')->nullable(); // Jalur file di FTP Hostinger
-            $table->enum('status', ['draft', 'published', 'archived'])->default('draft');
+            $table->enum('status', ['draft', 'review', 'published', 'scheduled', 'archived', 'rejected'])->default('draft');
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
         });

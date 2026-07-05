@@ -5,14 +5,14 @@
 
     md:relative md:translate-x-0
 
-    transform-gpu transition-all duration-300 ease-in-out overflow-x-hidden flex flex-col items-start bg-white text-white p-1 md:mx-1.5  md:my-2 md:rounded-lg max-h-dvh'
+    transform-gpu transition-all duration-300 ease-in-out overflow-x-hidden flex flex-col items-start bg-white text-white p-1 md:mx-1.5  md:my-2 md:rounded-lg max-h-dvh md:border-0 border-r-2 border-forest'
     ]) }}
 {{-- :class="isExpanded ? 'w-64' : 'w-20'" --}}
 :class="{
     'translate-x-0': isExpanded,
     '-translate-x-full md:translate-x-0': !isExpanded,
-    'md:w-64': isExpanded,
-    'md:w-11': !isExpanded
+    'w-72 md:w-64': isExpanded,
+    'w-72 md:w-11': !isExpanded
 }"
 >
     {{-- top row expand button and title --}}
@@ -64,6 +64,14 @@
         :active="request()->routeIs('article.*')"
         icon="square-pen">
             {{ __('Articles') }}
+        </x-layouts.app.sidebar-link>
+
+        <x-layouts::app.sidebar-link
+        route="{{ route('article.index') }}"
+        :active="request()->routeIs('article.*')"
+        icon="chevrons-left-right-ellipsis"
+        iconSize="5">
+            {{ __('Laman') }}
         </x-layouts.app.sidebar-link>
 
     </nav>

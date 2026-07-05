@@ -1,7 +1,9 @@
 @props([
     'route' => '#',       // URL atau nama route tujuan
     'active' => false,    // Menentukan apakah rute ini sedang aktif
-    'icon' => null        // Menerima nama icon atau dibiarkan kosong jika pakai slot
+    'icon' => null,        // Menerima nama icon atau dibiarkan kosong jika pakai slot
+    'iconSize' => '4', // Menambahkan prop ukuran icon dengan nilai default
+    
 ])
 
 <a href="{{ $route }}"
@@ -18,7 +20,7 @@
         @if($icon)
             <x-dynamic-component
                 :component="'lucide-' . $icon"
-                class="h-4 w-4"
+                class="h-{{ $iconSize }} w-{{ $iconSize }}" {{-- Otomatis membuat h-5 w-5, h-7 w-7, dst --}}
                 stroke-width="2"
             />
         @else
