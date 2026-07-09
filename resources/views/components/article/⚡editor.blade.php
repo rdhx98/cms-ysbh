@@ -46,7 +46,7 @@ new class extends Component {
         $this->title = '';
         $this->slug = '';
         $this->featured_image = 'default.webp'; // Gambar default jika penulis tidak memilih
-        $this->status = 'draft'; // review | published | scheduled | archived | rejected 
+        $this->status = 'draft'; // review | published | scheduled | archived | rejected
     }
 
     public function scanEditorImages()
@@ -280,7 +280,7 @@ new class extends Component {
                 // Cek apakah inputannya hanya berupa angka (berarti ID Tag lama)
                 if (is_numeric($tagInput)) {
                     $finalTagIds[] = (int) $tagInput;
-                } 
+                }
                 // Jika berupa teks/string (berarti Tag baru yang diketik user)
                 else {
                     // Gunakan firstOrCreate agar tidak ada tag duplikat jika user salah ketik
@@ -289,7 +289,7 @@ new class extends Component {
                         'name' => trim($tagInput),
                         'slug' => Str::slug($tagInput),
                     ]);
-                    
+
                     // Masukkan ID dari tag yang baru saja dibuat ke dalam wadah
                     $finalTagIds[] = $newTag->id;
                 }
@@ -490,19 +490,19 @@ new class extends Component {
                                                 maxItems: null,
                                                 placeholder: 'Ketik atau Cari Tags...'
                                             });
-                                            
+
                                             // Set nilai awal saat halaman dimuat menggunakan data dari Livewire
                                             this.tom.setValue(@js($tags));
-                                            
+
                                             // 🌟 KUNCI: Tembak data langsung ke PHP backend setiap ada perubahan
                                             this.tom.on('change', val => {
                                                 let tagsArray = [];
-                                                
+
                                                 if (val) {
                                                     // Pastikan datanya benar-benar Array sebelum dikirim
                                                     tagsArray = Array.isArray(val) ? val : val.split(',');
                                                 }
-                                                
+
                                                 // Gunakan $wire.set() untuk meng-overwrite variabel $this->tags di PHP
                                                 $wire.set('tags', tagsArray);
                                             });
@@ -535,14 +535,18 @@ new class extends Component {
             <div x-data="setupEditor('content', $wire)" @buka-modal-link.window="isLinkOpen = true"
 
                 :style="isUploading ? { cursor: 'wait !important' } : {}"
-                {{-- :class="{ 'tiptap-locked': isUploading }"
-                class="flex-1 flex flex-col-reverse md:flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-900 shadow-sm relative" --}}
                 {{-- 🌟 KUNCI LAYAR PENUH: Jika isFullscreen true, elemen ini akan menutupi seluruh layar (fixed inset-0) dengan z-index 100 --}}
-                :class="isFullscreen
-                    ? 'fixed inset-0 z-100 bg-white dark:bg-zinc-950 flex flex-col-reverse md:flex-col'
-                    : 'flex-1 flex flex-col-reverse md:flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-900 shadow-sm relative'"
-                class="transition-all duration-300 ease-in-out"
-                wire:ignore>
+
+                    {{-- :class="isFullscreen
+                        ? 'fixed inset-0 z-100 bg-white dark:bg-zinc-950 flex flex-col-reverse md:flex-col'
+                        : 'flex-1 flex flex-col-reverse md:flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 shadow-sm relative'"
+                    class="transition-colors duration-300 ease-in-out flex-1 flex flex-col-reverse md:flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 shadow-sm relative" --}}
+                    :class="isFullscreen
+                        ? 'fixed inset-0 z-100 bg-white dark:bg-zinc-950 flex flex-col-reverse md:flex-col'
+                        : 'flex-1 flex flex-col-reverse md:flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-900 shadow-sm relative'"
+                    class="transition-colors duration-300 ease-in-out flex-1 flex flex-col-reverse md:flex-col min-h-0 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-900 shadow-sm relative"
+
+                    wire:ignore>
 
                 {{-- IMAGE BUBBLE MENU --}}
                 <div x-ref="imageBubbleMenu"
@@ -752,6 +756,39 @@ new class extends Component {
                                     <x-dynamic-component :component="'lucide-bell'" class="h-5 w-5" stroke-width="2.5" />
                                 </button>
                             </div> --}}
+                            <div class="editor-toolbar flex flex-wrap gap-2 mb-3 pb-3 border-b border-gray-200">
+
+                            <div class="w-px h-6 bg-gray-300 mx-1 self-center"></div>
+                                <button
+                                    type="button"
+                                    @click="insertStepCard()"
+                                    class="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                                    title="Tambahkan Kartu Komponen/Langkah"
+                                >
+                                    <svg class="w-4 h-4 text-forest" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                    Langkah
+                                </button>
+
+                                <button
+                                    type="button"
+                                    @click="insertTransferCard()"
+                                    class="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                                    title="Tambahkan Kartu Rekening Donasi"
+                                >
+                                    <svg class="w-4 h-4 text-forest" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                                    Rekening
+                                </button>
+
+                                <button
+                                    type="button"
+                                    @click="insertContactItem()"
+                                    class="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                                    title="Tambahkan Item Kontak"
+                                >
+                                    <svg class="w-4 h-4 text-forest" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.9.6 2.8a2 2 0 0 1-.5 2.1L7.9 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2Z"></path></svg>
+                                    Kontak
+                                </button>
+                            </div>
                         </div>
 
                         {{-- ================= AKSI KANAN TOOLBAR ================= --}}
@@ -880,9 +917,13 @@ new class extends Component {
                     </div>
 
                     {{-- AREA WRAPPER TEXT UTAMA TIPTAP --}}
-                    <div x-ref="editorElement"
-                        class="prose prose-zinc dark:prose-invert max-w-none p-6 flex-1 overflow-y-auto dark:text-zinc-100 focus:outline-none">
-                    </div>
+                    <div id="editor" x-ref="editorElement" class="prose prose-zinc dark:prose-invert max-w-none flex-1 overflow-y-auto dark:text-zinc-100 focus:outline-none"></div>
+
+
+                    {{-- <div id="editor" x-ref="editorElement" class="relative prose prose-zinc dark:prose-invert max-w-none flex-1 dark:text-zinc-100 focus:outline-none"></div> --}}
+                    {{-- <div id="editor" x-ref="editorElement" class="relative prose prose-zinc dark:prose-invert max-w-none flex-1 dark:text-zinc-100 focus:outline-none"></div> --}}
+                    {{-- <div id="editor" x-ref="editorElement" class="prose prose-zinc dark:prose-invert max-w-none p-4 flex-1 dark:text-zinc-100 focus:outline-none"></div> --}}
+                    {{-- <div id="editor" x-ref="editorElement" class="pl-12 p-4 min-h-[300px] prose max-w-none"></div> --}}
 
                     {{-- 🌟 WORD COUNTER MELAYANG (FLOATING) --}}
                     <div class="absolute bottom-2 right-3 md:bottom-4 md:right-4 pointer-events-none z-10">

@@ -20,339 +20,28 @@ import { FontFamily } from '@tiptap/extension-font-family'
 import { Underline } from '@tiptap/extension-underline'
 import { OrderedList } from '@tiptap/extension-ordered-list'
 
+// import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
 import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { DOMParser as ProseMirrorDOMParser } from '@tiptap/pm/model'
 
+import { HiddenMarks } from './extensions/HiddenMarks.js'
+import { LinkBackspaceHandler } from './extensions/LinkBackspaceHandler.js'
+import { ParagraphIndent } from './extensions/ParagraphIndent.js'
+
+// import { InfoCard } from './node/InfoCard.js'
+// import { ChipGroup } from './node/ChipGroup.js'
+import { StepCard } from './node//StepCard.js'
+import { TransferCard } from './node//TransferCard.js'
+import { ContactItem } from './node//ContactItem.js'
+import { MediaPlaceholder } from './node/MediaPlaceholder.js'
 
 
 const ALLOWED_FONTS = ['Arial', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
 
 const lowlight = createLowlight(common)
 
-const LinkBackspaceHandler = Extension.create({
-    name: 'linkBackspaceHandler',
-
-    addProseMirrorPlugins() {
-        return [
-            new Plugin({
-                key: new PluginKey('linkBackspacePlugin'),
-                props: {
-                    handleKeyDown(view, event) {
-                        if (event.key !== 'Backspace') return false;
-
-                        const { state } = view;
-                        const { selection, tr } = state;
-                        const { $from, empty } = selection;
-
-                        if (!empty) return false;
-
-                        let linkMark = state.schema.marks.link ? $from.marks().find(m => m.type.name === 'link') : null;
-
-                        if (!linkMark && state.schema.marks.link) {
-                            linkMark = $from.nodeBefore ? $from.nodeBefore.marks.find(m => m.type.name === 'link') : null;
-                        }
-
-                        if (linkMark) {
-                            const linkType = state.schema.marks.link;
-                            let start = $from.pos;
-                            let end = $from.pos;
-
-                            // Melacak batas awal link
-                            while (start > 0 && state.doc.rangeHasMark(start - 1, start, linkType)) {
-                                start--;
-                            }
-
-                            // Melacak batas akhir link
-                            while (end < state.doc.content.size && state.doc.rangeHasMark(end, end + 1, linkType)) {
-                                end++;
-                            }
-
-                            if (start < end) {
-                                // --- ✅ PERBAIKAN DI SINI ---
-                                // 1. Hapus teks link dari dokumen
-                                // 2. Gunakan removeStoredMark agar ketikan setelahnya tidak bermark link
-                                view.dispatch(
-                                    tr.delete(start, end)
-                                      .removeStoredMark(linkType)
-                                );
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    },
-                }
-            })
-        ];
-    }
-});
-
-const HiddenMarks = Extension.create({
-    name: 'hiddenMarks',
-
-    addStorage() {
-        return {
-            visible: false,
-        }
-    },
-    // --- ➕ INJECT CSS OTOMATIS LEWAT JS ---
-    onCreate() {
-        if (!document.getElementById('tiptap-hidden-marks-styles')) {
-            const style = document.createElement('style');
-            style.id = 'tiptap-hidden-marks-styles';
-            style.textContent = `
-                /* 🌟 SOLUSI ANTI-BUG INDENTASI & JUSTIFY 🌟 */
-                .tiptap-invisible-space {
-                    /* Menggambar titik bulat vektor langsung di background spasi */
-                    background-image: radial-gradient(circle, #a1a1aa 1.25px, transparent 1.5px) !important;
-
-                    /* Mengunci posisi gambar persis di tengah secara horizontal, dan 55% secara vertikal */
-                    background-position: center 55% !important;
-                    background-repeat: no-repeat !important;
-                }
-
-                /* Matikan pemanggilan ::before yang lama agar tidak muncul dobel */
-                .tiptap-invisible-space::before {
-                    content: none !important;
-                    display: none !important;
-                }
-            `;
-            document.head.appendChild(style);
-        }
-    },
-
-    addCommands() {
-        return {
-            toggleHiddenMarks: () => ({ editor }) => {
-                this.storage.visible = !this.storage.visible;
-
-                const { state, view } = editor;
-                view.dispatch(
-                    state.tr
-                        .setMeta('hiddenMarksTrigger', Date.now())
-                        .setMeta('addToHistory', false)
-                );
-
-                return true;
-            },
-        }
-    },
-
-    addProseMirrorPlugins() {
-        const extensionThis = this;
-
-        return [
-            new Plugin({
-                key: new PluginKey('hiddenMarksPlugin'),
-
-                state: {
-                    init() { return null; },
-                    apply(tr, value) {
-                        if (tr.getMeta('hiddenMarksTrigger') !== undefined) return tr.getMeta('hiddenMarksTrigger');
-                        return value;
-                    }
-                },
-
-                props: {
-                    attributes() {
-                        return extensionThis.storage.visible
-                            ? { class: 'show-invisible-marks' }
-                            : {};
-                    },
-
-                    decorations(state) {
-                        if (!extensionThis.storage.visible) return DecorationSet.empty;
-
-                        const decorations = [];
-                        const { doc } = state;
-
-                        doc.descendants((node, pos) => {
-
-                            // 1. PERBAIKAN PARAGRAF (¶) - DIKUNCI AGAR TIDAK TURUN
-                            if (node.type.name === 'paragraph') {
-                                const endPos = pos + node.nodeSize - 1;
-                                decorations.push(
-                                    Decoration.widget(endPos, () => {
-                                        const span = document.createElement('span');
-                                        span.className = 'tiptap-invisible-para';
-                                        span.textContent = '¶';
-                                        return span;
-                                    }, { side: 1, stopEvent: () => true })
-                                );
-                            }
-
-                            // 2. PERBAIKAN HARD BREAK (↵) - DIKUNCI AGAR SEJAJAR TEKS
-                            if (node.type.name === 'hardBreak') {
-                                decorations.push(
-                                    Decoration.widget(pos, () => {
-                                        const span = document.createElement('span');
-                                        span.className = 'tiptap-invisible-break';
-                                        span.textContent = '↵';
-                                        span.style.cssText = `
-                                            display: inline-block !important;
-                                            width: 0 !important;
-                                            height: 0 !important;
-                                            line-height: 0 !important;
-                                            overflow: visible !important;
-
-                                            /* Kunci posisi vertikal */
-                                            vertical-align: baseline !important;
-                                            transform: translateY(-0.05em) !important; /* Dorong mikro ke atas jika ikut ketarik turun */
-
-                                            font-family: var(--font-mono) !important;
-                                            font-size: 0.85em !important;
-                                            color: #c300ff !important;
-                                            user-select: none !important;
-                                            pointer-events: none !important;
-                                            margin-left: 2px !important;
-                                        `;
-                                        return span;
-                                    }, { side: -1, stopEvent: () => true })
-                                );
-                            }
-
-
-                            // 3. DETEKSI SPASI (·) - MENGGUNAKAN INLINE DECORATION
-                            if (node.isText) {
-                                const text = node.text;
-                                let index = text.indexOf(' ');
-
-                                while (index !== -1) {
-                                    const startPos = pos + index;
-                                    const endPos = startPos + 1;
-
-                                    decorations.push(
-                                        Decoration.inline(startPos, endPos, {
-                                            class: 'tiptap-invisible-space',
-                                        })
-                                    );
-
-                                    // Cari spasi berikutnya di dalam text node yang sama
-                                    index = text.indexOf(' ', index + 1);
-                                }
-                            }
-                        });
-
-                        return DecorationSet.create(doc, decorations);
-                    }
-                }
-            }),
-        ];
-    }
-});
-
-const ParagraphIndent = Extension.create({
-    name: 'paragraphIndent',
-
-    addGlobalAttributes() {
-        return [
-            {
-                types: ['paragraph'],
-                attributes: {
-                    indent: {
-                        default: null,
-                        // 🌟 FIX INDENTASI WORD ONLINE: Cek apakah nilainya valid dan lebih besar dari 0
-                        parseHTML: element => {
-                            const style = element.style.textIndent || '';
-                            const value = parseFloat(style);
-                            // Jika ada text-indent dan nilainya lebih dari 0 (misal 24pt, 1cm, dll), anggap true.
-                            // Jika 0pt atau tidak ada, berikan null (normal).
-                            return (style && value > 0) ? true : null;
-                        },
-                        renderHTML: attributes => {
-                            if (!attributes.indent) return {}
-                            return { style: 'text-indent: 2rem;' }
-                        },
-                    },
-                },
-            },
-        ]
-    },
-
-
-    addCommands() {
-        return {
-            toggleIndent: () => ({ commands, editor }) => {
-                const isIndented = editor.getAttributes('paragraph').indent
-                return commands.updateAttributes('paragraph', { indent: isIndented ? null : true })
-            },
-            unsetIndent: () => ({ commands }) => {
-                return commands.updateAttributes('paragraph', { indent: null })
-            },
-        }
-    },
-
-    addKeyboardShortcuts() {
-        return {
-            'Tab': () => {
-                if (this.editor.isActive('bulletList') || this.editor.isActive('orderedList')) {
-                    return false
-                }
-                if (this.editor.isActive('paragraph')) {
-                    return this.editor.commands.toggleIndent()
-                }
-                return false
-            },
-            'Shift-Tab': () => {
-                if (this.editor.isActive('bulletList') || this.editor.isActive('orderedList')) {
-                    return false
-                }
-                if (this.editor.isActive('paragraph')) {
-                    return this.editor.commands.unsetIndent()
-                }
-                return false
-            },
-            // 🌟 TAMBAHKAN KODE BACKSPACE INI 🌟
-            'Backspace': () => {
-                const { selection } = this.editor.state;
-                const { empty, $anchor } = selection;
-
-                // Jika ada teks yang diblok, biarkan backspace menghapus teks tersebut
-                if (!empty) return false;
-
-                // Cek apakah kursor berada tepat di titik paling awal (offset 0) dari sebuah paragraf
-                if ($anchor.parentOffset === 0 && this.editor.isActive('paragraph')) {
-                    const isIndented = this.editor.getAttributes('paragraph').indent;
-
-                    // Jika paragraf tersebut memiliki indentasi, hapus indentasinya saja
-                    if (isIndented) {
-                        return this.editor.commands.unsetIndent();
-                    }
-                }
-
-                // Jika tidak ada indentasi, biarkan backspace bekerja normal (menghapus paragraf)
-                return false;
-            },
-        }
-    },
-});
-
-const MediaPlaceholder = Node.create({
-    name: 'mediaPlaceholder',
-    group: 'block',
-    atom: true,
-    selectable: true, // 💡 KUNCI 2: Izinkan user mengklik/memilih blok ini agar tahu fokusnya ada di sini
-    draggable: false,  // Jaga agar slot placeholder tidak sengaja tergeser saat mau di-drop
-
-    parseHTML() {
-        return [{ tag: 'div[data-type="media-placeholder"]' }]
-    },
-
-    renderHTML({ HTMLAttributes }) {
-        return [
-            'div',
-            mergeAttributes(HTMLAttributes, { 'data-type': 'media-placeholder', class: 'media-placeholder-zone' }),
-            [
-                'div', { class: 'placeholder-content' },
-                ['span', { class: 'placeholder-text' }, 'Tarik & lepas gambar ke sini atau '],
-                // Gunakan fungsi pembuka modal/picker yang Anda miliki
-                ['button', { type: 'button', class: 'placeholder-btn', onclick: 'window.triggerLocalFilePicker()' }, 'Cari Berkas']
-            ]
-        ]
-    }
-});
 
 document.addEventListener('alpine:init', () => {
     // Simpan instance murni global agar terbebas dari Proxy Observer Alpine
@@ -424,6 +113,9 @@ document.addEventListener('alpine:init', () => {
                 window.tiptapEditor = new Editor({
                     element: this.$refs.editorElement,
                     extensions: [
+
+
+
                         // StarterKit standar
                         StarterKit.configure({
                             codeBlock: false,
@@ -431,6 +123,17 @@ document.addEventListener('alpine:init', () => {
                             underline: false,
                             orderedList:false,
                         }),
+
+                        // GlobalDragHandle.configure({
+                        //     dragHandleWidth: 32, // Lebar area deteksi hover (dalam px)
+                        //     scrollTreshold: 100, // Kecepatan scroll saat drag mendekati tepi layar
+                        // }),
+
+                        StepCard,
+                        TransferCard,
+                        ContactItem,
+                        // InfoCard,
+                        // ChipGroup,
 
                         // Biarkan mati saat pertama kali dimuat
                         HiddenMarks.configure({visible: false }),
@@ -766,6 +469,41 @@ document.addEventListener('alpine:init', () => {
 
                     content: initialContent,
 
+                    // TIMPA MULAI DARI SINI
+                    // onUpdate({ editor }) {
+                    //     if (_this.isUploading) return;
+
+                    //     // 1. Bersihkan sisa antrean waktu sebelumnya saat user masih mengetik
+                    //     clearTimeout(_this.syncTimeout);
+                    //     clearTimeout(_this.uiTimeout);
+
+                    //     // 2. DEBOUNCE UI TOOLBAR & WORD COUNT (Ditunda 150 milidetik)
+                    //     // Biarkan jari user mengetik dengan lancar, baru update UI saat ada jeda
+                    //     _this.uiTimeout = setTimeout(() => {
+                    //         _this.updatedAt = Date.now();
+
+                    //         // Penghitung kata dipindah ke sini agar tidak menyiksa CPU
+                    //         const text = editor.getText();
+                    //         _this.wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+                    //     }, 150);
+
+                    //     // 3. DEBOUNCE SINKRONISASI LIVEWIRE (Ditunda 500 milidetik)
+                    //     _this.syncTimeout = setTimeout(() => {
+                    //         if (window.tiptapEditor) {
+                    //             wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
+                    //         }
+                    //     }, 500);
+                    // },
+
+                    // onSelectionUpdate() {
+                    //     clearTimeout(_this.uiTimeout);
+
+                    //     // Tunda update tombol aktif (Bold/Italic/dll) saat kursor berpindah
+                    //     _this.uiTimeout = setTimeout(() => {
+                    //         _this.updatedAt = Date.now();
+                    //     }, 150);
+                    // }
+
                     onUpdate({ editor }) {
                         _this.updatedAt = Date.now();
 
@@ -785,21 +523,6 @@ document.addEventListener('alpine:init', () => {
                             }
                         }, 500);
                     },
-                    // onUpdate({ editor }) {
-                    //     _this.updatedAt = Date.now()
-
-
-                    //     // 🌟 LOGIKA PENGHITUNG KATA 🌟
-                    //     // Mengambil teks murni, menghapus spasi ekstra, lalu menghitung array kata
-                    //     const text = editor.getText();
-                    //     _this.wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-
-                    //     // JANGAN kirim data ke Livewire jika sedang ada proses upload gambar di latar belakang
-                    //     if (_this.isUploading) return;
-
-                    //     // wireComponent.set(wireModelName, editor.getHTML(), false)
-                    //     wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
-                    // },
                     onSelectionUpdate() {
                         _this.updatedAt = Date.now()
                     }
@@ -1092,6 +815,28 @@ document.addEventListener('alpine:init', () => {
                     .focus()
                     .insertContent({ type: 'mediaPlaceholder' })
                     .run();
+                this.updatedAt = Date.now();
+            },
+
+            insertInfoCard() {
+                if (!window.tiptapEditor) return;
+
+                window.tiptapEditor.chain()
+                    .focus()
+                    .setInfoCard({ icon: 'building', tag: 'Mitra', color: 'forest' })
+                    .run();
+
+                this.updatedAt = Date.now(); // Trigger reaktivitas Alpine
+            },
+
+            insertChipGroup() {
+                if (!window.tiptapEditor) return;
+
+                window.tiptapEditor.chain()
+                    .focus()
+                    .setChipGroup({ label: 'Beban Sedang', color: 'gold', chips: ['Kabupaten A'] })
+                    .run();
+
                 this.updatedAt = Date.now();
             },
 
@@ -1430,7 +1175,22 @@ document.addEventListener('alpine:init', () => {
                         type: type || 'success'
                     }
                 }));
-            }
+            },
+            insertStepCard() {
+                if (!window.tiptapEditor) return;
+                window.tiptapEditor.chain().focus().setStepCard({ number: '01' }).run();
+                this.updatedAt = Date.now();
+            },
+            insertTransferCard() {
+                if (!window.tiptapEditor) return;
+                window.tiptapEditor.chain().focus().setTransferCard().run();
+                this.updatedAt = Date.now();
+            },
+            insertContactItem() {
+                if (!window.tiptapEditor) return;
+                window.tiptapEditor.chain().focus().setContactItem().run();
+                this.updatedAt = Date.now();
+            },
         }
     }
 })

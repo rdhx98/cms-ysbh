@@ -12,4 +12,4 @@ window.TomSelect = TomSelect;
 Alpine.plugin(collapse);
 
 // Import modul Tiptap Editor yang terpisah
-import './tiptap-editor';
+import './tiptap/tiptap-editor.js';
