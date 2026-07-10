@@ -1,7 +1,8 @@
 @props(['title' => null])
 
 <aside
-{{ $attributes->merge(['class' => 'flex flex-row items-center justify-between bg-white text-forest rounded-lg h-10 p-2 ']) }}
+{{-- {{ $attributes->merge(['class' => 'flex flex-row items-center justify-between bg-white text-forest rounded-lg h-10 p-2 ']) }} --}}
+{{ $attributes->merge(['class' => 'flex flex-row items-center justify-between bg-white text-forest rounded-lg h-10 p-2 z-50']) }}
 :class="isExpanded ? '' : ''"
 >
     <button

@@ -18,7 +18,8 @@
         <x-layouts::app.sidebar />
 
         {{-- <main class="flex-1 py-2 pr-2"> --}}
-        <main class="flex-1 md:p-[0.5rem_0.5rem_0.5rem_0rem] p-[0.5rem_0.5rem_0.5rem_0.5rem] overflow-y-auto h-full space-y-2">
+        {{-- <main class="flex-1 md:p-[0.5rem_0.5rem_0.5rem_0rem] p-[0.5rem_0.5rem_0.5rem_0.5rem] overflow-y-auto h-full space-y-2"> --}}
+        <main class="flex-1 md:p-[0.5rem_0.5rem_0.5rem_0rem] p-[0.5rem_0.5rem_0.5rem_0.5rem] space-y-2 min-h-screen">
             <x-layouts::app.header :title="$title ?? 'Nu uh'" />
             {{ $slot }}
         </main>

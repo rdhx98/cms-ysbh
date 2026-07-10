@@ -5,8 +5,7 @@ export const StepCard = Node.create({
   name: 'stepCard',
   group: 'block',
   content: 'block+',
-
-  // 🚨 HAPUS 'draggable: true' DI SINI AGAR TIDAK KENA BUG TRIPLE-CLICK 🚨
+  // draggable tidak perlu diset true secara eksplisit lagi, biar Global Handle yang urus
 
   addAttributes() {
     return { number: { default: '01' } }
@@ -23,7 +22,6 @@ export const StepCard = Node.create({
     return [
       'div',
       mergeAttributes(HTMLAttributes, { 'data-type': 'step-card', class: 'component-card' }),
-      // Render publik untuk pengunjung web tetap memakai span biasa, bukan input
       ['span', { class: 'component-num' }, node.attrs.number],
       ['div', { class: 'component-body' }, 0],
     ]
@@ -34,20 +32,24 @@ export const StepCard = Node.create({
       const dom = document.createElement('div')
       dom.className = 'component-card'
       dom.dataset.number = node.attrs.number
+
+      // 🌟 PERBAIKAN: margin: 1.5rem auto; agar mengikuti hukum rata tengah max-w-7xl
+      // Tuas (drag handle) lokal juga sudah dibuang agar editor jauh lebih bersih
       dom.style.cssText = `
         display: flex; gap: 24px; align-items: flex-start;
         background: #FFFFFF; border: 1px solid rgba(6, 79, 59, 0.14);
         border-radius: 18px; padding: 26px 30px;
-        box-shadow: 0 20px 50px -25px rgba(6, 45, 35, 0.35); margin: 1.5rem 0;
+        box-shadow: 0 20px 50px -25px rgba(6, 45, 35, 0.35);
+        margin: 1.5rem auto; /* 👈 KUNCI EMASNYA DI SINI */
+        width: 100%;
       `
 
-      // 🌟 SOLUSI 1: Gunakan <input> asli alih-alih <span> contenteditable
+      // --- KOTAK ANGKA ---
       const numEl = document.createElement('input')
       numEl.type = 'text'
       numEl.value = node.attrs.number
       numEl.className = 'component-num'
-      numEl.maxLength = 2 // Batasi misal cuma bisa ketik '01', '99'
-
+      numEl.maxLength = 2
       numEl.style.cssText = `
         font-family: 'Fraunces', serif; font-weight: 700; font-size: 15px;
         color: #064F3B; background: #F7EBAF; width: 40px; height: 40px;
@@ -66,10 +68,11 @@ export const StepCard = Node.create({
       numEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault()
-          editor.commands.focus(getPos() + 2) // Lempar kursor ke teks sebelah
+          editor.commands.focus(getPos() + 2)
         }
       })
 
+      // --- AREA TEKS ---
       const contentDOM = document.createElement('div')
       contentDOM.className = 'component-body'
       contentDOM.style.cssText = 'flex: 1; min-width: 0;'
@@ -79,16 +82,8 @@ export const StepCard = Node.create({
       return {
         dom,
         contentDOM,
-
-        // 🌟 SOLUSI 2: Kunci agar Tiptap tidak mencuri klik/ketikan dari input angka kita!
-        stopEvent: (event) => {
-          return event.target === numEl;
-        },
-
-        // 🌟 SOLUSI 3: Cegah Tiptap merender ulang kartu jika kita cuma mengubah angka
-        ignoreMutation: (mutation) => {
-          return !contentDOM.contains(mutation.target);
-        }
+        stopEvent: (event) => { return event.target === numEl; },
+        ignoreMutation: (mutation) => { return !contentDOM.contains(mutation.target); }
       }
     }
   },
@@ -105,7 +100,7 @@ export const StepCard = Node.create({
               { type: 'paragraph', content: [{ type: 'text', text: 'Tulis penjelasan komponen di sini...' }] },
             ],
           },
-          { type: 'paragraph' } // 👈 Kursor otomatis pindah ke baris baru di bawah kartu
+          { type: 'paragraph' }
         ])
       },
     }

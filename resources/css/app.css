@@ -187,7 +187,21 @@
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
 
-    /* Warna Yayasan Sinar Bhakti Husada */
+
+    --color-foresty:#064F3B;
+    --color-foresty-dark:#043328;
+    --color-foresty-tint:#0E6A4F;
+    --color-goldy:#EBCC26;
+    --color-goldy-soft:#F7EBAF;
+    --color-coral:#E42326;
+    --color-coral-dark:#BE1417;
+    --color-paper:#FBF7EA;
+    --color-paper-dim:#F3ECD6;
+    --color-ink:#12241C;
+    --color-ink-soft:#4B5D53;
+    --color-mist:#E9F1EB;
+
+    /* GEMINI */
     --color-sage-soft: #D2E7DF;
     --color-pale-yellow: #FFF2B2;
     --color-coral-muted: #FAD2D2;
@@ -233,20 +247,95 @@
 }
 
 /* ==========================================================================
-   1. STRUKTUR BASE & CORE TIPTAP EDITOR
+   ILUSI KERTAS HVS (MAX-W-64REM) DI TENGAH LAYAR
    ========================================================================== */
 .tiptap {
-    font-family: var(--font-jakarta);
-    font-size: 1rem;
-    line-height: 1.6;
-    color: #1f2937;
+    width: 100%;
+    outline: none;
+    padding: 0 !important;
+    min-height: 100%; /* HAPUS 250vh, ganti dengan 100% */
+    display: flex;
+    flex-direction: column;
 
-    /* 🌟 KUNCI 1: Beri bantalan 64px di kiri agar teks bergeser dan tuas punya tempat */
-    padding: 1rem 4rem 1rem 4rem !important;
-    /* box-sizing: border-box; */
-    /* min-height: 100%; */
+    /* Menggambar Latar Kertas Putih persis selebar 64rem di tengah layar */
+    background-color: transparent;
+    background-image: linear-gradient(
+        to right,
+        transparent calc(50% - 32rem),
+        #ffffff calc(50% - 32rem),
+        #ffffff calc(50% + 32rem),
+        transparent calc(50% + 32rem)
+    );
 }
 
+.dark .tiptap {
+    background-image: linear-gradient(
+        to right,
+        transparent calc(50% - 32rem),
+        #18181b calc(50% - 32rem),
+        #18181b calc(50% + 32rem),
+        transparent calc(50% + 32rem)
+    );
+}
+
+/* Jika layar kecil (Tablet/HP), hilangkan efek kolom kertas */
+@media (max-width: 1024px) {
+    .tiptap {
+        background-image: none !important;
+        background-color: #ffffff;
+    }
+    .dark .tiptap {
+        background-image: none !important;
+        background-color: #18181b;
+    }
+}
+
+/* Kunci Semua Paragraf dan Teks sejajar di atas "Kertas" tersebut */
+.tiptap > * {
+    max-width: 64rem !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 3rem !important; /* Ruang kosong lega di kiri untuk tempat Drag Handle */
+    padding-right: 3rem !important;
+    width: 100%;
+}
+
+/* Pengecualian! Blok Warna (SectionBlock) boleh menembus kertas layar penuh */
+.tiptap > .full-width-section {
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* ==========================================================================
+   GLOBAL DRAG HANDLE (Fixed Mutlak Anti-Hilang)
+   ========================================================================== */
+.drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: transparent;
+    border-radius: 4px;
+    cursor: grab;
+    color: #9ca3af;
+
+    /* 🌟 KUNCI: Fixed mutlak agar tidak terpotong kontainer scroll */
+    position: fixed !important;
+    z-index: 9999 !important;
+    opacity: 1;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='%239ca3af'%3E%3Cpath d='M8 5.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 13.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 21.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+.drag-handle.hide { opacity: 0; pointer-events: none; }
+.drag-handle:hover { background-color: #e5e7eb; color: #064F3B; }
+.drag-handle svg { display: none !important; }
+
+/* FOCUS STATE */
 .tiptap:focus {
     outline: none;
 }
@@ -509,23 +598,6 @@
     pointer-events: none !important;
     margin-left: 2px !important;
 }
-/* Penanda Paragraf (¶) */
-/* .show-invisible-marks .tiptap-invisible-para {
-    display: inline-block !important;
-    position: static !important;
-    width: 0 !important;
-    height: 0 !important;
-    line-height: 0 !important;
-    overflow: visible !important;
-    vertical-align: baseline !important;
-    font-family: monospace !important;
-    font-size: 0.85em !important;
-    font-weight: bold !important;
-    color: #10b981 !important;
-    user-select: none !important;
-    pointer-events: none !important;
-    margin-left: 2px !important;
-} */
 
 /* Penanda Hard Break / Shift+Enter (↵) */
 .show-invisible-marks .tiptap-invisible-break {
@@ -723,84 +795,5 @@
 /* 3. Hover pada pil/item Tag yang sudah terpilih */
 .ts-wrapper.multi .ts-control > div:hover {
     @apply bg-zinc-200 dark:bg-zinc-700 border-zinc-300 dark:border-zinc-600 transition-colors shadow-sm;
-}
-
-/* --- TIPTAP GLOBAL DRAG HANDLE STYLES --- */
-
-/* Wrapper ikon drag */
-/* .drag-handle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    background-color: transparent;
-    border-radius: 4px;
-    cursor: grab;
-    color: #9ca3af; /* Warna ikon abu-abu *
-    transition: background-color 0.2s ease, color 0.2s ease;
-} */
-
-/* Efek hover pada tuas drag */
-/* .drag-handle:hover {
-    background-color: #f3f4f6; /* Warna latar saat di-hover
-    color: #064F3B; /* var(--forest) saat di-hover agar selaras dengan tema YSBH
-} */
-
-/* Saat sedang ditarik */
-/* .drag-handle:active {
-    cursor: grabbing;
-} */
-
-/* Ikon SVG bawaan dari ekstensi */
-/* .drag-handle svg {
-    width: 16px;
-    height: 16px;
-    /* Mencegah klik nyasar ke elemen SVG di dalamnya
-    pointer-events: none;
-} */
-
-/* Efek transparan pada node yang sedang diseret (drag preview) */
-/* .ProseMirror-selectednode {
-    outline: 2px solid #E42326 !important; /* var(--coral)
-    outline-offset: 2px;
-    transition: outline 0.1s ease-in-out;
-} */
-.drag-handle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    background-color: transparent;
-    border-radius: 4px;
-    cursor: grab;
-    color: #9ca3af;
-
-    /* 🌟 KUNCI 2: FIXED akan mengabaikan semua div 'relative' dan langsung menempel di kordinat layar yang benar! */
-    position: fixed !important;
-    z-index: 9999;
-    opacity: 1;
-    transition: opacity 0.2s ease, background-color 0.2s ease;
-
-    /* Jaga-jaga jika SVG plugin gagal dimuat, kita pakai ikon cadangan ini */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='%239ca3af'%3E%3Cpath d='M8 5.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 13.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 21.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-.drag-handle.hide {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.drag-handle:hover {
-    background-color: #f3f4f6;
-    color: #064F3B;
-}
-
-.drag-handle svg {
-    /* Sembunyikan SVG bawaan plugin karena kita pakai background-image di atas */
-    display: none !important;
 }
 

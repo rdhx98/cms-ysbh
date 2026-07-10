@@ -20,7 +20,7 @@ import { FontFamily } from '@tiptap/extension-font-family'
 import { Underline } from '@tiptap/extension-underline'
 import { OrderedList } from '@tiptap/extension-ordered-list'
 
-// import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
+import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
 import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
@@ -36,6 +36,9 @@ import { StepCard } from './node//StepCard.js'
 import { TransferCard } from './node//TransferCard.js'
 import { ContactItem } from './node//ContactItem.js'
 import { MediaPlaceholder } from './node/MediaPlaceholder.js'
+import { SectionBlock } from './node/SectionBlock.js'
+import { SectionBlock2 } from './node/SectionBlock2.js'
+import { SectionBlock3 } from './node/SectionBlock3.js'
 
 
 const ALLOWED_FONTS = ['Arial', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
@@ -78,6 +81,12 @@ document.addEventListener('alpine:init', () => {
                 const _this = this;
                 const editorElement = this.$refs.editorElement;
                 const initialContent = wireComponent.get(wireModelName) || '';
+
+                // 🌟 SABUK PENGAMAN: Hentikan proses jika HTML berantakan
+                if (!editorElement) {
+                    console.error("🚨 Alpine kehilangan jejak x-ref='editorElement'! Periksa tag </div> di file Blade kamu.");
+                    return;
+                }
 
                 window.addEventListener('offline', () => {
                     window.dispatchEvent(new CustomEvent('tampilkan-error', {
@@ -124,11 +133,14 @@ document.addEventListener('alpine:init', () => {
                             orderedList:false,
                         }),
 
-                        // GlobalDragHandle.configure({
-                        //     dragHandleWidth: 32, // Lebar area deteksi hover (dalam px)
-                        //     scrollTreshold: 100, // Kecepatan scroll saat drag mendekati tepi layar
-                        // }),
+                        GlobalDragHandle.configure({
+                            dragHandleWidth: 32, // Lebar area deteksi hover (dalam px)
+                            scrollTreshold: 100, // Kecepatan scroll saat drag mendekati tepi layar
+                        }),
 
+                        SectionBlock,
+                        SectionBlock2,
+                        SectionBlock3,
                         StepCard,
                         TransferCard,
                         ContactItem,
@@ -1189,6 +1201,16 @@ document.addEventListener('alpine:init', () => {
             insertContactItem() {
                 if (!window.tiptapEditor) return;
                 window.tiptapEditor.chain().focus().setContactItem().run();
+                this.updatedAt = Date.now();
+            },
+            insertSectionBlock() {
+                if (!window.tiptapEditor) return;
+                window.tiptapEditor.chain().focus().setSectionBlock().run();
+                this.updatedAt = Date.now();
+            },
+            insertSectionBlock2() {
+                if (!window.tiptapEditor) return;
+                window.tiptapEditor.chain().focus().setSectionBlock().run();
                 this.updatedAt = Date.now();
             },
         }
