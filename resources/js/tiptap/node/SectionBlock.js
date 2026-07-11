@@ -1,90 +1,148 @@
-import { Node, mergeAttributes } from '@tiptap/core'
+import { Node, mergeAttributes } from '@tiptap/core';
 
 export const SectionBlock = Node.create({
-  name: 'sectionBlock',
-  group: 'block',
-  content: 'block+', // Mengizinkan elemen apapun (teks, gambar, kartu) masuk ke dalamnya
+    name: 'sectionBlock',
+    group: 'block',
+    content: 'block+',
+    defining: true,
 
-  addAttributes() {
-    return {
-      bgColor: { default: '#f3f4f6' } // Default abu-abu terang
-    }
-  },
+    addAttributes() {
+        return {
+            bgColor: {
+                default: '#E9F1EB',
+                parseHTML: element => element.getAttribute('data-bg-color') || '#E9F1EB',
+                renderHTML: attributes => ({ 'data-bg-color': attributes.bgColor })
+            },
+            innerBgColor: {
+                default: 'transparent',
+                parseHTML: element => element.getAttribute('data-inner-color') || 'transparent',
+                renderHTML: attributes => ({ 'data-inner-color': attributes.innerBgColor })
+            }
+        }
+    },
 
-  parseHTML() {
-    return [{ tag: 'div[data-type="section-block"]' }]
-  },
+    parseHTML() {
+        return [
+            { tag: 'section[data-type="section-block"]' },
+        ]
+    },
 
-  // HTML yang dirender untuk pengunjung website (Frontend Publik)
-  renderHTML({ HTMLAttributes }) {
-    return [
-      'div',
-      // Class 'full-width-section' akan membuatnya menembus batas 7xl
-      mergeAttributes(HTMLAttributes, { 'data-type': 'section-block', class: 'full-width-section', style: `background-color: ${HTMLAttributes.bgColor}; padding: 4rem 0;` }),
-      // Tapi pembungkus dalamnya akan mengunci teks kembali ke tengah (max-w-7xl)
-      ['div', { class: 'max-w-7xl mx-auto px-6' }, 0]
-    ]
-  },
+    renderHTML({ HTMLAttributes }) {
+        const bgColor = HTMLAttributes['data-bg-color'] || '#E9F1EB';
+        const innerColor = HTMLAttributes['data-inner-color'] || 'transparent';
+        const isCard = innerColor !== 'transparent';
 
-  // Tampilan UI Interaktif Khusus di dalam Editor
-  addNodeView() {
-    return ({ node, editor, getPos }) => {
-      const dom = document.createElement('div')
-      dom.className = 'full-width-section'
-      dom.style.cssText = `
-        background-color: ${node.attrs.bgColor};
-        padding: 3rem 0;
-        margin: 2rem 0;
-        position: relative;
-        border-top: 1px dashed #ccc;
-        border-bottom: 1px dashed #ccc;
-      `
+        // 🌟 KITA KEMBALI KE STRUKTUR 2 LAPIS 🌟
+        return [
+            'section', 
+            mergeAttributes(HTMLAttributes, { 
+                'data-type': 'section-block',
+                // OUTER: Mengurus batas 7xl dan Padding utama Seksi
+                class: 'tiptap-full-bleed max-w-7xl mx-auto px-5 sm:px-8 relative py-10 sm:py-12',
+                style: `--bg-outer: ${bgColor};`
+            }),
+            [
+                'div', 
+                { 
+                    // INNER: Mengurus bentuk Kartu dan mencegah konten meluber (flow-root)
+                    class: `transition-colors duration-300 flow-root ${isCard ? 'p-8 sm:p-10 rounded-2xl shadow-sm border border-zinc-200/80' : ''}`, 
+                    style: `background-color: ${innerColor};` 
+                },
+                0 // 0 adalah lubang untuk teks
+            ]
+        ];
+    },
+    
+    addNodeView() {
+        return ({ node, editor, getPos }) => {
+            // ==========================================
+            // 1. DOM OUTER (Menempel dengan Drag Handle)
+            // ==========================================
+            const dom = document.createElement('section');
+            const isCard = node.attrs.innerBgColor !== 'transparent';
+            
+            dom.className = `tiptap-full-bleed max-w-7xl mx-auto px-5 sm:px-8 relative py-10 sm:py-12`;
+            dom.style.cssText = `--bg-outer: ${node.attrs.bgColor};`;
+            dom.dataset.type = 'section-block';
 
-      // --- COLOR PICKER MINI DI POJOK KANAN ATAS BLOK ---
-      const toolbar = document.createElement('div')
-      toolbar.contentEditable = 'false'
-      toolbar.style.cssText = `
-        position: absolute; top: 10px; right: 20px;
-        display: flex; gap: 8px; background: white; padding: 4px 8px;
-        border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      `
+            // --- MENU PALET WARNA (Mini Toolbar) ---
+            const toolbar = document.createElement('div');
+            toolbar.contentEditable = 'false';
+            toolbar.className = 'section-color-toolbar';
+            toolbar.style.cssText = `
+                position: absolute; top: 12px; right: 20px;
+                display: flex; flex-direction: column; gap: 10px;
+                background: #ffffff; padding: 10px 12px;
+                border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+                font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; color: #52525b;
+                z-index: 50; border: 1px solid #e4e4e7;
+            `;
 
-      const colors = ['#f3f4f6', '#F7EBAF', '#e0f2fe', '#dcfce7']; // Pilihan warna
-      colors.forEach(c => {
-        const btn = document.createElement('button')
-        btn.style.cssText = `width:20px; height:20px; border-radius:100%; background:${c}; border:1px solid #ddd; cursor:pointer;`
-        btn.title = `Ubah latar ke ${c}`
-        btn.addEventListener('click', () => {
-          if (typeof getPos === 'function') {
-            editor.chain().setNodeSelection(getPos()).updateAttributes('sectionBlock', { bgColor: c }).run()
-          }
-        })
-        toolbar.appendChild(btn)
-      })
-      dom.appendChild(toolbar)
+            const colorsOuter = ['#ffffff', '#FBF7EA', '#E9F1EB', '#F7EBAF'];
+            const colorsInner = ['transparent', '#ffffff', '#FBF7EA', '#064F3B'];
 
-      // --- AREA KONTEN (Terkunci max-w-7xl di tengah) ---
-      const contentDOM = document.createElement('div')
-      // Tailwind classes disuntikkan secara dinamis
-      contentDOM.className = 'max-w-7xl mx-auto px-6'
+            const createColorRow = (label, colors, attrName) => {
+                const row = document.createElement('div');
+                row.innerHTML = `<strong style="display:block; margin-bottom:6px;">${label}</strong>`;
+                const btnGroup = document.createElement('div');
+                btnGroup.style.cssText = 'display: flex; gap: 8px;';
 
-      dom.appendChild(contentDOM)
+                colors.forEach(c => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    
+                    if (c === 'transparent') {
+                        btn.style.cssText = `width:24px; height:24px; border-radius:50%; border:1px solid #d4d4d8; cursor:pointer; background-image: linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e7eb 75%), linear-gradient(-45deg, transparent 75%, #e5e7eb 75%); background-size: 8px 8px; background-position: 0 0, 0 4px, 4px -4px, -4px 0px;`;
+                    } else {
+                        btn.style.cssText = `width:24px; height:24px; border-radius:50%; background:${c}; border:1px solid #d4d4d8; cursor:pointer;`;
+                    }
+                    
+                    if (node.attrs[attrName] === c) { 
+                        btn.style.outline = '2px solid #064F3B'; 
+                        btn.style.outlineOffset = '2px'; 
+                    }
 
-      return { dom, contentDOM }
-    }
-  },
+                    btn.addEventListener('click', () => {
+                        if (typeof getPos === 'function') {
+                            editor.chain().setNodeSelection(getPos()).updateAttributes('sectionBlock', { [attrName]: c }).run();
+                        }
+                    });
+                    btnGroup.appendChild(btn);
+                });
+                row.appendChild(btnGroup);
+                return row;
+            }
 
-  addCommands() {
-    return {
-      setSectionBlock: () => ({ commands }) => {
-        return commands.insertContent({
-          type: this.name,
-          content: [
-            { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Judul Seksi Baru' }] },
-            { type: 'paragraph', content: [{ type: 'text', text: 'Ketik konten Anda di dalam area bewarna ini...' }] }
-          ]
-        })
-      },
-    }
-  },
-})
+            toolbar.appendChild(createColorRow('Latar Layar Penuh', colorsOuter, 'bgColor'));
+            toolbar.appendChild(createColorRow('Latar Kotak Dalam', colorsInner, 'innerBgColor'));
+            dom.appendChild(toolbar);
+
+            // ==========================================
+            // 2. DOM INNER (Area Teks Penulis)
+            // ==========================================
+            const contentDOM = document.createElement('div');
+            
+            // PENTING: Class `flow-root` adalah kunci untuk mencegah teks meluber di sumbu Y (Margin Collapsing)
+            contentDOM.className = `transition-colors duration-300 flow-root ${isCard ? 'p-8 sm:p-10 rounded-2xl shadow-sm border border-zinc-200/80' : ''}`;
+            contentDOM.style.cssText = `background-color: ${node.attrs.innerBgColor};`;
+            
+            // Auto ubah teks jadi putih jika latar kartu berwarna Forest (Hijau Gelap)
+            if (node.attrs.innerBgColor === '#064F3B') {
+                contentDOM.style.color = '#ffffff';
+            }
+
+            // Masukkan Inner ke dalam Outer
+            dom.appendChild(contentDOM);
+
+            return { dom, contentDOM }
+        }
+    },
+
+    addCommands() {
+        return {
+            setSectionBlock: () => ({ commands }) => {
+                return commands.insertContent([{ type: this.name, content: [{ type: 'paragraph' }] }, { type: 'paragraph' }])
+            },
+        }
+    },
+});

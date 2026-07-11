@@ -1,0 +1,130 @@
+/* additional-components.css
+   Tempel di stylesheet yang sama dengan editor DAN halaman publik,
+   supaya tampilan WYSIWYG persis sama dengan hasil akhir.
+   Memakai token warna yang sama dengan situs: --forest, --gold, --coral, dst.
+   (lihat :root di landing page utama kalau variabel ini belum ada di proyek Anda) */
+
+/* ===== Callout ===== */
+.tiptap-callout {
+  display: flex;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: var(--radius-md, 14px);
+  border-left: 4px solid var(--forest);
+  background: var(--mist, #E9F1EB);
+  margin: 20px 0;
+}
+.tiptap-callout[data-color="gold"] { border-left-color: var(--gold); background: var(--gold-soft, #F7EBAF); }
+.tiptap-callout[data-color="coral"] { border-left-color: var(--coral); background: #FBE6E6; }
+.tiptap-callout-icon { width: 22px; height: 22px; flex-shrink: 0; color: var(--forest); }
+.tiptap-callout[data-color="coral"] .tiptap-callout-icon { color: var(--coral); }
+.tiptap-callout-body p { margin: 0; color: var(--ink, #12241C); }
+
+/* ===== Stat Highlight ===== */
+.tiptap-stat-highlight {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  padding: 20px 0;
+  margin: 20px 0;
+  border-top: 1px solid var(--line, rgba(6,79,59,0.14));
+  border-bottom: 1px solid var(--line, rgba(6,79,59,0.14));
+}
+.tiptap-stat-item { display: flex; flex-direction: column; gap: 2px; }
+.tiptap-stat-value {
+  font-family: 'Fraunces', serif; font-weight: 700; font-size: 28px; color: var(--forest);
+  border: none; background: transparent; width: auto; max-width: 140px;
+}
+.tiptap-stat-label { font-size: 13px; color: var(--ink-soft, #4B5D53); border: none; background: transparent; }
+.tiptap-stat-remove { border: none; background: none; color: var(--coral); cursor: pointer; font-size: 12px; }
+.tiptap-stat-add {
+  align-self: flex-start; border: 1px dashed var(--forest); background: transparent; color: var(--forest);
+  border-radius: 999px; padding: 6px 16px; font-size: 13px; cursor: pointer;
+}
+
+/* ===== Figure (foto + keterangan) ===== */
+.tiptap-figure { margin: 24px 0; }
+.tiptap-figure img { width: 100%; border-radius: var(--radius-md, 14px); display: block; }
+.tiptap-figure-placeholder {
+  aspect-ratio: 4/3; border: 2px dashed var(--line, rgba(6,79,59,0.14)); border-radius: var(--radius-md, 14px);
+  display: flex; align-items: center; justify-content: center; color: var(--ink-soft, #4B5D53);
+  background: var(--paper-dim, #F3ECD6); font-size: 14px;
+}
+.tiptap-figure-caption {
+  display: block; width: 100%; margin-top: 8px; font-size: 13.5px; color: var(--ink-soft, #4B5D53);
+  font-style: italic; border: none; background: transparent; text-align: center;
+}
+
+/* ===== Pull Quote ===== */
+.pull-quote, .tiptap-pull-quote {
+  border-left: 4px solid var(--gold); padding: 4px 0 4px 24px; margin: 24px 0;
+}
+.pull-quote-body p, .tiptap-quote-body p {
+  font-family: 'Fraunces', serif; font-style: italic; font-size: 20px; color: var(--forest); margin: 0;
+}
+.pull-quote-attribution, .tiptap-quote-attribution {
+  margin-top: 10px; font-size: 13.5px; color: var(--ink-soft, #4B5D53); font-weight: 600;
+}
+.tiptap-quote-name, .tiptap-quote-role { border: none; background: transparent; font: inherit; }
+
+/* ===== CTA Button (editor-only wrapper; output publik pakai .btn yang sudah ada) ===== */
+.tiptap-cta-editor {
+  display: flex; align-items: center; gap: 16px; padding: 14px 16px;
+  border: 1px dashed var(--line, rgba(6,79,59,0.14)); border-radius: var(--radius-md, 14px); margin: 16px 0;
+}
+.tiptap-cta-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.tiptap-cta-controls input, .tiptap-cta-controls select {
+  border: 1px solid var(--line, rgba(6,79,59,0.14)); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+}
+
+/* ===== Global Drag Handle ===== */
+/* tiptap-extension-global-drag-handle bersifat headless - style-nya kita atur sendiri di sini. */
+.drag-handle {
+  position: fixed;
+  opacity: 0;
+  transition: opacity 0.2s ease, background-color 0.15s ease;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  cursor: grab;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234B5D53' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='9' cy='6' r='1'/%3E%3Ccircle cx='15' cy='6' r='1'/%3E%3Ccircle cx='9' cy='12' r='1'/%3E%3Ccircle cx='15' cy='12' r='1'/%3E%3Ccircle cx='9' cy='18' r='1'/%3E%3Ccircle cx='15' cy='18' r='1'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 18px;
+}
+.drag-handle:hover { background-color: var(--mist, #E9F1EB); }
+.drag-handle:active { cursor: grabbing; background-color: var(--gold-soft, #F7EBAF); }
+.drag-handle.hide { opacity: 0; pointer-events: none; }
+
+/* Handle muncul saat hover di area blok (class ini di-toggle otomatis oleh plugin) */
+.drag-handle:not(.hide) { opacity: 1; }
+
+/* ===== Columns (drag-to-column) ===== */
+.editor-column-list {
+  display: grid;
+  grid-template-columns: repeat(var(--column-count, 2), 1fr);
+  gap: 24px;
+  margin: 16px 0;
+}
+.editor-column {
+  min-width: 0; /* supaya gambar/teks panjang tidak mendorong lebar kolom */
+  border: 1px dashed var(--line, rgba(6,79,59,0.14));
+  border-radius: 12px;
+  padding: 12px;
+}
+.editor-column:focus-within { border-color: var(--forest, #064F3B); border-style: solid; }
+
+@media (max-width: 640px) {
+  .editor-column-list { grid-template-columns: 1fr; } /* tumpuk 1 kolom di layar kecil */
+}
+
+/* Garis indikator vertikal saat drag masuk zona kiri/kanan */
+.column-drop-indicator {
+  position: relative;
+  display: inline-block;
+  width: 3px;
+  height: 1.4em;
+  vertical-align: middle;
+  background: var(--coral, #E42326);
+  border-radius: 2px;
+}

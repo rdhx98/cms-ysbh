@@ -147,7 +147,7 @@ new class extends Component
 };
 ?>
 
-<div class="bg-white rounded-lg w-full h-full md:max-w-none flex flex-col items-center justify-center p-4 flex-1 grow">
+<div class="bg-white rounded-lg w-full  md:max-w-none flex flex-col items-center justify-center p-4 flex-1 grow">
     <x-slot:title>{{ __('Arcticles') }}</x-slot:title>  
 
     <div class="w-full min-w-0 max-w-7xl" x-data="{ activeSubPanel: 'none', showDeleteModal: false, deleteType: '', deleteId: null, newItemName: '' }">
@@ -252,9 +252,8 @@ new class extends Component
                         </thead>
                         <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
                             
-                            {{-- @foreach (range(1, 12) as $i) --}}
-                                @foreach ($this->articles as $article)
-
+                            @forelse ($this->articles as $article)
+                                @foreach (range(1, 6) as $i)
                                     <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
                                         <td class="px-4 py-3.5 text-sm">
                                             <div class="font-medium text-zinc-900 dark:text-white">{{ $article->title }}</div>
@@ -339,9 +338,18 @@ new class extends Component
                                             </div>
                                         </td>
                                     </tr>
-
                                 @endforeach
-                            {{-- @endforeach --}}
+                            @empty
+                                {{-- INI AKAN MUNCUL JIKA TIDAK ADA DATA ARTIKEL --}}
+                                <tr>
+                                    <td colspan="4" class="px-4 py-12 text-center">
+                                        <div class="flex flex-col items-center justify-center">
+                                            <flux:icon variant="outline" icon="document-text" class="size-8 text-zinc-400 mb-2" />
+                                            <span class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Belum ada artikel yang ditemukan.</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>

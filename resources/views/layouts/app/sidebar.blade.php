@@ -63,13 +63,14 @@
         <x-layouts::app.sidebar-link
         route="{{ route('article.index') }}"
         :active="request()->routeIs('article.*')"
-        icon="square-pen">
+        {{-- icon="square-pen"> --}}
+        icon="newspaper">
             {{ __('Articles') }}
         </x-layouts.app.sidebar-link>
 
         <x-layouts::app.sidebar-link
-        route="{{ route('article.index') }}"
-        :active="request()->routeIs('article.*')"
+        route="{{ route('documentation') }}"
+        :active="request()->routeIs('documentation')"
         icon="chevrons-left-right-ellipsis"
         iconSize="5">
             {{ __('Laman') }}

@@ -37,8 +37,7 @@ import { TransferCard } from './node//TransferCard.js'
 import { ContactItem } from './node//ContactItem.js'
 import { MediaPlaceholder } from './node/MediaPlaceholder.js'
 import { SectionBlock } from './node/SectionBlock.js'
-import { SectionBlock2 } from './node/SectionBlock2.js'
-import { SectionBlock3 } from './node/SectionBlock3.js'
+import { Eyebrow } from './node/EyeBrow.js'
 
 
 const ALLOWED_FONTS = ['Arial', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
@@ -139,8 +138,7 @@ document.addEventListener('alpine:init', () => {
                         }),
 
                         SectionBlock,
-                        SectionBlock2,
-                        SectionBlock3,
+                        Eyebrow,
                         StepCard,
                         TransferCard,
                         ContactItem,
@@ -1190,12 +1188,12 @@ document.addEventListener('alpine:init', () => {
             },
             insertStepCard() {
                 if (!window.tiptapEditor) return;
-                window.tiptapEditor.chain().focus().setStepCard({ number: '01' }).run();
+                window.tiptapEditor.chain().focus().insertStepCard({ number: '01' }).run();
                 this.updatedAt = Date.now();
             },
             insertTransferCard() {
                 if (!window.tiptapEditor) return;
-                window.tiptapEditor.chain().focus().setTransferCard().run();
+                window.tiptapEditor.chain().focus().insertTransferCard().run();
                 this.updatedAt = Date.now();
             },
             insertContactItem() {
@@ -1204,11 +1202,6 @@ document.addEventListener('alpine:init', () => {
                 this.updatedAt = Date.now();
             },
             insertSectionBlock() {
-                if (!window.tiptapEditor) return;
-                window.tiptapEditor.chain().focus().setSectionBlock().run();
-                this.updatedAt = Date.now();
-            },
-            insertSectionBlock2() {
                 if (!window.tiptapEditor) return;
                 window.tiptapEditor.chain().focus().setSectionBlock().run();
                 this.updatedAt = Date.now();
