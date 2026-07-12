@@ -12,6 +12,43 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* FRAUNCES */
+@font-face {
+    font-family: 'Fraunces';
+    src: url('../../public/fonts/fraunces/Fraunces_72pt-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Fraunces';
+    src: url('../../public/fonts/fraunces/Fraunces_72pt-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Fraunces';
+    src: url('../../public/fonts/fraunces/Fraunces_72pt-SemiBold.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Fraunces';
+    src: url('../../public/fonts/fraunces/Fraunces_72pt-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Fraunces';
+    src: url('../../public/fonts/fraunces/Fraunces_72pt-BoldItalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap;
+}
+
 /* JETBRAINS MONO */
 @font-face {
     font-family: 'JetBrains Mono';
@@ -860,5 +897,107 @@ section[data-type="section-block"]:hover .section-color-toolbar,
 /* 3. Hover pada pil/item Tag yang sudah terpilih */
 .ts-wrapper.multi .ts-control > div:hover {
     @apply bg-zinc-200 dark:bg-zinc-700 border-zinc-300 dark:border-zinc-600 transition-colors shadow-sm;
+}
+
+/* ===== Callout (Catatan/Peringatan) ===== */
+.tiptap-callout {
+  display: flex;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: var(--radius-md, 14px);
+  border-left: 4px solid var(--color-forest);
+  background: var(--color-mist, #E9F1EB);
+  margin: 20px 0;
+}
+.tiptap-callout[data-color="gold"] { border-left-color: var(--color-goldy); background: var(--color-goldy-soft, #F7EBAF); }
+.tiptap-callout[data-color="coral"] { border-left-color: var(--color-coral); background: #FBE6E6; }
+.tiptap-callout-icon { width: 22px; height: 22px; flex-shrink: 0; color: var(--color-forest); }
+.tiptap-callout[data-color="coral"] .tiptap-callout-icon { color: var(--color-coral); }
+.tiptap-callout-body p { margin: 0 !important; color: var(--color-ink, #12241C); }
+
+/* ===== Stat Highlight ===== */
+.tiptap-stat-highlight {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  padding: 20px 0;
+  margin: 20px 0;
+  border-top: 1px solid rgba(6,79,59,0.14);
+  border-bottom: 1px solid rgba(6,79,59,0.14);
+}
+.tiptap-stat-item { display: flex; flex-direction: column; gap: 2px; }
+.tiptap-stat-value {
+  font-family: var(--font-times), serif; font-weight: 700; font-size: 28px; color: var(--color-forest);
+  border: none; background: transparent; width: auto; max-width: 140px;
+}
+.tiptap-stat-label { font-size: 13px; color: var(--color-ink-soft, #4B5D53); border: none; background: transparent; }
+.tiptap-stat-remove { border: none; background: none; color: var(--color-coral); cursor: pointer; font-size: 12px; }
+.tiptap-stat-add {
+  align-self: flex-start; border: 1px dashed var(--color-forest); background: transparent; color: var(--color-forest);
+  border-radius: 999px; padding: 6px 16px; font-size: 13px; cursor: pointer;
+}
+
+/* ===== Figure (foto + keterangan) ===== */
+.tiptap-figure { margin: 24px 0; }
+.tiptap-figure img { width: 100%; border-radius: var(--radius-md, 14px); display: block; }
+.tiptap-figure-placeholder {
+  aspect-ratio: 4/3; border: 2px dashed rgba(6,79,59,0.14); border-radius: var(--radius-md, 14px);
+  display: flex; align-items: center; justify-content: center; color: var(--color-ink-soft, #4B5D53);
+  background: var(--color-paper-dim, #F3ECD6); font-size: 14px;
+}
+.tiptap-figure-caption {
+  display: block; width: 100%; margin-top: 8px; font-size: 13.5px; color: var(--color-ink-soft, #4B5D53);
+  font-style: italic; border: none; background: transparent; text-align: center;
+}
+
+/* ===== Pull Quote ===== */
+.pull-quote, .tiptap-pull-quote {
+  border-left: 4px solid var(--color-goldy); padding: 4px 0 4px 24px; margin: 24px 0;
+}
+.pull-quote-body p, .tiptap-quote-body p {
+  font-family: var(--font-times), serif; font-style: italic; font-size: 20px; color: var(--color-forest); margin: 0 !important;
+}
+.pull-quote-attribution, .tiptap-quote-attribution {
+  margin-top: 10px; font-size: 13.5px; color: var(--color-ink-soft, #4B5D53); font-weight: 600;
+}
+.tiptap-quote-name, .tiptap-quote-role { border: none; background: transparent; font: inherit; }
+
+/* ===== CTA Button (editor-only wrapper) ===== */
+.tiptap-cta-editor {
+  display: flex; align-items: center; gap: 16px; padding: 14px 16px;
+  border: 1px dashed rgba(6,79,59,0.14); border-radius: var(--radius-md, 14px); margin: 16px 0;
+}
+.tiptap-cta-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.tiptap-cta-controls input, .tiptap-cta-controls select {
+  border: 1px solid rgba(6,79,59,0.14); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+}
+
+/* ===== Columns (drag-to-column) ===== */
+.editor-column-list {
+  display: grid;
+  grid-template-columns: repeat(var(--column-count, 2), 1fr);
+  gap: 24px;
+  margin: 16px 0;
+}
+.editor-column {
+  min-width: 0;
+  border: 1px dashed rgba(6,79,59,0.14);
+  border-radius: 12px;
+  padding: 12px;
+}
+.editor-column:focus-within { border-color: var(--color-forest, #064F3B); border-style: solid; }
+
+@media (max-width: 640px) {
+  .editor-column-list { grid-template-columns: 1fr; }
+}
+
+.column-drop-indicator {
+  position: relative;
+  display: inline-block;
+  width: 3px;
+  height: 1.4em;
+  vertical-align: middle;
+  background: var(--color-coral, #E42326);
+  border-radius: 2px;
 }
 

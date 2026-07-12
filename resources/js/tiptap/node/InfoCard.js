@@ -1,130 +1,185 @@
-// InfoCard.js
-// Pola: CONTENT-BASED NODE — dipakai kalau isi kartu adalah rich text
-// (judul + paragraf) yang tetap perlu bisa diedit bebas oleh pengguna.
-// Mewakili gaya ".partner-card" / ".program-card" di halaman Malaria:
-// ikon + label kecil (tag) di header, lalu judul & deskripsi di bawahnya.
-
-import { Node, mergeAttributes } from '@tiptap/core'
-
-// Kumpulan ikon inline SVG - dipakai bareng di NodeView (tampilan editor)
-// maupun renderHTML (HTML final yang disimpan/ditampilkan ke publik),
-// supaya WYSIWYG: apa yang diedit = persis apa yang tampil di halaman.
-const ICONS = {
-  building: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21h16M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg>',
-  graduation: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12.5V17c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5"/></svg>',
-  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.6-9.3-9.2C1.4 8.6 3 5 6.6 5c2 0 3.4 1.1 4.4 2.6C12 6.1 13.4 5 15.4 5 19 5 20.6 8.6 19.3 11.8 17 16.4 12 21 12 21z"/></svg>',
-  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-4Z"/><path d="M9 12l2 2 4-4"/></svg>',
-}
+import { Node, mergeAttributes } from '@tiptap/core';
 
 export const InfoCard = Node.create({
-  name: 'infoCard',
-  group: 'block',
-  content: 'block+', // isinya boleh heading + paragraf, bebas diedit seperti biasa
-  draggable: true,
+    name: 'infoCard',
+    group: 'block',
+    content: 'block+', // Tetap izinkan semua jenis blok (paragraf, gambar, heading, dll) masuk ke sini
+    isolating: true, 
 
-  addAttributes() {
-    return {
-      icon: { default: 'building' },
-      tag: { default: 'Label' },
-      color: { default: 'forest' }, // forest | gold | coral - dipetakan ke CSS var yang sama dgn situs
-    }
-  },
+    addAttributes() {
+        return {
+            bgColor: {
+                default: 'white', 
+            }
+        };
+    },
 
-  parseHTML() {
-    return [
-      {
-        tag: 'div[data-type="info-card"]',
-        // Supaya konten yang sudah tersimpan bisa dibuka & diedit lagi,
-        // bukan cuma sekali tulis lalu jadi HTML mati.
-        getAttrs: (dom) => ({
-          icon: dom.dataset.icon || 'building',
-          color: dom.dataset.color || 'forest',
-          tag: dom.querySelector('.tag')?.textContent || '',
-        }),
-      },
-    ]
-  },
+    parseHTML() {
+        return [{ tag: 'div[data-type="info-card"]' }];
+    },
 
-  renderHTML({ HTMLAttributes, node }) {
-    return [
-      'div',
-      mergeAttributes(HTMLAttributes, {
-        'data-type': 'info-card',
-        class: 'partner-card',
-        'data-color': node.attrs.color,
-        'data-icon': node.attrs.icon,
-      }),
-      [
-        'div',
-        { class: 'partner-icon-row', contenteditable: 'false' },
-        ['span', { class: 'partner-icon', innerHTML: ICONS[node.attrs.icon] }],
-        ['span', { class: 'tag' }, node.attrs.tag],
-      ],
-      ['div', { class: 'partner-card-body' }, 0], // "0" = lubang tempat content (heading/paragraf) dirender
-    ]
-  },
+    // ---------------------------------------------------------
+    // TAMPILAN PUBLIK (FRONTEND)
+    // ---------------------------------------------------------
+    renderHTML({ HTMLAttributes }) {
+        // Pemetaan warna Latar Belakang Kartu
+        const bgColorMap = {
+            white: 'background-color: #FFFFFF;',
+            gold: 'background-color: #F7EBAF;',
+            forest: 'background-color: #E9F1EB;',
+            coral: 'background-color: #FBE6E6;'
+        };
 
-  addNodeView() {
-    return ({ node, editor, getPos }) => {
-      const dom = document.createElement('div')
-      dom.className = 'partner-card'
-      dom.dataset.color = node.attrs.color
-      dom.dataset.icon = node.attrs.icon
+        const activeBgColor = bgColorMap[HTMLAttributes.bgColor] || bgColorMap.white;
 
-      const header = document.createElement('div')
-      header.className = 'partner-icon-row'
-      header.contentEditable = 'false'
+        return [
+            'div',
+            mergeAttributes(HTMLAttributes, {
+                'data-type': 'info-card',
+                // class: 'flex flex-col h-full border border-transparent rounded-[18px] p-6 md:p-8 shadow-sm transition-colors mx-[2.5rem] [[data-type="column"]_&]:mx-0 [[data-type="column"]_&]:w-full',
+                // Class baru untuk InfoCard
+                class: 'flex flex-col h-full border border-transparent rounded-[18px] p-6 md:p-8 shadow-sm transition-colors mx-[2.5rem] [[data-type="column"]_&]:mx-0 [[data-type="section-block"]_&]:mx-0 [[data-type="column"]_&]:w-full [[data-type="section-block"]_&]:w-full',
+                style: activeBgColor 
+            }),
+            0 // Area Konten
+        ];
+    },
 
-      const iconEl = document.createElement('span')
-      iconEl.className = 'partner-icon'
-      iconEl.innerHTML = ICONS[node.attrs.icon]
+    addCommands() {
+        return {
+            setInfoCard: () => ({ commands }) => {
+                return commands.insertContent({
+                    type: this.name,
+                    content: [{ type: 'paragraph' }] 
+                });
+            }
+        };
+    },
 
-      const tagEl = document.createElement('span')
-      tagEl.className = 'tag'
-      tagEl.textContent = node.attrs.tag
-      tagEl.contentEditable = 'true'
-      tagEl.addEventListener('blur', () => {
-        if (typeof getPos === 'function') {
-          editor.chain().setNodeSelection(getPos()).updateAttributes('infoCard', { tag: tagEl.textContent }).run()
+    // ---------------------------------------------------------
+    // TAMPILAN INTERAKTIF DI EDITOR
+    // ---------------------------------------------------------
+    addNodeView() {
+        return ({ node, getPos, editor }) => {
+            const dom = document.createElement('div');
+            dom.dataset.type = 'info-card';
+            
+            // Konfigurasi Warna Latar
+            const bgOptions = [
+                'white', 
+                'gold', 
+                'softGold', 
+                'forest', 
+                'softForest', 
+                'coral',
+                'softCoral',
+            ];
+            const cardBgColors = { 
+                white: 'bg-white', 
+                gold: 'bg-goldy', 
+                softGold: 'bg-[#F7EBAF]', 
+                forest: 'bg-foresty', 
+                softForest: 'bg-[#E9F1EB]', 
+                coral: 'bg-coral',
+                softCoral: 'bg-[#FBE6E6]',
+            };
+            const bgDotBg = { 
+                // white: 'bg-white border border-zinc-300', 
+                white: 'bg-white border border-zinc-300', 
+                gold: 'bg-goldy', 
+                softGold: 'bg-[#F7EBAF]', 
+                forest: 'bg-foresty ', 
+                softForest: 'bg-[#E9F1EB]', 
+                coral: 'bg-coral',
+                softCoral: 'bg-[#FBE6E6]', 
+            };
+
+            // // Set class awal latar belakang
+            // const initialBg = cardBgColors[node.attrs.bgColor] || cardBgColors.white;
+            // dom.className = `group relative flex flex-col h-full ${initialBg} border border-dashed border-zinc-400/60 rounded-[18px] p-2 shadow-sm focus-within:border-[#064F3B] focus-within:border-solid transition-colors m-0`;
+
+            // Set class awal latar belakang
+            const initialBg = cardBgColors[node.attrs.bgColor] || cardBgColors.white;
+            // Terapkan Varian Tailwind
+            dom.className = `group relative flex flex-col h-full ${initialBg} border border-dashed border-zinc-400/60 rounded-[18px] p-6 shadow-sm focus-within:border-[#064F3B] focus-within:border-solid transition-colors mx-[2.5rem] [[data-type="column"]_&]:mx-0 [[data-type="section-block"]_&]:mx-0 [[data-type="column"]_&]:w-full [[data-type="section-block"]_&]:w-full`;
+
+            // 1. Toolbar Melayang
+            const toolbar = document.createElement('div');
+            toolbar.className = 'absolute -top-3 right-4 flex items-center gap-1.5 bg-white border border-zinc-200 rounded-md p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-sm';
+            toolbar.contentEditable = 'false'; 
+
+            // --- TOMBOL WARNA LATAR (BG) ---
+            bgOptions.forEach(color => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.dataset.colorType = 'bg'; 
+                btn.title = `Warna Latar: ${color}`;
+                const isActive = node.attrs.bgColor === color;
+                btn.className = `w-4 h-4 rounded-full ${bgDotBg[color]} hover:scale-110 transition-transform cursor-pointer ${isActive ? 'ring-2 ring-offset-2 ring-zinc-400' : ''}`;
+                
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    if (typeof getPos === 'function') {
+                        editor.chain().setNodeSelection(getPos()).updateAttributes('infoCard', { bgColor: color }).run();
+                    }
+                };
+                toolbar.appendChild(btn);
+            });
+
+            // Pemisah Hapus
+            const divider = document.createElement('div');
+            divider.className = 'w-[1px] h-4 bg-zinc-200 mx-1';
+            toolbar.appendChild(divider);
+
+            // --- TOMBOL HAPUS ---
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.innerHTML = '×';
+            delBtn.className = 'w-4 h-4 flex items-center justify-center text-zinc-400 hover:text-red-500 text-lg leading-none cursor-pointer';
+            delBtn.title = "Hapus Kontainer";
+            delBtn.onclick = (e) => {
+                e.preventDefault();
+                if (typeof getPos === 'function') {
+                    editor.chain().deleteRange({ from: getPos(), to: getPos() + node.nodeSize }).run();
+                }
+            };
+            toolbar.appendChild(delBtn);
+
+            // 2. Area Teks Bebas (Bisa diisi apa saja)
+            const contentDOM = document.createElement('div');
+            contentDOM.className = 'flex-1 w-full min-w-0'; 
+
+            dom.appendChild(toolbar);
+            dom.appendChild(contentDOM);
+
+            return {
+                dom,
+                contentDOM,
+                // update: (updatedNode) => {
+                //     if (updatedNode.type.name !== 'infoCard') return false;
+                    
+                //     // Update Latar Belakang Kartu
+                //     const newBg = cardBgColors[updatedNode.attrs.bgColor] || cardBgColors.white;
+                //     dom.className = `group relative flex flex-col h-full w-full ${newBg} border border-dashed border-zinc-400/60 rounded-[18px] p-6 shadow-sm focus-within:border-[#064F3B] focus-within:border-solid transition-colors m-0`;
+                update: (updatedNode) => {
+                    if (updatedNode.type.name !== 'infoCard') return false;
+                    
+                    const newBg = cardBgColors[updatedNode.attrs.bgColor] || cardBgColors.white;
+                    
+                    // Pastikan class ini sama persis dengan yang di atas
+                    dom.className = `group relative flex flex-col h-full ${newBg} border border-dashed border-zinc-400/60 rounded-[18px] p-6 shadow-sm focus-within:border-[#064F3B] focus-within:border-solid transition-colors mx-[2.5rem] [[data-type="column"]_&]:mx-0 [[data-type="column"]_&]:w-full`;
+
+                    // Update Status Aktif (Ring) pada Tombol Latar
+                    const bgButtons = toolbar.querySelectorAll('button[data-color-type="bg"]');
+                    bgButtons.forEach((btn, idx) => {
+                        const color = bgOptions[idx];
+                        const isActive = updatedNode.attrs.bgColor === color;
+                        btn.className = `w-4 h-4 rounded-full ${bgDotBg[color]} hover:scale-110 transition-transform cursor-pointer ${isActive ? 'ring-2 ring-offset-2 ring-zinc-400' : ''}`;
+                    });
+
+                    return true;
+                }
+            };
         }
-      })
-
-      // Ganti ikon lewat klik - siklus sederhana antar 4 pilihan.
-      iconEl.style.cursor = 'pointer'
-      iconEl.title = 'Klik untuk ganti ikon'
-      iconEl.addEventListener('click', () => {
-        const keys = Object.keys(ICONS)
-        const next = keys[(keys.indexOf(node.attrs.icon) + 1) % keys.length]
-        if (typeof getPos === 'function') {
-          editor.chain().setNodeSelection(getPos()).updateAttributes('infoCard', { icon: next }).run()
-        }
-      })
-
-      header.append(iconEl, tagEl)
-
-      const contentDOM = document.createElement('div')
-      contentDOM.className = 'partner-card-body'
-
-      dom.append(header, contentDOM)
-
-      return { dom, contentDOM }
     }
-  },
-
-  addCommands() {
-    return {
-      setInfoCard:
-        (attrs) =>
-        ({ commands }) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs,
-            content: [
-              { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Judul Kartu' }] },
-              { type: 'paragraph', content: [{ type: 'text', text: 'Tulis deskripsi di sini...' }] },
-            ],
-          })
-        },
-    }
-  },
-})
+});

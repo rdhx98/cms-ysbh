@@ -16,6 +16,7 @@ import { createLowlight, common } from 'lowlight'
 import { Node, mergeAttributes } from '@tiptap/core'
 
 import { TextStyle } from '@tiptap/extension-text-style'
+import { Color } from '@tiptap/extension-color'
 import { FontFamily } from '@tiptap/extension-font-family'
 import { Underline } from '@tiptap/extension-underline'
 import { OrderedList } from '@tiptap/extension-ordered-list'
@@ -30,17 +31,20 @@ import { HiddenMarks } from './extensions/HiddenMarks.js'
 import { LinkBackspaceHandler } from './extensions/LinkBackspaceHandler.js'
 import { ParagraphIndent } from './extensions/ParagraphIndent.js'
 
-// import { InfoCard } from './node/InfoCard.js'
 // import { ChipGroup } from './node/ChipGroup.js'
+// import { ContactItem } from './unverified/ContactItem.js'
+
+import { InfoCard } from './node/InfoCard.js'
 import { StepCard } from './node//StepCard.js'
-import { TransferCard } from './node//TransferCard.js'
-import { ContactItem } from './node//ContactItem.js'
+import { TransferCard } from './unverified/TransferCard.js'
 import { MediaPlaceholder } from './node/MediaPlaceholder.js'
 import { SectionBlock } from './node/SectionBlock.js'
 import { Eyebrow } from './node/EyeBrow.js'
 
+import { Column, ColumnBlock } from "./node/ColumnLayout.js";
 
-const ALLOWED_FONTS = ['Arial', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
+
+const ALLOWED_FONTS = ['Arial', 'Fraunces', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
 
 const lowlight = createLowlight(common)
 
@@ -135,14 +139,28 @@ document.addEventListener('alpine:init', () => {
                         GlobalDragHandle.configure({
                             dragHandleWidth: 32, // Lebar area deteksi hover (dalam px)
                             scrollTreshold: 100, // Kecepatan scroll saat drag mendekati tepi layar
+                            customNodes: [
+                                'info-card',
+                                'chip-group',
+                                'callout',
+                                'pull-quote',
+                                'stat-highlight',
+                                'figure',
+                                'cta-button',
+                                'column',
+                            ],
                         }),
 
+                        Column,
+                        ColumnBlock,
+                        
                         SectionBlock,
                         Eyebrow,
                         StepCard,
-                        TransferCard,
-                        ContactItem,
-                        // InfoCard,
+                        InfoCard,
+                        
+                        // TransferCard,
+                        // ContactItem,
                         // ChipGroup,
 
                         // Biarkan mati saat pertama kali dimuat
@@ -269,6 +287,7 @@ document.addEventListener('alpine:init', () => {
                             }
                         }),
                         TextStyle, // Wajib diisi karena FontFamily bergantung pada TextStyle
+                        Color,
                         FontFamily.extend({
                             parseHTML() {
                                 return [
@@ -1178,10 +1197,10 @@ document.addEventListener('alpine:init', () => {
 
             notifyTheUser(message, type) {
                 console.log('faggotron released', message, type);
-                // error, success, warning, info
                 window.dispatchEvent(new CustomEvent('tampilkan-notifikasi', {
+                    // error, success, warning, info
                     detail: {
-                        message: message || 'Faggotron 2000',
+                        message: message || '404',
                         type: type || 'success'
                     }
                 }));
@@ -1191,16 +1210,16 @@ document.addEventListener('alpine:init', () => {
                 window.tiptapEditor.chain().focus().insertStepCard({ number: '01' }).run();
                 this.updatedAt = Date.now();
             },
-            insertTransferCard() {
-                if (!window.tiptapEditor) return;
-                window.tiptapEditor.chain().focus().insertTransferCard().run();
-                this.updatedAt = Date.now();
-            },
-            insertContactItem() {
-                if (!window.tiptapEditor) return;
-                window.tiptapEditor.chain().focus().setContactItem().run();
-                this.updatedAt = Date.now();
-            },
+            // insertTransferCard() {
+            //     if (!window.tiptapEditor) return;
+            //     window.tiptapEditor.chain().focus().insertTransferCard().run();
+            //     this.updatedAt = Date.now();
+            // },
+            // insertContactItem() {
+            //     if (!window.tiptapEditor) return;
+            //     window.tiptapEditor.chain().focus().setContactItem().run();
+            //     this.updatedAt = Date.now();
+            // },
             insertSectionBlock() {
                 if (!window.tiptapEditor) return;
                 window.tiptapEditor.chain().focus().setSectionBlock().run();

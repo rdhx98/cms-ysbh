@@ -1,6 +1,7 @@
 @props([
     'command', 
-    'activeName', 
+    // 'activeName', 
+    'activeName' => null,
     'activeParams' => '{}', 
     'activeType' => 'default', 
     'title' => '', 

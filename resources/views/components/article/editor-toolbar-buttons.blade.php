@@ -30,18 +30,67 @@
                     <select id="font-family-select" :value="getCurrentFont()"
                         @change="changeFontFamily($event.target.value)"
                         class="block w-48 px-3 py-1 text-sm bg-white border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-forest transition-colors">
-                        <option value="default" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-                            Plus Jakarta Sans (Default)</option>
+                        <option value="default" style="font-family: 'Plus Jakarta Sans', sans-serif;">  Plus Jakarta Sans (Default)</option>
                         <option value="Arial" style="font-family: Arial, sans-serif;">Arial</option>
-                        <option value="Jetbrains Mono"
-                            style="font-family: 'JetBrains Mono', monospace;">JetBrains Mono</option>
-                        <option value="Open Sans" style="font-family: 'Open Sans', sans-serif;">Open
-                            Sans</option>
-                        <option value="Roboto" style="font-family: 'Roboto', sans-serif;">Roboto
-                        </option>
-                        <option value="Times New Roman"
-                            style="font-family: 'Times New Roman', serif;">Times New Roman</option>
+                        <option value="Fraunces" style="font-family: Fraunces, sans-serif;">Fraunces</option>
+                        <option value="Jetbrains Mono" style="font-family: 'JetBrains Mono', monospace;">JetBrains Mono</option>
+                        <option value="Open Sans" style="font-family: 'Open Sans', sans-serif;">Open  Sans</option>
+                        <option value="Roboto" style="font-family: 'Roboto', sans-serif;">Roboto </option>
+                        <option value="Times New Roman" style="font-family: 'Times New Roman', serif;">Times New Roman</option>
                     </select>
+                </div>
+
+                {{-- GRUP WARNA TEKS (CUSTOM ALPINE DROPDOWN) --}}
+                <div x-data="{ openColorMenu: false }" class="relative flex items-center border-l border-zinc-200 pl-2 ml-1">
+                    
+                    {{-- Tombol Pemicu Menu (Ikon + Kotak Warna) --}}
+                    <button type="button" 
+                        @click="openColorMenu = !openColorMenu"
+                        class="flex items-center gap-2 p-1.5 h-9 transition rounded cursor-pointer hover:bg-zinc-200 text-gray-700 bg-zinc-50 shadow-sm border border-transparent"
+                        title="Warna Teks">
+                        
+                        <x-dynamic-component component="lucide-palette" class="h-4 w-4" stroke-width="2.5" />
+
+                        <div class="w-6 h-6 rounded border border-zinc-300 shadow-inner transition-colors"
+                            :style="updatedAt && window.tiptapEditor?.getAttributes('textStyle').color ? { backgroundColor: window.tiptapEditor.getAttributes('textStyle').color } : { backgroundColor: '#18181b' }">
+                        </div>
+                    </button>
+
+                    {{-- Panel Menu (Muncul saat tombol diklik) --}}
+                    <div x-show="openColorMenu" 
+                        @click.away="openColorMenu = false"
+                        style="display: none;"
+                        class="absolute top-full left-0 mt-1 bg-white border border-zinc-200 shadow-lg rounded-xl p-3 z-50 flex flex-col gap-3 w-48">
+                        
+                        {{-- Sesi 1: Warna Default --}}
+                        <div>
+                            <span class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Warna Brand</span>
+                            <div class="flex gap-2">
+                                <button type="button" @click="runCommand('setColor', '#064F3B'); openColorMenu = false" class="w-6 h-6 rounded-full bg-[#064F3B] hover:scale-110 transition-transform shadow-sm" title="Forest"></button>
+                                <button type="button" @click="runCommand('setColor', '#EBCC26'); openColorMenu = false" class="w-6 h-6 rounded-full bg-[#EBCC26] hover:scale-110 transition-transform shadow-sm" title="Gold"></button>
+                                <button type="button" @click="runCommand('setColor', '#E42326'); openColorMenu = false" class="w-6 h-6 rounded-full bg-[#E42326] hover:scale-110 transition-transform shadow-sm" title="Coral"></button>
+                            </div>
+                        </div>
+
+                        <hr class="border-zinc-100">
+
+                        {{-- Sesi 2: Color Picker Bebas --}}
+                        <div>
+                            <span class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Warna Bebas</span>
+                            <input type="color" @input="runCommand('setColor', $event.target.value)" class="w-full h-8 p-0 border-0 rounded cursor-pointer bg-transparent">
+                        </div>
+
+                        <hr class="border-zinc-100">
+
+                        {{-- 🌟 Sesi 3: Tombol Hapus Warna (Pindah ke Dalam) --}}
+                        <button type="button" 
+                            @click="runCommand('unsetColor'); openColorMenu = false" 
+                            class="flex items-center gap-2 px-2 py-2 -mx-1 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 rounded-md transition-colors text-left"
+                            title="Kembalikan ke warna default">
+                            <x-dynamic-component component="lucide-eraser" class="h-4 w-4" stroke-width="2.5" />
+                            <span>Hapus Warna</span>
+                        </button>
+                    </div>
                 </div>
 
                 {{-- PILCROW --}}
@@ -104,7 +153,7 @@
                         title="Daftar Kapital" icon="list-tree">
                         <span class="text-[10px] font-bold ml-0.5">A.</span>
                     </x-layouts::app.editor-toolbar-btn>
-
+                    <x-layouts::app.editor-toolbar-btn command="toggleEyebrow" activeName="eyebrow" title="Eyebrow (Teks Konteks)" icon="circle-small" />
                 </div>
 
                 <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
@@ -154,18 +203,41 @@
                             'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
                         <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
+                        
                     </button>
-                    {{-- <button type="button" wire:click="scanEditorImages" :disabled="isUploading" @click="$dispatch('buka-featured-modal')"
-                    class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
-                    <x-dynamic-component :component="'lucide-view'" class="h-4 w-4" stroke-width="2" />
-                </button> --}}
-                    <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
-
-
+                    
                 </div>
+                
+                <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
+
+                {{-- LAYOUTS --}}
+                <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" @click="runCommand('insertManualColumns')"
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
+                        title="Tambahkan Grid Layout">
+                        <x-dynamic-component :component="'lucide-grid-2x2-plus'" class="h-4 w-4" stroke-width="2" />
+                    </button>
+                    <button type="button" @click="runCommand('setSectionBlock')"
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
+                        title="Tambahkan Kartu Langkah">
+                        <x-dynamic-component :component="'lucide-layers-plus'" class="h-4 w-4" stroke-width="2" />
+                    </button>
+                    <button type="button" @click="runCommand('insertStepCard')"
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
+                        title="Tambahkan Blok Seksi">
+                        <x-dynamic-component :component="'lucide-rectangle-ellipsis'" class="h-4 w-4" stroke-width="2" />
+                    </button>
+                    {{-- <button type="button" @click="runCommand('setInfoCard')"
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
+                        title="Tambahkan Blok Seksi">
+                        <x-dynamic-component :component="'lucide-rectangle-ellipsis'" class="h-4 w-4" stroke-width="2" />
+                    </button> --}}
+
+                    <x-layouts::app.editor-toolbar-btn command="setInfoCard" activeName="setInfoCard" title="Kartu Info" icon="code-xml" />
+                </div>  
 
                 {{-- NOTIFY  BUTTONs --}}
-                <div class="flex items-center gap-1 shrink-0">
+                {{-- <div class="flex items-center gap-1 shrink-0">
                     <button type="button" @click="notifyTheUser('putangina','warning');" :disabled="isUploading"
                         :class="checkButtonActive('link', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
@@ -186,72 +258,8 @@
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
                         <x-dynamic-component :component="'lucide-bell'" class="h-5 w-5" stroke-width="2.5" />
                     </button>
-                </div>
-
-                <div class="flex items-center gap-1 shrink-0">
-
-                    <div class="w-px h-6 bg-gray-300 mx-1 self-center"></div>
-                    <button type="button" @click="insertStepCard()"
-                        class="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                        title="Tambahkan Kartu Komponen/Langkah">
-                        <svg class="w-4 h-4 text-forest" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2"
-                                ry="2"></rect>
-                            <line x1="16" y1="2" x2="16" y2="6">
-                            </line>
-                            <line x1="8" y1="2" x2="8" y2="6">
-                            </line>
-                            <line x1="3" y1="10" x2="21" y2="10">
-                            </line>
-                        </svg>
-                        Langkah
-                    </button>
-
-                    <button type="button" @click="insertTransferCard()"
-                        class="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                        title="Tambahkan Kartu Rekening Donasi">
-                        <svg class="w-4 h-4 text-forest" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                            <line x1="2" y1="10" x2="22" y2="10">
-                            </line>
-                        </svg>
-                        Rekening
-                    </button>
-                    <button type="button" @click="runCommand('toggleEyebrow')"
-                        class="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                        title="Tambahkan Eyebrow (Teks Kecil di atas Judul)">
-                        <svg class="w-4 h-4 text-coral-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <path d="M12 3v2M12 19v2M3 12h2M19 12h2"></path>
-                        </svg>
-                        Eyebrow
-                    </button>
-                    {{-- 
-                    <button type="button" @click="insertContactItem()"
-                        class="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                        title="Tambahkan Item Kontak">
-                        <svg class="w-4 h-4 text-forest" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.9.6 2.8a2 2 0 0 1-.5 2.1L7.9 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2Z">
-                            </path>
-                        </svg>
-                        Kontak
-                    </button> --}}
-                    <button type="button" @click="insertSectionBlock()"
-                        class="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                        title="Tambahkan Blok Seksi ">
-                        <svg class="w-4 h-4 text-forest" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.9.6 2.8a2 2 0 0 1-.5 2.1L7.9 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2Z">
-                            </path>
-                        </svg>
-                        Seksi
-                    </button>
-                </div>
+                </div> 
+                --}}
             </div>
 
             {{-- ================= AKSI KANAN TOOLBAR ================= --}}
