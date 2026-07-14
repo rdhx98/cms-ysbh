@@ -319,14 +319,14 @@ body, html {
     flex-direction: column;
 
     /* Menggambar Latar Kertas Putih persis selebar 64rem di tengah layar */
-    background-color: transparent;
+    /* background-color: transparent;
     background-image: linear-gradient(
         to right,
         transparent calc(50% - 32rem),
         #ffffff calc(50% - 32rem),
         #ffffff calc(50% + 32rem),
         transparent calc(50% + 32rem)
-    );
+    ); */
 
 }
 
@@ -412,10 +412,10 @@ body, html {
     bottom: 0;
     left: -5000px;
     right: -5000px;
-    
+
     /* AJAIB: Menerima warna dari renderHTML dan NodeView */
-    background-color: var(--bg-outer, transparent); 
-    
+    background-color: var(--bg-outer, transparent);
+
     z-index: -1;
     pointer-events: none;
     transition: background-color 0.3s ease;
@@ -1000,4 +1000,18 @@ section[data-type="section-block"]:hover .section-color-toolbar,
   background: var(--color-coral, #E42326);
   border-radius: 2px;
 }
+.section-placeholder {
+    position: relative; /* Ini kunci agar placeholder bisa muncul di dalamnya */
+}
 
+.section-placeholder::before {
+    content: "Section Block";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #a1a1aa;
+    font-style: italic;
+    pointer-events: none;
+    z-index: 10;
+}

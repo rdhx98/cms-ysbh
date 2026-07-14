@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
 
-#[Table('post')]
+#[Table('posts')]
 class Post extends Model
 {
     use HasFactory;

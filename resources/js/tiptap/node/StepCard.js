@@ -25,21 +25,21 @@ export const StepCard = Node.create({
     // ==========================================
     renderHTML({ HTMLAttributes }) {
         return [
-            'div', 
-            mergeAttributes(HTMLAttributes, { 
+            'div',
+            mergeAttributes(HTMLAttributes, {
                 'data-type': 'step-card',
                 // Tampilan Kartu menggunakan palet warna Forest & Gold
-                class: 'flex gap-4 sm:gap-6 items-start bg-white border border-[#064F3B]/15 rounded-[18px] p-6 md:px-[30px] md:py-[26px] shadow-[0_20px_50px_-25px_rgba(6,45,35,0.35)] my-5' 
+                class: 'flex gap-4 sm:gap-6 items-start bg-white border border-[#064F3B]/15 rounded-[18px] p-6 md:px-[30px] md:py-[26px] shadow-[0_20px_50px_-25px_rgba(6,45,35,0.35)] my-5'
             }),
             [
-                'span', 
+                'span',
                 // Badge Angka Statis (Span)
                 { class: 'font-display font-bold text-[15px] text-[#064F3B] bg-[#F7EBAF] w-10 h-10 rounded-xl flex items-center justify-center shrink-0 select-none' },
                 HTMLAttributes['data-step'] || '01'
             ],
             [
-                'div', 
-                { class: 'flex-1 min-w-0 pt-1' }, 
+                'div',
+                { class: 'flex-1 min-w-0 pt-1' },
                 0 // Lubang untuk teks (Heading & Paragraf)
             ]
         ];
@@ -57,7 +57,7 @@ export const StepCard = Node.create({
             // Wadah Badge Angka
             const badgeContainer = document.createElement('div');
             badgeContainer.className = 'font-display font-bold text-[15px] text-[#064F3B] bg-[#F7EBAF] w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-transparent focus-within:ring-[#064F3B]/30 transition-all';
-            
+
             // AJAIB: Kita gunakan <input> agar angka '01' bisa diganti 'A', 'B', '02' oleh penulis!
             const input = document.createElement('input');
             input.type = 'text';
@@ -83,7 +83,22 @@ export const StepCard = Node.create({
             contentDOM.className = 'flex-1 min-w-0 pt-1';
             dom.appendChild(contentDOM);
 
-            return { dom, contentDOM }
+            return {
+                dom,
+                contentDOM,
+                update: (updatedNode) => {
+                    // Pastikan node yang di-update adalah tipe yang sama
+                    if (updatedNode.type.name !== node.type.name) return false;
+
+                    // Update variabel node lokal agar sinkron dengan data Tiptap terbaru
+                    node = updatedNode;
+
+                    // Logika tambahan jika ada atribut yang berubah (misal warna)
+                    // Contoh: dom.style.setProperty('--bg-outer', updatedNode.attrs.bgColor);
+
+                    return true; // Memberitahu Tiptap bahwa update sukses, jangan hancurkan DOM
+                }
+            }
         }
     },
 

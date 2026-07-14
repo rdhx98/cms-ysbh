@@ -42,13 +42,13 @@
 
                 {{-- GRUP WARNA TEKS (CUSTOM ALPINE DROPDOWN) --}}
                 <div x-data="{ openColorMenu: false }" class="relative flex items-center border-l border-zinc-200 pl-2 ml-1">
-                    
+
                     {{-- Tombol Pemicu Menu (Ikon + Kotak Warna) --}}
-                    <button type="button" 
+                    <button type="button"
                         @click="openColorMenu = !openColorMenu"
                         class="flex items-center gap-2 p-1.5 h-9 transition rounded cursor-pointer hover:bg-zinc-200 text-gray-700 bg-zinc-50 shadow-sm border border-transparent"
                         title="Warna Teks">
-                        
+
                         <x-dynamic-component component="lucide-palette" class="h-4 w-4" stroke-width="2.5" />
 
                         <div class="w-6 h-6 rounded border border-zinc-300 shadow-inner transition-colors"
@@ -57,11 +57,11 @@
                     </button>
 
                     {{-- Panel Menu (Muncul saat tombol diklik) --}}
-                    <div x-show="openColorMenu" 
+                    <div x-show="openColorMenu"
                         @click.away="openColorMenu = false"
                         style="display: none;"
                         class="absolute top-full left-0 mt-1 bg-white border border-zinc-200 shadow-lg rounded-xl p-3 z-50 flex flex-col gap-3 w-48">
-                        
+
                         {{-- Sesi 1: Warna Default --}}
                         <div>
                             <span class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Warna Brand</span>
@@ -83,8 +83,8 @@
                         <hr class="border-zinc-100">
 
                         {{-- 🌟 Sesi 3: Tombol Hapus Warna (Pindah ke Dalam) --}}
-                        <button type="button" 
-                            @click="runCommand('unsetColor'); openColorMenu = false" 
+                        <button type="button"
+                            @click="runCommand('unsetColor'); openColorMenu = false"
                             class="flex items-center gap-2 px-2 py-2 -mx-1 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 rounded-md transition-colors text-left"
                             title="Kembalikan ke warna default">
                             <x-dynamic-component component="lucide-eraser" class="h-4 w-4" stroke-width="2.5" />
@@ -203,11 +203,11 @@
                             'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
                         <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
-                        
+
                     </button>
-                    
+
                 </div>
-                
+
                 <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
 
                 {{-- LAYOUTS --}}
@@ -217,7 +217,8 @@
                         title="Tambahkan Grid Layout">
                         <x-dynamic-component :component="'lucide-grid-2x2-plus'" class="h-4 w-4" stroke-width="2" />
                     </button>
-                    <button type="button" @click="runCommand('setSectionBlock')"
+                    {{-- <button type="button" @click="runCommand('setSectionBlock')" --}}
+                    <button type="button" @click="insertSectionBlock()"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
                         title="Tambahkan Kartu Langkah">
                         <x-dynamic-component :component="'lucide-layers-plus'" class="h-4 w-4" stroke-width="2" />
@@ -234,7 +235,7 @@
                     </button> --}}
 
                     <x-layouts::app.editor-toolbar-btn command="setInfoCard" activeName="setInfoCard" title="Kartu Info" icon="code-xml" />
-                </div>  
+                </div>
 
                 {{-- NOTIFY  BUTTONs --}}
                 {{-- <div class="flex items-center gap-1 shrink-0">
@@ -258,7 +259,7 @@
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
                         <x-dynamic-component :component="'lucide-bell'" class="h-5 w-5" stroke-width="2.5" />
                     </button>
-                </div> 
+                </div>
                 --}}
             </div>
 
