@@ -34,7 +34,7 @@ import { ParagraphIndent } from './extensions/ParagraphIndent.js'
 // import { ChipGroup } from './node/ChipGroup.js'
 // import { ContactItem } from './unverified/ContactItem.js'
 
-import { InfoCard } from './node/InfoCard.js'
+import { Card } from './node/Card.js'
 import { StepCard } from './node//StepCard.js'
 import { TransferCard } from './unverified/TransferCard.js'
 import { MediaPlaceholder } from './node/MediaPlaceholder.js'
@@ -42,12 +42,49 @@ import { SectionBlock } from './node/SectionBlock.js'
 import { Eyebrow } from './node/EyeBrow.js'
 
 import { Column, ColumnBlock } from "./node/ColumnLayout.js";
+import { FontSize } from "./node/FontSize.js";
+import { Pill } from "./node/Pill.js";
 
 
 const ALLOWED_FONTS = ['Arial', 'Fraunces', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
 
+// Daftar ikon untuk dropdown pemilih icon Eyebrow di toolbar.
+// Path SVG-nya harus tetap sinkron dengan ICONS di node/EyeBrow.js
+const EYEBROW_ICONS = [
+    { key: 'crosshair', label: 'Crosshair', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>` },
+    { key: 'star', label: 'Star', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>` },
+    { key: 'zap', label: 'Zap', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>` },
+    { key: 'sparkles', label: 'Sparkles', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg>` },
+    { key: 'flag', label: 'Flag', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></svg>` },
+    { key: 'tag', label: 'Tag', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>` },
+    { key: 'badge-check', label: 'Badge Check', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>` },
+    { key: 'trending-up', label: 'Trending Up', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></svg>` },
+];
+
+
 const lowlight = createLowlight(common)
 
+document.addEventListener('alpine:init', () => {
+    const original = window.Alpine.initTree;
+    window.Alpine.initTree = function (...args) {
+        console.trace('🚨 Alpine.initTree dipanggil ulang di sini:');
+        return original.apply(this, args);
+    };
+});
+
+
+document.addEventListener('livewire:init', () => {
+    const protectedKeys = ['tiptap-instance-permanen', 'tiptap-editor-shell'];
+    const isProtected = (el) => el && el.getAttribute && protectedKeys.includes(el.getAttribute('wire:key'));
+
+    Livewire.hook('morph.updating', ({ el, skip }) => {
+        if (isProtected(el)) skip();
+    });
+
+    Livewire.hook('morph.removing', ({ el, skip }) => {
+        if (isProtected(el)) skip();
+    });
+});
 
 document.addEventListener('alpine:init', () => {
     // Simpan instance murni global agar terbebas dari Proxy Observer Alpine
@@ -64,6 +101,7 @@ document.addEventListener('alpine:init', () => {
             linkInputText: '',
             hasSelection: false,
             isLinkOpen: false,
+            isEyebrowIconOpen: false,
             wordCount: 0,
             isLocalDrag: false,
             syncTimeout: null,
@@ -81,8 +119,27 @@ document.addEventListener('alpine:init', () => {
             },
 
             init() {
+
+                if 
+                (
+                    window.tiptapEditor &&
+                    !window.tiptapEditor.isDestroyed &&
+                    window.tiptapEditor.view &&
+                    document.body.contains(window.tiptapEditor.view.dom)
+                ) {
+                    console.log('[setupEditor] Editor sudah ada & sehat, lewati pembuatan instance baru.');
+                    return;
+                }
+
                 const _this = this;
                 const editorElement = this.$refs.editorElement;
+
+                // 🌟 SABUK PENGAMAN REVISI: Cek apakah elemen DOM INI sudah punya editor
+                // Ini menyelamatkan ketikan saat Livewire transaksi/error validasi
+                if (editorElement && editorElement.__tiptap) {
+                    window.tiptapEditor = editorElement.__tiptap;
+                    return;
+                }
                 const initialContent = wireComponent.get(wireModelName) || '';
 
                 // 🌟 SABUK PENGAMAN: Hentikan proses jika HTML berantakan
@@ -125,9 +182,6 @@ document.addEventListener('alpine:init', () => {
                 window.tiptapEditor = new Editor({
                     element: this.$refs.editorElement,
                     extensions: [
-
-
-
                         // StarterKit standar
                         StarterKit.configure({
                             codeBlock: false,
@@ -140,7 +194,7 @@ document.addEventListener('alpine:init', () => {
                             dragHandleWidth: 32, // Lebar area deteksi hover (dalam px)
                             scrollTreshold: 100, // Kecepatan scroll saat drag mendekati tepi layar
                             customNodes: [
-                                'info-card',
+                                'card',
                                 'chip-group',
                                 'callout',
                                 'pull-quote',
@@ -153,11 +207,13 @@ document.addEventListener('alpine:init', () => {
 
                         Column,
                         ColumnBlock,
-
                         SectionBlock,
                         Eyebrow,
                         StepCard,
-                        InfoCard,
+                        Card,
+                        Pill,
+                        // InfoCard,
+                        FontSize,
 
                         // TransferCard,
                         // ContactItem,
@@ -262,7 +318,7 @@ document.addEventListener('alpine:init', () => {
 
                         CodeBlockLowlight.configure({ lowlight }),
 
-                        // BUBBLE MENU TEXT
+                        
                         BubbleMenu.configure({
                             element: this.$refs.bubbleMenuElement,
                             tippyOptions: { duration: 150, zIndex: 99 },
@@ -337,6 +393,45 @@ document.addEventListener('alpine:init', () => {
                     ],
 
                     editorProps: {
+                        handleKeyDown: (view, event) => {
+                            const { state } = view;
+                            const { selection, doc } = state;
+                            
+                            // 🌟 PERBAIKAN 1: Deteksi yang lebih kebal.
+                            // ProseMirror terkadang menghitung ukuran node 2 angka lebih kecil/besar di ujung dokumen.
+                            const isAllSelected = selection.from === 0 && selection.to >= doc.content.size - 2;
+
+                            if (isAllSelected) {
+                                const editor = window.tiptapEditor;
+                                if (!editor) return false;
+
+                                // 1. Jika menekan Backspace atau Delete
+                                if (event.key === 'Backspace' || event.key === 'Delete') {
+                                    event.preventDefault();
+                                    
+                                    // 🌟 PERBAIKAN 2: Opsi Nuklir (Reset Paksa HTML)
+                                    // Ini akan menghancurkan semua atribut yang 'nyangkut'
+                                    editor.commands.setContent('<p></p>');
+                                    editor.commands.focus();
+                                    
+                                    return true;
+                                }
+
+                                // 2. Jika langsung mengetik huruf/angka untuk menimpa teks
+                                if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                                    event.preventDefault();
+                                    
+                                    // Hancurkan dan langsung isi dengan huruf pertama
+                                    editor.commands.setContent(`<p>${event.key}</p>`);
+                                    // Pindahkan kursor ke ujung teks
+                                    editor.commands.focus('end');
+                                    
+                                    return true;
+                                }
+                            }
+                            
+                            return false;
+                        },
                         handleDragOver: (view, event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -502,6 +597,10 @@ document.addEventListener('alpine:init', () => {
                         // 🌟 PERBAIKAN: Gunakan penghitung manual seperti di onUpdate
                         const text = editor.getText();
                         _this.wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+
+
+                        // 🔥 IKAT INSTANCE: Simpan Tiptap ke dalam elemen HTML-nya secara fisik
+                        editorElement.__tiptap = editor;
                     },
 
                     onUpdate({ editor }) {
@@ -513,17 +612,8 @@ document.addEventListener('alpine:init', () => {
 
                         if (_this.isUploading) return;
 
-                        // 🌟 HAPUS: Blok pengecekan editor.storage.characterCount dari sini
-                        // karena ekstensinya tidak ada dan merusak logika.
-
-                        // 🌟 PERBAIKAN PERFORMA: Debounce sinkronisasi
-                        clearTimeout(_this.syncTimeout);
-                        _this.syncTimeout = setTimeout(() => {
-                            if (window.tiptapEditor) {
-                                wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
-                            }
-                        }, 500);
                     },
+                    
 
                     onSelectionUpdate() {
                         _this.updatedAt = Date.now()
@@ -568,6 +658,15 @@ document.addEventListener('alpine:init', () => {
                 editorElement.addEventListener('drop', blockEvent, { capture: true, passive: false });
 
 
+            },
+
+            // Tambahkan ini sejajar/di bawah fungsi init() atau fungsi lainnya
+            destroy() {
+                if (this.$refs.editorElement && this.$refs.editorElement.__tiptap) {
+                    this.$refs.editorElement.__tiptap.destroy();
+                    delete this.$refs.editorElement.__tiptap;
+                }
+                window.tiptapEditor = null;
             },
 
             // 1. Pintu Masuk File
@@ -664,8 +763,8 @@ document.addEventListener('alpine:init', () => {
                 }
             },
 
-            // 3. Eksekusi Livewire
-            executeLivewireUpload(targetFile) {
+            //upload with direct routing
+            async executeLivewireUpload(targetFile) {
                 if (!navigator.onLine) {
                     window.dispatchEvent(new CustomEvent('tampilkan-error', {
                         detail: "Koneksi internet terputus! Silakan periksa jaringan Anda."
@@ -675,33 +774,75 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
 
-                wireComponent.upload('photo', targetFile,
-                    async (uploadedUrl) => {
-                        try {
-                            const finalUrl = await wireComponent.uploadImage();
-                            if (finalUrl && window.tiptapEditor) {
-                                this.replaceDummyWithImage(targetFile.targetToken, finalUrl, targetFile.name);
-                            }
-                        } catch (error) {
-                            console.error('[Upload Error]', error);
-                            this.removeDummyImage(targetFile.targetToken);
-                        } finally {
-                            // 🔑 Lanjut ke antrean berikutnya apa pun yang terjadi
-                            this.processNextInQueue();
-                        }
-                    },
-                    (error) => {
-                        console.error('[Livewire Error]', error);
-                        window.dispatchEvent(new CustomEvent('tampilkan-error', {
-                            detail: `Gagal mengunggah ${targetFile.name}. Periksa koneksi internet Anda.`
-                        }));
-                        this.removeDummyImage(targetFile.targetToken);
+                const formData = new FormData();
+                formData.append('image', targetFile);
 
-                        // 🔑 Lanjut ke antrean berikutnya apa pun yang terjadi
-                        this.processNextInQueue();
+                try {
+                    const response = await fetch('/editor/upload-image', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                            'Accept': 'application/json',
+                        },
+                        body: formData,
+                    });
+
+                    if (!response.ok) throw new Error(`Upload gagal (status ${response.status})`);
+
+                    const data = await response.json();
+                    if (!data.url) throw new Error('Response tidak berisi URL gambar');
+
+                    if (window.tiptapEditor) {
+                        this.replaceDummyWithImage(targetFile.targetToken, data.url, targetFile.name);
                     }
-                );
+                } catch (error) {
+                    console.error('[Upload Error]', error);
+                    window.dispatchEvent(new CustomEvent('tampilkan-error', {
+                        detail: `Gagal mengunggah ${targetFile.name}. Periksa koneksi internet Anda.`
+                    }));
+                    this.removeDummyImage(targetFile.targetToken);
+                } finally {
+                    this.processNextInQueue();
+                }
             },
+            // 3. Eksekusi Livewire
+            // executeLivewireUpload(targetFile) {
+            //     if (!navigator.onLine) {
+            //         window.dispatchEvent(new CustomEvent('tampilkan-error', {
+            //             detail: "Koneksi internet terputus! Silakan periksa jaringan Anda."
+            //         }));
+            //         this.removeDummyImage(targetFile.targetToken);
+            //         this.processNextInQueue();
+            //         return;
+            //     }
+
+            //     wireComponent.upload('photo', targetFile,
+            //         async (uploadedUrl) => {
+            //             try {
+            //                 const finalUrl = await wireComponent.uploadImage();
+            //                 if (finalUrl && window.tiptapEditor) {
+            //                     this.replaceDummyWithImage(targetFile.targetToken, finalUrl, targetFile.name);
+            //                 }
+            //             } catch (error) {
+            //                 console.error('[Upload Error]', error);
+            //                 this.removeDummyImage(targetFile.targetToken);
+            //             } finally {
+            //                 // 🔑 Lanjut ke antrean berikutnya apa pun yang terjadi
+            //                 this.processNextInQueue();
+            //             }
+            //         },
+            //         (error) => {
+            //             console.error('[Livewire Error]', error);
+            //             window.dispatchEvent(new CustomEvent('tampilkan-error', {
+            //                 detail: `Gagal mengunggah ${targetFile.name}. Periksa koneksi internet Anda.`
+            //             }));
+            //             this.removeDummyImage(targetFile.targetToken);
+
+            //             // 🔑 Lanjut ke antrean berikutnya apa pun yang terjadi
+            //             this.processNextInQueue();
+            //         }
+            //     );
+            // },
 
             // 4. Helper Pemrosesan & Pembersihan
             removeDummyImage(token) {
@@ -715,19 +856,23 @@ document.addEventListener('alpine:init', () => {
             },
 
             replaceDummyWithImage(token, finalUrl, fileName) {
-                const insertCommand = {
+                // 🌟 SOLUSI: Gunakan JSON Node, bukan HTML String.
+                // Ini lebih aman karena langsung didefinisikan sebagai object node Tiptap.
+                const imageNode = {
                     type: 'image',
                     attrs: {
-                        src: finalUrl, alt: fileName, title: fileName,
-                        style: 'width: 25%; display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;',
-                        class: 'rounded-lg max-w-full my-2 transition-all cursor-pointer tiptap-uploaded-image inline-block'
+                        src: finalUrl,
+                        alt: fileName,
+                        title: fileName,
+                        class: 'rounded-lg max-w-full my-2 transition-all cursor-pointer tiptap-uploaded-image inline-block',
+                        style: 'width: 25%; display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;'
                     }
                 };
 
-                // KASUS 1: Upload via tombol (tidak pakai token placeholder)
+                // KASUS 1: Upload via tombol MediaPlaceholder (tidak pakai token)
                 if (!token) {
-                    // 🌟 PERBAIKAN: Hapus .focus() agar tidak menyeleksi seluruh teks
-                    window.tiptapEditor.commands.insertContent(insertCommand);
+                    // Gunakan .insertContent dengan object agar Tiptap mencoba menyelesaikan skema
+                    window.tiptapEditor.chain().deleteSelection().insertContent(imageNode).run();
                     return;
                 }
 
@@ -744,73 +889,53 @@ document.addEventListener('alpine:init', () => {
 
                 let actualPos = findToken();
                 if (actualPos !== null) {
-                    // 🌟 PERBAIKAN: Hapus .focus() dari rantai (chain)
-                    window.tiptapEditor.chain().setNodeSelection(actualPos).deleteSelection().insertContent(insertCommand).run();
+                    // Gunakan tr.replaceWith untuk mengganti node dummy dengan imageNode secara langsung (bypass parser)
+                    const tr = window.tiptapEditor.state.tr.replaceWith(
+                        actualPos,
+                        actualPos + 1,
+                        window.tiptapEditor.schema.node('image', imageNode.attrs)
+                    );
+                    window.tiptapEditor.view.dispatch(tr);
                 } else {
-                    // Fallback jika Tiptap lambat merender dummy
+                    // Fallback
                     let retries = 0;
                     const interval = setInterval(() => {
                         actualPos = findToken();
                         if (actualPos !== null) {
                             clearInterval(interval);
-                            window.tiptapEditor.chain().setNodeSelection(actualPos).deleteSelection().insertContent(insertCommand).run();
+                            const tr = window.tiptapEditor.state.tr.replaceWith(
+                                actualPos,
+                                actualPos + 1,
+                                window.tiptapEditor.schema.node('image', imageNode.attrs)
+                            );
+                            window.tiptapEditor.view.dispatch(tr);
                         } else if (retries > 10) {
                             clearInterval(interval);
-                            window.tiptapEditor.commands.insertContent(insertCommand);
+                            window.tiptapEditor.chain().insertContent(imageNode).run();
                         }
                         retries++;
                     }, 150);
                 }
+                if (actualPos !== null) {
+                    const tr = window.tiptapEditor.state.tr.replaceWith(
+                        actualPos,
+                        actualPos + 1,
+                        window.tiptapEditor.schema.node('image', imageNode.attrs)
+                    );
+                    window.tiptapEditor.view.dispatch(tr);
+
+                    // 🔥 TAMBAHKAN INI: Memaksa Tiptap menyegarkan tampilan
+                    window.tiptapEditor.view.updateState(window.tiptapEditor.state);
+                }
             },
-            // replaceDummyWithImage(token, finalUrl, fileName) {
-            //     const insertCommand = {
-            //         type: 'image',
-            //         attrs: {
-            //             src: finalUrl, alt: fileName, title: fileName,
-            //             style: 'width: 25%; display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;',
-            //             class: 'rounded-lg max-w-full my-2 transition-all cursor-pointer tiptap-uploaded-image inline-block'
-            //         }
-            //     };
 
-            //     // 🌟 PERBAIKAN DRAG & DROP:
-            //     // Jika tidak ada token (berarti dari drag/drop/tombol), langsung sisipkan di kursor!
-            //     if (!token) {
-            //         window.tiptapEditor.chain().focus().insertContent(insertCommand).run();
-            //         return;
-            //     }
 
-            //     // Logika khusus untuk Paste (karena ada token dummy)
-            //     const findToken = () => {
-            //         let foundPos = null;
-            //         window.tiptapEditor.state.doc.descendants((node, pos) => {
-            //             if (node.type.name === 'image' && node.attrs.title === token) {
-            //                 foundPos = pos; return false;
-            //             }
-            //         });
-            //         return foundPos;
-            //     };
-
-            //     let actualPos = findToken();
-            //     if (actualPos !== null) {
-            //         window.tiptapEditor.chain().focus().setNodeSelection(actualPos).deleteSelection().insertContent(insertCommand).run();
-            //     } else {
-            //         // Fallback jika Tiptap lambat merender dummy
-            //         let retries = 0;
-            //         const interval = setInterval(() => {
-            //             actualPos = findToken();
-            //             if (actualPos !== null) {
-            //                 clearInterval(interval);
-            //                 window.tiptapEditor.chain().focus().setNodeSelection(actualPos).deleteSelection().insertContent(insertCommand).run();
-            //             } else if (retries > 10) {
-            //                 clearInterval(interval);
-            //                 // Jika dummy benar-benar hilang/terhapus user, tetap sisipkan gambarnya
-            //                 window.tiptapEditor.chain().focus().insertContent(insertCommand).run();
-            //             }
-            //             retries++;
-            //         }, 150);
-            //     }
-            // },
-
+            flushEditorSync() {
+                clearTimeout(this.syncTimeout);
+                if (window.tiptapEditor) {
+                    wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
+                }
+            },
             convertToWebp(file) {
                 return new Promise((resolve) => {
                     const reader = new FileReader();
@@ -1225,20 +1350,70 @@ document.addEventListener('alpine:init', () => {
                 window.tiptapEditor.chain().focus().insertStepCard({ number: '01' }).run();
                 this.updatedAt = Date.now();
             },
-            // insertTransferCard() {
-            //     if (!window.tiptapEditor) return;
-            //     window.tiptapEditor.chain().focus().insertTransferCard().run();
-            //     this.updatedAt = Date.now();
-            // },
-            // insertContactItem() {
-            //     if (!window.tiptapEditor) return;
-            //     window.tiptapEditor.chain().focus().setContactItem().run();
-            //     this.updatedAt = Date.now();
-            // },
+
             insertSectionBlock() {
                 if (!window.tiptapEditor) return;
+
+                // 🛑 CEGAH KLIK TOMBOL: Cek apakah kursor sedang berada di dalam Section
+                if (window.tiptapEditor.isActive('sectionBlock')) {
+                    this.notifyTheUser('Tidak bisa menambahkan Section di dalam Section!', 'warning');
+                    return; // Batalkan eksekusi
+                }
+
                 window.tiptapEditor.chain().focus().setSectionBlock().run();
                 this.updatedAt = Date.now();
+            },
+            setFontSize(size) {
+                if (!window.tiptapEditor) return;
+
+                if (size === 'default') {
+                    window.tiptapEditor.chain().focus().unsetFontSize().run();
+                } else {
+                    window.tiptapEditor.chain().focus().setFontSize(size).run();
+                }
+                this.updatedAt = Date.now();
+            },
+
+            getCurrentFontSize() {
+                this.updatedAt; // Trigger reaktivitas Alpine
+                if (!window.tiptapEditor) return 'default';
+
+                const attributes = window.tiptapEditor.getAttributes('textStyle');
+                return attributes.fontSize || 'default';
+            },
+            // ➕ EYEBROW ICON PICKER
+            eyebrowIcons: EYEBROW_ICONS,
+
+            toggleEyebrowIconMenu() {
+                this.isEyebrowIconOpen = !this.isEyebrowIconOpen;
+            },
+
+            selectEyebrowIcon(icon) {
+                if (!window.tiptapEditor) return;
+
+                // Kalau kursor sudah di dalam node eyebrow, cukup ganti attribute icon-nya.
+                // Kalau belum, ubah blok saat ini jadi node eyebrow baru dengan icon terpilih.
+                if (window.tiptapEditor.isActive('eyebrow')) {
+                    window.tiptapEditor.chain().focus().setEyebrowIcon(icon).run();
+                } else {
+                    window.tiptapEditor.chain().focus().setEyebrow(icon).run();
+                }
+
+                this.isEyebrowIconOpen = false;
+                this.updatedAt = Date.now();
+            },
+
+            getCurrentEyebrowIcon() {
+                this.updatedAt; // Trigger reaktivitas Alpine saat kursor/seleksi berubah
+                if (!window.tiptapEditor) return EYEBROW_ICONS[0].key;
+
+                const attributes = window.tiptapEditor.getAttributes('eyebrow');
+                return attributes.icon || EYEBROW_ICONS[0].key;
+            },
+
+            getEyebrowIconSVG(key) {
+                const found = EYEBROW_ICONS.find((item) => item.key === key);
+                return found ? found.svg : EYEBROW_ICONS[0].svg;
             },
         }
     }

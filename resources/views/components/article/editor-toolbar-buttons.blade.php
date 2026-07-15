@@ -39,6 +39,21 @@
                         <option value="Times New Roman" style="font-family: 'Times New Roman', serif;">Times New Roman</option>
                     </select>
                 </div>
+                <div class="relative flex items-center">
+                    <select 
+                        @change="setFontSize($event.target.value)"
+                        :value="getCurrentFontSize()"
+                        class="text-xs md:text-sm border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 rounded-md py-1 pl-2 pr-6 focus:ring-0 focus:border-forest transition-colors cursor-pointer"
+                    >
+                        <option value="default">Ukuran Default</option>
+                        <option value="12px">12px (Sangat Kecil)</option>
+                        <option value="14px">14px (Kecil)</option>
+                        <option value="16px">16px (Normal)</option>
+                        <option value="18px">18px (Besar)</option>
+                        <option value="20px">20px (Sangat Besar)</option>
+                        <option value="24px">24px (Judul)</option>
+                    </select>
+                </div>
 
                 {{-- GRUP WARNA TEKS (CUSTOM ALPINE DROPDOWN) --}}
                 <div x-data="{ openColorMenu: false }" class="relative flex items-center border-l border-zinc-200 pl-2 ml-1">
@@ -153,7 +168,10 @@
                         title="Daftar Kapital" icon="list-tree">
                         <span class="text-[10px] font-bold ml-0.5">A.</span>
                     </x-layouts::app.editor-toolbar-btn>
-                    <x-layouts::app.editor-toolbar-btn command="toggleEyebrow" activeName="eyebrow" title="Eyebrow (Teks Konteks)" icon="circle-small" />
+                    <x-layouts::app.editor-toolbar-btn command="toggleEyebrow" activeName="eyebrow" title="Judul Kecil (Eyebrow)" icon="tag"/>
+                    <x-layouts::app.editor-toolbar-btn command="updateEyebrowStyle"  activeParams="{ color: '#BE1417', size: '18px' }"  activeName="eyebrow"  title="Gaya Judul Merah"  icon="palette"/>
+                    {{-- <x-layouts::app.editor-toolbar-btn command="toggleEyebrow" activeName="eyebrow" title="Eyebrow (Teks Konteks)" icon="circle-small" /> --}}
+                    <x-layouts::app.editor-toolbar-btn command="togglePill" activeName="pill" title="Pembungkus Pill" icon="pill" />
                 </div>
 
                 <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
@@ -212,29 +230,108 @@
 
                 {{-- LAYOUTS --}}
                 <div class="flex items-center gap-1 shrink-0">
+                    <div class="relative inline-block">
+                        <button
+                            type="button"
+                            @click="toggleEyebrowIconMenu()"
+                            :class="checkButtonActive('eyebrow') ? 'bg-coral-dark/10 text-coral-dark' : 'text-gray-600 hover:bg-gray-100'"
+                            class="flex items-center gap-1 rounded-md px-2 py-1.5 transition-colors"
+                            :aria-expanded="isEyebrowIconOpen"
+                            aria-haspopup="true"
+                            title="Eyebrow"
+                        >
+                            <span class="w-4 h-4 [&>svg]:w-full [&>svg]:h-full" x-html="getEyebrowIconSVG(getCurrentEyebrowIcon())"></span>
+                            <svg class="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+
+                        <div
+                            x-show="isEyebrowIconOpen"
+                            x-cloak
+                            x-transition.origin.top.left
+                            @click.outside="isEyebrowIconOpen = false"
+                            @keydown.escape.window="isEyebrowIconOpen = false"
+                            class="absolute z-20 mt-1 grid grid-cols-4 gap-1 rounded-lg border border-gray-200 bg-foresty p-2 shadow-lg"
+                            role="menu"
+                        >
+                            <template x-for="item in eyebrowIcons" :key="item.key">
+                                <button
+                                    type="button"
+                                    @click="selectEyebrowIcon(item.key)"
+                                    :class="checkButtonActive('eyebrow', { icon: item.key })
+                                        ? 'bg-coral-dark/10 text-coral-dark ring-1 ring-coral-dark/30'
+                                        : 'text-gray-600 hover:bg-gray-100'"
+                                    class="flex items-center justify-center rounded-md p-2 transition-colors [&>svg]:w-4 [&>svg]:h-4"
+                                    :title="item.label"
+                                    x-html="item.svg"
+                                ></button>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="relative inline-block">
+                        <button
+                            type="button"
+                            @click="toggleEyebrowIconMenu()"
+                            :class="checkButtonActive('eyebrow') ? 'bg-coral-dark/10 text-coral-dark' : 'text-gray-600 hover:bg-gray-100'"
+                            class="flex items-center gap-1 rounded-md px-2 py-1.5 transition-colors"
+                            :aria-expanded="isEyebrowIconOpen"
+                            aria-haspopup="true"
+                            title="Eyebrow"
+                        >
+                            <span class="w-4 h-4 [&>svg]:w-full [&>svg]:h-full" x-html="getEyebrowIconSVG(getCurrentEyebrowIcon())"></span>
+                            <svg class="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+
+                        <div
+                            x-show="isEyebrowIconOpen"
+                            x-cloak
+                            x-transition.origin.top.left
+                            @click.outside="isEyebrowIconOpen = false"
+                            @keydown.escape.window="isEyebrowIconOpen = false"
+                            class="absolute z-20 mt-1 grid grid-cols-4 gap-1 rounded-lg border border-gray-200 bg-white p-2 shadow-lg"
+                            role="menu"
+                        >
+                            <template x-for="item in eyebrowIcons" :key="item.key">
+                                <button
+                                    type="button"
+                                    @click="selectEyebrowIcon(item.key)"
+                                    :class="checkButtonActive('eyebrow', { icon: item.key })
+                                        ? 'bg-coral-dark/10 text-coral-dark ring-1 ring-coral-dark/30'
+                                        : 'text-gray-600 hover:bg-gray-100'"
+                                    class="flex items-center justify-center rounded-md p-2 transition-colors [&>svg]:w-4 [&>svg]:h-4"
+                                    :title="item.label"
+                                    x-html="item.svg"
+                                ></button>
+                            </template>
+                        </div>
+                    </div>
                     <button type="button" @click="runCommand('insertManualColumns')"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
-                        title="Tambahkan Grid Layout">
-                        <x-dynamic-component :component="'lucide-grid-2x2-plus'" class="h-4 w-4" stroke-width="2" />
+                        title="Blok Grid">
+                        <x-dynamic-component :component="'lucide-columns-2'" class="h-4 w-4" stroke-width="2" />
                     </button>
                     {{-- <button type="button" @click="runCommand('setSectionBlock')" --}}
-                    <button type="button" @click="insertSectionBlock()"
+                    {{-- <button type="button" @click="insertSectionBlock()"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
-                        title="Tambahkan Kartu Langkah">
-                        <x-dynamic-component :component="'lucide-layers-plus'" class="h-4 w-4" stroke-width="2" />
-                    </button>
+                        title="Blok Seksi">
+                        <x-dynamic-component :component="'lucide-gallery-vertical'" class="h-4 w-4" stroke-width="2" />
+                    </button> --}}
                     <button type="button" @click="runCommand('insertStepCard')"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
-                        title="Tambahkan Blok Seksi">
-                        <x-dynamic-component :component="'lucide-rectangle-ellipsis'" class="h-4 w-4" stroke-width="2" />
+                        title="Step Card ">
+                        <x-dynamic-component :component="'lucide-square-chart-gantt'" class="h-4 w-4" stroke-width="2" />
                     </button>
                     {{-- <button type="button" @click="runCommand('setInfoCard')"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
                         title="Tambahkan Blok Seksi">
                         <x-dynamic-component :component="'lucide-rectangle-ellipsis'" class="h-4 w-4" stroke-width="2" />
                     </button> --}}
-
-                    <x-layouts::app.editor-toolbar-btn command="setInfoCard" activeName="setInfoCard" title="Kartu Info" icon="code-xml" />
+                    
+                    <x-layouts::app.editor-toolbar-btn command="insertSectionBlock" activeType="alpine" activeName="isActive('sectionBlock')" title="Blok Seksi" icon="gallery-vertical" />
+                    <x-layouts::app.editor-toolbar-btn command="setCard" activeName="setCard" title="Blok Kartu" icon="gallery-thumbnails" />
                 </div>
 
                 {{-- NOTIFY  BUTTONs --}}

@@ -2,7 +2,6 @@
 <html lang="id">
 <head>
     @include('partials.head')
-
 </head>
 <body
     {{-- min-h-screen --}}

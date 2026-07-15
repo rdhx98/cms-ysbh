@@ -83,20 +83,32 @@ export const StepCard = Node.create({
             contentDOM.className = 'flex-1 min-w-0 pt-1';
             dom.appendChild(contentDOM);
 
+            // return {
+            //     dom,
+            //     contentDOM,
+            //     update: (updatedNode) => {
+            //         // Pastikan node yang di-update adalah tipe yang sama
+            //         if (updatedNode.type.name !== node.type.name) return false;
+
+            //         // Update variabel node lokal agar sinkron dengan data Tiptap terbaru
+            //         node = updatedNode;
+
+            //         // Logika tambahan jika ada atribut yang berubah (misal warna)
+            //         // Contoh: dom.style.setProperty('--bg-outer', updatedNode.attrs.bgColor);
+
+            //         return true; // Memberitahu Tiptap bahwa update sukses, jangan hancurkan DOM
+            //     }
+            // }
             return {
                 dom,
                 contentDOM,
                 update: (updatedNode) => {
-                    // Pastikan node yang di-update adalah tipe yang sama
-                    if (updatedNode.type.name !== node.type.name) return false;
-
-                    // Update variabel node lokal agar sinkron dengan data Tiptap terbaru
-                    node = updatedNode;
-
-                    // Logika tambahan jika ada atribut yang berubah (misal warna)
-                    // Contoh: dom.style.setProperty('--bg-outer', updatedNode.attrs.bgColor);
-
-                    return true; // Memberitahu Tiptap bahwa update sukses, jangan hancurkan DOM
+                    if (updatedNode.type.name !== 'stepCard') return false;
+                    // Sinkron angka badge, tapi jangan timpa saat user sedang mengetik di situ
+                    if (document.activeElement !== input && input.value !== updatedNode.attrs.stepNumber) {
+                        input.value = updatedNode.attrs.stepNumber;
+                    }
+                    return true;
                 }
             }
         }

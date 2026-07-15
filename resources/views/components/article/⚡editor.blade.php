@@ -19,9 +19,6 @@ new class extends Component {
     use WithFileUploads;
     use WithNotifications;
 
-    // public int $user_id;
-    // public int $article_id;
-    // public int $category_id;
 
     public ?int $user_id = null;
     public ?int $article_id = null;
@@ -43,8 +40,7 @@ new class extends Component {
     public array $extracted_images = []; // Menyimpan daftar semua URL gambar dari editor
     public ?string $selected_image_url = null; // Menyimpan URL gambar yang dipilih penulis
 
-    public function mount(?Post $post = null)
-    {
+    public function mount(?Post $post = null) {
         // JIKA MODE EDIT (Ada data Post dari URL)
         if ($post && $post->exists) {
             $this->article_id = $post->id;
@@ -77,19 +73,10 @@ new class extends Component {
             $this->status = 'draft';
             $this->tags = [];
         }
-        // $this->post = $post;
-        // $this->created_at = now()->format('Y-m-d');
-        // $this->user_id = auth()->id() ?? $this->user_id;
-        // $this->content = '';
-        // $this->title = '';
-        // $this->slug = '';
-        // $this->featured_image = 'default.webp'; // Gambar default jika penulis tidak memilih
-        // $this->status = 'draft'; // review | published | scheduled | archived | rejected
     }
 
 
-    public function scanEditorImages()
-    {
+    public function scanEditorImages() {
         $this->extracted_images = [];
 
         if (!empty($this->content)) {
@@ -114,8 +101,7 @@ new class extends Component {
     /**
      * Fungsi ketika penulis mengklik/memilih salah satu gambar dari editor
      */
-    public function selectImageFromEditor($url)
-    {
+    public function selectImageFromEditor($url) {
         $this->photo = null; // Batalkan file upload kustom jika ada
         $this->selected_image_url = $url;
         $this->featured_image = basename($url); // Ambil nama filenya saja untuk database
@@ -124,8 +110,7 @@ new class extends Component {
     /**
      * Lifecycle hook Livewire: Otomatis berjalan ketika penulis mengunggah file kustom lewat input file
      */
-    public function updatedPhoto()
-    {
+    public function updatedPhoto() {
         $this->validate([
             'photo' => 'image|max:15360',
         ]);
@@ -136,8 +121,7 @@ new class extends Component {
         // $this->featured_image = $this->photo->getClientOriginalName();
     }
 
-    private function processAndTrimImages($htmlContent)
-{
+    private function processAndTrimImages($htmlContent) {
         if (empty($htmlContent)) return $htmlContent;
 
         return preg_replace_callback(
@@ -157,79 +141,9 @@ new class extends Component {
             $htmlContent
         );
     }
-    // private function processAndTrimImages($htmlContent)
-    // {
-    //     if (empty($htmlContent)) {
-    //         return $htmlContent;
-    //     }
+    
 
-    //     // Gunakan DOMDocument untuk membaca HTML secara aman di sisi Backend
-    //     $dom = new \DOMDocument();
-
-    //     // Libatkan libxml_use_internal_errors agar tidak memicu warning jika ada tag HTML5 kustom
-    //     libxml_use_internal_errors(true);
-    //     // Muat string HTML dengan encoding UTF-8
-    //     $dom->loadHTML(mb_convert_encoding($htmlContent, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-    //     libxml_clear_errors();
-
-    //     $images = $dom->getElementsByTagName('img');
-    //     $hasChanges = false;
-
-    //     foreach ($images as $img) {
-    //         $src = $img->getAttribute('src');
-
-    //         // 🚀 DETEKSI & POTONG (TRIM) HANYA GAMBAR BASE64
-    //         if (Str::startsWith($src, 'data:image/')) {
-    //             try {
-    //                 // Memecah format data:image/png;base64,XXXXXX
-    //                 $parts = explode(',', $src);
-    //                 if (count($parts) < 2) {
-    //                     continue;
-    //                 }
-
-    //                 $metadata = $parts[0]; // data:image/png;base64
-    //                 $base64Data = $parts[1]; // data biner murni
-
-    //                 // Ambil ekstensi file (png, jpeg, webp, dll)
-    //                 $extension = 'png';
-    //                 if (preg_match('/data:image\/(?<mime>.*?);/', $metadata, $groups)) {
-    //                     $extension = $groups['mime'];
-    //                 }
-
-    //                 // Decode string base64 menjadi biner fisik
-    //                 $decodedImage = base64_decode($base64Data);
-
-    //                 // 🌟 DISELARASKAN: Gunakan folder 'articles' agar sinkron dengan sistem Cleaner Anda
-    //                 $filename = 'article-' . Str::uuid() . '.' . $extension;
-    //                 $storagePath = 'articles/' . $filename;
-
-    //                 // Simpan file ke folder storage publik public/articles/...
-    //                 Storage::disk('public')->put($storagePath, $decodedImage);
-
-    //                 // Dapatkan URL publik gambar tersebut
-    //                 $fileUrl = asset('storage/' . $storagePath);
-
-    //                 // 🌟 SULAP: Ganti src Base64 raksasa dengan URL gambar server yang ringan!
-    //                 $img->setAttribute('src', $fileUrl);
-
-    //                 // Tambahkan class kustom untuk styling frontend Anda
-    //                 $img->setAttribute('class', 'rounded-lg max-w-full my-2 inline-block tiptap-trimmed-image');
-
-    //                 $hasChanges = true;
-    //             } catch (\Exception $e) {
-    //                 // Jika gagal di-decode, hapus tag gambarnya agar database tidak bengkak
-    //                 $img->parentNode->removeChild($img);
-    //                 $hasChanges = true;
-    //             }
-    //         }
-    //     }
-
-    //     // Jika ada gambar yang berhasil diproses, kembalikan HTML yang sudah bersih, jika tidak kembalikan apa adanya
-    //     return $hasChanges ? $dom->saveHTML() : $htmlContent;
-    // }
-
-    protected function rules()
-    {
+    protected function rules() {
         return [
             'category_id'       => 'required|numeric',
             'title'             => ['required', Rule::unique('posts')->ignore($this->article_id)],
@@ -240,8 +154,7 @@ new class extends Component {
         ];
     }
 
-    protected function messages()
-    {
+    protected function messages() {
         return [
             // Format: 'nama_variabel.nama_rule' => 'Pesan kustom'
 
@@ -260,8 +173,7 @@ new class extends Component {
         ];
     }
 
-    public function save($latestContent)
-    {
+    public function saveArticle($latestContent) {
         $this->content = $latestContent;
         // 1. Biarkan Carbon membaca tanggalnya secara otomatis
         // (Tidak peduli formatnya d/m/y, d-m-Y, atau Y-m-d)
@@ -428,49 +340,9 @@ new class extends Component {
 
         return asset('storage/' . $path);
     }
-    // public function uploadImage()
-    // {
-    //     // 1. Validasi standar untuk mengamankan server
-    //     $this->validate([
-    //         'photo' => 'image|max:15360', // Batas aman 15MB
-    //     ]);
-
-    //     $tempPath = $this->photo->getRealPath();
-    //     $extension = strtolower($this->photo->getClientOriginalExtension());
-    //     $filename = 'article-' . uniqid() . '.webp';
-    //     $savePath = storage_path('app/public/articles/' . $filename);
-
-    //     // 💡 STRATEGI HIBRIDA: Cek apakah ekstensi Imagick benar-benar aktif di server
-    //     if ($extension === 'gif' && class_exists('\Imagick')) {
-    //         try {
-    //             // Jalur ini hanya akan dieksekusi jika Imagick terpasang sempurna (seperti di Hostinger nanti)
-    //             \Intervention\Image\Laravel\Facades\Image::withDriver(new \Intervention\Image\Drivers\Imagick\Driver())
-    //                 ->read($tempPath)
-    //                 ->scale(width: 1000) // Pangkas resolusi agar hemat storage
-    //                 ->toWebp(70) // Kompres menjadi Animated WebP
-    //                 ->save($savePath);
-
-    //             return asset('storage/articles/' . $filename);
-    //         } catch (\Exception $e) {
-    //             // Jika terjadi kegagalan tak terduga, langsung lompat ke jalur aman (fallback)
-    //             Log::warning('Gagal kompresi GIF di backend, menggunakan file asli: ' . $e->getMessage());
-    //         }
-    //     }
-
-    //     // 💡 JALUR AMAN (FALLBACK):
-    //     // Digunakan di laptop lokal (karena Imagick Herd error) DAN untuk file JPG/PNG biasa.
-    //     // File disimpan murni dan orisinal tanpa memicu error 500!
-    //     $path = $this->photo->store('articles', 'public');
-    //     return asset('storage/' . $path);
-    // }
 };
 ?>
 
-{{-- <div class="max-w-5xl mx-auto p-6" >
-    <x-slot:title>{{ __('Write Article') }}</x-slot:title> --}}
-
-{{-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"> --}}
-{{-- <div class="h-[calc(100vh-120px)] flex flex-col justify-between"> --}}
 <div class="w-full h-[calc(100vh-4rem)] flex flex-col pt-2 md:pt-0">
     <x-slot:title>{{ __('Write Article') }}</x-slot:title>
 
@@ -530,31 +402,7 @@ new class extends Component {
                             @endif
                         </button>
 
-                        {{-- Tombol Buka Pengaturan Meta
-                        <button type="button" @click="isMetaOpen = true"
-                            class="shrink-0 p-2 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer md:w-[45%] md:w-auto"
-                            title="Pengaturan Artikel">
-                            <x-dynamic-component :component="'lucide-file-sliders'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                            <span class="hidden md:inline">Pengaturan Dokumen</span>
-                            <span class="md:hidden">Pengaturan</span>
-                        </button> --}}
-
-                        <!-- 🔥 UBAH type="submit" menjadi type="button", dan gabungkan eksekusi Livewire di x-on:click -->
-                        {{-- <button type="button"
-                            x-on:click="if(window.tiptapEditor) { $wire.content = window.tiptapEditor.getHTML(); $wire.save(); }"
-                            wire:loading.attr="disabled"
-                            class="p-2 bg-forest hover:bg-forest/90 text-white font-medium rounded-lg text-sm shadow cursor-pointer disabled:opacity-70 flex items-center justify-center min-w-[140px]">
-
-                            <span class="flex items-center justify-center gap-2" wire:loading.remove wire:target="save">
-                                <x-dynamic-component :component="'lucide-save'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                                <span class="hidden md:block"> {{ __('Simpan Artikel') }} </span>
-                                <span class="md:hidden"> {{ __('Simpan') }} </span>
-                            </span>
-
-                            <div wire:loading.flex wire:target="save" class="flex-row items-center justify-center gap-2">
-                                <span>Memproses...</span>
-                            </div>
-                        </button> --}}
+                        
                         <button type="button"
                             x-on:click="if(window.tiptapEditor) { $wire.saveArticle(window.tiptapEditor.getHTML()) }"
                             wire:loading.attr="disabled"
@@ -568,26 +416,9 @@ new class extends Component {
                             </span>
 
                             <div wire:loading.flex wire:target="saveArticle" class="flex-row items-center justify-center gap-2">
-                                <span>Memproses...</span>
-                            </div>
+                                <span>Memproses...</span> 
+                            </div> 
                         </button>
-                        {{-- 🌟 PERBAIKAN 2: Tambahkan x-on:click untuk memaksa sinkronisasi instan --}}
-                        {{-- <button type="submit"
-                            x-on:click="if(window.tiptapEditor) { $wire.set('content', window.tiptapEditor.getHTML(), false) }"
-                            wire:loading.attr="disabled"
-                            class="p-2 bg-forest hover:bg-forest/90 text-white font-medium rounded-lg text-sm shadow cursor-pointer disabled:opacity-70 flex items-center justify-center min-w-[140px]">
-
-                            <span class="flex items-center justify-center gap-2" wire:loading.remove wire:target="save">
-                                <x-dynamic-component :component="'lucide-save'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                                <span class="hidden md:block"> {{ __('Simpan Artikel') }} </span>
-                                <span class="md:hidden"> {{ __('Simpan') }} </span>
-                            </span>
-
-                            <div wire:loading.flex wire:target="save" class="flex-row items-center justify-center gap-2">
-                                {{-- ... SVG Loading Anda ...
-                                <span>Memproses...</span>
-                            </div>
-                        </button> --}}
 
                     </div>
 
@@ -741,7 +572,7 @@ new class extends Component {
                 @include('components.article.editor-bubble-menu')
 
                 {{-- EDITOR's AREA --}}
-                <div class="flex-1 relative w-full h-full flex flex-col overflow-hidden bg-paper dark:bg-zinc-950" >
+                <div wire:ignore wire:key="tiptap-editor-shell" class="flex-1 relative w-full h-full flex flex-col overflow-hidden bg-paper dark:bg-zinc-950" >
 
 
                     {{-- 🌌 ZONA DROP OVERLAY GLOBAL (SUNTIKAN PASIF SAH) --}}
