@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Program Kesehatan Ibu dan Anak (KIA) — Yayasan Sinar Bhakti Husada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#064F3B; --forest-dark:#043328; --forest-tint:#0E6A4F;
+    --gold:#EBCC26; --gold-soft:#F7EBAF;
+    --coral:#E42326; --coral-dark:#BE1417;
+    --paper:#FBF7EA; --paper-dim:#F3ECD6;
+    --ink:#12241C; --ink-soft:#4B5D53;
+    --mist:#E9F1EB; --white:#FFFFFF;
+    --line: rgba(6,79,59,0.14);
+    --shadow: 0 20px 50px -25px rgba(6,45,35,0.35);
+    --radius-lg: 28px; --radius-md: 18px; --radius-sm: 10px;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing:antialiased; line-height:1.65; overflow-x:hidden; }
+  h1,h2,h3,.display{ font-family:'Fraunces', serif; color:var(--forest); margin:0; letter-spacing:-0.01em; }
+  a{ color:inherit; }
+  img{ max-width:100%; display:block; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 32px; }
+  @media (max-width:640px){ .wrap{ padding:0 20px; } }
+
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:13px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--coral-dark); }
+  .eyebrow svg{ width:16px; height:16px; flex-shrink:0; }
+
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:15.5px; padding:14px 28px; border-radius:999px; border:2px solid transparent; cursor:pointer; transition:transform .25s ease, box-shadow .25s ease, background-color .25s ease; text-decoration:none; white-space:nowrap; }
+  .btn-coral{ background:var(--coral); color:var(--white); }
+  .btn-coral:hover{ background:var(--coral-dark); transform:translateY(-2px); box-shadow:0 14px 28px -14px rgba(228,35,38,0.55); }
+  .btn-ghost{ background:transparent; color:var(--forest); border-color:var(--forest); }
+  .btn-ghost:hover{ background:var(--forest); color:var(--white); transform:translateY(-2px); }
+  .btn-light{ background:var(--white); color:var(--forest); }
+  .btn-light:hover{ transform:translateY(-2px); box-shadow:0 14px 28px -14px rgba(0,0,0,0.35); }
+  .btn-outline-light{ background:transparent; color:var(--white); border-color:rgba(255,255,255,0.6); }
+  .btn-outline-light:hover{ background:rgba(255,255,255,0.12); border-color:var(--white); }
+
+  header{ position:sticky; top:0; z-index:100; background:rgba(251,247,234,0.88); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 32px; max-width:1180px; margin:0 auto; }
+  .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; }
+  .brand svg{ width:42px; height:42px; }
+  .brand-name{ font-family:'Fraunces', serif; font-weight:700; font-size:17px; color:var(--forest); line-height:1.15; }
+  .brand-name span{ display:block; font-family:'Plus Jakarta Sans', sans-serif; font-weight:600; font-size:10.5px; letter-spacing:0.14em; color:var(--coral); text-transform:uppercase; margin-top:2px; }
+  .nav-links{ display:flex; align-items:center; gap:36px; }
+  .nav-links a{ font-weight:600; font-size:15px; color:var(--ink-soft); text-decoration:none; }
+  .nav-links a:hover{ color:var(--forest); }
+  .nav-cta{ display:flex; align-items:center; gap:18px; }
+  .burger{ display:none; background:none; border:none; cursor:pointer; padding:6px; }
+  .burger span{ display:block; width:24px; height:2.5px; background:var(--forest); margin:5px 0; border-radius:2px; }
+  @media (max-width:900px){
+    .nav-links{ position:fixed; inset:72px 0 0 0; background:var(--paper); flex-direction:column; justify-content:flex-start; align-items:flex-start; padding:32px; gap:24px; transform:translateX(100%); transition:transform .35s ease; border-top:1px solid var(--line); }
+    .nav-links.open{ transform:translateX(0); }
+    .nav-links a{ font-size:18px; }
+    .burger{ display:block; }
+    .nav-cta .btn-ghost{ display:none; }
+  }
+
+  section{ position:relative; }
+  .section-pad{ padding:96px 0; }
+  @media (max-width:640px){ .section-pad{ padding:64px 0; } }
+  .mist-bg{ background:var(--mist); }
+  .section-head{ max-width:680px; margin-bottom:56px; }
+  .section-head h2{ font-size:clamp(1.9rem, 3.2vw, 2.6rem); font-weight:600; margin-top:14px; line-height:1.15; }
+  .section-head p{ color:var(--ink-soft); font-size:16.5px; margin-top:16px; }
+
+  .breadcrumb{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-soft); margin-bottom:32px; flex-wrap:wrap; }
+  .breadcrumb a{ font-weight:600; color:var(--ink-soft); text-decoration:none; }
+  .breadcrumb a:hover{ color:var(--forest); }
+  .breadcrumb span{ color:var(--ink-soft); opacity:0.5; }
+  .breadcrumb .current{ color:var(--forest); font-weight:700; opacity:1; }
+
+  .lang-toggle{ display:inline-flex; background:var(--white); border:1px solid var(--line); border-radius:999px; padding:4px; gap:2px; box-shadow:var(--shadow); margin-bottom:24px; }
+  .lang-toggle button{ border:none; background:transparent; padding:8px 20px; border-radius:999px; font-weight:700; font-size:13.5px; cursor:pointer; color:var(--ink-soft); font-family:inherit; }
+  .lang-toggle button.active{ background:var(--forest); color:var(--white); }
+  .lang-en-content{ display:none; }
+  body.lang-en .lang-en-content{ display:block; }
+  body.lang-en .lang-id-content{ display:none; }
+  body.lang-en .lang-toggle button.active{ background:transparent; color:var(--ink-soft); }
+  body.lang-en .lang-toggle button.lang-btn-en{ background:var(--forest); color:var(--white); }
+
+  .program-hero-icon{ width:72px; height:72px; border-radius:22px; background:var(--gold-soft); color:var(--forest); display:flex; align-items:center; justify-content:center; margin-bottom:22px; }
+  .program-hero-icon svg{ width:34px; height:34px; }
+  .hero-title{ font-size:clamp(2rem, 4vw, 3rem); font-weight:600; line-height:1.12; margin:16px 0 20px; max-width:820px; }
+  .hero-lead{ font-size:18px; color:var(--ink-soft); max-width:760px; }
+  .hero-img{ width:100%; border-radius:var(--radius-lg); margin-top:40px; box-shadow:var(--shadow); object-fit:cover; max-height:420px; }
+
+  .about-grid{ display:grid; grid-template-columns:0.9fr 1.1fr; gap:64px; align-items:start; }
+  @media (max-width:860px){ .about-grid{ grid-template-columns:1fr; gap:36px; } }
+  .about-copy p{ color:var(--ink-soft); margin-bottom:16px; }
+
+  .components-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:20px; }
+  @media (max-width:960px){ .components-grid{ grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:560px){ .components-grid{ grid-template-columns:1fr; } }
+  .comp-card{ background:var(--white); border-radius:var(--radius-md); padding:26px 22px; border:1px solid var(--line); box-shadow:var(--shadow); }
+  .comp-num{ font-family:'Fraunces', serif; font-weight:700; font-size:22px; color:var(--gold); margin-bottom:12px; }
+  .comp-card h3{ font-size:16.5px; font-weight:600; line-height:1.3; }
+
+  .region-card{ border-radius:var(--radius-lg); padding:32px; border:1px solid var(--line); background:var(--white); box-shadow:var(--shadow); }
+  .region-tag{ display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:6px 14px; border-radius:999px; margin-bottom:18px; background:var(--gold-soft); color:var(--forest); }
+  .region-province{ font-size:13px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em; margin:18px 0 10px; }
+  .region-province:first-of-type{ margin-top:4px; }
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .region-chip{ background:var(--mist); color:var(--forest); font-weight:600; font-size:13.5px; padding:7px 14px; border-radius:999px; }
+
+  .deepdive-grid{ display:grid; grid-template-columns:0.85fr 1.15fr; gap:48px; align-items:start; }
+  @media (max-width:860px){ .deepdive-grid{ grid-template-columns:1fr; } }
+  .deepdive-grid.reverse .img-col{ order:2; }
+  .img-col img{ border-radius:var(--radius-md); box-shadow:var(--shadow); width:100%; object-fit:cover; }
+  .deepdive-copy p{ color:var(--ink-soft); margin-bottom:16px; }
+  .deepdive-copy a{ color:var(--forest); font-weight:700; text-decoration:underline; text-decoration-color:var(--gold); text-underline-offset:3px; }
+
+  .risk-list{ display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; margin:20px 0 24px; }
+  @media (max-width:560px){ .risk-list{ grid-template-columns:1fr; } }
+  .risk-item{ display:flex; align-items:center; gap:10px; background:var(--mist); border-radius:var(--radius-sm); padding:12px 16px; font-size:14.5px; font-weight:600; color:var(--forest); }
+  .risk-item svg{ width:18px; height:18px; color:var(--coral); flex-shrink:0; }
+
+  .stat-row{ display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin:24px 0; }
+  @media (max-width:760px){ .stat-row{ grid-template-columns:repeat(2, 1fr); } }
+  .stat-box{ text-align:center; background:var(--forest); border-radius:var(--radius-md); padding:22px 14px; }
+  .stat-box .num{ font-family:'Fraunces', serif; font-weight:700; font-size:clamp(1.4rem,2.6vw,1.9rem); color:var(--gold); display:block; }
+  .stat-box .lbl{ font-size:12px; color:rgba(255,255,255,0.78); margin-top:6px; display:block; line-height:1.4; }
+
+  .donate-cta{ background:var(--coral); color:var(--white); overflow:hidden; position:relative; }
+  .donate-inner{ display:grid; grid-template-columns:1.2fr 0.8fr; gap:48px; align-items:center; position:relative; z-index:2; }
+  @media (max-width:860px){ .donate-inner{ grid-template-columns:1fr; } }
+  .donate-cta h2{ color:var(--white); font-size:clamp(1.9rem,3.4vw,2.5rem); font-weight:600; line-height:1.15; }
+  .donate-cta p{ color:rgba(255,255,255,0.88); font-size:16.5px; margin:16px 0 28px; max-width:460px; }
+  .donate-actions{ display:flex; gap:16px; flex-wrap:wrap; }
+  .transfer-card{ background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); border-radius:var(--radius-md); padding:26px 28px; backdrop-filter:blur(4px); }
+  .transfer-card .label{ font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.75); margin-bottom:8px; }
+  .transfer-card .acct{ font-family:'Fraunces', serif; font-size:22px; font-weight:600; margin-bottom:4px; }
+  .transfer-card .name{ font-size:14px; color:rgba(255,255,255,0.85); margin-bottom:16px; }
+  .copy-btn{ background:var(--white); color:var(--coral); border:none; border-radius:999px; padding:9px 18px; font-weight:700; font-size:13.5px; cursor:pointer; }
+
+  .contact-grid{ display:grid; grid-template-columns:1fr 1fr; gap:56px; }
+  @media (max-width:860px){ .contact-grid{ grid-template-columns:1fr; gap:36px; } }
+  .contact-item{ display:flex; gap:16px; margin-bottom:26px; }
+  .contact-item .ico{ width:46px; height:46px; border-radius:14px; background:var(--white); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .contact-item .ico svg{ width:21px; height:21px; color:var(--forest); }
+  .contact-item .t{ font-weight:700; font-size:14.5px; color:var(--forest); margin-bottom:3px; }
+  .contact-item .d{ font-size:14.5px; color:var(--ink-soft); }
+  .map-frame{ border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--line); height:100%; min-height:280px; background:var(--paper-dim); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:14px; }
+
+  footer{ background:var(--forest-dark); color:rgba(255,255,255,0.72); padding:64px 0 28px; }
+  .footer-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:40px; margin-bottom:48px; }
+  @media (max-width:760px){ .footer-grid{ grid-template-columns:1fr 1fr; } }
+  .footer-brand{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .footer-brand svg{ width:36px; height:36px; }
+  .footer-brand span{ font-family:'Fraunces', serif; font-weight:700; color:var(--white); font-size:16px; }
+  footer p.desc{ font-size:14px; max-width:280px; }
+  footer h4{ color:var(--white); font-size:13.5px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:18px; font-weight:700; }
+  footer ul{ list-style:none; margin:0; padding:0; }
+  footer li{ margin-bottom:12px; }
+  footer a{ font-size:14.5px; text-decoration:none; }
+  footer a:hover{ color:var(--gold); }
+  .social-row{ display:flex; gap:10px; margin-top:6px; }
+  .social-row a{ width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; }
+  .social-row a:hover{ background:var(--coral); }
+  .social-row svg{ width:16px; height:16px; color:var(--white); }
+  .footer-bottom{ border-top:1px solid rgba(255,255,255,0.12); padding-top:24px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:13px; }
+
+  .reveal{ opacity:0; transform:translateY(22px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+  :focus-visible{ outline:3px solid var(--coral); outline-offset:3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="sinar-bhakti-husada-landing.html" class="brand">
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="29" fill="var(--gold)"/>
+        <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/>
+        <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+        <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+      </svg>
+      <div class="brand-name">Sinar Bhakti Husada<span>Yayasan Kesehatan</span></div>
+    </a>
+    <nav class="nav-links" id="navLinks">
+      <a href="sinar-bhakti-husada-landing.html#tentang">Tentang</a>
+      <a href="sinar-bhakti-husada-landing.html#program">Program</a>
+      <a href="sinar-bhakti-husada-landing.html#dampak">Dampak</a>
+      <a href="sinar-bhakti-husada-landing.html#cerita">Cerita</a>
+      <a href="#kontak">Kontak</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="#kontak" class="btn btn-ghost" style="padding:11px 22px; font-size:14px;">Hubungi Kami</a>
+      <a href="#donasi" class="btn btn-coral" style="padding:11px 22px; font-size:14px;">Donasi Sekarang</a>
+      <button class="burger" id="burgerBtn" aria-label="Buka menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="section-pad" style="padding-top:48px; padding-bottom:40px;">
+    <div class="wrap">
+      <div class="breadcrumb reveal">
+        <a href="sinar-bhakti-husada-landing.html">Beranda</a><span>/</span>
+        <a href="sinar-bhakti-husada-landing.html#program">Program</a><span>/</span>
+        <span class="current">Kesehatan Ibu &amp; Anak</span>
+      </div>
+
+      <div class="lang-toggle reveal">
+        <button class="lang-btn-id active" onclick="setLang('id')">Bahasa Indonesia</button>
+        <button class="lang-btn-en" onclick="setLang('en')">English</button>
+      </div>
+
+      <div class="reveal">
+        <div class="program-hero-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.6-9.3-9.2C1.4 8.6 3 5 6.6 5c2 0 3.4 1.1 4.4 2.6C12 6.1 13.4 5 15.4 5 19 5 20.6 8.6 19.3 11.8 17 16.4 12 21 12 21z"/></svg>
+        </div>
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Program Kesehatan · Tanah Papua
+        </span>
+
+        <h1 class="hero-title lang-id-content">Program Kesehatan Ibu dan Anak (KIA)</h1>
+        <h1 class="hero-title lang-en-content">Maternal and Child Health (MCH) Program</h1>
+
+        <p class="hero-lead lang-id-content">Program KIA dukungan Yayasan Sinar Bhakti Husada telah mendukung pemerintah daerah untuk memastikan bahwa ibu hamil, bayi baru lahir, anak-anak, dan remaja di seluruh wilayah dukungan — termasuk daerah terpencil — memiliki akses ke layanan kesehatan primer yang adil dan berkualitas tinggi, khususnya di kampung-kampung yang terpinggirkan dan kurang terlayani.</p>
+        <p class="hero-lead lang-en-content">The MCH Program, supported by the Sinar Bhakti Husada Foundation, has been assisting local governments to ensure that pregnant women, newborns, children, and adolescents across all supported areas — including remote regions — have equitable access to high-quality primary healthcare services, particularly in marginalized and underserved villages (<em>kampung</em>).</p>
+
+        <img src="images/kia-hero.jpg" alt="Kegiatan lapangan Program KIA" class="hero-img">
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad mist-bg">
+    <div class="wrap about-grid">
+      <div class="reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Pendekatan
+        </span>
+        <p style="font-family:'Fraunces',serif; font-size:26px; font-weight:500; color:var(--forest); line-height:1.4; margin-top:16px;" class="lang-id-content">
+          Menjawab tantangan geografis lewat penguatan tenaga medis lokal, kader posyandu, dan Puskesmas.
+        </p>
+        <p style="font-family:'Fraunces',serif; font-size:26px; font-weight:500; color:var(--forest); line-height:1.4; margin-top:16px;" class="lang-en-content">
+          Addressing geographical challenges through strengthening local health workers, posyandu volunteers, and Puskesmas.
+        </p>
+      </div>
+      <div class="about-copy reveal">
+        <p class="lang-id-content">Tantangan geografis yang unik di berbagai wilayah di daerah dukungan yang tersebar di beberapa Provinsi dan Kabupaten di Tanah Papua dijawab dengan memperkuat kapasitas tenaga medis lokal, kader posyandu, dan Puskesmas. Penguatan ini bertujuan untuk merencanakan, melaksanakan, memantau, dan memberikan layanan esensial bagi keselamatan dan kesehatan ibu dan bayi baru lahir.</p>
+        <p class="lang-id-content">Program ini juga berfokus pada pencegahan, pengendalian, dan pengeliminasian penyakit utama pada anak — terutama penyakit yang sering menyebabkan kematian pada anak seperti pneumonia dan diare, malnutrisi (stunting), penyakit yang dapat dicegah dengan imunisasi (PD3I), serta penyakit menular endemik seperti malaria — melalui peningkatan sistem kesehatan yang tangguh, terutama di Puskesmas Model yang juga berfungsi sebagai Puskesmas On The Job Training (OJT) Center di masing-masing Kabupaten dampingan.</p>
+
+        <p class="lang-en-content">The unique geographical challenges across the supported areas, which span several Provinces and Regencies in the Land of Papua, are addressed by strengthening the capacity of local medical personnel, <em>posyandu</em> volunteers, and <em>Puskesmas</em> (public health centers). This capacity building aims to plan, implement, monitor, and deliver essential services for the safety and health of mothers and newborns.</p>
+        <p class="lang-en-content">The program also focuses on preventing, controlling, and eliminating major childhood illnesses — especially those that frequently cause infant and child mortality, such as pneumonia and diarrhea, malnutrition (stunting), vaccine-preventable diseases (VPDs), and endemic infectious diseases like malaria — by building resilient health systems, particularly through Model <em>Puskesmas</em> that also function as On-the-Job Training (OJT) Centers in each assisted regency.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad" id="program">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Empat Komponen Utama
+        </span>
+        <h2 class="lang-id-content">Program KIA di Wilayah Ini</h2>
+        <h2 class="lang-en-content">The MCH Program in This Region</h2>
+        <p class="lang-id-content">Diimplementasikan di distrik-distrik terpilih dengan pendekatan yang disesuaikan konteks sosial-budaya masyarakat Papua, dengan harapan pemerintah daerah dan lintas sektor dapat mengadopsi serta memperluas skalanya.</p>
+        <p class="lang-en-content">Implemented in selected districts using approaches tailored to the socio-cultural context of the Papuan community, with the hope that local governments and cross-sector partners can adopt and scale up these initiatives.</p>
+      </div>
+
+      <div class="components-grid">
+        <div class="comp-card reveal">
+          <div class="comp-num">01</div>
+          <h3 class="lang-id-content">Perawatan Ibu Hamil dan Bayi Baru Lahir</h3>
+          <h3 class="lang-en-content">Maternal and Newborn Care</h3>
+        </div>
+        <div class="comp-card reveal">
+          <div class="comp-num">02</div>
+          <h3 class="lang-id-content">Kesehatan dan Gizi Anak</h3>
+          <h3 class="lang-en-content">Child Health and Nutrition</h3>
+        </div>
+        <div class="comp-card reveal">
+          <div class="comp-num">03</div>
+          <h3 class="lang-id-content">Penguatan Sistem Kesehatan Berbasis Komunitas</h3>
+          <h3 class="lang-en-content">Strengthening Community-Based Health Systems</h3>
+        </div>
+        <div class="comp-card reveal">
+          <div class="comp-num">04</div>
+          <h3 class="lang-id-content">Kesehatan dalam Keadaan Darurat</h3>
+          <h3 class="lang-en-content">Health in Emergencies</h3>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad mist-bg">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Wilayah Dampingan
+        </span>
+        <h2 class="lang-id-content">Tersebar di Tanah Papua</h2>
+        <h2 class="lang-en-content">Across the Land of Papua</h2>
+      </div>
+      <div class="region-card reveal">
+        <div class="region-tag lang-id-content">3 Provinsi · 9 Kabupaten</div>
+        <div class="region-tag lang-en-content">3 Provinces · 9 Regencies</div>
+
+        <div class="region-province">Papua</div>
+        <div class="chip-row">
+          <span class="region-chip">Sarmi</span>
+        </div>
+
+        <div class="region-province">Papua Pegunungan</div>
+        <div class="chip-row">
+          <span class="region-chip">Pegunungan Bintang</span>
+          <span class="region-chip">Yahukimo</span>
+        </div>
+
+        <div class="region-province">Papua Tengah</div>
+        <div class="chip-row">
+          <span class="region-chip">Nabire</span>
+          <span class="region-chip">Mimika</span>
+          <span class="region-chip">Paniai</span>
+          <span class="region-chip">Deiyai</span>
+          <span class="region-chip">Dogiyai</span>
+          <span class="region-chip">Puncak Jaya</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Komponen 01
+        </span>
+        <h2 class="lang-id-content">Perawatan Bayi Baru Lahir</h2>
+        <h2 class="lang-en-content">Newborn Care</h2>
+      </div>
+
+      <div class="deepdive-grid reveal">
+        <div class="img-col">
+          <img src="images/kia-newborn-1.jpg" alt="Perawatan bayi baru lahir">
+        </div>
+        <div class="deepdive-copy">
+          <p class="lang-id-content">Periode 28 hari pertama kehidupan (neonatal) merupakan fase paling kritis bagi kelangsungan hidup seorang anak. Bayi baru lahir menghadapi risiko tinggi mengalami kematian dan kecacatan, yang sebagian besar berakar dari kondisi kesehatan ibu yang kurang optimal selama kehamilan, kurangnya kunjungan antenatal (ANC) standar, serta penanganan persalinan yang tidak memadai. Data nasional menunjukkan bahwa mayoritas kematian balita justru terjadi pada masa neonatal (0–28 hari).</p>
+          <p class="lang-id-content">Oleh karena itu, penurunan Angka Kematian Neonatal (AKN) tidak dapat dipisahkan dari upaya peningkatan kesehatan ibu dan intervensi medis yang terintegrasi sejak masa kehamilan hingga pasca persalinan. Penyelamatan bayi baru lahir membutuhkan pemenuhan standar pelayanan terpadu — mencakup pencegahan komplikasi persalinan, tata laksana asfiksia, penanganan infeksi berat (seperti sepsis neonatal), serta intervensi khusus untuk bayi rentan.</p>
+
+          <p class="lang-en-content">The first 28 days of life (the neonatal period) represent the most critical phase for a child's survival. Newborns face a high risk of mortality and disability, largely stemming from sub-optimal maternal health conditions during pregnancy, a lack of standardized antenatal care (ANC) visits, and inadequate delivery management. National data shows that the majority of under-five deaths actually occur during the neonatal period (0–28 days).</p>
+          <p class="lang-en-content">Therefore, reducing the Neonatal Mortality Rate (NMR) is inseparable from efforts to improve maternal health and provide integrated medical interventions from pregnancy through the postpartum period. Saving newborns requires meeting integrated service standards — including preventing delivery complications, managing asphyxia, treating severe infections, and providing targeted interventions for vulnerable infants.</p>
+        </div>
+      </div>
+
+      <p style="font-weight:700; color:var(--forest); margin:36px 0 4px;" class="lang-id-content">Faktor risiko utama:</p>
+      <p style="font-weight:700; color:var(--forest); margin:36px 0 4px;" class="lang-en-content">Main risk factors:</p>
+      <div class="risk-list">
+        <div class="risk-item reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          <span class="lang-id-content">Berat Badan Lahir Rendah (BBLR) &amp; Prematuritas</span>
+          <span class="lang-en-content">Low Birth Weight (LBW) &amp; Prematurity</span>
+        </div>
+        <div class="risk-item reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          <span class="lang-id-content">Hipotermia</span>
+          <span class="lang-en-content">Hypothermia</span>
+        </div>
+        <div class="risk-item reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          <span class="lang-id-content">Pneumonia dan Infeksi Neonatal</span>
+          <span class="lang-en-content">Pneumonia and Neonatal Infections</span>
+        </div>
+        <div class="risk-item reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          <span class="lang-id-content">Optimalisasi ASI Eksklusif &amp; Inisiasi Menyusu Dini (IMD)</span>
+          <span class="lang-en-content">Exclusive Breastfeeding &amp; Early Initiation of Breastfeeding (EIBF)</span>
+        </div>
+      </div>
+
+      <div class="deepdive-grid reverse reveal" style="margin-top:20px;">
+        <div class="img-col">
+          <img src="images/kia-newborn-2.jpg" alt="Pendampingan teknis layanan bayi baru lahir">
+        </div>
+        <div class="deepdive-copy">
+          <p class="lang-id-content">Strategi intervensi terbaru berupa pendekatan Point of Care Quality Improvement (POCQI) dan Quality Improvement (QI) kolaboratif telah diperkenalkan kepada pemerintah daerah melalui pendampingan teknis dari Yayasan Sinar Bhakti Husada. Selain itu, Yayasan juga membantu pemerintah daerah mengembangkan Peraturan Gubernur/Bupati beserta Rencana Aksi Daerah (RAD) Penguatan Layanan KIA dan Percepatan Penurunan Angka Kematian Ibu dan Anak, terutama bayi baru lahir.</p>
+          <p class="lang-en-content">The latest intervention strategies — such as the Point of Care Quality Improvement (POCQI) approach and collaborative Quality Improvement (QI) — have been introduced to local governments through technical assistance from the Sinar Bhakti Husada Foundation. Additionally, the Foundation assists local governments in developing Governor/Regent Regulations along with Regional Action Plans (RAD) to strengthen MCH services and accelerate the reduction of maternal and child mortality, particularly for newborns.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad mist-bg">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Komponen 02
+        </span>
+        <h2 class="lang-id-content">Kesehatan Anak</h2>
+        <h2 class="lang-en-content">Child Health</h2>
+      </div>
+
+      <div class="deepdive-grid reveal">
+        <div class="img-col">
+          <img src="images/kia-child-1.jpg" alt="Kesehatan anak">
+        </div>
+        <div class="deepdive-copy">
+          <p class="lang-id-content">Pneumonia dan diare terus menjadi ancaman infeksi terbesar bagi kesehatan dan kelangsungan hidup bayi serta anak-anak di seluruh dunia. Berdasarkan data WHO dan <a href="https://publichealth.jhu.edu/ivac/2024/tracking-progress-toward-pneumonia-and-diarrhea-control" target="_blank" rel="noopener">Laporan Progress IVAC</a>, kombinasi kedua penyakit ini menyumbang sekitar 23% dari total kematian balita — setara 1,17 juta kematian anak di bawah lima tahun setiap tahunnya. Statistik UNICEF mengonfirmasi pneumonia secara mandiri merenggut nyawa lebih dari 700.000 anak per tahun, menjadikannya penyakit infeksi paling mematikan bagi balita di tingkat global.</p>
+          <p class="lang-en-content">Pneumonia and diarrhea continue to be the greatest infectious threats to the health and survival of infants and children worldwide. According to global data from WHO and the <a href="https://publichealth.jhu.edu/ivac/2024/tracking-progress-toward-pneumonia-and-diarrhea-control" target="_blank" rel="noopener">IVAC Progress Report</a>, the combination of these two diseases accounts for approximately 23% of total under-five deaths — equating to 1.17 million child deaths under five annually. UNICEF statistics confirm that pneumonia alone claims the lives of over 700,000 children per year, making it the deadliest infectious disease for toddlers globally.</p>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-box reveal"><span class="num">23%</span><span class="lbl lang-id-content">dari total kematian balita global</span><span class="lbl lang-en-content">of global under-five deaths</span></div>
+        <div class="stat-box reveal"><span class="num">1,17 juta</span><span class="lbl lang-id-content">kematian anak balita per tahun</span><span class="lbl lang-en-content">child deaths under five annually</span></div>
+        <div class="stat-box reveal"><span class="num">700rb+</span><span class="lbl lang-id-content">kematian akibat pneumonia per tahun</span><span class="lbl lang-en-content">deaths from pneumonia per year</span></div>
+        <div class="stat-box reveal"><span class="num">19,83</span><span class="lbl lang-id-content">AKBa nasional per 1.000 kelahiran (target SDG: 25)</span><span class="lbl lang-en-content">national U5MR per 1,000 births (SDG target: 25)</span></div>
+      </div>
+
+      <div class="deepdive-grid reverse reveal">
+        <div class="img-col">
+          <img src="images/kia-child-2.jpg" alt="Pendampingan pemerintah daerah untuk kesehatan anak">
+        </div>
+        <div class="deepdive-copy">
+          <p class="lang-id-content">Di Indonesia, tren serupa menempatkan pneumonia sebagai penyebab utama kematian pada kelompok anak balita, diikuti ketat oleh diare. Berdasarkan <a href="https://kesprimkom.kemkes.go.id/assets/uploads/contents/others/LAKIP_DITJEN_Kesprimkom_TAHUN_2025_semester_1.pdf" target="_blank" rel="noopener">Laporan Akuntabilitas Kemenkes</a>, Angka Kematian Balita (AKBa) nasional telah ditekan hingga 19,83 per 1.000 kelahiran hidup — melampaui ambang batas target global SDGs 2030 sebesar 25 per 1.000 kelahiran hidup.</p>
+          <p class="lang-id-content">Yayasan Sinar Bhakti Husada memberikan bantuan teknis kepada pemerintah daerah untuk mengembangkan Peraturan Gubernur/Bupati beserta Rencana Aksi Daerah (RAD) Penanggulangan Pneumonia dan Diare, serta peningkatan kapasitas tenaga kesehatan dalam melaksanakan Manajemen Terpadu Balita Sakit (MTBS) dan Kalakarya MTBS, maupun pengembangan kapasitas kader dalam melaksanakan MTBS berbasis masyarakat (MTBS-M) yang dipayungi oleh Permenkes No. 70/2013 dan Permenkes No. 41/2018.</p>
+
+          <p class="lang-en-content">In Indonesia, a similar trend places pneumonia as the leading cause of death among children under five, followed closely by diarrhea. According to the <a href="https://kesprimkom.kemkes.go.id/assets/uploads/contents/others/LAKIP_DITJEN_Kesprimkom_TAHUN_2025_semester_1.pdf" target="_blank" rel="noopener">Ministry of Health's Accountability Report</a>, the national Under-Five Mortality Rate (U5MR) has been reduced to 19.83 per 1,000 live births — surpassing the global SDG 2030 target threshold of 25 per 1,000 live births.</p>
+          <p class="lang-en-content">The Sinar Bhakti Husada Foundation provides technical assistance to local governments to develop Governor/Regent Regulations along with Regional Action Plans (RAD) for Pneumonia and Diarrhea Control. This includes building healthcare workers' capacity in Integrated Management of Childhood Illness (IMCI) and IMCI clinical mentoring, and developing volunteers' capacity in community-based IMCI (c-IMCI), legally framed by Ministry of Health Regulations No. 70/2013 and No. 41/2018.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad donate-cta" id="donasi">
+    <div class="wrap donate-inner">
+      <div class="reveal">
+        <h2 class="lang-id-content">Dukung Kesehatan Ibu dan Anak di Papua</h2>
+        <h2 class="lang-en-content">Support Maternal and Child Health in Papua</h2>
+        <p class="lang-id-content">Bantuan Anda mendukung pendampingan teknis, penguatan Puskesmas Model, dan pelatihan tenaga kesehatan di wilayah dampingan Tanah Papua.</p>
+        <p class="lang-en-content">Your support funds technical assistance, Model Puskesmas strengthening, and health worker training across our assisted areas in the Land of Papua.</p>
+        <div class="donate-actions">
+          <a href="#kontak" class="btn btn-light lang-id-content">Donasi via Transfer</a>
+          <a href="#kontak" class="btn btn-light lang-en-content">Donate via Bank Transfer</a>
+          <a href="#kontak" class="btn btn-outline-light lang-id-content">Jadi Mitra Program</a>
+          <a href="#kontak" class="btn btn-outline-light lang-en-content">Become a Program Partner</a>
+        </div>
+      </div>
+      <div class="transfer-card reveal">
+        <div class="label">Transfer Bank</div>
+        <div class="acct">BCA · 123 4567 890</div>
+        <div class="name">a.n. Yayasan Sinar Bhakti Husada</div>
+        <button class="copy-btn" id="copyBtn">Salin Nomor Rekening</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad" id="kontak">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Hubungi Kami
+        </span>
+        <h2 class="lang-id-content">Mari Berdiskusi Soal Kemitraan Program</h2>
+        <h2 class="lang-en-content">Let's Talk About Program Partnership</h2>
+      </div>
+      <div class="contact-grid">
+        <div class="reveal">
+          <div class="contact-item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"/><path d="m22 6-10 7L2 6"/></svg></div>
+            <div><div class="t">Email</div><div class="d">kontak@sinarbhaktihusada.org</div></div>
+          </div>
+          <div class="contact-item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.9.6 2.8a2 2 0 0 1-.5 2.1L7.9 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2Z"/></svg></div>
+            <div><div class="t">Telepon / WhatsApp</div><div class="d">+62 812-3456-7890</div></div>
+          </div>
+          <div class="contact-item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+            <div><div class="t lang-id-content">Kantor Sekretariat</div><div class="t lang-en-content">Secretariat Office</div><div class="d">Jl. Melati No. 21, Kupang, Nusa Tenggara Timur</div></div>
+          </div>
+        </div>
+        <div class="map-frame reveal lang-id-content">Peta lokasi kantor dapat ditambahkan di sini</div>
+        <div class="map-frame reveal lang-en-content">Office location map can be added here</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">
+          <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="30" cy="30" r="29" fill="var(--gold)"/>
+            <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/>
+            <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+            <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+          </svg>
+          <span>Sinar Bhakti Husada</span>
+        </div>
+        <p class="desc">Yayasan kesehatan yang mendampingi ibu, anak, dan komunitas di wilayah terpencil Indonesia sejak 2014.</p>
+        <div class="social-row">
+          <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+          <a href="#" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3Z"/></svg></a>
+          <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3Z" fill="currentColor"/></svg></a>
+        </div>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <ul>
+          <li><a href="kia-program-sinar-bhakti-husada.html">Kesehatan Ibu &amp; Anak</a></li>
+          <li><a href="sinar-bhakti-husada-landing.html#program">Imunisasi</a></li>
+          <li><a href="malaria-program-sinar-bhakti-husada.html">Penanganan Malaria</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Yayasan</h4>
+        <ul>
+          <li><a href="sinar-bhakti-husada-landing.html#tentang">Tentang Kami</a></li>
+          <li><a href="sinar-bhakti-husada-landing.html#dampak">Dampak</a></li>
+          <li><a href="sinar-bhakti-husada-landing.html#cerita">Cerita Lapangan</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Ambil Bagian</h4>
+        <ul>
+          <li><a href="#donasi">Donasi</a></li>
+          <li><a href="#kontak">Jadi Relawan</a></li>
+          <li><a href="#kontak">Kerja Sama Program</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Yayasan Sinar Bhakti Husada. Seluruh hak cipta dilindungi.</span>
+      <span>Dibuat dengan bhakti, untuk sinar yang terus menyala.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const burger = document.getElementById('burgerBtn');
+  const navLinks = document.getElementById('navLinks');
+  burger.addEventListener('click', () => navLinks.classList.toggle('open'));
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navLinks.classList.remove('open')));
+
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+
+  const copyBtn = document.getElementById('copyBtn');
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText('1234567890').then(() => {
+      const original = copyBtn.textContent;
+      copyBtn.textContent = 'Tersalin ✓';
+      setTimeout(() => copyBtn.textContent = original, 2000);
+    });
+  });
+
+  function setLang(lang) {
+    document.body.classList.toggle('lang-en', lang === 'en');
+    document.querySelectorAll('.lang-btn-id, .lang-btn-en').forEach(b => b.classList.remove('active'));
+    document.querySelector(lang === 'en' ? '.lang-btn-en' : '.lang-btn-id').classList.add('active');
+  }
+</script>
+
+</body>
+</html>

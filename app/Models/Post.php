@@ -31,6 +31,11 @@ class Post extends Model
         'published_at' => 'datetime',
     ];
 
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
     /**
      * Relasi: Post ini dimiliki oleh satu Kategori (belongsTo).
      */

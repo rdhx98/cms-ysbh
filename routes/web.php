@@ -42,10 +42,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Route::livewire('/article/write', 'article.editor')->name('article.editor');
 
     // 2. Edit: Menyunting artikel lama (MENGGUNAKAN parameter {post} dan komponen editor yang sama)
-    Route::livewire('/article/{post}/edit', 'article.editor')->name('article.edit');
+    Route::livewire('/article/edit/{post:slug}', 'article.editor')->name('article.edit');
 
     // 3. Preview: Melihat artikel baca-saja (MENGGUNAKAN parameter {post} dan komponen preview baru)
-    Route::livewire('/article/{post}/preview', 'article.preview')->name('article.preview');
+    Route::livewire('/article/preview/{post:slug}', 'article.preview')->name('article.preview');
 
     Route::post('/editor/upload-image', [EditorImageUploadController::class, 'store'])
     // ->middleware(['auth']) // sesuaikan dengan middleware yang dipakai route artikel Anda

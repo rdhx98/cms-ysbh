@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yayasan Sinar Bhakti Husada — Sinar Sehat untuk Setiap Rumah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#064F3B;
+    --forest-dark:#043328;
+    --forest-tint:#0E6A4F;
+    --gold:#EBCC26;
+    --gold-soft:#F7EBAF;
+    --coral:#E42326;
+    --coral-dark:#BE1417;
+    --paper:#FBF7EA;
+    --paper-dim:#F3ECD6;
+    --ink:#12241C;
+    --ink-soft:#4B5D53;
+    --mist:#E9F1EB;
+    --white:#FFFFFF;
+    --line: rgba(6,79,59,0.14);
+    --shadow: 0 20px 50px -25px rgba(6,45,35,0.35);
+    --radius-lg: 28px;
+    --radius-md: 18px;
+    --radius-sm: 10px;
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+  }
+
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+    overflow-x:hidden;
+  }
+
+  h1,h2,h3,.display{
+    font-family:'Fraunces', serif;
+    color:var(--forest);
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+
+  a{ color:inherit; text-decoration:none; }
+  img{ max-width:100%; display:block; }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 32px; }
+  @media (max-width:640px){ .wrap{ padding:0 20px; } }
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:10px;
+    font-size:13px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--coral-dark);
+  }
+  .eyebrow svg{ width:16px; height:16px; flex-shrink:0; }
+
+  /* ===== Buttons ===== */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    font-family:'Plus Jakarta Sans', sans-serif;
+    font-weight:700; font-size:15.5px;
+    padding:14px 28px; border-radius:999px; border:2px solid transparent;
+    cursor:pointer; transition:transform .25s ease, box-shadow .25s ease, background-color .25s ease;
+    white-space:nowrap;
+  }
+  .btn-coral{ background:var(--coral); color:var(--white); }
+  .btn-coral:hover{ background:var(--coral-dark); transform:translateY(-2px); box-shadow:0 14px 28px -14px rgba(228,35,38,0.55); }
+  .btn-ghost{ background:transparent; color:var(--forest); border-color:var(--forest); }
+  .btn-ghost:hover{ background:var(--forest); color:var(--white); transform:translateY(-2px); }
+  .btn-light{ background:var(--white); color:var(--forest); }
+  .btn-light:hover{ transform:translateY(-2px); box-shadow:0 14px 28px -14px rgba(0,0,0,0.35); }
+  .btn-outline-light{ background:transparent; color:var(--white); border-color:rgba(255,255,255,0.6); }
+  .btn-outline-light:hover{ background:rgba(255,255,255,0.12); border-color:var(--white); }
+
+  /* ===== Nav ===== */
+  header{
+    position:sticky; top:0; z-index:100;
+    background:rgba(251,247,234,0.88);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 32px; max-width:1180px; margin:0 auto; }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand svg{ width:42px; height:42px; }
+  .brand-name{ font-family:'Fraunces', serif; font-weight:700; font-size:17px; color:var(--forest); line-height:1.15; }
+  .brand-name span{ display:block; font-family:'Plus Jakarta Sans', sans-serif; font-weight:600; font-size:10.5px; letter-spacing:0.14em; color:var(--coral); text-transform:uppercase; margin-top:2px; }
+
+  .nav-links{ display:flex; align-items:center; gap:36px; }
+  .nav-links a{ font-weight:600; font-size:15px; color:var(--ink-soft); position:relative; padding:4px 0; }
+  .nav-links a:hover{ color:var(--forest); }
+  .nav-cta{ display:flex; align-items:center; gap:18px; }
+  .burger{ display:none; background:none; border:none; cursor:pointer; padding:6px; }
+  .burger span{ display:block; width:24px; height:2.5px; background:var(--forest); margin:5px 0; border-radius:2px; }
+
+  @media (max-width:900px){
+    .nav-links{
+      position:fixed; inset:72px 0 0 0; background:var(--paper);
+      flex-direction:column; justify-content:flex-start; align-items:flex-start;
+      padding:32px; gap:24px; transform:translateX(100%); transition:transform .35s ease;
+      border-top:1px solid var(--line);
+    }
+    .nav-links.open{ transform:translateX(0); }
+    .nav-links a{ font-size:18px; }
+    .burger{ display:block; }
+    .nav-cta .btn-ghost{ display:none; }
+  }
+
+  /* ===== Hero ===== */
+  .hero{ position:relative; padding:88px 0 60px; overflow:hidden; }
+  .hero-grid{ display:grid; grid-template-columns:1.05fr 0.95fr; gap:56px; align-items:center; }
+  @media (max-width:960px){ .hero-grid{ grid-template-columns:1fr; } }
+
+  .hero h1{ font-size:clamp(2.4rem, 4.6vw, 3.6rem); font-weight:600; line-height:1.08; margin:18px 0 22px; }
+  .hero h1 em{ font-style:italic; color:var(--coral); font-weight:500; }
+  .hero p.lead{ font-size:18px; color:var(--ink-soft); max-width:520px; margin-bottom:34px; }
+  .hero-actions{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:44px; }
+
+  .hero-seal-wrap{ position:relative; display:flex; align-items:center; justify-content:center; }
+  .seal-rays{ animation:spin 90s linear infinite; transform-origin:150px 150px; }
+  @keyframes spin{ from{ transform:rotate(0deg);} to{ transform:rotate(360deg);} }
+  .hero-seal-wrap svg{ width:min(380px, 80vw); height:auto; }
+
+  .program-strip{ display:flex; gap:14px; flex-wrap:wrap; }
+  .strip-tag{
+    display:flex; align-items:center; gap:9px;
+    background:var(--white); border:1px solid var(--line); border-radius:999px;
+    padding:9px 18px 9px 10px; font-weight:600; font-size:14px; color:var(--forest);
+    box-shadow:var(--shadow);
+  }
+  .strip-tag .dot{ width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .strip-tag svg{ width:15px; height:15px; }
+
+  /* ===== Section shells ===== */
+  section{ position:relative; }
+  .section-pad{ padding:96px 0; }
+  @media (max-width:640px){ .section-pad{ padding:64px 0; } }
+  .mist-bg{ background:var(--mist); }
+
+  .section-head{ max-width:640px; margin-bottom:56px; }
+  .section-head h2{ font-size:clamp(1.9rem, 3.2vw, 2.6rem); font-weight:600; margin-top:14px; line-height:1.15; }
+  .section-head p{ color:var(--ink-soft); font-size:16.5px; margin-top:16px; }
+
+  .divider{ display:flex; align-items:center; gap:14px; margin:0 0 40px; }
+  .divider svg{ width:22px; height:22px; flex-shrink:0; color:var(--gold); }
+  .divider .rule{ flex:1; height:1px; background:linear-gradient(90deg, var(--line), transparent); }
+
+  /* ===== About ===== */
+  .about-grid{ display:grid; grid-template-columns:0.9fr 1.1fr; gap:64px; align-items:start; }
+  @media (max-width:860px){ .about-grid{ grid-template-columns:1fr; gap:36px; } }
+  .about-grid .lead-text{ font-family:'Fraunces', serif; font-size:26px; font-weight:500; color:var(--forest); line-height:1.4; }
+  .about-grid .lead-text em{ font-style:italic; color:var(--coral); }
+  .about-copy p{ color:var(--ink-soft); margin-bottom:16px; }
+  .about-stats{ display:flex; gap:28px; margin-top:28px; flex-wrap:wrap; }
+  .about-stats div b{ display:block; font-family:'Fraunces', serif; font-size:26px; color:var(--forest); }
+  .about-stats div span{ font-size:13px; color:var(--ink-soft); }
+
+  /* ===== Programs ===== */
+  .programs-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:28px; }
+  @media (max-width:900px){ .programs-grid{ grid-template-columns:1fr; } }
+
+  .program-card{
+    background:var(--white); border-radius:var(--radius-lg); padding:36px 32px;
+    border:1px solid var(--line); box-shadow:var(--shadow);
+    transition:transform .3s ease, box-shadow .3s ease;
+    display:flex; flex-direction:column;
+  }
+  .program-card:hover{ transform:translateY(-6px); }
+  .program-icon{
+    width:64px; height:64px; border-radius:18px; display:flex; align-items:center; justify-content:center;
+    margin-bottom:22px;
+  }
+  .program-icon svg{ width:30px; height:30px; }
+  .program-card h3{ font-size:21px; font-weight:600; margin-bottom:10px; }
+  .program-card p{ color:var(--ink-soft); font-size:15px; flex:1; }
+  .program-card .tag{ font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:14px; }
+  .program-link{ margin-top:20px; font-weight:700; font-size:14.5px; display:inline-flex; align-items:center; gap:6px; }
+  .program-link svg{ width:15px; height:15px; transition:transform .2s ease; }
+  .program-card:hover .program-link svg{ transform:translateX(4px); }
+
+  .p-kia .program-icon{ background:var(--gold-soft); color:var(--forest); }
+  .p-kia .tag{ color:var(--coral); }
+  .p-kia .program-link{ color:var(--forest); }
+  .p-imu .program-icon{ background:var(--mist); color:var(--forest); }
+  .p-imu .tag{ color:var(--forest-tint); }
+  .p-imu .program-link{ color:var(--forest); }
+  .p-mal .program-icon{ background:#FBE6E6; color:var(--coral); }
+  .p-mal .tag{ color:var(--coral); }
+  .p-mal .program-link{ color:var(--forest); }
+
+  /* ===== Impact / stats seals ===== */
+  .impact{ background:var(--forest); color:var(--white); }
+  .impact .section-head h2{ color:var(--white); }
+  .impact .section-head p{ color:rgba(255,255,255,0.75); }
+  .impact .eyebrow{ color:var(--gold); }
+  .stats-row{ display:grid; grid-template-columns:repeat(4, 1fr); gap:24px; }
+  @media (max-width:860px){ .stats-row{ grid-template-columns:repeat(2, 1fr); } }
+  .stat-seal{ text-align:center; padding:30px 16px; border:1px dashed rgba(255,255,255,0.28); border-radius:var(--radius-md); }
+  .stat-seal .num{ font-family:'Fraunces', serif; font-size:clamp(2rem,4vw,2.6rem); font-weight:700; color:var(--gold); display:block; }
+  .stat-seal .lbl{ font-size:13.5px; color:rgba(255,255,255,0.78); margin-top:8px; display:block; }
+
+  /* ===== Testimonials ===== */
+  .testi-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:26px; }
+  @media (max-width:900px){ .testi-grid{ grid-template-columns:1fr; } }
+  .testi-card{
+    background:var(--white); border-radius:var(--radius-md); padding:30px 28px;
+    border:1px solid var(--line); position:relative;
+  }
+  .testi-card svg.quote{ width:30px; height:30px; color:var(--gold); margin-bottom:14px; }
+  .testi-card p.quote-text{ font-family:'Fraunces', serif; font-style:italic; font-size:17px; color:var(--forest); line-height:1.5; margin-bottom:20px; }
+  .testi-who{ display:flex; align-items:center; gap:12px; }
+  .testi-avatar{ width:42px; height:42px; border-radius:50%; background:var(--mist); display:flex; align-items:center; justify-content:center; color:var(--forest); font-family:'Fraunces', serif; font-weight:700; flex-shrink:0; }
+  .testi-who .name{ font-weight:700; font-size:14.5px; color:var(--ink); }
+  .testi-who .role{ font-size:13px; color:var(--ink-soft); }
+
+  /* ===== Donation CTA ===== */
+  .donate-cta{ background:var(--coral); color:var(--white); overflow:hidden; position:relative; }
+  .donate-inner{ display:grid; grid-template-columns:1.2fr 0.8fr; gap:48px; align-items:center; position:relative; z-index:2; }
+  @media (max-width:860px){ .donate-inner{ grid-template-columns:1fr; } }
+  .donate-cta h2{ color:var(--white); font-size:clamp(1.9rem,3.4vw,2.5rem); font-weight:600; line-height:1.15; }
+  .donate-cta p{ color:rgba(255,255,255,0.88); font-size:16.5px; margin:16px 0 28px; max-width:460px; }
+  .donate-actions{ display:flex; gap:16px; flex-wrap:wrap; }
+  .transfer-card{ background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); border-radius:var(--radius-md); padding:26px 28px; backdrop-filter:blur(4px); }
+  .transfer-card .label{ font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.75); margin-bottom:8px; }
+  .transfer-card .acct{ font-family:'Fraunces', serif; font-size:22px; font-weight:600; margin-bottom:4px; }
+  .transfer-card .name{ font-size:14px; color:rgba(255,255,255,0.85); margin-bottom:16px; }
+  .copy-btn{ background:var(--white); color:var(--coral); border:none; border-radius:999px; padding:9px 18px; font-weight:700; font-size:13.5px; cursor:pointer; }
+  .donate-rays{ position:absolute; top:50%; right:-80px; transform:translateY(-50%); opacity:0.15; width:520px; height:520px; }
+  .donate-rays .seal-rays{ animation:spin 120s linear infinite; }
+
+  /* ===== Contact / Footer ===== */
+  .contact-grid{ display:grid; grid-template-columns:1fr 1fr; gap:56px; }
+  @media (max-width:860px){ .contact-grid{ grid-template-columns:1fr; gap:36px; } }
+  .contact-item{ display:flex; gap:16px; margin-bottom:26px; }
+  .contact-item .ico{ width:46px; height:46px; border-radius:14px; background:var(--white); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .contact-item .ico svg{ width:21px; height:21px; color:var(--forest); }
+  .contact-item .t{ font-weight:700; font-size:14.5px; color:var(--forest); margin-bottom:3px; }
+  .contact-item .d{ font-size:14.5px; color:var(--ink-soft); }
+  .map-frame{ border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--line); height:100%; min-height:280px; background:var(--paper-dim); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:14px; }
+
+  footer{ background:var(--forest-dark); color:rgba(255,255,255,0.72); padding:64px 0 28px; }
+  .footer-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:40px; margin-bottom:48px; }
+  @media (max-width:760px){ .footer-grid{ grid-template-columns:1fr 1fr; } }
+  .footer-brand{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .footer-brand svg{ width:36px; height:36px; }
+  .footer-brand span{ font-family:'Fraunces', serif; font-weight:700; color:var(--white); font-size:16px; }
+  footer p.desc{ font-size:14px; max-width:280px; }
+  footer h4{ color:var(--white); font-size:13.5px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:18px; font-weight:700; }
+  footer ul{ list-style:none; margin:0; padding:0; }
+  footer li{ margin-bottom:12px; }
+  footer a{ font-size:14.5px; }
+  footer a:hover{ color:var(--gold); }
+  .social-row{ display:flex; gap:10px; margin-top:6px; }
+  .social-row a{ width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; }
+  .social-row a:hover{ background:var(--coral); }
+  .social-row svg{ width:16px; height:16px; color:var(--white); }
+  .footer-bottom{ border-top:1px solid rgba(255,255,255,0.12); padding-top:24px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:13px; }
+
+  /* reveal on scroll */
+  .reveal{ opacity:0; transform:translateY(22px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+
+  :focus-visible{ outline:3px solid var(--coral); outline-offset:3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="#home" class="brand">
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="29" fill="var(--gold)"/>
+        <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/>
+        <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+        <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+      </svg>
+      <div class="brand-name">Sinar Bhakti Husada<span>Yayasan Kesehatan</span></div>
+    </a>
+
+    <nav class="nav-links" id="navLinks">
+      <a href="#tentang">Tentang</a>
+      <a href="#program">Program</a>
+      <a href="#dampak">Dampak</a>
+      <a href="#cerita">Cerita</a>
+      <a href="#kontak">Kontak</a>
+    </nav>
+
+    <div class="nav-cta">
+      <a href="#kontak" class="btn btn-ghost" style="padding:11px 22px; font-size:14px;">Hubungi Kami</a>
+      <a href="#donasi" class="btn btn-coral" style="padding:11px 22px; font-size:14px;">Donasi Sekarang</a>
+      <button class="burger" id="burgerBtn" aria-label="Buka menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="home">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Yayasan Kesehatan Masyarakat
+        </span>
+        <h1>Menyalakan <em>Sinar Sehat</em> di Setiap Rumah</h1>
+        <p class="lead">Kami mendampingi ibu hamil, melindungi anak lewat imunisasi lengkap, dan memutus rantai malaria di desa-desa dengan akses layanan kesehatan yang masih terbatas.</p>
+        <div class="hero-actions">
+          <a href="#donasi" class="btn btn-coral">Donasi Sekarang</a>
+          <a href="#program" class="btn btn-ghost">Lihat Program Kami</a>
+        </div>
+        <div class="program-strip">
+          <a href="#program" class="strip-tag">
+            <span class="dot" style="background:var(--gold-soft);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--forest)" stroke-width="2"><path d="M12 21s-7-4.6-9.3-9.2C1.4 8.6 3 5 6.6 5c2 0 3.4 1.1 4.4 2.6C12 6.1 13.4 5 15.4 5 19 5 20.6 8.6 19.3 11.8 17 16.4 12 21 12 21z"/></svg>
+            </span>
+            Ibu &amp; Anak
+          </a>
+          <a href="#program" class="strip-tag">
+            <span class="dot" style="background:var(--mist);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--forest)" stroke-width="2"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-4Z"/><path d="M9 12l2 2 4-4"/></svg>
+            </span>
+            Imunisasi
+          </a>
+          <a href="#program" class="strip-tag">
+            <span class="dot" style="background:#FBE6E6;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--coral)" stroke-width="2"><path d="M4 20c3-6 13-6 16 0"/><circle cx="12" cy="9" r="5"/><path d="M9 9h6M12 6v6"/></svg>
+            </span>
+            Malaria
+          </a>
+        </div>
+      </div>
+
+      <div class="hero-seal-wrap" aria-hidden="true">
+        <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+          <g class="seal-rays" stroke="var(--coral)" stroke-width="6" stroke-linecap="round">
+            <line x1="208.0" y1="150.0" x2="288.0" y2="150.0" />
+            <line x1="203.6" y1="172.2" x2="249.8" y2="191.3" />
+            <line x1="191.0" y1="191.0" x2="247.6" y2="247.6" />
+            <line x1="172.2" y1="203.6" x2="191.3" y2="249.8" />
+            <line x1="150.0" y1="208.0" x2="150.0" y2="288.0" />
+            <line x1="127.8" y1="203.6" x2="108.7" y2="249.8" />
+            <line x1="109.0" y1="191.0" x2="52.4" y2="247.6" />
+            <line x1="96.4" y1="172.2" x2="50.2" y2="191.3" />
+            <line x1="92.0" y1="150.0" x2="12.0" y2="150.0" />
+            <line x1="96.4" y1="127.8" x2="50.2" y2="108.7" />
+            <line x1="109.0" y1="109.0" x2="52.4" y2="52.4" />
+            <line x1="127.8" y1="96.4" x2="108.7" y2="50.2" />
+            <line x1="150.0" y1="92.0" x2="150.0" y2="12.0" />
+            <line x1="172.2" y1="96.4" x2="191.3" y2="50.2" />
+            <line x1="191.0" y1="109.0" x2="247.6" y2="52.4" />
+            <line x1="203.6" y1="127.8" x2="249.8" y2="108.7" />
+          </g>
+          <circle cx="150" cy="150" r="92" fill="var(--gold)"/>
+          <circle cx="150" cy="150" r="92" fill="none" stroke="var(--forest)" stroke-width="2" opacity="0.15"/>
+          <path d="M150 205C150 205 108 172 108 143C108 122 122 108 139 108C144.5 108 148 111 150 116C152 111 155.5 108 161 108C178 108 192 122 192 143C192 172 150 205 150 205Z" fill="var(--forest)"/>
+          <rect x="140" y="128" width="20" height="46" rx="3" fill="white"/>
+          <rect x="127" y="141" width="46" height="20" rx="3" fill="white"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="section-pad" id="tentang">
+    <div class="wrap about-grid">
+      <div class="reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Tentang Kami
+        </span>
+        <p class="lead-text" style="margin-top:16px;">"Sinar" berarti cahaya harapan. <em>"Bhakti"</em> berarti pengabdian. Keduanya menuntun setiap langkah kerja kami di lapangan.</p>
+      </div>
+      <div class="about-copy reveal">
+        <p>Yayasan Sinar Bhakti Husada berdiri untuk menjawab satu masalah nyata: banyak keluarga di daerah terpencil Indonesia masih sulit menjangkau layanan kesehatan dasar. Kami hadir langsung di dusun dan desa, bekerja sama dengan puskesmas, kader posyandu, dan pemerintah setempat.</p>
+        <p>Tiga program utama kami — kesehatan ibu &amp; anak, imunisasi, dan penanganan malaria — dipilih karena ketiganya adalah titik kritis yang paling menentukan masa depan sebuah keluarga, terutama di wilayah endemis seperti Nusa Tenggara Timur, Maluku, dan Papua.</p>
+        <div class="about-stats">
+          <div><b>2014</b><span>Tahun berdiri</span></div>
+          <div><b>76</b><span>Desa dampingan</span></div>
+          <div><b>18</b><span>Kabupaten tersebar</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROGRAMS -->
+  <section class="section-pad mist-bg" id="program">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Fokus Program
+        </span>
+        <h2>Tiga Pilar yang Kami Jaga Bersama</h2>
+        <p>Bukan proyek satu kali jalan — tiga program ini berjalan berdampingan, saling menguatkan, di setiap desa dampingan kami.</p>
+      </div>
+
+      <div class="programs-grid">
+        <div class="program-card reveal p-kia">
+          <div class="program-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.6-9.3-9.2C1.4 8.6 3 5 6.6 5c2 0 3.4 1.1 4.4 2.6C12 6.1 13.4 5 15.4 5 19 5 20.6 8.6 19.3 11.8 17 16.4 12 21 12 21z"/></svg>
+          </div>
+          <div class="tag">Kesehatan Ibu &amp; Anak</div>
+          <h3>Mendampingi Sejak dalam Kandungan</h3>
+          <p>Pemeriksaan kehamilan berkala, pendampingan persalinan aman bersama bidan desa, dan pemantauan tumbuh kembang balita hingga usia lima tahun.</p>
+          <a href="#kontak" class="program-link">Selengkapnya
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+
+        <div class="program-card reveal p-imu">
+          <div class="program-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-4Z"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <div class="tag">Imunisasi</div>
+          <h3>Vaksin Lengkap, Sampai ke Pelosok</h3>
+          <p>Menjangkau anak-anak di dusun terpencil dengan imunisasi dasar lengkap, cold chain vaksin yang terjaga, serta edukasi rutin bagi orang tua.</p>
+          <a href="#kontak" class="program-link">Selengkapnya
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+
+        <div class="program-card reveal p-mal">
+          <div class="program-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20c3-6 13-6 16 0"/><circle cx="12" cy="9" r="5"/><path d="M9 9h6M12 6v6"/></svg>
+          </div>
+          <div class="tag">Penanganan Malaria</div>
+          <h3>Memutus Rantai Penularan</h3>
+          <p>Distribusi kelambu berinsektisida, tes cepat untuk deteksi dini, serta pengobatan tuntas bekerja sama dengan puskesmas di wilayah endemis.</p>
+          <a href="#kontak" class="program-link">Selengkapnya
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- IMPACT -->
+  <section class="section-pad impact" id="dampak">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Dampak Kami
+        </span>
+        <h2>Sejak 2014, Bersama Lembaga Internasional</h2>
+        <p>Rekam jejak kemitraan kami dengan UNICEF, USAID/FHI 360, dan WHO dalam memperkuat sistem kesehatan di Papua.</p>
+      </div>
+      <div class="stats-row">
+        <div class="stat-seal reveal"><span class="num">7 Tahun</span><span class="lbl">Kemitraan program internasional (2014–2020)</span></div>
+        <div class="stat-seal reveal"><span class="num">3</span><span class="lbl">Lembaga mitra global — UNICEF, USAID/FHI 360, WHO</span></div>
+        <div class="stat-seal reveal"><span class="num">1.300+</span><span class="lbl">Tenaga kesehatan &amp; fasilitator dilatih langsung</span></div>
+        <div class="stat-seal reveal"><span class="num">16+</span><span class="lbl">Kabupaten endemis malaria didampingi</span></div>
+      </div>
+      <p style="text-align:center; margin-top:28px;">
+        <a href="dampak-sinar-bhakti-husada.html" style="color:var(--gold); font-weight:700; font-size:14.5px; text-decoration:underline; text-underline-offset:3px;">Lihat rincian dampak lengkap per tahun →</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="section-pad" id="cerita">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Cerita dari Lapangan
+        </span>
+        <h2>Suara Mereka yang Kami Dampingi</h2>
+      </div>
+      <div class="testi-grid">
+        <div class="testi-card reveal">
+          <svg class="quote" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7C4.8 7 3 8.8 3 11c0 2.2 1.8 4 4 4 .3 0 .6 0 .9-.1C7.3 17 6 18.5 4 19v2c4-.5 7-3.3 7-7.5V11c0-2.2-1.8-4-4-4zm10 0c-2.2 0-4 1.8-4 4 0 2.2 1.8 4 4 4 .3 0 .6 0 .9-.1-.6 2.1-1.9 3.6-3.9 4.1v2c4-.5 7-3.3 7-7.5V11c0-2.2-1.8-4-4-4z"/></svg>
+          <p class="quote-text">Kader posyandu di kampung kami jadi lebih percaya diri mendampingi ibu hamil sejak ada pelatihan rutin dari yayasan.</p>
+          <div class="testi-who">
+            <div class="testi-avatar">SW</div>
+            <div><div class="name">Sri Wahyuni</div><div class="role">Kader Posyandu, Sikka · NTT</div></div>
+          </div>
+        </div>
+        <div class="testi-card reveal">
+          <svg class="quote" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7C4.8 7 3 8.8 3 11c0 2.2 1.8 4 4 4 .3 0 .6 0 .9-.1C7.3 17 6 18.5 4 19v2c4-.5 7-3.3 7-7.5V11c0-2.2-1.8-4-4-4zm10 0c-2.2 0-4 1.8-4 4 0 2.2 1.8 4 4 4 .3 0 .6 0 .9-.1-.6 2.1-1.9 3.6-3.9 4.1v2c4-.5 7-3.3 7-7.5V11c0-2.2-1.8-4-4-4z"/></svg>
+          <p class="quote-text">Anak saya sekarang lengkap imunisasinya. Petugas datang langsung ke dusun, kami tidak perlu jalan jauh lagi.</p>
+          <div class="testi-who">
+            <div class="testi-avatar">F</div>
+            <div><div class="name">Fatimah</div><div class="role">Warga, Waepana · Manggarai</div></div>
+          </div>
+        </div>
+        <div class="testi-card reveal">
+          <svg class="quote" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7C4.8 7 3 8.8 3 11c0 2.2 1.8 4 4 4 .3 0 .6 0 .9-.1C7.3 17 6 18.5 4 19v2c4-.5 7-3.3 7-7.5V11c0-2.2-1.8-4-4-4zm10 0c-2.2 0-4 1.8-4 4 0 2.2 1.8 4 4 4 .3 0 .6 0 .9-.1-.6 2.1-1.9 3.6-3.9 4.1v2c4-.5 7-3.3 7-7.5V11c0-2.2-1.8-4-4-4z"/></svg>
+          <p class="quote-text">Sejak dapat kelambu dan edukasi rutin, kasus malaria di dusun kami turun jauh dibanding tiga tahun lalu.</p>
+          <div class="testi-who">
+            <div class="testi-avatar">YB</div>
+            <div><div class="name">Yosef Bunga</div><div class="role">Kepala Dusun, Sumba Timur</div></div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin-top:22px;">*Cerita di atas adalah contoh ilustratif — mudah diganti dengan testimoni asli dari penerima manfaat Anda.</p>
+    </div>
+  </section>
+
+  <!-- DONATION CTA -->
+  <section class="section-pad donate-cta" id="donasi">
+    <div class="donate-rays" aria-hidden="true">
+      <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+        <g class="seal-rays" stroke="white" stroke-width="7" stroke-linecap="round">
+          <line x1="208.0" y1="150.0" x2="288.0" y2="150.0" /><line x1="203.6" y1="172.2" x2="249.8" y2="191.3" />
+          <line x1="191.0" y1="191.0" x2="247.6" y2="247.6" /><line x1="172.2" y1="203.6" x2="191.3" y2="249.8" />
+          <line x1="150.0" y1="208.0" x2="150.0" y2="288.0" /><line x1="127.8" y1="203.6" x2="108.7" y2="249.8" />
+          <line x1="109.0" y1="191.0" x2="52.4" y2="247.6" /><line x1="96.4" y1="172.2" x2="50.2" y2="191.3" />
+          <line x1="92.0" y1="150.0" x2="12.0" y2="150.0" /><line x1="96.4" y1="127.8" x2="50.2" y2="108.7" />
+          <line x1="109.0" y1="109.0" x2="52.4" y2="52.4" /><line x1="127.8" y1="96.4" x2="108.7" y2="50.2" />
+          <line x1="150.0" y1="92.0" x2="150.0" y2="12.0" /><line x1="172.2" y1="96.4" x2="191.3" y2="50.2" />
+          <line x1="191.0" y1="109.0" x2="247.6" y2="52.4" /><line x1="203.6" y1="127.8" x2="249.8" y2="108.7" />
+        </g>
+      </svg>
+    </div>
+    <div class="wrap donate-inner">
+      <div class="reveal">
+        <h2>Setiap Sumbangan Adalah Sinar Baru</h2>
+        <p>Rp150.000 dapat menyediakan satu kelambu anti-malaria. Rp500.000 dapat mendampingi satu ibu hamil selama satu bulan penuh. Bergabunglah dengan kami.</p>
+        <div class="donate-actions">
+          <a href="#kontak" class="btn btn-light">Donasi via Transfer</a>
+          <a href="#kontak" class="btn btn-outline-light">Jadi Relawan</a>
+        </div>
+      </div>
+      <div class="transfer-card reveal">
+        <div class="label">Transfer Bank</div>
+        <div class="acct" id="acctNumber">BCA · 123 4567 890</div>
+        <div class="name">a.n. Yayasan Sinar Bhakti Husada</div>
+        <button class="copy-btn" id="copyBtn">Salin Nomor Rekening</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="section-pad" id="kontak">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Hubungi Kami
+        </span>
+        <h2>Mari Berbincang atau Berkunjung</h2>
+        <p>Untuk kerja sama program, kunjungan lapangan, atau pertanyaan seputar donasi.</p>
+      </div>
+      <div class="contact-grid">
+        <div class="reveal">
+          <div class="contact-item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"/><path d="m22 6-10 7L2 6"/></svg></div>
+            <div><div class="t">Email</div><div class="d">kontak@sinarbhaktihusada.org</div></div>
+          </div>
+          <div class="contact-item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.9.6 2.8a2 2 0 0 1-.5 2.1L7.9 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2Z"/></svg></div>
+            <div><div class="t">Telepon / WhatsApp</div><div class="d">+62 812-3456-7890</div></div>
+          </div>
+          <div class="contact-item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+            <div><div class="t">Kantor Sekretariat</div><div class="d">Jl. Melati No. 21, Kupang, Nusa Tenggara Timur</div></div>
+          </div>
+        </div>
+        <div class="map-frame reveal">Peta lokasi kantor dapat ditambahkan di sini</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">
+          <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="30" cy="30" r="29" fill="var(--gold)"/>
+            <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/>
+            <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+            <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+          </svg>
+          <span>Sinar Bhakti Husada</span>
+        </div>
+        <p class="desc">Yayasan kesehatan yang mendampingi ibu, anak, dan komunitas di wilayah terpencil Indonesia sejak 2014.</p>
+        <div class="social-row">
+          <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+          <a href="#" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3Z"/></svg></a>
+          <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3Z" fill="currentColor"/></svg></a>
+        </div>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <ul>
+          <li><a href="#program">Kesehatan Ibu &amp; Anak</a></li>
+          <li><a href="#program">Imunisasi</a></li>
+          <li><a href="#program">Penanganan Malaria</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Yayasan</h4>
+        <ul>
+          <li><a href="#tentang">Tentang Kami</a></li>
+          <li><a href="#dampak">Dampak</a></li>
+          <li><a href="#cerita">Cerita Lapangan</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Ambil Bagian</h4>
+        <ul>
+          <li><a href="#donasi">Donasi</a></li>
+          <li><a href="#kontak">Jadi Relawan</a></li>
+          <li><a href="#kontak">Kerja Sama Program</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Yayasan Sinar Bhakti Husada. Seluruh hak cipta dilindungi.</span>
+      <span>Dibuat dengan bhakti, untuk sinar yang terus menyala.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Mobile nav toggle
+  const burger = document.getElementById('burgerBtn');
+  const navLinks = document.getElementById('navLinks');
+  burger.addEventListener('click', () => navLinks.classList.toggle('open'));
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navLinks.classList.remove('open')));
+
+  // Scroll reveal
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+
+  // Copy account number
+  const copyBtn = document.getElementById('copyBtn');
+  const acctNumber = document.getElementById('acctNumber');
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText('1234567890').then(() => {
+      const original = copyBtn.textContent;
+      copyBtn.textContent = 'Tersalin ✓';
+      setTimeout(() => copyBtn.textContent = original, 2000);
+    });
+  });
+</script>
+
+</body>
+</html>

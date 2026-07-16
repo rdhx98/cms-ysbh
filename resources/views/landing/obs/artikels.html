@@ -1,0 +1,347 @@
+bash
+
+mkdir -p /home/claude/more-pages
+cat > /home/claude/more-pages/artikel-sinar-bhakti-husada.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artikel & Cerita Lapangan — Yayasan Sinar Bhakti Husada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#064F3B; --forest-dark:#043328; --forest-tint:#0E6A4F;
+    --gold:#EBCC26; --gold-soft:#F7EBAF;
+    --coral:#E42326; --coral-dark:#BE1417;
+    --paper:#FBF7EA; --paper-dim:#F3ECD6;
+    --ink:#12241C; --ink-soft:#4B5D53;
+    --mist:#E9F1EB; --white:#FFFFFF;
+    --line: rgba(6,79,59,0.14);
+    --shadow: 0 20px 50px -25px rgba(6,45,35,0.35);
+    --radius-lg: 28px; --radius-md: 18px; --radius-sm: 10px;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  @media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; } }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing:antialiased; line-height:1.65; overflow-x:hidden; }
+  h1,h2,h3,.display{ font-family:'Fraunces', serif; color:var(--forest); margin:0; letter-spacing:-0.01em; }
+  a{ color:inherit; }
+  img{ max-width:100%; display:block; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 32px; }
+  @media (max-width:640px){ .wrap{ padding:0 20px; } }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:13px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--coral-dark); }
+  .eyebrow svg{ width:16px; height:16px; flex-shrink:0; }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:15.5px; padding:14px 28px; border-radius:999px; border:2px solid transparent; cursor:pointer; transition:transform .25s ease, box-shadow .25s ease, background-color .25s ease; text-decoration:none; white-space:nowrap; }
+  .btn-coral{ background:var(--coral); color:var(--white); }
+  .btn-coral:hover{ background:var(--coral-dark); transform:translateY(-2px); box-shadow:0 14px 28px -14px rgba(228,35,38,0.55); }
+  .btn-ghost{ background:transparent; color:var(--forest); border-color:var(--forest); }
+  .btn-ghost:hover{ background:var(--forest); color:var(--white); transform:translateY(-2px); }
+  header{ position:sticky; top:0; z-index:100; background:rgba(251,247,234,0.88); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 32px; max-width:1180px; margin:0 auto; }
+  .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; }
+  .brand svg{ width:42px; height:42px; }
+  .brand-name{ font-family:'Fraunces', serif; font-weight:700; font-size:17px; color:var(--forest); line-height:1.15; }
+  .brand-name span{ display:block; font-family:'Plus Jakarta Sans', sans-serif; font-weight:600; font-size:10.5px; letter-spacing:0.14em; color:var(--coral); text-transform:uppercase; margin-top:2px; }
+  .nav-links{ display:flex; align-items:center; gap:32px; }
+  .nav-links a{ font-weight:600; font-size:15px; color:var(--ink-soft); text-decoration:none; }
+  .nav-links a:hover{ color:var(--forest); }
+  .nav-links a.current{ color:var(--forest); }
+  .nav-cta{ display:flex; align-items:center; gap:18px; }
+  .burger{ display:none; background:none; border:none; cursor:pointer; padding:6px; }
+  .burger span{ display:block; width:24px; height:2.5px; background:var(--forest); margin:5px 0; border-radius:2px; }
+  @media (max-width:960px){
+    .nav-links{ position:fixed; inset:72px 0 0 0; background:var(--paper); flex-direction:column; justify-content:flex-start; align-items:flex-start; padding:32px; gap:24px; transform:translateX(100%); transition:transform .35s ease; border-top:1px solid var(--line); }
+    .nav-links.open{ transform:translateX(0); }
+    .nav-links a{ font-size:18px; }
+    .burger{ display:block; }
+    .nav-cta .btn-ghost{ display:none; }
+  }
+  section{ position:relative; }
+  .section-pad{ padding:96px 0; }
+  @media (max-width:640px){ .section-pad{ padding:56px 0; } }
+  .breadcrumb{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-soft); margin-bottom:32px; flex-wrap:wrap; }
+  .breadcrumb a{ font-weight:600; color:var(--ink-soft); text-decoration:none; }
+  .breadcrumb a:hover{ color:var(--forest); }
+  .breadcrumb span{ color:var(--ink-soft); opacity:0.5; }
+  .breadcrumb .current{ color:var(--forest); font-weight:700; opacity:1; }
+  .hero-title{ font-size:clamp(2rem, 4vw, 3rem); font-weight:600; line-height:1.12; margin:16px 0 14px; max-width:720px; }
+  .hero-lead{ font-size:17px; color:var(--ink-soft); max-width:640px; }
+
+  .filter-row{ display:flex; gap:10px; flex-wrap:wrap; margin:36px 0 44px; }
+  .filter-chip{ background:var(--white); border:1px solid var(--line); color:var(--ink-soft); font-weight:700; font-size:13.5px; padding:10px 20px; border-radius:999px; cursor:pointer; transition:all .2s ease; }
+  .filter-chip.active, .filter-chip:hover{ background:var(--forest); color:var(--white); border-color:var(--forest); }
+
+  .featured-article{ display:grid; grid-template-columns:1.1fr 0.9fr; gap:40px; align-items:center; background:var(--white); border:1px solid var(--line); border-radius:var(--radius-lg); padding:20px; box-shadow:var(--shadow); margin-bottom:56px; }
+  @media (max-width:860px){ .featured-article{ grid-template-columns:1fr; } }
+  .featured-img{ aspect-ratio:4/3; border-radius:var(--radius-md); background:var(--mist); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); border:2px dashed var(--line); }
+  .featured-img svg{ width:36px; height:36px; opacity:0.5; }
+  .featured-body{ padding:12px 20px 20px 0; }
+  @media (max-width:860px){ .featured-body{ padding:0 12px 20px; } }
+  .cat-badge{ display:inline-block; font-size:11.5px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; padding:5px 12px; border-radius:999px; margin-bottom:14px; }
+  .cat-kegiatan{ background:var(--gold-soft); color:var(--forest); }
+  .cat-laporan{ background:var(--mist); color:var(--forest-tint); }
+  .cat-cerita{ background:#FBE6E6; color:var(--coral-dark); }
+  .featured-body h2{ font-size:clamp(1.5rem,2.6vw,2rem); font-weight:600; line-height:1.25; margin-bottom:12px; }
+  .featured-body p{ color:var(--ink-soft); font-size:15px; margin-bottom:18px; }
+  .article-meta{ display:flex; align-items:center; gap:14px; font-size:13px; color:var(--ink-soft); }
+  .article-meta .dot{ width:4px; height:4px; border-radius:50%; background:var(--ink-soft); opacity:0.5; }
+
+  .article-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:28px; }
+  @media (max-width:900px){ .article-grid{ grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:600px){ .article-grid{ grid-template-columns:1fr; } }
+  .article-card{ background:var(--white); border:1px solid var(--line); border-radius:var(--radius-md); overflow:hidden; box-shadow:var(--shadow); transition:transform .3s ease; display:flex; flex-direction:column; }
+  .article-card:hover{ transform:translateY(-4px); }
+  .article-thumb{ aspect-ratio:16/10; background:var(--mist); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); border-bottom:1px solid var(--line); }
+  .article-thumb svg{ width:26px; height:26px; opacity:0.5; }
+  .article-card-body{ padding:22px; display:flex; flex-direction:column; flex:1; }
+  .article-card-body h3{ font-size:17px; font-weight:600; line-height:1.35; margin:10px 0 10px; }
+  .article-card-body p{ color:var(--ink-soft); font-size:14px; flex:1; margin-bottom:14px; }
+
+  .load-more{ text-align:center; margin-top:52px; }
+
+  footer{ background:var(--forest-dark); color:rgba(255,255,255,0.72); padding:64px 0 28px; }
+  .footer-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:40px; margin-bottom:48px; }
+  @media (max-width:760px){ .footer-grid{ grid-template-columns:1fr 1fr; } }
+  .footer-brand{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .footer-brand svg{ width:36px; height:36px; }
+  .footer-brand span{ font-family:'Fraunces', serif; font-weight:700; color:var(--white); font-size:16px; }
+  footer p.desc{ font-size:14px; max-width:280px; }
+  footer h4{ color:var(--white); font-size:13.5px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:18px; font-weight:700; }
+  footer ul{ list-style:none; margin:0; padding:0; }
+  footer li{ margin-bottom:12px; }
+  footer a{ font-size:14.5px; text-decoration:none; }
+  footer a:hover{ color:var(--gold); }
+  .footer-bottom{ border-top:1px solid rgba(255,255,255,0.12); padding-top:24px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:13px; }
+  .reveal{ opacity:0; transform:translateY(22px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+  :focus-visible{ outline:3px solid var(--coral); outline-offset:3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="sinar-bhakti-husada-landing.html" class="brand">
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="29" fill="var(--gold)"/>
+        <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/>
+        <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+        <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+      </svg>
+      <div class="brand-name">Sinar Bhakti Husada<span>Yayasan Kesehatan</span></div>
+    </a>
+    <nav class="nav-links" id="navLinks">
+      <a href="sinar-bhakti-husada-landing.html#program">Program</a>
+      <a href="artikel-sinar-bhakti-husada.html" class="current">Artikel</a>
+      <a href="transparansi-sinar-bhakti-husada.html">Transparansi</a>
+      <a href="kredibilitas-sinar-bhakti-husada.html">Kredibilitas</a>
+      <a href="sinar-bhakti-husada-landing.html#kontak">Kontak</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="sinar-bhakti-husada-landing.html#kontak" class="btn btn-ghost" style="padding:11px 22px; font-size:14px;">Hubungi Kami</a>
+      <a href="sinar-bhakti-husada-landing.html#donasi" class="btn btn-coral" style="padding:11px 22px; font-size:14px;">Donasi Sekarang</a>
+      <button class="burger" id="burgerBtn" aria-label="Buka menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="section-pad" style="padding-bottom:0;">
+    <div class="wrap">
+      <div class="breadcrumb reveal">
+        <a href="sinar-bhakti-husada-landing.html">Beranda</a><span>/</span>
+        <span class="current">Artikel</span>
+      </div>
+      <div class="reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+          Artikel &amp; Cerita Lapangan
+        </span>
+        <h1 class="hero-title">Kisah dan Catatan dari Lapangan</h1>
+        <p class="hero-lead">Dokumentasi kegiatan, laporan progres program, dan cerita langsung dari tim kami yang bekerja di kampung-kampung dampingan.</p>
+      </div>
+
+      <div class="filter-row reveal">
+        <button class="filter-chip active" data-filter="all">Semua</button>
+        <button class="filter-chip" data-filter="kegiatan">Kegiatan</button>
+        <button class="filter-chip" data-filter="laporan">Laporan</button>
+        <button class="filter-chip" data-filter="cerita">Cerita Lapangan</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad" style="padding-top:0;">
+    <div class="wrap">
+
+      <a href="#" class="featured-article reveal" style="text-decoration:none;">
+        <div class="featured-img">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg>
+        </div>
+        <div class="featured-body">
+          <span class="cat-badge cat-cerita">Cerita Lapangan</span>
+          <h2>Menembus Medan Sulit: Kisah Tim Fasilitator Menuju Puncak Jaya</h2>
+          <p>Perjalanan delapan jam melintasi jalan berbatu dan sungai yang harus disebrangi manual — begini rasanya menjadi fasilitator imunisasi di salah satu kabupaten paling terpencil di Papua Tengah.</p>
+          <div class="article-meta">
+            <span>Tim YSBH</span><span class="dot"></span><span>12 Juni 2026</span><span class="dot"></span><span>6 menit baca</span>
+          </div>
+        </div>
+      </a>
+
+      <div class="article-grid">
+        <a href="#" class="article-card reveal" style="text-decoration:none;">
+          <div class="article-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg></div>
+          <div class="article-card-body">
+            <span class="cat-badge cat-kegiatan">Kegiatan</span>
+            <h3>Cerita dari Waghete: Pelatihan Fasilitator Imunisasi di Deiyai</h3>
+            <p>Dua puluh tenaga kesehatan dari lima puskesmas berkumpul selama tiga hari untuk memperdalam praktik POCQI.</p>
+            <div class="article-meta"><span>Tim YSBH</span><span class="dot"></span><span>28 Mei 2026</span></div>
+          </div>
+        </a>
+
+        <a href="#" class="article-card reveal" style="text-decoration:none;">
+          <div class="article-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg></div>
+          <div class="article-card-body">
+            <span class="cat-badge cat-laporan">Laporan</span>
+            <h3>Laporan Semester I: Progres Program KIA di 9 Kabupaten</h3>
+            <p>Ringkasan capaian pendampingan ibu hamil, bayi baru lahir, dan penguatan Puskesmas Model sepanjang enam bulan pertama.</p>
+            <div class="article-meta"><span>Tim YSBH</span><span class="dot"></span><span>15 Mei 2026</span></div>
+          </div>
+        </a>
+
+        <a href="#" class="article-card reveal" style="text-decoration:none;">
+          <div class="article-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg></div>
+          <div class="article-card-body">
+            <span class="cat-badge cat-cerita">Cerita Lapangan</span>
+            <h3>Kunjungan ke Puskesmas Model Wanggar Sari</h3>
+            <p>Belajar langsung bagaimana OJT Center membentuk kebiasaan berbagi ilmu antar tenaga kesehatan dari berbagai wilayah.</p>
+            <div class="article-meta"><span>Tim YSBH</span><span class="dot"></span><span>2 Mei 2026</span></div>
+          </div>
+        </a>
+
+        <a href="#" class="article-card reveal" style="text-decoration:none;">
+          <div class="article-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg></div>
+          <div class="article-card-body">
+            <span class="cat-badge cat-kegiatan">Kegiatan</span>
+            <h3>Kolaborasi Lintas Sektor: Ketika Tokoh Adat Bicara Soal Imunisasi</h3>
+            <p>Bagaimana suara kepala suku dan pemuka agama membantu menurunkan keraguan warga terhadap vaksin.</p>
+            <div class="article-meta"><span>Tim YSBH</span><span class="dot"></span><span>20 April 2026</span></div>
+          </div>
+        </a>
+
+        <a href="#" class="article-card reveal" style="text-decoration:none;">
+          <div class="article-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg></div>
+          <div class="article-card-body">
+            <span class="cat-badge cat-laporan">Laporan</span>
+            <h3>Mengapa Angka Zero-Dose di Papua Tengah Masih Tinggi?</h3>
+            <p>Menelusuri akar penyebab rendahnya cakupan imunisasi dasar lengkap dan langkah percepatan yang kami dorong.</p>
+            <div class="article-meta"><span>Tim YSBH</span><span class="dot"></span><span>8 April 2026</span></div>
+          </div>
+        </a>
+
+        <a href="#" class="article-card reveal" style="text-decoration:none;">
+          <div class="article-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg></div>
+          <div class="article-card-body">
+            <span class="cat-badge cat-cerita">Cerita Lapangan</span>
+            <h3>Satu Hari Bersama Kader Posyandu di Sarmi</h3>
+            <p>Mengikuti rutinitas kader dari rumah ke rumah, memantau tumbuh kembang balita di wilayah pesisir.</p>
+            <div class="article-meta"><span>Tim YSBH</span><span class="dot"></span><span>29 Maret 2026</span></div>
+          </div>
+        </a>
+      </div>
+
+      <div class="load-more reveal">
+        <button class="btn btn-ghost">Muat Artikel Lainnya</button>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">
+          <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="30" cy="30" r="29" fill="var(--gold)"/>
+            <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/>
+            <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+            <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+          </svg>
+          <span>Sinar Bhakti Husada</span>
+        </div>
+        <p class="desc">Yayasan kesehatan yang mendampingi ibu, anak, dan komunitas di wilayah terpencil Indonesia sejak 2014.</p>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <ul>
+          <li><a href="kia-program-sinar-bhakti-husada.html">Kesehatan Ibu &amp; Anak</a></li>
+          <li><a href="imunisasi-program-sinar-bhakti-husada.html">Imunisasi</a></li>
+          <li><a href="malaria-program-sinar-bhakti-husada.html">Penanganan Malaria</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Yayasan</h4>
+        <ul>
+          <li><a href="transparansi-sinar-bhakti-husada.html">Transparansi</a></li>
+          <li><a href="kredibilitas-sinar-bhakti-husada.html">Kredibilitas</a></li>
+          <li><a href="artikel-sinar-bhakti-husada.html">Artikel</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Ambil Bagian</h4>
+        <ul>
+          <li><a href="sinar-bhakti-husada-landing.html#donasi">Donasi</a></li>
+          <li><a href="sinar-bhakti-husada-landing.html#kontak">Jadi Relawan</a></li>
+          <li><a href="sinar-bhakti-husada-landing.html#kontak">Kerja Sama Program</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Yayasan Sinar Bhakti Husada. Seluruh hak cipta dilindungi.</span>
+      <span>Dibuat dengan bhakti, untuk sinar yang terus menyala.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const burger = document.getElementById('burgerBtn');
+  const navLinks = document.getElementById('navLinks');
+  burger.addEventListener('click', () => navLinks.classList.toggle('open'));
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navLinks.classList.remove('open')));
+
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+
+  const filterChips = document.querySelectorAll('.filter-chip');
+  const cards = document.querySelectorAll('.article-card');
+  const catMap = { kegiatan: 'cat-kegiatan', laporan: 'cat-laporan', cerita: 'cat-cerita' };
+  filterChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      filterChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const filter = chip.dataset.filter;
+      cards.forEach(card => {
+        if (filter === 'all') { card.style.display = ''; return; }
+        const badge = card.querySelector('.cat-badge');
+        card.style.display = badge.classList.contains(catMap[filter]) ? '' : 'none';
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
+HTMLEOF
+echo "Artikel page written"
+wc -l /home/claude/more-pages/artikel-sinar-bhakti-husada.html
+Output
+
+Artikel page written
+336 /home/claude/more-pages/artikel-sinar-bhakti-husada.html

@@ -1,5 +1,9 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 
+// ─── Kumpulan ikon umum untuk Eyebrow ───────────────────────────────
+// Didefinisikan sekali sebagai deskriptor SVG, dipakai ulang di
+// renderHTML (output/database) maupun addNodeView (tampilan editor)
+// supaya tidak dobel maintain.
 const ICONS = {
   crosshair: [
     ['circle', { cx: '12', cy: '12', r: '9' }],
@@ -35,14 +39,15 @@ const ICONS = {
 };
 
 const DEFAULT_ICON = 'crosshair';
-const DEFAULT_COLOR = '#BE1417';
-const DEFAULT_FONT_SIZE = '13px';
-const DEFAULT_PILL_BG = '#E9F1EB';
+const DEFAULT_COLOR = '#BE1417';   // fallback kalau tidak ada mark warna di teks
+const DEFAULT_FONT_SIZE = '13px'; // fallback kalau tidak ada mark font-size di teks
 
 function getIconChildren(iconKey) {
   return ICONS[iconKey] || ICONS[DEFAULT_ICON];
 }
 
+// Dipakai addNodeView() untuk membangun SVG via innerHTML,
+// sumber datanya tetap satu (ICONS) biar tidak dobel maintain.
 function iconToSVGString(iconKey) {
   const children = getIconChildren(iconKey);
   const inner = children
@@ -57,13 +62,15 @@ function iconToSVGString(iconKey) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2em;height:1.2em;display:block">${inner}</svg>`;
 }
 
-// Membaca mark 'textStyle' (warna & font-size) dari teks di dalam Eyebrow
+// Menelusuri isi node eyebrow untuk menemukan mark 'textStyle'
+// (dipakai ekstensi Color & FontSize), ambil warna/ukuran pertama
+// yang ditemukan. Inilah yang bikin Eyebrow "mengikuti" gaya teks.
 function extractTextStyle(node) {
   let color = null;
   let fontSize = null;
 
   node.descendants((child) => {
-    if (color && fontSize) return false;
+    if (color && fontSize) return false; // sudah lengkap, berhenti lebih awal
     if (child.isText) {
       child.marks.forEach((mark) => {
         if (mark.type.name === 'textStyle') {
@@ -77,38 +84,15 @@ function extractTextStyle(node) {
   return { color, fontSize };
 }
 
-// 🔑 BARU: Membaca mark 'pill' dari teks di dalam Eyebrow.
-// Karena mark tidak pernah bisa membungkus node composite (Eyebrow) sebagai
-// satu kesatuan — cuma bisa menempel ke teks di dalamnya — Eyebrow sendiri
-// yang perlu "sadar" ada pill di kontennya, lalu menggambar kotak pill itu
-// di elemen terluarnya sendiri (supaya icon ikut kebungkus juga).
-function extractPillStyle(node) {
-  let hasPill = false;
-  let backgroundColor = null;
-  let borderColor = null;
-
-  node.descendants((child) => {
-    if (hasPill) return false;
-    if (child.isText) {
-      child.marks.forEach((mark) => {
-        if (mark.type.name === 'pill') {
-          hasPill = true;
-          backgroundColor = mark.attrs.backgroundColor || null;
-          borderColor = mark.attrs.borderColor || null;
-        }
-      });
-    }
-  });
-
-  return { hasPill, backgroundColor, borderColor };
-}
-
 export const Eyebrow = Node.create({
     name: 'eyebrow',
+
+    // 🔑 PERUBAHAN UTAMA: block -> inline
+    // Supaya Eyebrow bisa dibungkus mark (Pill) dan dipakai berkali-kali
+    // berdampingan dalam satu paragraf/baris yang sama.
     group: 'inline',
     inline: true,
-    content: 'text*',
-    defining: true,
+    content: 'text*', // teks polos saja — mencegah Eyebrow bersarang di dalam Eyebrow
 
     addAttributes() {
         return {
@@ -123,27 +107,20 @@ export const Eyebrow = Node.create({
     parseHTML() {
         return [
             { tag: 'span[data-type="eyebrow"]' },
-            { tag: 'div[data-type="eyebrow"]' }, // kompatibilitas data lama
+            { tag: 'div[data-type="eyebrow"]' }, // kompatibilitas dgn data lama sebelum jadi inline
         ]
     },
 
     renderHTML({ node, HTMLAttributes }) {
         const { color, fontSize } = extractTextStyle(node);
-        const { hasPill, backgroundColor, borderColor } = extractPillStyle(node);
         const iconKey = ICONS[node.attrs.icon] ? node.attrs.icon : DEFAULT_ICON;
 
-        let style = `color: ${color || DEFAULT_COLOR}; font-size: ${fontSize || DEFAULT_FONT_SIZE};`;
-        if (hasPill) {
-            style += ` background-color: ${backgroundColor || DEFAULT_PILL_BG}; border: 1.5px solid ${borderColor || 'transparent'}; padding: 0.3em 0.85em; border-radius: 9999px;`;
-        }
-
         return [
-            'span',
+            'span', // sebelumnya 'div'
             mergeAttributes(HTMLAttributes, {
                 'data-type': 'eyebrow',
-                ...(hasPill ? { 'data-has-pill': 'true' } : {}),
                 class: 'inline-flex items-center gap-2.5 font-bold tracking-[0.16em] uppercase align-middle mx-0.5',
-                style,
+                style: `color: ${color || DEFAULT_COLOR}; font-size: ${fontSize || DEFAULT_FONT_SIZE};`,
             }),
             [
                 'span',
@@ -169,7 +146,7 @@ export const Eyebrow = Node.create({
 
     addNodeView() {
         return ({ node }) => {
-            const dom = document.createElement('span');
+            const dom = document.createElement('span'); // sebelumnya 'div'
             dom.className = 'inline-flex items-center gap-2.5 font-bold tracking-[0.16em] uppercase align-middle mx-0.5';
             dom.dataset.type = 'eyebrow';
 
@@ -185,24 +162,8 @@ export const Eyebrow = Node.create({
 
             const syncView = (currentNode) => {
                 const { color, fontSize } = extractTextStyle(currentNode);
-                const { hasPill, backgroundColor, borderColor } = extractPillStyle(currentNode);
-
                 dom.style.color = color || DEFAULT_COLOR;
                 dom.style.fontSize = fontSize || DEFAULT_FONT_SIZE;
-
-                if (hasPill) {
-                    dom.dataset.hasPill = 'true';
-                    dom.style.backgroundColor = backgroundColor || DEFAULT_PILL_BG;
-                    dom.style.border = `1.5px solid ${borderColor || 'transparent'}`;
-                    dom.style.padding = '0.3em 0.85em';
-                    dom.style.borderRadius = '9999px';
-                } else {
-                    delete dom.dataset.hasPill;
-                    dom.style.backgroundColor = '';
-                    dom.style.border = '';
-                    dom.style.padding = '';
-                    dom.style.borderRadius = '';
-                }
 
                 const iconKey = ICONS[currentNode.attrs.icon] ? currentNode.attrs.icon : DEFAULT_ICON;
                 if (iconWrapper.dataset.icon !== iconKey) {
@@ -227,6 +188,8 @@ export const Eyebrow = Node.create({
 
     addCommands() {
         return {
+            // Kursor kosong -> sisipkan node baru berisi placeholder "Label" (langsung terpilih, siap ditimpa).
+            // Ada teks terpilih -> bungkus teks itu ke dalam node Eyebrow baru.
             setEyebrow: (icon) => ({ commands, state, chain }) => {
                 const { from, to, empty } = state.selection;
 
@@ -253,6 +216,7 @@ export const Eyebrow = Node.create({
                 );
             },
 
+            // Lepas node Eyebrow di sekitar kursor, sisakan teksnya saja
             unsetEyebrow: () => ({ state, tr, dispatch }) => {
                 const { $from } = state.selection;
 
@@ -282,3 +246,136 @@ export const Eyebrow = Node.create({
         }
     }
 });
+
+
+// export const Eyebrow = Node.create({
+//     name: 'eyebrow',
+//     group: 'block',
+//     content: 'inline*',
+//     defining: true,
+
+//     addAttributes() {
+//         return {
+//             icon: {
+//                 default: DEFAULT_ICON,
+//                 parseHTML: (element) => element.getAttribute('data-icon') || DEFAULT_ICON,
+//                 renderHTML: (attributes) => ({ 'data-icon': attributes.icon }),
+//             },
+//         };
+//     },
+
+//     parseHTML() {
+//         return [
+//             { tag: 'div[data-type="eyebrow"]' },
+//         ]
+//     },
+
+//     // 1. TAMPILAN UNTUK DISIMPAN KE DATABASE (FRONTEND)
+//     renderHTML({ node, HTMLAttributes }) {
+//         const { color, fontSize } = extractTextStyle(node);
+//         const iconKey = ICONS[node.attrs.icon] ? node.attrs.icon : DEFAULT_ICON;
+
+//         return [
+//             'div',
+//             mergeAttributes(HTMLAttributes, {
+//                 'data-type': 'eyebrow',
+//                 class: 'inline-flex items-center gap-2.5 font-bold tracking-[0.16em] uppercase mb-3 mt-4',
+//                 style: `color: ${color || DEFAULT_COLOR}; font-size: ${fontSize || DEFAULT_FONT_SIZE};`,
+//             }),
+//             [
+//                 'span',
+//                 { contenteditable: "false", class: 'flex shrink-0 select-none' },
+//                 [
+//                     'svg',
+//                     {
+//                         xmlns: 'http://www.w3.org/2000/svg',
+//                         viewBox: '0 0 24 24',
+//                         fill: 'none',
+//                         stroke: 'currentColor',
+//                         'stroke-width': '2',
+//                         'stroke-linecap': 'round',
+//                         'stroke-linejoin': 'round',
+//                         style: 'width:1.2em;height:1.2em;display:block',
+//                     },
+//                     ...getIconChildren(iconKey),
+//                 ]
+//             ],
+//             [
+//                 'span',
+//                 { class: 'outline-none flex-1 min-w-0' },
+//                 0
+//             ]
+//         ];
+//     },
+
+//     // 2. TAMPILAN INTERAKTIF DI DALAM EDITOR
+//     addNodeView() {
+//         return ({ node }) => {
+//             const dom = document.createElement('div');
+//             dom.className = 'inline-flex items-center gap-2.5 font-bold tracking-[0.16em] uppercase mb-3 mt-4 w-full';
+//             dom.dataset.type = 'eyebrow';
+
+//             const iconWrapper = document.createElement('span');
+//             iconWrapper.contentEditable = 'false';
+//             iconWrapper.className = 'flex shrink-0 select-none';
+
+//             const contentDOM = document.createElement('span');
+//             contentDOM.className = 'outline-none flex-1 min-w-0';
+
+//             dom.appendChild(iconWrapper);
+//             dom.appendChild(contentDOM);
+
+//             // Sinkronkan warna, ukuran font, dan ikon tiap kali node berubah
+//             const syncView = (currentNode) => {
+//                 const { color, fontSize } = extractTextStyle(currentNode);
+//                 dom.style.color = color || DEFAULT_COLOR;
+//                 dom.style.fontSize = fontSize || DEFAULT_FONT_SIZE;
+
+//                 const iconKey = ICONS[currentNode.attrs.icon] ? currentNode.attrs.icon : DEFAULT_ICON;
+//                 if (iconWrapper.dataset.icon !== iconKey) {
+//                     iconWrapper.innerHTML = iconToSVGString(iconKey);
+//                     iconWrapper.dataset.icon = iconKey;
+//                 }
+//             };
+
+//             syncView(node);
+
+//             return {
+//                 dom,
+//                 contentDOM,
+//                 update(updatedNode) {
+//                     if (updatedNode.type.name !== 'eyebrow') return false;
+//                     syncView(updatedNode);
+//                     return true;
+//                 },
+//             }
+//         }
+//     },
+
+//     // addCommands() {
+//     //     return {
+//     //         setEyebrow: () => ({ commands }) => {
+//     //             return commands.setNode(this.name)
+//     //         },
+//     //         toggleEyebrow: () => ({ commands }) => {
+//     //             return commands.toggleNode(this.name, 'paragraph')
+//     //         },
+//     //         setEyebrowIcon: (icon) => ({ commands }) => {
+//     //             return commands.updateAttributes(this.name, { icon })
+//     //         },
+//     //     }
+//     // }
+//     addCommands() {
+//       return {
+//           setEyebrow: (icon) => ({ commands }) => {
+//               return commands.setNode(this.name, icon ? { icon } : undefined)
+//           },
+//           toggleEyebrow: () => ({ commands }) => {
+//               return commands.toggleNode(this.name, 'paragraph')
+//           },
+//           setEyebrowIcon: (icon) => ({ commands }) => {
+//               return commands.updateAttributes(this.name, { icon })
+//           },
+//       }
+//   },
+// });

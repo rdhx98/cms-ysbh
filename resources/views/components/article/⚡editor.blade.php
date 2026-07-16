@@ -40,29 +40,35 @@ new class extends Component {
     public array $extracted_images = []; // Menyimpan daftar semua URL gambar dari editor
     public ?string $selected_image_url = null; // Menyimpan URL gambar yang dipilih penulis
 
-    public function mount(?Post $post = null) {
-        // JIKA MODE EDIT (Ada data Post dari URL)
-        if ($post && $post->exists) {
-            $this->article_id = $post->id;
-            $this->title = $post->title;
-            $this->slug = $post->slug;
-            $this->content = $post->content;
-            $this->category_id = $post->category_id;
-            $this->user_id = $post->user_id;
-            $this->status = $post->status;
-            $this->created_at = $post->created_at->format('Y-m-d');
+
+    public function mount($post = null) {
+        // 1. JIKA ADA PARAMETER DI URL (Masuk Mode Edit)
+        if ($post) {
+
+            // 🌟 KUNCI 404: Cari artikel berdasarkan slug.
+            // Jika slug asal-asalan dan tidak ada di database, sistem akan OTOMATIS berhenti dan merender halaman 404 Not Found.
+            $artikel = \App\Models\Post::where('slug', $post)->firstOrFail();
+
+            $this->article_id = $artikel->id;
+            $this->title = $artikel->title;
+            $this->slug = $artikel->slug;
+            $this->content = $artikel->content;
+            $this->category_id = $artikel->category_id;
+            $this->user_id = $artikel->user_id;
+            $this->status = $artikel->status;
+            $this->created_at = $artikel->created_at->format('Y-m-d');
 
             // Ambil ID tags untuk TomSelect
-            $this->tags = $post->tags->pluck('id')->toArray();
+            $this->tags = $artikel->tags->pluck('id')->toArray();
 
             // Atur gambar sampul
-            $this->featured_image = $post->featured_image;
-            $this->selected_image_url = asset('storage/articles/' . $post->featured_image);
+            $this->featured_image = $artikel->featured_image;
+            $this->selected_image_url = asset('storage/articles/' . $artikel->featured_image);
 
             // Pindai gambar dari konten lama
             $this->scanEditorImages();
         }
-        // JIKA MODE TULIS BARU
+        // 2. JIKA URL KOSONG / TANPA PARAMETER (Masuk Mode Tulis Baru)
         else {
             $this->created_at = now()->format('Y-m-d');
             $this->user_id = auth()->id() ?? 1; // Pastikan ada fallback user ID
@@ -74,6 +80,41 @@ new class extends Component {
             $this->tags = [];
         }
     }
+
+    // public function mount(?Post $post = null) {
+    //     // JIKA MODE EDIT (Ada data Post dari URL)
+    //     if ($post && $post->exists) {
+    //         $this->article_id = $post->id;
+    //         $this->title = $post->title;
+    //         $this->slug = $post->slug;
+    //         $this->content = $post->content;
+    //         $this->category_id = $post->category_id;
+    //         $this->user_id = $post->user_id;
+    //         $this->status = $post->status;
+    //         $this->created_at = $post->created_at->format('Y-m-d');
+
+    //         // Ambil ID tags untuk TomSelect
+    //         $this->tags = $post->tags->pluck('id')->toArray();
+
+    //         // Atur gambar sampul
+    //         $this->featured_image = $post->featured_image;
+    //         $this->selected_image_url = asset('storage/articles/' . $post->featured_image);
+
+    //         // Pindai gambar dari konten lama
+    //         $this->scanEditorImages();
+    //     }
+    //     // JIKA MODE TULIS BARU
+    //     else {
+    //         $this->created_at = now()->format('Y-m-d');
+    //         $this->user_id = auth()->id() ?? 1; // Pastikan ada fallback user ID
+    //         $this->content = '';
+    //         $this->title = '';
+    //         $this->slug = '';
+    //         $this->featured_image = 'default.webp';
+    //         $this->status = 'draft';
+    //         $this->tags = [];
+    //     }
+    // }
 
 
     public function scanEditorImages() {
@@ -141,7 +182,7 @@ new class extends Component {
             $htmlContent
         );
     }
-    
+
 
     protected function rules() {
         return [
@@ -347,7 +388,12 @@ new class extends Component {
     <x-slot:title>{{ __('Write Article') }}</x-slot:title>
 
         {{-- Gunakan wire:submit="save" yang merupakan standar Livewire 3 --}}
-        <form wire:submit="save" @submit.capture="flushEditorSync()" x-data="setupEditor('content', $wire)" @buka-modal-link.window="isLinkOpen = true"  class="flex flex-col w-full h-full bg-zinc-50 dark:bg-zinc-950 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
+        <form
+        wire:submit="save"
+        @submit.capture="flushEditorSync()"
+        x-data="setupEditor('content', $wire)"
+        @buka-modal-link.window="isLinkOpen = true"
+        class="flex flex-col w-full h-full bg-zinc-50 dark:bg-zinc-950 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
 
             <div class="flex-none w-full bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 z-40">
                 {{-- META's --}}
@@ -402,7 +448,7 @@ new class extends Component {
                             @endif
                         </button>
 
-                        
+
                         <button type="button"
                             x-on:click="if(window.tiptapEditor) { $wire.saveArticle(window.tiptapEditor.getHTML()) }"
                             wire:loading.attr="disabled"
@@ -416,8 +462,8 @@ new class extends Component {
                             </span>
 
                             <div wire:loading.flex wire:target="saveArticle" class="flex-row items-center justify-center gap-2">
-                                <span>Memproses...</span> 
-                            </div> 
+                                <span>Memproses...</span>
+                            </div>
                         </button>
 
                     </div>

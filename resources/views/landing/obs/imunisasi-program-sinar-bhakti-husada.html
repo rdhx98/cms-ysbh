@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Program Imunisasi — Yayasan Sinar Bhakti Husada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#064F3B; --forest-dark:#043328; --forest-tint:#0E6A4F;
+    --gold:#EBCC26; --gold-soft:#F7EBAF;
+    --coral:#E42326; --coral-dark:#BE1417;
+    --paper:#FBF7EA; --paper-dim:#F3ECD6;
+    --ink:#12241C; --ink-soft:#4B5D53;
+    --mist:#E9F1EB; --white:#FFFFFF;
+    --line: rgba(6,79,59,0.14);
+    --shadow: 0 20px 50px -25px rgba(6,45,35,0.35);
+    --radius-lg: 28px; --radius-md: 18px; --radius-sm: 10px;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing:antialiased; line-height:1.65; overflow-x:hidden; }
+  h1,h2,h3,.display{ font-family:'Fraunces', serif; color:var(--forest); margin:0; letter-spacing:-0.01em; }
+  a{ color:inherit; }
+  img{ max-width:100%; display:block; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 32px; }
+  @media (max-width:640px){ .wrap{ padding:0 20px; } }
+
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:13px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--coral-dark); }
+  .eyebrow svg{ width:16px; height:16px; flex-shrink:0; }
+
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:15.5px; padding:14px 28px; border-radius:999px; border:2px solid transparent; cursor:pointer; transition:transform .25s ease, box-shadow .25s ease, background-color .25s ease; text-decoration:none; white-space:nowrap; }
+  .btn-coral{ background:var(--coral); color:var(--white); }
+  .btn-coral:hover{ background:var(--coral-dark); transform:translateY(-2px); box-shadow:0 14px 28px -14px rgba(228,35,38,0.55); }
+  .btn-ghost{ background:transparent; color:var(--forest); border-color:var(--forest); }
+  .btn-ghost:hover{ background:var(--forest); color:var(--white); transform:translateY(-2px); }
+  .btn-light{ background:var(--white); color:var(--forest); }
+  .btn-light:hover{ transform:translateY(-2px); box-shadow:0 14px 28px -14px rgba(0,0,0,0.35); }
+  .btn-outline-light{ background:transparent; color:var(--white); border-color:rgba(255,255,255,0.6); }
+  .btn-outline-light:hover{ background:rgba(255,255,255,0.12); border-color:var(--white); }
+
+  header{ position:sticky; top:0; z-index:100; background:rgba(251,247,234,0.88); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 32px; max-width:1180px; margin:0 auto; }
+  .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; }
+  .brand svg{ width:42px; height:42px; }
+  .brand-name{ font-family:'Fraunces', serif; font-weight:700; font-size:17px; color:var(--forest); line-height:1.15; }
+  .brand-name span{ display:block; font-family:'Plus Jakarta Sans', sans-serif; font-weight:600; font-size:10.5px; letter-spacing:0.14em; color:var(--coral); text-transform:uppercase; margin-top:2px; }
+  .nav-links{ display:flex; align-items:center; gap:36px; }
+  .nav-links a{ font-weight:600; font-size:15px; color:var(--ink-soft); text-decoration:none; }
+  .nav-links a:hover{ color:var(--forest); }
+  .nav-cta{ display:flex; align-items:center; gap:18px; }
+  .burger{ display:none; background:none; border:none; cursor:pointer; padding:6px; }
+  .burger span{ display:block; width:24px; height:2.5px; background:var(--forest); margin:5px 0; border-radius:2px; }
+  @media (max-width:900px){
+    .nav-links{ position:fixed; inset:72px 0 0 0; background:var(--paper); flex-direction:column; justify-content:flex-start; align-items:flex-start; padding:32px; gap:24px; transform:translateX(100%); transition:transform .35s ease; border-top:1px solid var(--line); }
+    .nav-links.open{ transform:translateX(0); }
+    .nav-links a{ font-size:18px; }
+    .burger{ display:block; }
+    .nav-cta .btn-ghost{ display:none; }
+  }
+
+  section{ position:relative; }
+  .section-pad{ padding:96px 0; }
+  @media (max-width:640px){ .section-pad{ padding:64px 0; } }
+  .mist-bg{ background:var(--mist); }
+  .section-head{ max-width:680px; margin-bottom:56px; }
+  .section-head h2{ font-size:clamp(1.9rem, 3.2vw, 2.6rem); font-weight:600; margin-top:14px; line-height:1.15; }
+  .section-head p{ color:var(--ink-soft); font-size:16.5px; margin-top:16px; }
+
+  .breadcrumb{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-soft); margin-bottom:32px; flex-wrap:wrap; }
+  .breadcrumb a{ font-weight:600; color:var(--ink-soft); text-decoration:none; }
+  .breadcrumb a:hover{ color:var(--forest); }
+  .breadcrumb span{ color:var(--ink-soft); opacity:0.5; }
+  .breadcrumb .current{ color:var(--forest); font-weight:700; opacity:1; }
+
+  .lang-toggle{ display:inline-flex; background:var(--white); border:1px solid var(--line); border-radius:999px; padding:4px; gap:2px; box-shadow:var(--shadow); margin-bottom:24px; }
+  .lang-toggle button{ border:none; background:transparent; padding:8px 20px; border-radius:999px; font-weight:700; font-size:13.5px; cursor:pointer; color:var(--ink-soft); font-family:inherit; }
+  .lang-toggle button.active{ background:var(--forest); color:var(--white); }
+  .lang-en-content{ display:none; }
+  body.lang-en .lang-en-content{ display:block; }
+  body.lang-en .lang-id-content{ display:none; }
+  body.lang-en .lang-toggle button.active{ background:transparent; color:var(--ink-soft); }
+  body.lang-en .lang-toggle button.lang-btn-en{ background:var(--forest); color:var(--white); }
+
+  .program-hero-icon{ width:72px; height:72px; border-radius:22px; background:var(--mist); color:var(--forest); display:flex; align-items:center; justify-content:center; margin-bottom:22px; }
+  .program-hero-icon svg{ width:34px; height:34px; }
+  .hero-title{ font-size:clamp(2rem, 4vw, 3rem); font-weight:600; line-height:1.12; margin:16px 0 20px; max-width:820px; }
+  .hero-lead{ font-size:18px; color:var(--ink-soft); max-width:760px; }
+  .hero-img{ width:100%; border-radius:var(--radius-lg); margin-top:40px; box-shadow:var(--shadow); object-fit:cover; max-height:420px; }
+
+  .about-grid{ display:grid; grid-template-columns:0.9fr 1.1fr; gap:64px; align-items:start; }
+  @media (max-width:860px){ .about-grid{ grid-template-columns:1fr; gap:36px; } }
+  .about-copy p{ color:var(--ink-soft); margin-bottom:16px; }
+
+  .stat-highlight{ display:flex; align-items:center; gap:24px; background:var(--forest); border-radius:var(--radius-lg); padding:32px 36px; margin:28px 0; }
+  @media (max-width:560px){ .stat-highlight{ flex-direction:column; align-items:flex-start; gap:12px; } }
+  .stat-highlight .num{ font-family:'Fraunces', serif; font-weight:700; font-size:clamp(2.4rem,5vw,3.2rem); color:var(--gold); line-height:1; }
+  .stat-highlight .txt{ color:rgba(255,255,255,0.85); font-size:15px; line-height:1.5; }
+
+  .risk-list{ display:flex; flex-wrap:wrap; gap:12px; margin:20px 0 8px; }
+  .risk-item{ display:flex; align-items:center; gap:10px; background:#FBE6E6; border-radius:999px; padding:10px 18px; font-size:14.5px; font-weight:700; color:var(--coral-dark); }
+  .risk-item svg{ width:16px; height:16px; color:var(--coral); flex-shrink:0; }
+
+  .pillars-intro-grid{ display:grid; grid-template-columns:repeat(5, 1fr); gap:14px; margin-bottom:8px; }
+  @media (max-width:900px){ .pillars-intro-grid{ grid-template-columns:repeat(3, 1fr); } }
+  @media (max-width:560px){ .pillars-intro-grid{ grid-template-columns:repeat(2, 1fr); } }
+  .pillar-chip{ background:var(--white); border:1px solid var(--line); border-radius:var(--radius-md); padding:18px 14px; text-align:center; box-shadow:var(--shadow); }
+  .pillar-chip .n{ font-family:'Fraunces', serif; font-weight:700; color:var(--gold); font-size:20px; display:block; margin-bottom:6px; }
+  .pillar-chip .t{ font-size:12.5px; font-weight:700; color:var(--forest); line-height:1.3; }
+
+  .deepdive-grid{ display:grid; grid-template-columns:0.85fr 1.15fr; gap:48px; align-items:start; }
+  @media (max-width:860px){ .deepdive-grid{ grid-template-columns:1fr; } }
+  .deepdive-grid.reverse .img-col{ order:2; }
+  .img-col img{ border-radius:var(--radius-md); box-shadow:var(--shadow); width:100%; object-fit:cover; }
+  .deepdive-copy p{ color:var(--ink-soft); margin-bottom:16px; }
+  .pillar-eyebrow{ display:inline-flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .pillar-eyebrow .badge{ width:32px; height:32px; border-radius:10px; background:var(--gold-soft); color:var(--forest); font-family:'Fraunces',serif; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .pillar-eyebrow span{ font-size:12.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--coral-dark); }
+  .location-chip-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+  .location-chip{ background:var(--mist); color:var(--forest); font-weight:600; font-size:13px; padding:7px 14px; border-radius:999px; }
+
+  .divider-block{ padding:64px 0; text-align:center; }
+  .divider-block .quote{ font-family:'Fraunces', serif; font-size:clamp(1.4rem,2.6vw,1.9rem); font-weight:500; color:var(--forest); line-height:1.5; max-width:820px; margin:0 auto; }
+  .divider-block .quote em{ font-style:italic; color:var(--coral); }
+
+  .donate-cta{ background:var(--coral); color:var(--white); overflow:hidden; position:relative; }
+  .donate-inner{ display:grid; grid-template-columns:1.2fr 0.8fr; gap:48px; align-items:center; position:relative; z-index:2; }
+  @media (max-width:860px){ .donate-inner{ grid-template-columns:1fr; } }
+  .donate-cta h2{ color:var(--white); font-size:clamp(1.9rem,3.4vw,2.5rem); font-weight:600; line-height:1.15; }
+  .donate-cta p{ color:rgba(255,255,255,0.88); font-size:16.5px; margin:16px 0 28px; max-width:460px; }
+  .donate-actions{ display:flex; gap:16px; flex-wrap:wrap; }
+  .transfer-card{ background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); border-radius:var(--radius-md); padding:26px 28px; backdrop-filter:blur(4px); }
+  .transfer-card .label{ font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.75); margin-bottom:8px; }
+  .transfer-card .acct{ font-family:'Fraunces', serif; font-size:22px; font-weight:600; margin-bottom:4px; }
+  .transfer-card .name{ font-size:14px; color:rgba(255,255,255,0.85); margin-bottom:16px; }
+  .copy-btn{ background:var(--white); color:var(--coral); border:none; border-radius:999px; padding:9px 18px; font-weight:700; font-size:13.5px; cursor:pointer; }
+
+  .contact-grid{ display:grid; grid-template-columns:1fr 1fr; gap:56px; }
+  @media (max-width:860px){ .contact-grid{ grid-template-columns:1fr; gap:36px; } }
+  .contact-item{ display:flex; gap:16px; margin-bottom:26px; }
+  .contact-item .ico{ width:46px; height:46px; border-radius:14px; background:var(--white); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .contact-item .ico svg{ width:21px; height:21px; color:var(--forest); }
+  .contact-item .t{ font-weight:700; font-size:14.5px; color:var(--forest); margin-bottom:3px; }
+  .contact-item .d{ font-size:14.5px; color:var(--ink-soft); }
+  .map-frame{ border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--line); height:100%; min-height:280px; background:var(--paper-dim); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:14px; }
+
+  footer{ background:var(--forest-dark); color:rgba(255,255,255,0.72); padding:64px 0 28px; }
+  .footer-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:40px; margin-bottom:48px; }
+  @media (max-width:760px){ .footer-grid{ grid-template-columns:1fr 1fr; } }
+  .footer-brand{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .footer-brand svg{ width:36px; height:36px; }
+  .footer-brand span{ font-family:'Fraunces', serif; font-weight:700; color:var(--white); font-size:16px; }
+  footer p.desc{ font-size:14px; max-width:280px; }
+  footer h4{ color:var(--white); font-size:13.5px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:18px; font-weight:700; }
+  footer ul{ list-style:none; margin:0; padding:0; }
+  footer li{ margin-bottom:12px; }
+  footer a{ font-size:14.5px; text-decoration:none; }
+  footer a:hover{ color:var(--gold); }
+  .social-row{ display:flex; gap:10px; margin-top:6px; }
+  .social-row a{ width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; }
+  .social-row a:hover{ background:var(--coral); }
+  .social-row svg{ width:16px; height:16px; color:var(--white); }
+  .footer-bottom{ border-top:1px solid rgba(255,255,255,0.12); padding-top:24px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:13px; }
+
+  .reveal{ opacity:0; transform:translateY(22px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+  :focus-visible{ outline:3px solid var(--coral); outline-offset:3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="sinar-bhakti-husada-landing.html" class="brand">
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="29" fill="var(--gold)"/>
+        <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/>
+        <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+        <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+      </svg>
+      <div class="brand-name">Sinar Bhakti Husada<span>Yayasan Kesehatan</span></div>
+    </a>
+    <nav class="nav-links" id="navLinks">
+      <a href="sinar-bhakti-husada-landing.html#tentang">Tentang</a>
+      <a href="sinar-bhakti-husada-landing.html#program">Program</a>
+      <a href="sinar-bhakti-husada-landing.html#dampak">Dampak</a>
+      <a href="sinar-bhakti-husada-landing.html#cerita">Cerita</a>
+      <a href="#kontak">Kontak</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="#kontak" class="btn btn-ghost" style="padding:11px 22px; font-size:14px;">Hubungi Kami</a>
+      <a href="#donasi" class="btn btn-coral" style="padding:11px 22px; font-size:14px;">Donasi Sekarang</a>
+      <button class="burger" id="burgerBtn" aria-label="Buka menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="section-pad" style="padding-top:48px; padding-bottom:40px;">
+    <div class="wrap">
+      <div class="breadcrumb reveal">
+        <a href="sinar-bhakti-husada-landing.html">Beranda</a><span>/</span>
+        <a href="sinar-bhakti-husada-landing.html#program">Program</a><span>/</span>
+        <span class="current">Imunisasi</span>
+      </div>
+
+      <div class="lang-toggle reveal">
+        <button class="lang-btn-id active" onclick="setLang('id')">Bahasa Indonesia</button>
+        <button class="lang-btn-en" onclick="setLang('en')">English</button>
+      </div>
+
+      <div class="reveal">
+        <div class="program-hero-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 6v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6l-8-4Z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Program Kesehatan · Papua Tengah
+        </span>
+
+        <h1 class="hero-title lang-id-content">Melindungi Masa Depan Generasi Papua Tengah</h1>
+        <h1 class="hero-title lang-en-content">Safeguarding the Future of Papua Tengah Generation</h1>
+
+        <p class="hero-lead lang-id-content">Program Imunisasi Yayasan Sinar Bhakti Husada (YSBH) berkomitmen mendampingi pemerintah daerah dalam memastikan setiap anak di Papua Tengah memiliki benteng perlindungan terhadap penyakit yang dapat dicegah. Melalui pendekatan inovatif dan sensitif budaya, kami berupaya menurunkan angka anak <em>zero dose</em> demi memastikan keberlangsungan generasi masa depan Papua yang sehat dan tangguh.</p>
+        <p class="hero-lead lang-en-content">The Sinar Bhakti Husada Foundation (YSBH) Immunization Program is committed to assisting local governments in ensuring that every child in Papua Tengah has a shield of protection against vaccine-preventable diseases. Through innovative and culturally sensitive approaches, we strive to reduce the number of "zero-dose" children to ensure a healthy and resilient future for the Papuan generation.</p>
+
+        <img src="images/imun-hero.jpg" alt="Kegiatan Program Imunisasi Papua Tengah" class="hero-img">
+      </div>
+    </div>
+  </section>
+
+  <!-- CRISIS SECTION -->
+  <section class="section-pad mist-bg">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          Situasi Darurat
+        </span>
+        <h2 class="lang-id-content">Kami Bertindak di Tengah Krisis Imunisasi</h2>
+        <h2 class="lang-en-content">We Take Action Amid the Immunization Crisis</h2>
+      </div>
+
+      <div class="deepdive-grid reveal">
+        <div class="img-col">
+          <img src="images/imun-crisis.jpg" alt="Situasi krisis imunisasi Papua Tengah">
+        </div>
+        <div class="deepdive-copy">
+          <p class="lang-id-content">Situasi imunisasi di Provinsi Papua Tengah saat ini memerlukan perhatian mendesak dari seluruh pemangku kepentingan. Hingga tahun 2024, cakupan Imunisasi Dasar Lengkap (IDL) baru mencapai 12%, sebuah penurunan drastis dibandingkan tahun sebelumnya. Dampaknya adalah kemunculan kembali wabah penyakit mematikan yang silih berganti menyerang anak-anak kita dalam beberapa tahun terakhir.</p>
+
+          <div class="stat-highlight">
+            <div class="num">12%</div>
+            <div class="txt lang-id-content">Cakupan Imunisasi Dasar Lengkap (IDL) di Papua Tengah hingga tahun 2024 — penurunan drastis dari tahun sebelumnya.</div>
+            <div class="txt lang-en-content">Complete Basic Immunization coverage in Papua Tengah as of 2024 — a drastic decline from the previous year.</div>
+          </div>
+
+          <div class="risk-list">
+            <span class="risk-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg><span class="lang-id-content">Campak</span><span class="lang-en-content">Measles</span></span>
+            <span class="risk-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg><span class="lang-id-content">Polio</span><span class="lang-en-content">Polio</span></span>
+            <span class="risk-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg><span class="lang-id-content">Difteri</span><span class="lang-en-content">Diphtheria</span></span>
+          </div>
+
+          <p class="lang-id-content">Ketertinggalan ini bukan sekadar angka, melainkan ancaman nyata bagi keberlangsungan masyarakat Papua. Setiap wabah yang terjadi mengakibatkan duka mendalam bagi keluarga dan beban ekonomi yang besar. Tanpa intervensi yang sistematis dan berkelanjutan, kita berisiko kehilangan generasi emas yang akan membangun Tanah Papua di masa depan.</p>
+
+          <p class="lang-en-content">As of 2024, the Complete Basic Immunization coverage has only reached 12%, a drastic decline from the previous year. The direct consequence is the resurgence of deadly disease outbreaks such as Measles, Polio, and Diphtheria, which have repeatedly affected our children in recent years.</p>
+          <p class="lang-en-content">This lag is not just a statistic, it is a real threat to the survival of Papuan society. Every outbreak results in deep grief for families and a significant economic burden. Without systematic and sustainable intervention, we risk losing the golden generation meant to build the Land of Papua in the future.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIMA PILAR -->
+  <section class="section-pad" id="program">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Strategi Intervensi
+        </span>
+        <h2 class="lang-id-content">Lima Pilar Intervensi Program Imunisasi</h2>
+        <h2 class="lang-en-content">Five Pillars of Immunization Program Intervention</h2>
+      </div>
+
+      <div class="pillars-intro-grid reveal">
+        <div class="pillar-chip"><span class="n">01</span><span class="t lang-id-content">Regulasi &amp; Kebijakan</span><span class="t lang-en-content">Regulations &amp; Policies</span></div>
+        <div class="pillar-chip"><span class="n">02</span><span class="t lang-id-content">Puskesmas Model OJT</span><span class="t lang-en-content">Model Puskesmas OJT</span></div>
+        <div class="pillar-chip"><span class="n">03</span><span class="t lang-id-content">Human Centered Design</span><span class="t lang-en-content">Human-Centered Design</span></div>
+        <div class="pillar-chip"><span class="n">04</span><span class="t lang-id-content">Kolaborasi Lintas Sektor</span><span class="t lang-en-content">Cross-Sector Collaboration</span></div>
+        <div class="pillar-chip"><span class="n">05</span><span class="t lang-id-content">Tim Fasilitator Provinsi</span><span class="t lang-en-content">Provincial Facilitator Team</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PILLAR 1 -->
+  <section class="section-pad mist-bg">
+    <div class="wrap">
+      <div class="deepdive-grid reveal">
+        <div class="img-col">
+          <img src="images/imun-pillar1-regulasi.jpg" alt="Penguatan regulasi imunisasi">
+        </div>
+        <div class="deepdive-copy">
+          <div class="pillar-eyebrow">
+            <span class="badge">01</span>
+            <span class="lang-id-content">Penguatan Regulasi dan Kebijakan Imunisasi</span>
+            <span class="lang-en-content">Strengthening Immunization Regulations and Policies</span>
+          </div>
+          <p class="lang-id-content">Kami percaya bahwa keberlanjutan program imunisasi harus berakar pada komitmen politik dan hukum yang kuat di tingkat daerah. YSBH memberikan pendampingan teknis kepada pemerintah provinsi dan kabupaten untuk menyusun payung hukum yang kuat, termasuk Peraturan Gubernur Papua Tengah serta Peraturan Bupati di beberapa kabupaten dampingan. Regulasi ini sangat krusial untuk memastikan adanya alokasi anggaran daerah yang pasti, tata kelola logistik vaksin yang lebih baik, serta integrasi layanan imunisasi ke dalam rencana pembangunan daerah.</p>
+          <p class="lang-id-content">Melalui regulasi yang jelas, imunisasi tidak lagi dipandang sebagai kegiatan kesehatan rutin semata, melainkan sebagai kewajiban pemerintah untuk melindungi hak asasi anak-anak Papua. Kebijakan ini juga bertujuan untuk mengunci dukungan jangka panjang dari para pengambil keputusan, sehingga program imunisasi tetap berjalan stabil meskipun terjadi pergantian kepemimpinan atau dinamika politik di daerah.</p>
+
+          <p class="lang-en-content">We believe that the sustainability of immunization programs must be rooted in strong political and legal commitments at the regional level. YSBH provides technical assistance to provincial and district governments in drafting robust legal frameworks, including the Papua Tengah Governor's Regulation and Regent Regulations in several assisted districts. These regulations are crucial for ensuring a definite regional budget allocation, better vaccine logistics management, and the integration of immunization services into regional development plans.</p>
+          <p class="lang-en-content">With clear regulations, immunization is no longer seen as just a routine health activity, but as a government obligation to protect the basic rights of Papuan children. These policies also aim to secure long-term support from decision-makers, ensuring that the immunization program remains stable despite leadership changes or regional political dynamics.</p>
+
+          <div class="location-chip-row">
+            <span class="location-chip">Kab. Nabire</span>
+            <span class="location-chip">Kab. Dogiyai</span>
+            <span class="location-chip">Kab. Deiyai</span>
+            <span class="location-chip">Kab. Puncak Jaya</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PILLAR 2 -->
+  <section class="section-pad">
+    <div class="wrap">
+      <div class="deepdive-grid reverse reveal">
+        <div class="img-col">
+          <img src="images/imun-pillar2-ojt.jpg" alt="Puskesmas Model OJT Center">
+        </div>
+        <div class="deepdive-copy">
+          <div class="pillar-eyebrow">
+            <span class="badge">02</span>
+            <span class="lang-id-content">Pengembangan Puskesmas Model OJT Center</span>
+            <span class="lang-en-content">Development of Model Puskesmas OJT Centers</span>
+          </div>
+          <p class="lang-id-content">Tantangan geografis Papua membuat biaya pelatihan konvensional menjadi sangat mahal, sementara rotasi petugas kesehatan yang cepat seringkali meninggalkan kekosongan tenaga terlatih di daerah terpencil. Sebagai solusinya, YSBH mengembangkan Puskesmas Model OJT (<em>On-the-Job Training</em>) Center di lokasi-lokasi strategis. Pusat ini berfungsi sebagai laboratorium pembelajaran praktis bagi tenaga medis untuk memperdalam keterampilan imunisasi secara langsung di lapangan.</p>
+          <p class="lang-id-content">Model ini sangat efektif karena memanfaatkan pola mobilitas petugas kesehatan dari daerah terpencil yang sering berkunjung ke ibu kota kabupaten untuk urusan logistik atau pribadi. Saat mereka berada di ibu kota, mereka dapat mengikuti magang singkat dengan waktu fleksibel tanpa harus meninggalkan tugas mereka terlalu lama. Pendekatan ini tidak hanya menekan biaya transportasi secara signifikan, tetapi juga membangun keterikatan dan budaya saling belajar antar Puskesmas.</p>
+
+          <p class="lang-en-content">Papua's geographical challenges make conventional training costs extremely high, while rapid health worker rotation often leaves a vacuum of trained personnel in remote areas. In response, YSBH developed Model Puskesmas OJT Centers in strategic locations. These centers serve as practical learning laboratories for medical personnel to deepen their immunization skills directly in the field.</p>
+          <p class="lang-en-content">This model is highly effective as it leverages the mobility patterns of health workers from remote areas who frequently visit district capitals for logistics or personal matters. While in the capital, they can participate in flexible short-term internships without long absences from their duties. This approach significantly reduces transportation costs while fostering a culture of mutual learning between health centers.</p>
+
+          <div class="location-chip-row">
+            <span class="location-chip">Puskesmas Wanggar Sari · Nabire</span>
+            <span class="location-chip">Puskesmas Topo · Nabire</span>
+            <span class="location-chip">Puskesmas Waghete · Deiyai</span>
+            <span class="location-chip">Puskesmas Moanemani · Dogiyai</span>
+            <span class="location-chip">Puskesmas Mulia · Puncak Jaya</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PILLAR 3 -->
+  <section class="section-pad mist-bg">
+    <div class="wrap">
+      <div class="deepdive-grid reveal">
+        <div class="img-col">
+          <img src="images/imun-pillar3-hcd.jpg" alt="Human Centered Design imunisasi">
+        </div>
+        <div class="deepdive-copy">
+          <div class="pillar-eyebrow">
+            <span class="badge">03</span>
+            <span class="lang-id-content">Implementasi Human Centered Design (HCD)</span>
+            <span class="lang-en-content">Implementation of Human-Centered Design (HCD)</span>
+          </div>
+          <p class="lang-id-content">Program imunisasi seringkali menghadapi hambatan berupa keraguan atau ketakutan masyarakat terhadap vaksin. Melalui implementasi <em>Human-Centered Design</em> (HCD), YSBH berupaya memahami sisi kemanusiaan dan sosial-budaya di balik rendahnya cakupan imunisasi. Kami tidak hanya memberikan edukasi satu arah, melainkan duduk bersama orang tua, tokoh masyarakat, dan petugas kesehatan untuk mendengarkan kekhawatiran mereka dan bersama-sama merancang solusi yang sesuai dengan konteks lokal.</p>
+          <p class="lang-id-content">Pendekatan ini bertujuan untuk menciptakan layanan imunisasi yang lebih ramah, berempati, dan dapat dipercaya oleh masyarakat Papua. Dengan memahami hambatan dari sudut pandang pengguna layanan, kami dapat mengembangkan strategi komunikasi risiko yang menyentuh hati dan mengubah persepsi masyarakat terhadap vaksin. HCD memastikan bahwa setiap anak mendapatkan layanan yang tidak hanya berkualitas secara medis, tetapi juga dihargai secara budaya.</p>
+
+          <p class="lang-en-content">Immunization programs often face barriers such as community hesitation or fear regarding vaccines. Through the implementation of Human-Centered Design (HCD), YSBH strives to understand the human and socio-cultural aspects behind low immunization coverage. Instead of providing one-way education, we sit together with parents, community leaders, and health workers to listen to their concerns and co-design solutions that fit the local context.</p>
+          <p class="lang-en-content">This approach aims to create immunization services that are friendlier, more empathetic, and trusted by the Papuan community. By understanding barriers from the service users' perspective, we can develop risk communication strategies that resonate and change public perception of vaccines. HCD ensures that every child receives services that are not only medically high-quality but also culturally respectful.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PILLAR 4 -->
+  <section class="section-pad">
+    <div class="wrap">
+      <div class="deepdive-grid reverse reveal">
+        <div class="img-col">
+          <img src="images/imun-pillar4-kolaborasi.jpg" alt="Kolaborasi lintas sektor imunisasi">
+        </div>
+        <div class="deepdive-copy">
+          <div class="pillar-eyebrow">
+            <span class="badge">04</span>
+            <span class="lang-id-content">Penguatan Kolaborasi Lintas Sektor</span>
+            <span class="lang-en-content">Strengthening Cross-Sectoral Collaboration</span>
+          </div>
+          <p class="lang-id-content">Imunisasi adalah tanggung jawab bersama yang tidak bisa hanya dipikul oleh sektor kesehatan sendirian. YSBH aktif menggerakkan kolaborasi lintas sektor yang melibatkan tokoh adat, pemuka agama, pemerintah desa, hingga sektor swasta di Papua Tengah. Kami percaya bahwa ketika seorang pendeta, kepala suku, atau kepala desa menyuarakan pentingnya imunisasi, pesan tersebut akan memiliki daya terima yang jauh lebih kuat di tengah masyarakat.</p>
+          <p class="lang-id-content">Kerja sama ini mencakup pemanfaatan dana desa untuk mendukung mobilisasi sasaran, keterlibatan tokoh agama dalam sosialisasi di rumah-rumah ibadah, hingga dukungan logistik dari sektor lain. Dengan memperkuat sinergi ini, kami membangun ekosistem pendukung yang solid untuk melindungi generasi penerus bangsa — kunci untuk mencapai setiap anak, bahkan di wilayah yang paling sulit dijangkau sekalipun.</p>
+
+          <p class="lang-en-content">Immunization is a shared responsibility that cannot be borne by the health sector alone. YSBH actively mobilizes cross-sectoral collaboration involving traditional leaders, religious figures, village governments, and the private sector in Papua Tengah. We believe that when a pastor, a tribal chief, or a village head advocates for the importance of immunization, the message carries much stronger acceptance within the community.</p>
+          <p class="lang-en-content">This cooperation includes utilizing village funds to support mobilization, engaging religious leaders in socialization at places of worship, and securing logistical support from other sectors. By strengthening this synergy, we are building a solid support ecosystem to protect the nation's future generation — key to reaching every child, even in the most hard-to-reach areas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PILLAR 5 -->
+  <section class="section-pad mist-bg">
+    <div class="wrap">
+      <div class="deepdive-grid reveal">
+        <div class="img-col">
+          <img src="images/imun-pillar5-fasilitator.jpg" alt="Tim Fasilitator Imunisasi Provinsi">
+        </div>
+        <div class="deepdive-copy">
+          <div class="pillar-eyebrow">
+            <span class="badge">05</span>
+            <span class="lang-id-content">Pembentukan Tim Fasilitator Imunisasi Provinsi</span>
+            <span class="lang-en-content">Provincial Immunization Facilitator Team</span>
+          </div>
+          <p class="lang-id-content">Untuk menjamin kualitas dan keberlanjutan pendampingan teknis, YSBH memfasilitasi pembentukan Tim Fasilitator Imunisasi di tingkat Provinsi Papua Tengah. Tim ini terdiri dari para tenaga ahli lokal yang telah dibekali dengan pengetahuan mendalam mengenai manajemen imunisasi, pemantauan kualitas, hingga teknik komunikasi persuasif. Peran mereka adalah menjadi penggerak utama dalam memberikan bimbingan teknis (<em>technical assistance</em>) yang berkelanjutan kepada kabupaten-kabupaten dampingan.</p>
+          <p class="lang-id-content">Keberadaan tim fasilitator ini bertujuan untuk menciptakan kemandirian daerah dalam jangka panjang. Dengan memiliki tim ahli yang siap sedia di tingkat provinsi, proses transfer pengetahuan ke Puskesmas-Puskesmas akan berjalan lebih cepat dan konsisten — upaya kami untuk meninggalkan warisan berupa sistem kesehatan yang tangguh dan SDM lokal yang mumpuni untuk menjaga kesehatan anak-anak Papua tanpa ketergantungan pada pihak luar di masa depan.</p>
+
+          <p class="lang-en-content">To guarantee the quality and sustainability of technical assistance, YSBH facilitates the establishment of an Immunization Facilitator Team at the Papua Tengah Provincial level. This team consists of local experts equipped with in-depth knowledge of immunization management, quality monitoring, and persuasive communication techniques. Their role is to be the primary drivers in providing continuous technical assistance to the assisted regencies.</p>
+          <p class="lang-en-content">The presence of this facilitator team aims to achieve long-term regional independence. By having a ready expert team at the provincial level, the knowledge transfer process to health centers becomes faster and more consistent — our effort to leave a legacy of a resilient health system and capable local human resources to safeguard the health of Papuan children without future dependence on outside parties.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INVESTASI KEMANUSIAAN -->
+  <section class="divider-block wrap reveal">
+    <span class="eyebrow" style="justify-content:center; margin-bottom:20px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.6-9.3-9.2C1.4 8.6 3 5 6.6 5c2 0 3.4 1.1 4.4 2.6C12 6.1 13.4 5 15.4 5 19 5 20.6 8.6 19.3 11.8 17 16.4 12 21 12 21z"/></svg>
+      <span class="lang-id-content">Investasi Kemanusiaan</span>
+      <span class="lang-en-content">Humanitarian Investment</span>
+    </span>
+    <p class="quote lang-id-content">Setiap dukungan yang Anda berikan membantu kami memperkuat Puskesmas Model, melatih fasilitator lokal, dan memastikan vaksin sampai ke lengan anak-anak di kampung-kampung terpencil. Bersama-sama, kita bisa memastikan bahwa anak-anak Papua tumbuh <em>sehat, cerdas, dan siap</em> untuk memimpin masa depan mereka sendiri.</p>
+    <p class="quote lang-en-content">Every contribution you make helps us strengthen Model Puskesmas, train local facilitators, and ensure vaccines reach the arms of children in remote villages. Together, we can ensure that Papuan children grow up <em>healthy, intelligent, and ready</em> to lead their own future.</p>
+  </section>
+
+  <!-- DONATION CTA -->
+  <section class="section-pad donate-cta" id="donasi">
+    <div class="wrap donate-inner">
+      <div class="reveal">
+        <h2 class="lang-id-content">Setiap Anak Papua Berhak atas Masa Depan yang Sehat</h2>
+        <h2 class="lang-en-content">Every Papuan Child Deserves a Healthy Future</h2>
+        <p class="lang-id-content">Dukungan Anda membantu menurunkan angka anak zero-dose dan memastikan vaksin sampai ke kampung-kampung paling terpencil di Papua Tengah.</p>
+        <p class="lang-en-content">Your support helps reduce the number of zero-dose children and ensures vaccines reach the most remote villages in Papua Tengah.</p>
+        <div class="donate-actions">
+          <a href="#kontak" class="btn btn-light lang-id-content">Donasi via Transfer</a>
+          <a href="#kontak" class="btn btn-light lang-en-content">Donate via Bank Transfer</a>
+          <a href="#kontak" class="btn btn-outline-light lang-id-content">Jadi Mitra Program</a>
+          <a href="#kontak" class="btn btn-outline-light lang-en-content">Become a Program Partner</a>
+        </div>
+      </div>
+      <div class="transfer-card reveal">
+        <div class="label">Transfer Bank</div>
+        <div class="acct">BCA · 123 4567 890</div>
+        <div class="name">a.n. Yayasan Sinar Bhakti Husada</div>
+        <button class="copy-btn" id="copyBtn">Salin Nomor Rekening</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="section-pad" id="kontak">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Hubungi Kami
+        </span>
+        <h2 class="lang-id-content">Mari Berdiskusi Soal Kemitraan Program</h2>
+        <h2 class="lang-en-content">Let's Talk About Program Partnership</h2>
+      </div>
+      <div class="contact-grid">
+        <div class="reveal">
+          <div class="contact-item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"/><path d="m22 6-10 7L2 6"/></svg></div>
+            <div><div class="t">Email</div><div class="d">kontak@sinarbhaktihusada.org</div></div>
+          </div>
+          <div class="contact-item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.9.6 2.8a2 2 0 0 1-.5 2.1L7.9 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2Z"/></svg></div>
+            <div><div class="t">Telepon / WhatsApp</div><div class="d">+62 812-3456-7890</div></div>
+          </div>
+          <div class="contact-item">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+            <div><div class="t lang-id-content">Kantor Sekretariat</div><div class="t lang-en-content">Secretariat Office</div><div class="d">Jl. Melati No. 21, Kupang, Nusa Tenggara Timur</div></div>
+          </div>
+        </div>
+        <div class="map-frame reveal lang-id-content">Peta lokasi kantor dapat ditambahkan di sini</div>
+        <div class="map-frame reveal lang-en-content">Office location map can be added here</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">
+          <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="30" cy="30" r="29" fill="var(--gold)"/>
+            <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/>
+            <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+            <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+          </svg>
+          <span>Sinar Bhakti Husada</span>
+        </div>
+        <p class="desc">Yayasan kesehatan yang mendampingi ibu, anak, dan komunitas di wilayah terpencil Indonesia sejak 2014.</p>
+        <div class="social-row">
+          <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+          <a href="#" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3Z"/></svg></a>
+          <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3Z" fill="currentColor"/></svg></a>
+        </div>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <ul>
+          <li><a href="kia-program-sinar-bhakti-husada.html">Kesehatan Ibu &amp; Anak</a></li>
+          <li><a href="imunisasi-program-sinar-bhakti-husada.html">Imunisasi</a></li>
+          <li><a href="malaria-program-sinar-bhakti-husada.html">Penanganan Malaria</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Yayasan</h4>
+        <ul>
+          <li><a href="sinar-bhakti-husada-landing.html#tentang">Tentang Kami</a></li>
+          <li><a href="sinar-bhakti-husada-landing.html#dampak">Dampak</a></li>
+          <li><a href="sinar-bhakti-husada-landing.html#cerita">Cerita Lapangan</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Ambil Bagian</h4>
+        <ul>
+          <li><a href="#donasi">Donasi</a></li>
+          <li><a href="#kontak">Jadi Relawan</a></li>
+          <li><a href="#kontak">Kerja Sama Program</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Yayasan Sinar Bhakti Husada. Seluruh hak cipta dilindungi.</span>
+      <span>Dibuat dengan bhakti, untuk sinar yang terus menyala.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const burger = document.getElementById('burgerBtn');
+  const navLinks = document.getElementById('navLinks');
+  burger.addEventListener('click', () => navLinks.classList.toggle('open'));
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navLinks.classList.remove('open')));
+
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+
+  const copyBtn = document.getElementById('copyBtn');
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText('1234567890').then(() => {
+      const original = copyBtn.textContent;
+      copyBtn.textContent = 'Tersalin ✓';
+      setTimeout(() => copyBtn.textContent = original, 2000);
+    });
+  });
+
+  function setLang(lang) {
+    document.body.classList.toggle('lang-en', lang === 'en');
+    document.querySelectorAll('.lang-btn-id, .lang-btn-en').forEach(b => b.classList.remove('active'));
+    document.querySelector(lang === 'en' ? '.lang-btn-en' : '.lang-btn-id').classList.add('active');
+  }
+</script>
+
+</body>
+</html>

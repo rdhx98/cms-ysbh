@@ -39,8 +39,8 @@
                         <option value="Times New Roman" style="font-family: 'Times New Roman', serif;">Times New Roman</option>
                     </select>
                 </div>
-                <div class="relative flex items-center">
-                    <select 
+                {{-- <div class="relative flex items-center">
+                    <select
                         @change="setFontSize($event.target.value)"
                         :value="getCurrentFontSize()"
                         class="text-xs md:text-sm border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 rounded-md py-1 pl-2 pr-6 focus:ring-0 focus:border-forest transition-colors cursor-pointer"
@@ -53,12 +53,33 @@
                         <option value="20px">20px (Sangat Besar)</option>
                         <option value="24px">24px (Judul)</option>
                     </select>
+                </div> --}}
+
+                {{-- FONT SIZES --}}
+                <div class="relative flex items-center">
+                    <select
+                        @change="setFontSize($event.target.value)"
+                        :value="getCurrentFontSize()"
+                        class="text-xs md:text-sm border-zinc-200 dark:border-zinc-700 bg-sage-soft dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 rounded-md py-1 pl-2 pr-6 focus:ring-0 focus:border-forest transition-colors cursor-pointer"
+                    >
+                        <option value="12px">12</option>
+                        <option value="14px">14</option>
+                        <option value="default">16</option>
+                        <option value="18px">18</option>
+                        <option value="20px">20</option>
+                        <option value="24px">24</option>
+                        <option value="28px">28</option>
+                        <option value="32px">32</option>
+                        <option value="32px">36</option>
+                        <option value="38px">38</option>
+                        <option value="42px">42</option>
+                    </select>
                 </div>
 
-                {{-- GRUP WARNA TEKS (CUSTOM ALPINE DROPDOWN) --}}
+                {{-- PEMBUNGKUS PEMILIH WARNA --}}
                 <div x-data="{ openColorMenu: false }" class="relative flex items-center border-l border-zinc-200 pl-2 ml-1">
 
-                    {{-- Tombol Pemicu Menu (Ikon + Kotak Warna) --}}
+                    {{-- TOMBOL PEMILIH WARNA --}}
                     <button type="button"
                         @click="openColorMenu = !openColorMenu"
                         class="flex items-center gap-2 p-1.5 h-9 transition rounded cursor-pointer hover:bg-zinc-200 text-gray-700 bg-zinc-50 shadow-sm border border-transparent"
@@ -71,7 +92,7 @@
                         </div>
                     </button>
 
-                    {{-- Panel Menu (Muncul saat tombol diklik) --}}
+                    {{-- PANEL PEMILIH WARNA --}}
                     <div x-show="openColorMenu"
                         @click.away="openColorMenu = false"
                         style="display: none;"
@@ -135,6 +156,7 @@
                         title="Menjorokkan Baris (Tab)" icon="list-indent-increase" />
                 </div>
 
+                <!-- DIVIDER -->
                 <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
 
                 {{-- HEADINGs --}}
@@ -150,9 +172,10 @@
                         icon="heading-3" />
                 </div>
 
+                <!-- DIVIDER -->
                 <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
 
-                {{-- LISTS --}}
+                {{-- BULLET LISTS --}}
                 <div class="flex items-center gap-1 shrink-0">
                     <x-layouts::app.editor-toolbar-btn command="toggleBulletList" activeName=""
                         activeParams="{}" activeType="heading" title="Bullet list" icon="list" />
@@ -168,12 +191,129 @@
                         title="Daftar Kapital" icon="list-tree">
                         <span class="text-[10px] font-bold ml-0.5">A.</span>
                     </x-layouts::app.editor-toolbar-btn>
-                    <x-layouts::app.editor-toolbar-btn command="toggleEyebrow" activeName="eyebrow" title="Judul Kecil (Eyebrow)" icon="tag"/>
-                    <x-layouts::app.editor-toolbar-btn command="updateEyebrowStyle"  activeParams="{ color: '#BE1417', size: '18px' }"  activeName="eyebrow"  title="Gaya Judul Merah"  icon="palette"/>
-                    {{-- <x-layouts::app.editor-toolbar-btn command="toggleEyebrow" activeName="eyebrow" title="Eyebrow (Teks Konteks)" icon="circle-small" /> --}}
+
+                    {{-- <x-layouts::app.editor-toolbar-btn command="toggleEyebrow" activeName="eyebrow" title="Judul Kecil (Eyebrow)" icon="tag"/> --}}
+                    {{-- <x-layouts::app.editor-toolbar-btn command="updateEyebrowStyle"  activeParams="{ color: '#BE1417', size: '18px' }"  activeName="eyebrow"  title="Gaya Judul Merah"  icon="palette"/> --}}
+                    {{-- EYEBROW --}}
+                    <div class="relative inline-block">
+                        <button
+                            type="button"
+                            @click="toggleEyebrowIconMenu()"
+                            :class="checkButtonActive('eyebrow') ? 'bg-coral-dark/10 text-coral-dark' : 'text-gray-600 hover:bg-gray-100'"
+                            class="flex items-center gap-1 rounded-md px-2 py-1.5 transition-colors"
+                            :aria-expanded="isEyebrowIconOpen"
+                            aria-haspopup="true"
+                            title="Eyebrow"
+                        >
+                            <span class="w-4 h-4 [&>svg]:w-full [&>svg]:h-full" x-html="getEyebrowIconSVG(getCurrentEyebrowIcon())"></span>
+                            <svg class="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+
+                        {{-- <div
+                            x-show="isEyebrowIconOpen"
+                            x-cloak
+                            x-transition.origin.top.left
+                            @click.outside="isEyebrowIconOpen = false"
+                            @keydown.escape.window="isEyebrowIconOpen = false"
+                            class="absolute z-20 mt-1 grid grid-cols-4 gap-1 rounded-lg border border-gray-200 bg-white p-2 shadow-lg"
+                            role="menu"
+                        > --}}
+                        <div
+                            x-show="isEyebrowIconOpen"
+                            x-cloak
+                            x-transition.origin.top.left
+                            @click.outside="isEyebrowIconOpen = false"
+                            @keydown.escape.window="isEyebrowIconOpen = false"
+                            class="absolute z-20 mt-1 grid grid-cols-4 gap-2 rounded-lg border border-gray-200 bg-white p-3 shadow-lg w-max"
+                            role="menu"
+                        >
+                            <template x-for="item in eyebrowIcons" :key="item.key">
+                                <button
+                                    type="button"
+                                    @click="selectEyebrowIcon(item.key)"
+                                    :class="checkButtonActive('eyebrow', { icon: item.key })
+                                        ? 'bg-coral-dark/10 text-coral-dark ring-1 ring-coral-dark/30'
+                                        : 'text-gray-600 hover:bg-gray-100 bg-goldy'"
+                                    class="flex items-center justify-center rounded-md p-2 transition-colors [&>svg]:w-full [&>svg]:h-full w-8 h-8"
+                                    :title="item.label"
+                                    x-html="item.svg"
+                                ></button>
+                            </template>
+                        </div>
+
+                    </div>
+                    {{-- PILL --}}
+                    <div class="relative inline-block">
+                        <button
+                            type="button"
+                            @click="togglePillColorMenu()"
+                            :class="checkButtonActive('pill') ? 'bg-gray-100' : 'hover:bg-gray-100'"
+                            class="flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors text-gray-600"
+                            :aria-expanded="isPillColorOpen"
+                            aria-haspopup="true"
+                            title="Warna Pill"
+                        >
+                            <span class="w-4 h-4 rounded-full border border-gray-300" :style="`background-color: ${getCurrentPillSwatch()}`"></span>
+                            <svg class="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+
+                        <div
+                            x-show="isPillColorOpen"
+                            x-cloak
+                            x-transition.origin.top.left
+                            @click.outside="isPillColorOpen = false"
+                            @keydown.escape.window="isPillColorOpen = false"
+                            class="absolute z-20 mt-1 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg space-y-3"
+                            role="menu"
+                        >
+                            <div>
+                                <p class="text-xs font-medium text-gray-500 mb-1.5">Preset</p>
+                                <div class="grid grid-cols-6 gap-1.5">
+                                    <template x-for="preset in pillColorPresets" :key="preset.key">
+                                        <button
+                                            type="button"
+                                            @click="selectPillPreset(preset)"
+                                            class="w-6 h-6 rounded-full transition-transform hover:scale-110"
+                                            :style="`background-color: ${preset.backgroundColor}; border: 1.5px solid ${preset.borderColor || 'transparent'}`"
+                                            :title="preset.label"
+                                        ></button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-gray-100 pt-3 space-y-2">
+                                <label class="flex items-center justify-between text-xs font-medium text-gray-500">
+                                    Latar belakang
+                                    <input type="color" x-model="customPillBg" @change="applyCustomPillColor()" class="w-6 h-6 rounded border border-gray-300 p-0" />
+                                </label>
+
+                                <label class="flex items-center justify-between text-xs font-medium text-gray-500">
+                                    <span class="flex items-center gap-1.5">
+                                        <input type="checkbox" x-model="pillBorderEnabled" @change="applyCustomPillColor()" />
+                                        Border
+                                    </span>
+                                    <input type="color" x-model="customPillBorder" @change="applyCustomPillColor()" :disabled="!pillBorderEnabled" class="w-6 h-6 rounded border border-gray-300 p-0 disabled:opacity-40" />
+                                </label>
+                            </div>
+
+                            <button
+                                type="button"
+                                @click="removePill()"
+                                class="w-full text-left text-xs font-medium text-red-600 hover:bg-red-50 rounded-md px-2 py-1.5 transition-colors"
+                            >
+                                Hapus Pill
+                            </button>
+                        </div>
+                    </div>
+
                     <x-layouts::app.editor-toolbar-btn command="togglePill" activeName="pill" title="Pembungkus Pill" icon="pill" />
                 </div>
 
+                <!-- DIVIDER -->
                 <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
 
                 {{-- QUOTES --}}
@@ -201,7 +341,9 @@
                         </div>
                     </template>
                     --}}
-                <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
+
+                <!-- DIVIDER -->
+                    <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
 
                 {{-- MEDIA & LINK --}}
                 <div class="flex items-center gap-1 shrink-0">
@@ -226,112 +368,32 @@
 
                 </div>
 
+                <!-- DIVIDER -->
                 <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
 
                 {{-- LAYOUTS --}}
                 <div class="flex items-center gap-1 shrink-0">
-                    <div class="relative inline-block">
-                        <button
-                            type="button"
-                            @click="toggleEyebrowIconMenu()"
-                            :class="checkButtonActive('eyebrow') ? 'bg-coral-dark/10 text-coral-dark' : 'text-gray-600 hover:bg-gray-100'"
-                            class="flex items-center gap-1 rounded-md px-2 py-1.5 transition-colors"
-                            :aria-expanded="isEyebrowIconOpen"
-                            aria-haspopup="true"
-                            title="Eyebrow"
-                        >
-                            <span class="w-4 h-4 [&>svg]:w-full [&>svg]:h-full" x-html="getEyebrowIconSVG(getCurrentEyebrowIcon())"></span>
-                            <svg class="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="m6 9 6 6 6-6" />
-                            </svg>
-                        </button>
 
-                        <div
-                            x-show="isEyebrowIconOpen"
-                            x-cloak
-                            x-transition.origin.top.left
-                            @click.outside="isEyebrowIconOpen = false"
-                            @keydown.escape.window="isEyebrowIconOpen = false"
-                            class="absolute z-20 mt-1 grid grid-cols-4 gap-1 rounded-lg border border-gray-200 bg-foresty p-2 shadow-lg"
-                            role="menu"
-                        >
-                            <template x-for="item in eyebrowIcons" :key="item.key">
-                                <button
-                                    type="button"
-                                    @click="selectEyebrowIcon(item.key)"
-                                    :class="checkButtonActive('eyebrow', { icon: item.key })
-                                        ? 'bg-coral-dark/10 text-coral-dark ring-1 ring-coral-dark/30'
-                                        : 'text-gray-600 hover:bg-gray-100'"
-                                    class="flex items-center justify-center rounded-md p-2 transition-colors [&>svg]:w-4 [&>svg]:h-4"
-                                    :title="item.label"
-                                    x-html="item.svg"
-                                ></button>
-                            </template>
-                        </div>
-                    </div>
-                    <div class="relative inline-block">
-                        <button
-                            type="button"
-                            @click="toggleEyebrowIconMenu()"
-                            :class="checkButtonActive('eyebrow') ? 'bg-coral-dark/10 text-coral-dark' : 'text-gray-600 hover:bg-gray-100'"
-                            class="flex items-center gap-1 rounded-md px-2 py-1.5 transition-colors"
-                            :aria-expanded="isEyebrowIconOpen"
-                            aria-haspopup="true"
-                            title="Eyebrow"
-                        >
-                            <span class="w-4 h-4 [&>svg]:w-full [&>svg]:h-full" x-html="getEyebrowIconSVG(getCurrentEyebrowIcon())"></span>
-                            <svg class="w-3 h-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="m6 9 6 6 6-6" />
-                            </svg>
-                        </button>
-
-                        <div
-                            x-show="isEyebrowIconOpen"
-                            x-cloak
-                            x-transition.origin.top.left
-                            @click.outside="isEyebrowIconOpen = false"
-                            @keydown.escape.window="isEyebrowIconOpen = false"
-                            class="absolute z-20 mt-1 grid grid-cols-4 gap-1 rounded-lg border border-gray-200 bg-white p-2 shadow-lg"
-                            role="menu"
-                        >
-                            <template x-for="item in eyebrowIcons" :key="item.key">
-                                <button
-                                    type="button"
-                                    @click="selectEyebrowIcon(item.key)"
-                                    :class="checkButtonActive('eyebrow', { icon: item.key })
-                                        ? 'bg-coral-dark/10 text-coral-dark ring-1 ring-coral-dark/30'
-                                        : 'text-gray-600 hover:bg-gray-100'"
-                                    class="flex items-center justify-center rounded-md p-2 transition-colors [&>svg]:w-4 [&>svg]:h-4"
-                                    :title="item.label"
-                                    x-html="item.svg"
-                                ></button>
-                            </template>
-                        </div>
-                    </div>
+                    {{-- COLUMN BLOK --}}
                     <button type="button" @click="runCommand('insertManualColumns')"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
                         title="Blok Grid">
                         <x-dynamic-component :component="'lucide-columns-2'" class="h-4 w-4" stroke-width="2" />
                     </button>
-                    {{-- <button type="button" @click="runCommand('setSectionBlock')" --}}
-                    {{-- <button type="button" @click="insertSectionBlock()"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
-                        title="Blok Seksi">
-                        <x-dynamic-component :component="'lucide-gallery-vertical'" class="h-4 w-4" stroke-width="2" />
-                    </button> --}}
+
+                    {{-- STEP CARD --}}
                     <button type="button" @click="runCommand('insertStepCard')"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
                         title="Step Card ">
                         <x-dynamic-component :component="'lucide-square-chart-gantt'" class="h-4 w-4" stroke-width="2" />
                     </button>
-                    {{-- <button type="button" @click="runCommand('setInfoCard')"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
-                        title="Tambahkan Blok Seksi">
-                        <x-dynamic-component :component="'lucide-rectangle-ellipsis'" class="h-4 w-4" stroke-width="2" />
-                    </button> --}}
-                    
+
+                    {{-- SECTION BLOCK --}}
                     <x-layouts::app.editor-toolbar-btn command="insertSectionBlock" activeType="alpine" activeName="isActive('sectionBlock')" title="Blok Seksi" icon="gallery-vertical" />
+
+                    {{-- CARD BLOCK --}}
                     <x-layouts::app.editor-toolbar-btn command="setCard" activeName="setCard" title="Blok Kartu" icon="gallery-thumbnails" />
+
                 </div>
 
                 {{-- NOTIFY  BUTTONs --}}

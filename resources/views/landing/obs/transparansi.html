@@ -1,0 +1,360 @@
+bash
+
+cat > /home/claude/more-pages/transparansi-sinar-bhakti-husada.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transparansi Yayasan — Yayasan Sinar Bhakti Husada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#064F3B; --forest-dark:#043328; --forest-tint:#0E6A4F;
+    --gold:#EBCC26; --gold-soft:#F7EBAF;
+    --coral:#E42326; --coral-dark:#BE1417;
+    --paper:#FBF7EA; --paper-dim:#F3ECD6;
+    --ink:#12241C; --ink-soft:#4B5D53;
+    --mist:#E9F1EB; --white:#FFFFFF;
+    --line: rgba(6,79,59,0.14);
+    --shadow: 0 20px 50px -25px rgba(6,45,35,0.35);
+    --radius-lg: 28px; --radius-md: 18px; --radius-sm: 10px;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  @media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; } }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing:antialiased; line-height:1.65; overflow-x:hidden; }
+  h1,h2,h3,.display{ font-family:'Fraunces', serif; color:var(--forest); margin:0; letter-spacing:-0.01em; }
+  a{ color:inherit; }
+  img{ max-width:100%; display:block; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 32px; }
+  @media (max-width:640px){ .wrap{ padding:0 20px; } }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:13px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--coral-dark); }
+  .eyebrow svg{ width:16px; height:16px; flex-shrink:0; }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:15.5px; padding:14px 28px; border-radius:999px; border:2px solid transparent; cursor:pointer; transition:transform .25s ease, box-shadow .25s ease, background-color .25s ease; text-decoration:none; white-space:nowrap; }
+  .btn-coral{ background:var(--coral); color:var(--white); }
+  .btn-coral:hover{ background:var(--coral-dark); transform:translateY(-2px); box-shadow:0 14px 28px -14px rgba(228,35,38,0.55); }
+  .btn-ghost{ background:transparent; color:var(--forest); border-color:var(--forest); }
+  .btn-ghost:hover{ background:var(--forest); color:var(--white); transform:translateY(-2px); }
+  header{ position:sticky; top:0; z-index:100; background:rgba(251,247,234,0.88); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 32px; max-width:1180px; margin:0 auto; }
+  .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; }
+  .brand svg{ width:42px; height:42px; }
+  .brand-name{ font-family:'Fraunces', serif; font-weight:700; font-size:17px; color:var(--forest); line-height:1.15; }
+  .brand-name span{ display:block; font-family:'Plus Jakarta Sans', sans-serif; font-weight:600; font-size:10.5px; letter-spacing:0.14em; color:var(--coral); text-transform:uppercase; margin-top:2px; }
+  .nav-links{ display:flex; align-items:center; gap:32px; }
+  .nav-links a{ font-weight:600; font-size:15px; color:var(--ink-soft); text-decoration:none; }
+  .nav-links a:hover{ color:var(--forest); }
+  .nav-links a.current{ color:var(--forest); }
+  .nav-cta{ display:flex; align-items:center; gap:18px; }
+  .burger{ display:none; background:none; border:none; cursor:pointer; padding:6px; }
+  .burger span{ display:block; width:24px; height:2.5px; background:var(--forest); margin:5px 0; border-radius:2px; }
+  @media (max-width:960px){
+    .nav-links{ position:fixed; inset:72px 0 0 0; background:var(--paper); flex-direction:column; justify-content:flex-start; align-items:flex-start; padding:32px; gap:24px; transform:translateX(100%); transition:transform .35s ease; border-top:1px solid var(--line); }
+    .nav-links.open{ transform:translateX(0); }
+    .nav-links a{ font-size:18px; }
+    .burger{ display:block; }
+    .nav-cta .btn-ghost{ display:none; }
+  }
+  section{ position:relative; }
+  .section-pad{ padding:96px 0; }
+  @media (max-width:640px){ .section-pad{ padding:56px 0; } }
+  .mist-bg{ background:var(--mist); }
+  .section-head{ max-width:680px; margin-bottom:48px; }
+  .section-head h2{ font-size:clamp(1.8rem, 3vw, 2.4rem); font-weight:600; margin-top:14px; line-height:1.15; }
+  .section-head p{ color:var(--ink-soft); font-size:16px; margin-top:14px; }
+  .breadcrumb{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-soft); margin-bottom:32px; flex-wrap:wrap; }
+  .breadcrumb a{ font-weight:600; color:var(--ink-soft); text-decoration:none; }
+  .breadcrumb a:hover{ color:var(--forest); }
+  .breadcrumb span{ color:var(--ink-soft); opacity:0.5; }
+  .breadcrumb .current{ color:var(--forest); font-weight:700; opacity:1; }
+  .hero-title{ font-size:clamp(2rem, 4vw, 3rem); font-weight:600; line-height:1.12; margin:16px 0 20px; max-width:760px; }
+  .hero-lead{ font-size:18px; color:var(--ink-soft); max-width:700px; }
+
+  /* Alokasi dana */
+  .allocation-card{ background:var(--white); border:1px solid var(--line); border-radius:var(--radius-lg); padding:36px; box-shadow:var(--shadow); }
+  .allocation-bar{ display:flex; height:22px; border-radius:999px; overflow:hidden; margin:24px 0 28px; }
+  .allocation-seg-program{ background:var(--forest); width:82%; }
+  .allocation-seg-ops{ background:var(--gold); width:10%; }
+  .allocation-seg-fund{ background:var(--coral); width:8%; }
+  .allocation-legend{ display:flex; gap:28px; flex-wrap:wrap; }
+  .legend-item{ display:flex; align-items:center; gap:10px; font-size:14.5px; }
+  .legend-dot{ width:12px; height:12px; border-radius:4px; flex-shrink:0; }
+  .legend-item b{ color:var(--forest); font-family:'Fraunces',serif; font-size:20px; margin-right:6px; }
+
+  /* Laporan */
+  .report-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:20px; }
+  @media (max-width:760px){ .report-grid{ grid-template-columns:1fr; } }
+  .report-card{ display:flex; align-items:center; gap:18px; background:var(--white); border:1px solid var(--line); border-radius:var(--radius-md); padding:22px; box-shadow:var(--shadow); }
+  .report-icon{ width:52px; height:52px; border-radius:14px; background:var(--gold-soft); color:var(--forest); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .report-icon svg{ width:24px; height:24px; }
+  .report-info{ flex:1; }
+  .report-info .t{ font-weight:700; font-size:15px; color:var(--forest); margin-bottom:2px; }
+  .report-info .d{ font-size:13px; color:var(--ink-soft); }
+  .report-dl{ width:38px; height:38px; border-radius:50%; background:var(--mist); color:var(--forest); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .report-dl svg{ width:16px; height:16px; }
+
+  /* Legalitas */
+  .legal-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; }
+  @media (max-width:760px){ .legal-grid{ grid-template-columns:1fr; } }
+  .legal-item{ background:var(--white); border:1px solid var(--line); border-radius:var(--radius-md); padding:20px 24px; }
+  .legal-item .k{ font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--coral-dark); margin-bottom:6px; }
+  .legal-item .v{ font-size:15px; font-weight:600; color:var(--forest); }
+
+  /* Sumber Dana */
+  .funder-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; }
+  @media (max-width:760px){ .funder-grid{ grid-template-columns:repeat(2, 1fr); } }
+  .funder-card{ text-align:center; background:var(--white); border:1px solid var(--line); border-radius:var(--radius-md); padding:24px 16px; }
+  .funder-card .pct{ font-family:'Fraunces',serif; font-weight:700; font-size:26px; color:var(--forest); }
+  .funder-card .lbl{ font-size:13px; color:var(--ink-soft); margin-top:6px; }
+
+  .commitment-block{ text-align:center; padding:56px 0; }
+  .commitment-block .quote{ font-family:'Fraunces',serif; font-size:clamp(1.3rem,2.4vw,1.7rem); font-weight:500; color:var(--forest); line-height:1.55; max-width:780px; margin:0 auto; }
+  .commitment-block .quote em{ font-style:italic; color:var(--coral); }
+
+  footer{ background:var(--forest-dark); color:rgba(255,255,255,0.72); padding:64px 0 28px; }
+  .footer-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:40px; margin-bottom:48px; }
+  @media (max-width:760px){ .footer-grid{ grid-template-columns:1fr 1fr; } }
+  .footer-brand{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .footer-brand svg{ width:36px; height:36px; }
+  .footer-brand span{ font-family:'Fraunces', serif; font-weight:700; color:var(--white); font-size:16px; }
+  footer p.desc{ font-size:14px; max-width:280px; }
+  footer h4{ color:var(--white); font-size:13.5px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:18px; font-weight:700; }
+  footer ul{ list-style:none; margin:0; padding:0; }
+  footer li{ margin-bottom:12px; }
+  footer a{ font-size:14.5px; text-decoration:none; }
+  footer a:hover{ color:var(--gold); }
+  .footer-bottom{ border-top:1px solid rgba(255,255,255,0.12); padding-top:24px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:13px; }
+  .reveal{ opacity:0; transform:translateY(22px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+  :focus-visible{ outline:3px solid var(--coral); outline-offset:3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="sinar-bhakti-husada-landing.html" class="brand">
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="29" fill="var(--gold)"/>
+        <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/>
+        <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+        <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+      </svg>
+      <div class="brand-name">Sinar Bhakti Husada<span>Yayasan Kesehatan</span></div>
+    </a>
+    <nav class="nav-links" id="navLinks">
+      <a href="sinar-bhakti-husada-landing.html#program">Program</a>
+      <a href="artikel-sinar-bhakti-husada.html">Artikel</a>
+      <a href="transparansi-sinar-bhakti-husada.html" class="current">Transparansi</a>
+      <a href="kredibilitas-sinar-bhakti-husada.html">Kredibilitas</a>
+      <a href="sinar-bhakti-husada-landing.html#kontak">Kontak</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="sinar-bhakti-husada-landing.html#kontak" class="btn btn-ghost" style="padding:11px 22px; font-size:14px;">Hubungi Kami</a>
+      <a href="sinar-bhakti-husada-landing.html#donasi" class="btn btn-coral" style="padding:11px 22px; font-size:14px;">Donasi Sekarang</a>
+      <button class="burger" id="burgerBtn" aria-label="Buka menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="section-pad" style="padding-bottom:40px;">
+    <div class="wrap">
+      <div class="breadcrumb reveal">
+        <a href="sinar-bhakti-husada-landing.html">Beranda</a><span>/</span>
+        <span class="current">Transparansi</span>
+      </div>
+      <div class="reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+          Akuntabilitas
+        </span>
+        <h1 class="hero-title">Transparansi Yayasan</h1>
+        <p class="hero-lead">Kami percaya kepercayaan donatur dan mitra dibangun lewat keterbukaan. Halaman ini merangkum bagaimana dana dikelola, ke mana alokasinya, dan laporan resmi yang bisa diakses publik.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALOKASI DANA -->
+  <section class="section-pad" style="padding-top:0;">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Alokasi Dana
+        </span>
+        <h2>Ke Mana Setiap Rupiah Donasi Pergi</h2>
+        <p>Kami menjaga porsi terbesar dana tetap sampai ke program lapangan, bukan biaya operasional atau penggalangan dana.</p>
+      </div>
+
+      <div class="allocation-card reveal">
+        <div class="allocation-bar">
+          <div class="allocation-seg-program"></div>
+          <div class="allocation-seg-ops"></div>
+          <div class="allocation-seg-fund"></div>
+        </div>
+        <div class="allocation-legend">
+          <div class="legend-item"><span class="legend-dot" style="background:var(--forest);"></span><b>82%</b> Program &amp; Layanan Langsung</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--gold);"></span><b>10%</b> Operasional Yayasan</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--coral);"></span><b>8%</b> Penggalangan Dana</div>
+        </div>
+        <p style="margin-top:20px; font-size:13px; color:var(--ink-soft);">*Angka ilustratif berdasarkan struktur pelaporan standar — sesuaikan dengan hasil audit aktual yayasan sebelum dipublikasikan.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- LAPORAN PUBLIK -->
+  <section class="section-pad mist-bg">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Laporan Publik
+        </span>
+        <h2>Unduh Laporan Resmi Kami</h2>
+        <p>Laporan keuangan dan kegiatan diterbitkan setiap tahun, serta diaudit oleh auditor independen.</p>
+      </div>
+
+      <div class="report-grid">
+        <a href="#" class="report-card reveal">
+          <div class="report-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 1 2-2h9l5 5v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 6v5h5"/></svg></div>
+          <div class="report-info"><div class="t">Laporan Keuangan Tahunan 2025</div><div class="d">PDF · Diaudit oleh Kantor Akuntan Publik</div></div>
+          <div class="report-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg></div>
+        </a>
+        <a href="#" class="report-card reveal">
+          <div class="report-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 1 2-2h9l5 5v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 6v5h5"/></svg></div>
+          <div class="report-info"><div class="t">Laporan Kegiatan Tahunan 2025</div><div class="d">PDF · Ringkasan capaian seluruh program</div></div>
+          <div class="report-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg></div>
+        </a>
+        <a href="#" class="report-card reveal">
+          <div class="report-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 1 2-2h9l5 5v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 6v5h5"/></svg></div>
+          <div class="report-info"><div class="t">Hasil Audit Independen 2025</div><div class="d">PDF · Opini wajar tanpa pengecualian</div></div>
+          <div class="report-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg></div>
+        </a>
+        <a href="#" class="report-card reveal">
+          <div class="report-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 1 2-2h9l5 5v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 6v5h5"/></svg></div>
+          <div class="report-info"><div class="t">Laporan Keuangan Tahunan 2024</div><div class="d">PDF · Diaudit oleh Kantor Akuntan Publik</div></div>
+          <div class="report-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEGALITAS -->
+  <section class="section-pad">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Legalitas
+        </span>
+        <h2>Status Hukum Yayasan</h2>
+      </div>
+      <div class="legal-grid">
+        <div class="legal-item reveal"><div class="k">SK Kemenkumham RI</div><div class="v">AHU-0001234.AH.01.04 Tahun 2014</div></div>
+        <div class="legal-item reveal"><div class="k">Akta Notaris</div><div class="v">No. 12, Notaris Ratna Sari, S.H., 2014</div></div>
+        <div class="legal-item reveal"><div class="k">NPWP Yayasan</div><div class="v">01.234.567.8-901.000</div></div>
+        <div class="legal-item reveal"><div class="k">Izin Operasional</div><div class="v">Kementerian Sosial RI, No. 456/HUK/2015</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUMBER DANA -->
+  <section class="section-pad mist-bg">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Sumber Pendanaan
+        </span>
+        <h2>Dari Mana Dana Kami Berasal</h2>
+      </div>
+      <div class="funder-grid">
+        <div class="funder-card reveal"><div class="pct">45%</div><div class="lbl">Lembaga Internasional</div></div>
+        <div class="funder-card reveal"><div class="pct">28%</div><div class="lbl">Pemerintah &amp; Hibah Publik</div></div>
+        <div class="funder-card reveal"><div class="pct">18%</div><div class="lbl">Donatur Individu</div></div>
+        <div class="funder-card reveal"><div class="pct">9%</div><div class="lbl">Korporat &amp; CSR</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap commitment-block reveal">
+    <span class="eyebrow" style="justify-content:center; margin-bottom:18px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.6-9.3-9.2C1.4 8.6 3 5 6.6 5c2 0 3.4 1.1 4.4 2.6C12 6.1 13.4 5 15.4 5 19 5 20.6 8.6 19.3 11.8 17 16.4 12 21 12 21z"/></svg>
+      Komitmen Kami
+    </span>
+    <p class="quote">Kami berkomitmen untuk <em>terbuka</em> soal bagaimana dana dikelola — karena kepercayaan Anda adalah alasan program-program ini bisa terus berjalan.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">
+          <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="30" cy="30" r="29" fill="var(--gold)"/>
+            <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/>
+            <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+            <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+          </svg>
+          <span>Sinar Bhakti Husada</span>
+        </div>
+        <p class="desc">Yayasan kesehatan yang mendampingi ibu, anak, dan komunitas di wilayah terpencil Indonesia sejak 2014.</p>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <ul>
+          <li><a href="kia-program-sinar-bhakti-husada.html">Kesehatan Ibu &amp; Anak</a></li>
+          <li><a href="imunisasi-program-sinar-bhakti-husada.html">Imunisasi</a></li>
+          <li><a href="malaria-program-sinar-bhakti-husada.html">Penanganan Malaria</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Yayasan</h4>
+        <ul>
+          <li><a href="transparansi-sinar-bhakti-husada.html">Transparansi</a></li>
+          <li><a href="kredibilitas-sinar-bhakti-husada.html">Kredibilitas</a></li>
+          <li><a href="artikel-sinar-bhakti-husada.html">Artikel</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Ambil Bagian</h4>
+        <ul>
+          <li><a href="sinar-bhakti-husada-landing.html#donasi">Donasi</a></li>
+          <li><a href="sinar-bhakti-husada-landing.html#kontak">Jadi Relawan</a></li>
+          <li><a href="sinar-bhakti-husada-landing.html#kontak">Kerja Sama Program</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Yayasan Sinar Bhakti Husada. Seluruh hak cipta dilindungi.</span>
+      <span>Dibuat dengan bhakti, untuk sinar yang terus menyala.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const burger = document.getElementById('burgerBtn');
+  const navLinks = document.getElementById('navLinks');
+  burger.addEventListener('click', () => navLinks.classList.toggle('open'));
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navLinks.classList.remove('open')));
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>
+HTMLEOF
+echo "Transparansi page written"
+wc -l /home/claude/more-pages/transparansi-sinar-bhakti-husada.html
+Output
+
+Transparansi page written
+350 /home/claude/more-pages/transparansi-sinar-bhakti-husada.html

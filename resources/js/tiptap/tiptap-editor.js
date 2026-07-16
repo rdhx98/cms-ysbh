@@ -60,6 +60,16 @@ const EYEBROW_ICONS = [
     { key: 'badge-check', label: 'Badge Check', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>` },
     { key: 'trending-up', label: 'Trending Up', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></svg>` },
 ];
+// Preset warna latar + border untuk dropdown Pill.
+// borderColor: null berarti tanpa border (sesuai default lama Pill.js)
+const PILL_COLOR_PRESETS = [
+    { key: 'green', label: 'Hijau (default)', backgroundColor: '#E9F1EB', borderColor: null },
+    { key: 'red', label: 'Merah', backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
+    { key: 'blue', label: 'Biru', backgroundColor: '#DBEAFE', borderColor: '#93C5FD' },
+    { key: 'yellow', label: 'Kuning', backgroundColor: '#FEF9C3', borderColor: '#FDE68A' },
+    { key: 'purple', label: 'Ungu', backgroundColor: '#F3E8FF', borderColor: '#D8B4FE' },
+    { key: 'gray', label: 'Abu-abu', backgroundColor: '#F3F4F6', borderColor: '#D1D5DB' },
+];
 
 const lowlight = createLowlight(common)
 
@@ -96,11 +106,15 @@ document.addEventListener('alpine:init', () => {
             isUploading: false,
             showMarks: false,
 
-            linkInputUrl: '',
+           linkInputUrl: '',
             linkInputText: '',
             hasSelection: false,
             isLinkOpen: false,
             isEyebrowIconOpen: false,
+            isPillColorOpen: false,
+            customPillBg: '#E9F1EB',
+            customPillBorder: '#000000',
+            pillBorderEnabled: false,
             wordCount: 0,
             isLocalDrag: false,
             syncTimeout: null,
@@ -119,7 +133,7 @@ document.addEventListener('alpine:init', () => {
 
             init() {
 
-                if 
+                if
                 (
                     window.tiptapEditor &&
                     !window.tiptapEditor.isDestroyed &&
@@ -132,6 +146,14 @@ document.addEventListener('alpine:init', () => {
 
                 const _this = this;
                 const editorElement = this.$refs.editorElement;
+                const initialContent = wireComponent.get(wireModelName) || '';
+                const initialDiv = document.getElementById('initialContent');
+                const startingHTML = initialDiv ? initialDiv.innerHTML : '';
+
+                this.$watch('$wire.title', (newTitle) => {
+                    this.syncTitleToEditor(newTitle);
+                });
+
 
                 // 🌟 SABUK PENGAMAN REVISI: Cek apakah elemen DOM INI sudah punya editor
                 // Ini menyelamatkan ketikan saat Livewire transaksi/error validasi
@@ -139,7 +161,6 @@ document.addEventListener('alpine:init', () => {
                     window.tiptapEditor = editorElement.__tiptap;
                     return;
                 }
-                const initialContent = wireComponent.get(wireModelName) || '';
 
                 // 🌟 SABUK PENGAMAN: Hentikan proses jika HTML berantakan
                 if (!editorElement) {
@@ -317,7 +338,7 @@ document.addEventListener('alpine:init', () => {
 
                         CodeBlockLowlight.configure({ lowlight }),
 
-                        
+
                         BubbleMenu.configure({
                             element: this.$refs.bubbleMenuElement,
                             tippyOptions: { duration: 150, zIndex: 99 },
@@ -395,40 +416,107 @@ document.addEventListener('alpine:init', () => {
                         handleKeyDown: (view, event) => {
                             const { state } = view;
                             const { selection, doc } = state;
-                            
+
+                            // 🌟 TAMBAHAN: Kembalikan kursor ke default setelah menekan Enter di Judul (H1)
+                            if (event.key === 'Enter' && !event.shiftKey) {
+                                const { $from, empty } = selection;
+
+                                // Cek apakah kursor berada di dalam Heading 1 dan tidak ada teks yang di-blok
+                                if (empty && $from.parent.type.name === 'heading' && $from.parent.attrs.level === 1) {
+
+                                    // Pastikan kursor berada persis di ujung paling kanan (akhir teks judul)
+                                    const isAtEnd = $from.parentOffset === $from.parent.content.size;
+
+                                    if (isAtEnd) {
+                                        const editor = window.tiptapEditor;
+                                        if (editor) {
+                                            event.preventDefault(); // Cegah Enter bawaan Tiptap
+
+                                            // Rentetan aksi otomatis ala Tiptap
+                                            editor.chain()
+                                                .splitBlock()          // 1. Buat baris baru ke bawah
+                                                .setNode('paragraph')  // 2. Pastikan jadi paragraf biasa
+                                                .clearNodes()          // 3. Hapus gaya text-align (Rata tengah/kanan)
+                                                .unsetAllMarks()       // 4. Hapus warna, bold, italic, dll
+                                                .run();
+
+                                            return true; // Beri tahu browser bahwa aksi sudah selesai
+                                        }
+                                    }
+                                }
+                            }
+
                             // 🌟 PERBAIKAN 1: Deteksi yang lebih kebal.
                             // ProseMirror terkadang menghitung ukuran node 2 angka lebih kecil/besar di ujung dokumen.
+                            // 🌟 PERBAIKAN 1: Deteksi seleksi seluruh teks (Ctrl+A)
                             const isAllSelected = selection.from === 0 && selection.to >= doc.content.size - 2;
 
                             if (isAllSelected) {
                                 const editor = window.tiptapEditor;
                                 if (!editor) return false;
 
+                                // 💡 KUNCI UX: Ambil judul yang masih selamat di kolom input (Livewire)
+                                const savedTitle = wireComponent.get('title') || '';
+
                                 // 1. Jika menekan Backspace atau Delete
                                 if (event.key === 'Backspace' || event.key === 'Delete') {
                                     event.preventDefault();
-                                    
-                                    // 🌟 PERBAIKAN 2: Opsi Nuklir (Reset Paksa HTML)
-                                    // Ini akan menghancurkan semua atribut yang 'nyangkut'
-                                    editor.commands.setContent('<p></p>');
-                                    editor.commands.focus();
-                                    
+
+                                    // 🌟 SMART RESET: Hancurkan isi artikel, tapi kembalikan Judul (H1) dan buat 1 paragraf kosong!
+                                    editor.commands.setContent(`<h1>${savedTitle}</h1><p></p>`);
+
+                                    // Pindahkan kursor secara cerdas:
+                                    if (savedTitle) {
+                                        editor.commands.focus('end'); // Jika ada judul, kursor siap nulis isi artikel di paragraf bawah
+                                    } else {
+                                        editor.commands.focus('start'); // Jika judul juga kosong, kursor di H1 atas
+                                    }
+
                                     return true;
                                 }
 
-                                // 2. Jika langsung mengetik huruf/angka untuk menimpa teks
+                                // 2. Jika langsung mengetik huruf/angka untuk menimpa
                                 if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
                                     event.preventDefault();
-                                    
-                                    // Hancurkan dan langsung isi dengan huruf pertama
-                                    editor.commands.setContent(`<p>${event.key}</p>`);
-                                    // Pindahkan kursor ke ujung teks
+
+                                    // Selamatkan judul, taruh huruf baru yang diketik di paragraf bawah
+                                    editor.commands.setContent(`<h1>${savedTitle}</h1><p>${event.key}</p>`);
                                     editor.commands.focus('end');
-                                    
+
                                     return true;
                                 }
                             }
-                            
+                            // const isAllSelected = selection.from === 0 && selection.to >= doc.content.size - 2;
+
+                            // if (isAllSelected) {
+                            //     const editor = window.tiptapEditor;
+                            //     if (!editor) return false;
+
+                            //     // 1. Jika menekan Backspace atau Delete
+                            //     if (event.key === 'Backspace' || event.key === 'Delete') {
+                            //         event.preventDefault();
+
+                            //         // 🌟 PERBAIKAN 2: Opsi Nuklir (Reset Paksa HTML)
+                            //         // Ini akan menghancurkan semua atribut yang 'nyangkut'
+                            //         editor.commands.setContent('<p></p>');
+                            //         editor.commands.focus();
+
+                            //         return true;
+                            //     }
+
+                            //     // 2. Jika langsung mengetik huruf/angka untuk menimpa teks
+                            //     if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                            //         event.preventDefault();
+
+                            //         // Hancurkan dan langsung isi dengan huruf pertama
+                            //         editor.commands.setContent(`<p>${event.key}</p>`);
+                            //         // Pindahkan kursor ke ujung teks
+                            //         editor.commands.focus('end');
+
+                            //         return true;
+                            //     }
+                            // }
+
                             return false;
                         },
                         handleDragOver: (view, event) => {
@@ -600,6 +688,12 @@ document.addEventListener('alpine:init', () => {
 
                         // 🔥 IKAT INSTANCE: Simpan Tiptap ke dalam elemen HTML-nya secara fisik
                         editorElement.__tiptap = editor;
+
+                        // 🌟 PERBAIKAN 2: Ambil langsung dari komponen Livewire
+                        setTimeout(() => {
+                            const judulAwal = wireComponent.get('title') || '';
+                            _this.syncTitleToEditor(judulAwal);
+                        }, 100);
                     },
 
                     onUpdate({ editor }) {
@@ -609,13 +703,36 @@ document.addEventListener('alpine:init', () => {
                         const text = editor.getText();
                         _this.wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
 
+                        const firstNode = editor.state.doc.firstChild;
+                        if (firstNode && firstNode.type.name === 'heading' && firstNode.attrs.level === 1) {
+                            const h1Text = firstNode.textContent;
+
+                            // 🌟 PERBAIKAN 3: Gunakan wireComponent untuk mengecek dan menyimpan data
+                            if (wireComponent.get('title') !== h1Text) {
+                                wireComponent.set('title', h1Text, false); // false = jangan trigger network request/loading
+                            }
+                        }
+
                         if (_this.isUploading) return;
+                        clearTimeout(_this.syncTimeout);
+                        _this.syncTimeout = setTimeout(() => {
+                            if (window.tiptapEditor) {
+                                wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
+                            }
+                        }, 500);
 
                     },
-                    
+
 
                     onSelectionUpdate() {
                         _this.updatedAt = Date.now()
+                    }
+                });
+
+                // 🌟 TAMBAHAN: Sabuk pengaman agar editor tidak kosong setelah tombol 'Simpan' ditekan
+                window.addEventListener('article-saved', (event) => {
+                    if (window.tiptapEditor && event.detail.newContent) {
+                        window.tiptapEditor.commands.setContent(event.detail.newContent, false);
                     }
                 });
 
@@ -667,6 +784,78 @@ document.addEventListener('alpine:init', () => {
                 }
                 window.tiptapEditor = null;
             },
+
+            // 🌟 FUNGSI BARU: Sinkronisasi Teks ke Editor Tanpa Merusak Warna/Format
+            syncTitleToEditor(newTitle) {
+                if (!window.tiptapEditor) return;
+
+                const { state, view } = window.tiptapEditor;
+                const tr = state.tr;
+                const firstNode = state.doc.firstChild;
+
+                // Pastikan teks aman, jika null jadikan string kosong
+                const safeTitle = newTitle || '';
+
+                if (firstNode && firstNode.type.name === 'heading' && firstNode.attrs.level === 1) {
+                    // Jika teksnya sudah sama, hentikan (mencegah infinite loop)
+                    if (firstNode.textContent === safeTitle) return;
+
+                    // Mengganti Teks di DALAM H1 dengan kalkulasi posisi node ProseMirror
+                    // Angka 1 adalah awal teks di dalam node pertama.
+                    const from = 1;
+                    const to = firstNode.nodeSize - 1;
+
+                    if (safeTitle) {
+                        tr.replaceWith(from, to, state.schema.text(safeTitle));
+                    } else {
+                        tr.delete(from, to); // Kosongkan H1 jika input dihapus
+                    }
+                    view.dispatch(tr);
+                } else {
+                    // Jika belum ada H1 sama sekali, ciptakan H1 baru di baris paling atas
+                    if (safeTitle) {
+                        const h1 = state.schema.nodes.heading.create({ level: 1 }, state.schema.text(safeTitle));
+                        tr.insert(0, h1);
+                        view.dispatch(tr);
+                    }
+                }
+            },
+
+            // 🌟 FUNGSI BARU: Mendorong teks dari Input ke dalam Editor tanpa merusak gaya (style)
+            // syncTitleToEditor(newTitle) {
+            //     if (!window.tiptapEditor) return;
+
+            //     const { state, view } = window.tiptapEditor;
+            //     const tr = state.tr;
+            //     const firstNode = state.doc.firstChild;
+
+            //     // Pastikan teks aman (tidak null)
+            //     const safeTitle = newTitle || '';
+
+            //     if (firstNode && firstNode.type.name === 'heading' && firstNode.attrs.level === 1) {
+            //         // Jika teks sudah sama, hentikan proses untuk mencegah infinite loop
+            //         if (firstNode.textContent === safeTitle) return;
+
+            //         // KUNCI: Kita hanya mengganti Teks di DALAM H1,
+            //         // sehingga atribut warna dan posisi H1 tetap dipertahankan!
+            //         const from = 1;
+            //         const to = firstNode.nodeSize - 1;
+
+            //         if (safeTitle) {
+            //             tr.replaceWith(from, to, state.schema.text(safeTitle));
+            //         } else {
+            //             tr.delete(from, to); // Kosongkan isi H1 jika input dihapus
+            //         }
+            //         view.dispatch(tr);
+            //     } else {
+            //         // Jika belum ada H1 di paling atas, buat H1 baru
+            //         if (safeTitle) {
+            //             const h1 = state.schema.nodes.heading.create({ level: 1 }, state.schema.text(safeTitle));
+            //             tr.insert(0, h1);
+            //             view.dispatch(tr);
+            //         }
+            //     }
+            // },
 
             // 1. Pintu Masuk File
             handleMultipleImageUpload(files) {
@@ -1414,6 +1603,59 @@ document.addEventListener('alpine:init', () => {
             getEyebrowIconSVG(key) {
                 const found = EYEBROW_ICONS.find((item) => item.key === key);
                 return found ? found.svg : EYEBROW_ICONS[0].svg;
+            },
+            // ➕ PILL COLOR PICKER
+            pillColorPresets: PILL_COLOR_PRESETS,
+
+            togglePillColorMenu() {
+                // Saat dibuka, sinkronkan input custom color dengan warna pill
+                // yang sedang aktif di kursor (kalau ada), biar tidak "reset" ke default
+                if (!this.isPillColorOpen && window.tiptapEditor) {
+                    const attrs = window.tiptapEditor.getAttributes('pill');
+                    this.customPillBg = attrs.backgroundColor || '#E9F1EB';
+                    this.customPillBorder = attrs.borderColor || '#000000';
+                    this.pillBorderEnabled = !!attrs.borderColor;
+                }
+                this.isPillColorOpen = !this.isPillColorOpen;
+            },
+
+            selectPillPreset(preset) {
+                if (!window.tiptapEditor) return;
+
+                window.tiptapEditor.chain().focus().setPillColor({
+                    backgroundColor: preset.backgroundColor,
+                    borderColor: preset.borderColor || null,
+                }).run();
+
+                this.isPillColorOpen = false;
+                this.updatedAt = Date.now();
+            },
+
+            applyCustomPillColor() {
+                if (!window.tiptapEditor) return;
+
+                window.tiptapEditor.chain().focus().setPillColor({
+                    backgroundColor: this.customPillBg,
+                    borderColor: this.pillBorderEnabled ? this.customPillBorder : null,
+                }).run();
+
+                this.updatedAt = Date.now();
+            },
+
+            removePill() {
+                if (!window.tiptapEditor) return;
+
+                window.tiptapEditor.chain().focus().unsetPill().run();
+                this.isPillColorOpen = false;
+                this.updatedAt = Date.now();
+            },
+
+            getCurrentPillSwatch() {
+                this.updatedAt; // Trigger reaktivitas Alpine
+                if (!window.tiptapEditor) return '#E9F1EB';
+
+                const attrs = window.tiptapEditor.getAttributes('pill');
+                return attrs.backgroundColor || '#E9F1EB';
             },
         }
     }

@@ -1020,3 +1020,44 @@ section[data-type="section-block"]:hover .section-color-toolbar,
     pointer-events: none;
     z-index: 10;
 }
+
+[data-type="eyebrow"][data-has-pill="true"] .pill-wrapper {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  padding: 0 !important;
+}
+
+/* 🌟 1. Beri ruang ekstra di bagian atas H1 baris pertama untuk menaruh label */
+    .ProseMirror > h1:first-child {
+        position: relative !important;
+        margin-top: 2rem !important;
+    }
+
+    /* 🌟 2. Ciptakan label "📌 JUDUL ARTIKEL" yang melayang di atas H1 */
+    .ProseMirror > h1:first-child::before {
+        content: "Judul Artikel";
+        position: absolute;
+        top: -1.5rem; /* Tarik ke atas teks judul */
+        left: 0;
+        font-size: 0.7rem;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-weight: 700;
+        color: #064F3B; /* Warna hijau (bisa disesuaikan dengan tema web Anda) */
+        letter-spacing: 0.05em;
+        opacity: 0.7;
+        margin-left: 2.5rem;
+        margin-right: 2.5rem;
+        pointer-events: none; /* KUNCI: Agar label tidak menghalangi klik mouse */
+    }
+
+    /* 🌟 3. Jika penulis menekan tombol Rata Tengah, label ikut ke tengah */
+    .ProseMirror > h1:first-child[style*="text-align: center"]::before {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    /* 🌟 4. Jika penulis menekan tombol Rata Kanan, label ikut ke kanan */
+    .ProseMirror > h1:first-child[style*="text-align: right"]::before {
+        left: auto;
+        right: 0;
+    }
