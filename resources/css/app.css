@@ -1061,3 +1061,28 @@ section[data-type="section-block"]:hover .section-color-toolbar,
         left: auto;
         right: 0;
     }
+    /* 🌟 CSS UNTUK MENGGAMBAR PLACEHOLDER CAPTION GAMBAR */
+    figcaption[data-placeholder]:empty::before,
+    figcaption[data-placeholder].is-empty::before,
+    figcaption[data-placeholder]:has(br:only-child)::before {
+        content: attr(data-placeholder);
+        color: #a1a1aa; /* Warna abu-abu samar (zinc-400) */
+        pointer-events: none; /* Agar tidak menghalangi kursor saat diklik */
+        cursor: text;
+    }
+    
+    /* Mencegah tinggi caption anjlok saat kosong */
+    figcaption[data-placeholder] {
+        min-height: 1.5rem; 
+    }
+    
+    figure[data-type="image-block"] figcaption:empty::before {
+        content: attr(data-placeholder);
+        color: #a1a1aa;
+        pointer-events: none;
+    }
+    figure[data-type="image-block"]:focus-within {
+        outline: 2px solid #22c55e; /* samakan warnanya dengan border hijau gambar biasa Anda */
+        outline-offset: 2px;
+        border-radius: 0.5rem;
+    }

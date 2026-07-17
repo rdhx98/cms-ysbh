@@ -9,6 +9,27 @@ export const FontSize = Extension.create({
         };
     },
 
+    // addGlobalAttributes() {
+    //     return [
+    //         {
+    //             types: this.options.types,
+    //             attributes: {
+    //                 fontSize: {
+    //                     default: null,
+    //                     parseHTML: element => element.style.fontSize?.replace(/['"]+/g, '') || null,
+    //                     renderHTML: attributes => {
+    //                         if (!attributes.fontSize) {
+    //                             return {};
+    //                         }
+    //                         return {
+    //                             style: `font-size: ${attributes.fontSize}`,
+    //                         };
+    //                     },
+    //                 },
+    //             },
+    //         },
+    //     ];
+    // },
     addGlobalAttributes() {
         return [
             {
@@ -16,7 +37,23 @@ export const FontSize = Extension.create({
                 attributes: {
                     fontSize: {
                         default: null,
-                        parseHTML: element => element.style.fontSize?.replace(/['"]+/g, '') || null,
+                        parseHTML: element => {
+                            const raw = element.style.fontSize;
+                            if (!raw) return null;
+
+                            const match = raw.match(/^([\d.]+)(pt|px)$/i);
+                            if (!match) return raw.replace(/['"]+/g, '') || null;
+
+                            const [, num, unit] = match;
+
+                            if (unit.toLowerCase() === 'pt') {
+                                // Word & aplikasi desktop lain pakai satuan pt —
+                                // konversi ke px biar konsisten dengan satuan toolbar Anda
+                                return `${Math.round(parseFloat(num) * (96 / 72))}px`;
+                            }
+
+                            return `${parseFloat(num)}px`;
+                        },
                         renderHTML: attributes => {
                             if (!attributes.fontSize) {
                                 return {};

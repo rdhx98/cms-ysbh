@@ -44,6 +44,7 @@ import { Eyebrow } from './node/EyeBrow.js'
 import { Column, ColumnBlock } from "./node/ColumnLayout.js";
 import { FontSize } from "./node/FontSize.js";
 import { Pill } from "./node/Pill.js";
+import { ImageBlock } from "./node/ImageBlock.js";
 
 
 const ALLOWED_FONTS = ['Arial', 'Fraunces', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
@@ -73,13 +74,13 @@ const PILL_COLOR_PRESETS = [
 
 const lowlight = createLowlight(common)
 
-document.addEventListener('alpine:init', () => {
-    const original = window.Alpine.initTree;
-    window.Alpine.initTree = function (...args) {
-        console.trace('🚨 Alpine.initTree dipanggil ulang di sini:');
-        return original.apply(this, args);
-    };
-});
+// document.addEventListener('alpine:init', () => {
+//     const original = window.Alpine.initTree;
+//     window.Alpine.initTree = function (...args) {
+//         console.trace('🚨 Alpine.initTree dipanggil ulang di sini:');
+//         return original.apply(this, args);
+//     };
+// });
 
 
 document.addEventListener('livewire:init', () => {
@@ -95,7 +96,27 @@ document.addEventListener('livewire:init', () => {
     });
 });
 
+function posToDOMRect(view, from, to) {
+    const start = view.coordsAtPos(from);
+    const end = view.coordsAtPos(to, -1);
+    return {
+        top: Math.min(start.top, end.top),
+        bottom: Math.max(start.bottom, end.bottom),
+        left: Math.min(start.left, end.left),
+        right: Math.max(start.right, end.right),
+        width: Math.max(start.left, end.left) - Math.min(start.left, end.left),
+        height: Math.max(start.bottom, end.bottom) - Math.min(start.top, end.top),
+    };
+}
+
 document.addEventListener('alpine:init', () => {
+
+    const original = window.Alpine.initTree;
+    window.Alpine.initTree = function (...args) {
+        console.trace('🚨 Alpine.initTree dipanggil ulang di sini:');
+        return original.apply(this, args);
+    };
+
     // Simpan instance murni global agar terbebas dari Proxy Observer Alpine
     window.tiptapEditor = null;
 
@@ -106,7 +127,7 @@ document.addEventListener('alpine:init', () => {
             isUploading: false,
             showMarks: false,
 
-           linkInputUrl: '',
+            linkInputUrl: '',
             linkInputText: '',
             hasSelection: false,
             isLinkOpen: false,
@@ -232,6 +253,7 @@ document.addEventListener('alpine:init', () => {
                         StepCard,
                         Card,
                         Pill,
+                        ImageBlock,
                         // InfoCard,
                         FontSize,
 
@@ -344,24 +366,39 @@ document.addEventListener('alpine:init', () => {
                             tippyOptions: { duration: 150, zIndex: 99 },
                             shouldShow: ({ editor, from, to }) => {
                                 if (from === to) return false;
-                                return !editor.isActive('image')&& !editor.isActive('mediaPlaceholder');
-                                // return !editor.isActive('image')
+                                if (editor.isActive('imageBlock')) return false; // 🌟 TAMBAHAN: jangan tabrakan dengan bubble menu gambar
+                                return !editor.isActive('image') && !editor.isActive('mediaPlaceholder');
                             }
                         }),
+
                         BubbleMenu.extend({ name: 'imageBubbleMenu' }).configure({
                             element: this.$refs.imageBubbleMenu,
                             tippyOptions: {
-                                placement: 'top',
                                 duration: 150,
                                 zIndex: 99,
-                                hideOnClick: false, // Jaga Tippy agar tidak menutup saat area menu diklik
+                                hideOnClick: false,
+                                getReferenceClientRect: () => {
+                                    if (window.activeImageBlockRef?.el) {
+                                        return window.activeImageBlockRef.el.getBoundingClientRect();
+                                    }
+                                    const { view, state } = window.tiptapEditor;
+                                    const { from, to } = state.selection;
+                                    return posToDOMRect(view, from, to);
+                                },
+                                onShow: (instance) => {
+                                    const captionPos = window.activeImageBlockRef?.captionPosition;
+                                    instance.setProps({ placement: captionPos === 'top' ? 'bottom' : 'top' });
+                                },
                             },
-                            // 💡 KUNCI EMAS: Paksa menu tetap TRUE selama seleksi saat ini atau kursor adalah sebuah IMAGE
-                            shouldShow: ({ editor, state, from, to, view }) => {
-                                // Cek apakah elemen yang sedang dipilih oleh user saat ini adalah gambar
-                                return editor.isActive('image');
-                            }
+                            shouldShow: ({ state }) => {
+                                const { selection } = state;
+                                // 🌟 KUNCI: hanya true kalau ini betul-betul NodeSelection gambar/imageBlock,
+                                // BUKAN kursor teks yang kebetulan ada di dalam caption
+                                return !!(selection.node && (selection.node.type.name === 'imageBlock' || selection.node.type.name === 'image'));
+                            },
                         }),
+
+
                         TextStyle, // Wajib diisi karena FontFamily bergantung pada TextStyle
                         Color,
                         FontFamily.extend({
@@ -674,6 +711,28 @@ document.addEventListener('alpine:init', () => {
                                 setTimeout(() => { alpineData.processNextInQueue(); }, 150);
                             }
 
+                            doc.body.querySelectorAll('[style]').forEach(el => {
+                                const style = el.getAttribute('style');
+                                if (!style) return;
+
+                                // Buang font-family biasa DAN varian mso-*-font-family milik Word
+                                const cleanedStyle = style
+                                    .replace(/(?:mso-[a-z-]*-)?font-family\s*:[^;]+;?/gi, '')
+                                    .trim();
+
+                                if (cleanedStyle) {
+                                    el.setAttribute('style', cleanedStyle);
+                                } else {
+                                    el.removeAttribute('style');
+                                }
+                            });
+
+                            // Buang juga tag <font face="..."> gaya lama (masih sering muncul dari HTML lawas)
+                            doc.body.querySelectorAll('font[face]').forEach(el => el.removeAttribute('face'));
+
+                            // Buang blok <style> yang sering disisipkan Word (definisi class Mso*)
+                            doc.body.querySelectorAll('style').forEach(el => el.remove());
+
                             return doc.body.innerHTML;
                         },
                     },
@@ -726,6 +785,9 @@ document.addEventListener('alpine:init', () => {
 
                     onSelectionUpdate() {
                         _this.updatedAt = Date.now()
+                    },
+                    onTransaction: () => {
+                        _this.updatedAt = Date.now();
                     }
                 });
 
@@ -993,44 +1055,6 @@ document.addEventListener('alpine:init', () => {
                     this.processNextInQueue();
                 }
             },
-            // 3. Eksekusi Livewire
-            // executeLivewireUpload(targetFile) {
-            //     if (!navigator.onLine) {
-            //         window.dispatchEvent(new CustomEvent('tampilkan-error', {
-            //             detail: "Koneksi internet terputus! Silakan periksa jaringan Anda."
-            //         }));
-            //         this.removeDummyImage(targetFile.targetToken);
-            //         this.processNextInQueue();
-            //         return;
-            //     }
-
-            //     wireComponent.upload('photo', targetFile,
-            //         async (uploadedUrl) => {
-            //             try {
-            //                 const finalUrl = await wireComponent.uploadImage();
-            //                 if (finalUrl && window.tiptapEditor) {
-            //                     this.replaceDummyWithImage(targetFile.targetToken, finalUrl, targetFile.name);
-            //                 }
-            //             } catch (error) {
-            //                 console.error('[Upload Error]', error);
-            //                 this.removeDummyImage(targetFile.targetToken);
-            //             } finally {
-            //                 // 🔑 Lanjut ke antrean berikutnya apa pun yang terjadi
-            //                 this.processNextInQueue();
-            //             }
-            //         },
-            //         (error) => {
-            //             console.error('[Livewire Error]', error);
-            //             window.dispatchEvent(new CustomEvent('tampilkan-error', {
-            //                 detail: `Gagal mengunggah ${targetFile.name}. Periksa koneksi internet Anda.`
-            //             }));
-            //             this.removeDummyImage(targetFile.targetToken);
-
-            //             // 🔑 Lanjut ke antrean berikutnya apa pun yang terjadi
-            //             this.processNextInQueue();
-            //         }
-            //     );
-            // },
 
             // 4. Helper Pemrosesan & Pembersihan
             removeDummyImage(token) {
@@ -1197,48 +1221,53 @@ document.addEventListener('alpine:init', () => {
                 this.updatedAt = Date.now();
             },
 
-            setImageAlignment(alignment) {
-                if (!window.tiptapEditor || !window.tiptapEditor.isActive('image')) return;
+            // 🌟 HELPER BARU: deteksi tipe node gambar yang sedang aktif
+            getActiveImageType() {
+                if (!window.tiptapEditor) return null;
+                if (window.tiptapEditor.isActive('imageBlock')) return 'imageBlock';
+                if (window.tiptapEditor.isActive('image')) return 'image';
+                return null;
+            },
 
-                // Ambil posisi koordinat gambar sebelum diperbarui agar seleksi tidak hilang
+            setImageAlignment(alignment) {
+                const targetType = this.getActiveImageType();
+                if (!targetType) return;
+
                 const { selection } = window.tiptapEditor.state;
                 const currentPosition = selection.from;
 
-                const currentAttributes = window.tiptapEditor.getAttributes('image');
+                const currentAttributes = window.tiptapEditor.getAttributes(targetType);
                 const currentStyle = currentAttributes.style || '';
 
-                // Pertahankan ukuran persentase yang sudah disetel sebelumnya
                 const widthMatch = currentStyle.match(/width:\s*\d+%/);
                 const existingWidth = widthMatch ? widthMatch[0] + ';' : '';
 
                 let alignmentStyles = '';
                 if (alignment === 'left') {
-                    // Rata Kiri: Float kiri, rata atas dengan teks (margin-top kecil), margin kanan proporsional (1rem)
                     alignmentStyles = 'float: left; margin-right: 1rem; margin-top: 0.25rem; margin-bottom: 0.5rem; display: inline !important;';
                 } else if (alignment === 'right') {
-                    // Rata Kanan: Float kanan, rata atas dengan teks (margin-top kecil), margin kiri proporsional (1rem)
                     alignmentStyles = 'float: right; margin-left: 1rem; margin-top: 0.25rem; margin-bottom: 0.5rem; display: inline !important;';
                 } else {
-                    // Rata Tengah: Menjadi blok mandiri, jeda vertikal sumbu Y yang manis dan simetris (12px / 0.75rem)
                     alignmentStyles = 'display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;';
                 }
 
                 window.tiptapEditor.chain()
                     .focus()
-                    .updateAttributes('image', {
+                    .updateAttributes(targetType, {
                         style: `${existingWidth} ${alignmentStyles}`.trim()
                     })
-                    .setNodeSelection(currentPosition) // Kunci kembali posisi bubble menu
+                    .setNodeSelection(currentPosition)
                     .run();
 
                 this.updatedAt = Date.now();
             },
 
             isImageAlignActive(alignment) {
-                this.updatedAt; // Trigger reaktivitas visual UI
-                if (!window.tiptapEditor || !window.tiptapEditor.isActive('image')) return false;
+                this.updatedAt;
+                const targetType = this.getActiveImageType();
+                if (!targetType) return false;
 
-                const attrs = window.tiptapEditor.getAttributes('image');
+                const attrs = window.tiptapEditor.getAttributes(targetType);
                 const style = attrs.style || '';
 
                 if (alignment === 'left') return style.includes('float: left') || style.includes('float:left');
@@ -1247,49 +1276,87 @@ document.addEventListener('alpine:init', () => {
 
                 return false;
             },
-            // HELPER: Cek status persentase ukuran gambar aktif secara kustom lewat pencarian style teks
-            isImageWidthActive(width) {
-                this.updatedAt; // Trigger reaktivitas visual UI
-                if (!window.tiptapEditor || !window.tiptapEditor.isActive('image')) return false;
 
-                const attrs = window.tiptapEditor.getAttributes('image');
+            isImageWidthActive(width) {
+                this.updatedAt;
+                const targetType = this.getActiveImageType();
+                if (!targetType) return false;
+
+                const attrs = window.tiptapEditor.getAttributes(targetType);
                 const style = attrs.style || '';
 
-                // Mencari string "width: 25%" atau "width:25%" di dalam inline-style node gambar
                 return style.includes(`width: ${width}%`) || style.includes(`width:${width}%`);
             },
 
-            // AKTIVITAS HAPUS NODE: Menghapus gambar dari editor tanpa merusak sejarah Undo/Redo
             deleteSelectedImage() {
-                if (!window.tiptapEditor || !window.tiptapEditor.isActive('image')) return;
-
-                // Hapus node gambar yang sedang dipilih/aktif
+                if (!this.getActiveImageType()) return;
                 window.tiptapEditor.chain().focus().deleteSelection().run();
                 this.updatedAt = Date.now();
             },
 
             setImageWidth(width) {
-                if (!window.tiptapEditor || !window.tiptapEditor.isActive('image')) return;
+                const targetType = this.getActiveImageType();
+                if (!targetType) return;
 
-                // Ambil posisi koordinat gambar yang sedang dipilih saat ini sebelum dia diperbarui
                 const { selection } = window.tiptapEditor.state;
                 const currentPosition = selection.from;
 
-                const currentAttributes = window.tiptapEditor.getAttributes('image');
+                const currentAttributes = window.tiptapEditor.getAttributes(targetType);
                 const currentStyle = currentAttributes.style || '';
+
+                console.log('[DEBUG setImageWidth] diklik dengan width:', width);
+                console.log('[DEBUG setImageWidth] targetType:', targetType, '| currentPosition:', currentPosition);
+                console.log('[DEBUG setImageWidth] currentStyle (sebelum dibersihkan):', JSON.stringify(currentStyle));
 
                 const cleanedStyle = currentStyle.replace(/width:\s*\d+%;?/, '').trim();
                 const newStyle = `width: ${width}%; ${cleanedStyle}`.trim();
 
+                console.log('[DEBUG setImageWidth] newStyle (yang akan diterapkan):', JSON.stringify(newStyle));
+
                 window.tiptapEditor.chain()
                     .focus()
-                    .updateAttributes('image', { style: newStyle })
-                    // 💡 KUNCI EMAS: Paksa Tiptap menyeleksi kembali posisi gambar tersebut agar bubble menu tidak kabur
+                    .updateAttributes(targetType, { style: newStyle })
                     .setNodeSelection(currentPosition)
                     .run();
 
                 this.updatedAt = Date.now();
             },
+
+
+            isImageAlignActive(alignment) {
+                this.updatedAt;
+                const targetType = this.getActiveImageType();
+                if (!targetType) return false;
+
+                const attrs = window.tiptapEditor.getAttributes(targetType);
+                const style = attrs.style || '';
+
+                if (alignment === 'left') return style.includes('float: left') || style.includes('float:left');
+                if (alignment === 'right') return style.includes('float: right') || style.includes('float:right');
+                if (alignment === 'center') return style.includes('display: block') || style.includes('margin-left: auto');
+
+                return false;
+            },
+
+            isImageWidthActive(width) {
+                this.updatedAt;
+                const targetType = this.getActiveImageType();
+                if (!targetType) return false;
+
+                const attrs = window.tiptapEditor.getAttributes(targetType);
+                const style = attrs.style || '';
+
+                return style.includes(`width: ${width}%`) || style.includes(`width:${width}%`);
+            },
+
+            deleteSelectedImage() {
+                if (!this.getActiveImageType()) return;
+                window.tiptapEditor.chain().focus().deleteSelection().run();
+                this.updatedAt = Date.now();
+            },
+            
+            
+            
 
             isActive(type, opts = {}) {
                 this.updatedAt; // Trigger reaktivitas visual UI Alpine
@@ -1657,6 +1724,11 @@ document.addEventListener('alpine:init', () => {
                 const attrs = window.tiptapEditor.getAttributes('pill');
                 return attrs.backgroundColor || '#E9F1EB';
             },
+            createImageCaption() {
+                this.updatedAt; // Trigger reaktivitas Alpine
+                if (!window.tiptapEditor) return;
+                window.tiptapEditor.chain().focus().addImageCaption().run();
+            }
         }
     }
 })

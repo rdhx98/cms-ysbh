@@ -46,6 +46,7 @@
         <button type="button" @click="setImageWidth({{ $width }})"
             class="p-1.5 rounded hover:bg-sage-soft hover:text-forest text-zinc-600 dark:text-zinc-400 font-semibold transition cursor-pointer border border-transparent text-[11px]">{{ $width }}%</button>
     @endforeach --}}
+    <x-layouts::app.editor-toolbar-btn command="createImageCaption" activeType="alpine" activeName="isActive('caption')" title="Caption" icon="captions" />
 
     <div class="h-4 w-px bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
 
@@ -55,4 +56,5 @@
         title="Hapus Gambar">
         <x-dynamic-component :component="'lucide-trash-2'" class="h-4 w-4" stroke-width="2.5" />
     </button>
+
 </div>

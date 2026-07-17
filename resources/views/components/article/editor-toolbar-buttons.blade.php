@@ -249,7 +249,7 @@
                         <button
                             type="button"
                             @click="togglePillColorMenu()"
-                            :class="checkButtonActive('pill') ? 'bg-gray-100' : 'hover:bg-gray-100'"
+                            :class="checkButtonActive('pill') ? 'bg-sage-soft text-forest' : 'text-gray-600 hover:bg-gray-100hover:bg-gray-100'"
                             class="flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors text-gray-600"
                             :aria-expanded="isPillColorOpen"
                             aria-haspopup="true"
@@ -310,7 +310,6 @@
                         </div>
                     </div>
 
-                    <x-layouts::app.editor-toolbar-btn command="togglePill" activeName="pill" title="Pembungkus Pill" icon="pill" />
                 </div>
 
                 <!-- DIVIDER -->
