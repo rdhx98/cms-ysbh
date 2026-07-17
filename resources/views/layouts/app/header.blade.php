@@ -27,9 +27,31 @@
         </div>
     </button>
 
-    <span class="text-sm font-bold text-forest tracking-wide p-2">
+    <div class="text-sm font-bold text-forest tracking-wide p-2 flex items-center gap-4">
         {{ $title }}
-    </span>
+        <div class=" bg-sage-soft py-1 px-2 rounded-4xl">
+            {{ now()->format('d M Y') }}
+            <span 
+                x-data="{ time: '' }" 
+                x-init="
+                    const updateTime = () => {
+                        // Memaksa zona waktu ke Jayapura, format 24 jam, tanpa detik
+                        time = new Date().toLocaleTimeString('id-ID', { 
+                            timeZone: 'Asia/Jayapura', 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false
+                        });
+                    };
+                    updateTime(); // Jalankan pertama kali
+                    setInterval(updateTime, 1000); // Perbarui setiap detik
+                "
+                x-text="time"
+                class="font-bold text-gray-700"
+            >
+            </span>
+        </div> 
+    </div>
 
     <button
             @click="userMenuExpand = !userMenuExpand"

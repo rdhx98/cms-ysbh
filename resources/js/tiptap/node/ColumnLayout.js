@@ -19,9 +19,6 @@ export const ColumnBlock = Node.create({
             mergeAttributes(HTMLAttributes, {
                 'data-type': 'column-block',
                 // Tumpuk di HP (flex-col), Berjejer di Desktop (md:flex-row)
-                // class: 'flex flex-col md:flex-row gap-2 my-6 w-full !px-0'
-                // class: 'flex flex-col md:flex-row gap-2 my-6 w-full p-4'
-                // class: 'flex flex-col md:flex-row gap-2 my-6 w-full px-[2.5rem]'
                 // Di dalam renderHTML ColumnBlock
                 class: 'flex flex-col md:flex-row gap-2 my-6 w-full px-[2.5rem] [[data-type="section-block"]_&]:px-0'
             }),
@@ -29,44 +26,6 @@ export const ColumnBlock = Node.create({
         ];
     },
 
-    // addCommands() {
-    //     return {
-    //         insertManualColumns: () => ({ commands, state }) => {
-    //             // 1. Deteksi apakah kursor saat ini sedang berada di dalam kolom
-    //             const { selection } = state;
-    //             const { $from } = selection;
-    //             let isInsideColumn = false;
-
-    //             // Telusuri pohon DOM ke atas dari posisi kursor
-    //             for (let depth = $from.depth; depth > 0; depth--) {
-    //                 if ($from.node(depth).type.name === 'columnBlock' || $from.node(depth).type.name === 'column') {
-    //                     isInsideColumn = true;
-    //                     break;
-    //                 }
-    //             }
-
-    //             // 2. Jika iya, tolak perintahnya dan munculkan notifikasi Anda
-    //             if (isInsideColumn) {
-    //                 window.dispatchEvent(new CustomEvent('tampilkan-notifikasi', {
-    //                     detail: {
-    //                         message: 'Tidak dapat membuat kolom di dalam kolom. Buat baris baru di luar terlebih dahulu.',
-    //                         type: 'warning'
-    //                     }
-    //                 }));
-    //                 return false; // Hentikan eksekusi
-    //             }
-
-    //             // 3. Jika aman (di luar kolom), jalankan pembuatan kolom
-    //             return commands.insertContent({
-    //                 type: 'columnBlock',
-    //                 content: [
-    //                     { type: 'column', content: [{ type: 'paragraph' }] },
-    //                     { type: 'column', content: [{ type: 'paragraph' }] } // Langsung buat 2 kolom agar lebih intuitif
-    //                 ]
-    //             });
-    //         }
-    //     }
-    // }
     addCommands() {
         return {
             insertManualColumns: () => ({ commands, state }) => {
@@ -147,7 +106,7 @@ export const Column = Node.create({
             mergeAttributes(HTMLAttributes, {
                 'data-type': 'column',
                 // class: `flex flex-col gap-2 min-w-0 p-8 has-[[data-type=info-card]]:!p-0 rounded-xl border border-transparent ${spanClass}`
-                class: `flex flex-col gap-2 min-w-0 p-0 has-[[data-type=info-card]]:!p-0  border border-transparent ${spanClass}`
+                class: `flex flex-col gap-4 min-w-0 p-0 has-[[data-type=info-card]]:!p-0  border border-transparent ${spanClass}`
             }),
             0
         ];
@@ -157,7 +116,7 @@ export const Column = Node.create({
             const dom = document.createElement('div');
             const spanClass = node.attrs.span === 2 ? 'md:flex-[2]' : 'md:flex-1';
 
-            dom.className = `group relative flex flex-col gap-2 min-w-0 p-0 has-[[data-type=info-card]]:!p-0 border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
+            dom.className = `group relative flex flex-col gap-4 min-w-0 p-0 has-[[data-type=info-card]]:!p-0 border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
             // dom.className = `group relative flex flex-col gap-2 min-w-0 p-8 has-[[data-type=info-card]]:!p-0 rounded-xl border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
             dom.dataset.type = 'column';
 
@@ -324,7 +283,7 @@ export const Column = Node.create({
                     if (updatedNode.type.name !== 'column') return false;
                     const spanClass = updatedNode.attrs.span === 2 ? 'md:flex-[2]' : 'md:flex-1';
                     // dom.className = `group relative flex flex-col gap-2 min-w-0 p-8 has-[[data-type=info-card]]:!p-0 rounded-xl border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
-                    dom.className = `group relative flex flex-col gap-2 min-w-0 p-0 has-[[data-type=info-card]]:!p-0  border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
+                    dom.className = `group relative flex flex-col gap-4 min-w-0 p-0 has-[[data-type=info-card]]:!p-0  border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
                     spanBtn.innerHTML = updatedNode.attrs.span === 2 ? 'Kecilkan' : 'Lebarkan';
                     return true;
                 }

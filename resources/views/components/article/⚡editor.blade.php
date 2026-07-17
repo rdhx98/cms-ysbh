@@ -305,7 +305,7 @@ new class extends Component {
                 'content' => $this->content, // HTML bersih, ringan, bebas base64
                 'featured_image' => $this->featured_image,
                 'status' => $this->status,
-                'created_at' => $this->created_at,
+                // 'created_at' => $this->created_at,
             ],
         );
 

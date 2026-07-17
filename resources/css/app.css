@@ -1028,61 +1028,92 @@ section[data-type="section-block"]:hover .section-color-toolbar,
 }
 
 /* 🌟 1. Beri ruang ekstra di bagian atas H1 baris pertama untuk menaruh label */
-    .ProseMirror > h1:first-child {
-        position: relative !important;
-        margin-top: 2rem !important;
-    }
+.ProseMirror > h1:first-child {
+    position: relative !important;
+    margin-top: 2rem !important;
+}
 
-    /* 🌟 2. Ciptakan label "📌 JUDUL ARTIKEL" yang melayang di atas H1 */
-    .ProseMirror > h1:first-child::before {
-        content: "Judul Artikel";
-        position: absolute;
-        top: -1.5rem; /* Tarik ke atas teks judul */
-        left: 0;
-        font-size: 0.7rem;
-        font-family: ui-sans-serif, system-ui, sans-serif;
-        font-weight: 700;
-        color: #064F3B; /* Warna hijau (bisa disesuaikan dengan tema web Anda) */
-        letter-spacing: 0.05em;
-        opacity: 0.7;
-        margin-left: 2.5rem;
-        margin-right: 2.5rem;
-        pointer-events: none; /* KUNCI: Agar label tidak menghalangi klik mouse */
-    }
+/* 🌟 2. Ciptakan label "📌 JUDUL ARTIKEL" yang melayang di atas H1 */
+.ProseMirror > h1:first-child::before {
+    content: "Judul Artikel";
+    position: absolute;
+    top: -1.5rem; /* Tarik ke atas teks judul */
+    left: 0;
+    font-size: 0.7rem;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    color: #064F3B; /* Warna hijau (bisa disesuaikan dengan tema web Anda) */
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+    margin-left: 2.5rem;
+    margin-right: 2.5rem;
+    pointer-events: none; /* KUNCI: Agar label tidak menghalangi klik mouse */
+}
 
-    /* 🌟 3. Jika penulis menekan tombol Rata Tengah, label ikut ke tengah */
-    .ProseMirror > h1:first-child[style*="text-align: center"]::before {
-        left: 50%;
-        transform: translateX(-50%);
-    }
+/* 🌟 3. Jika penulis menekan tombol Rata Tengah, label ikut ke tengah */
+.ProseMirror > h1:first-child[style*="text-align: center"]::before {
+    left: 50%;
+    transform: translateX(-50%);
+}
 
-    /* 🌟 4. Jika penulis menekan tombol Rata Kanan, label ikut ke kanan */
-    .ProseMirror > h1:first-child[style*="text-align: right"]::before {
-        left: auto;
-        right: 0;
-    }
-    /* 🌟 CSS UNTUK MENGGAMBAR PLACEHOLDER CAPTION GAMBAR */
-    figcaption[data-placeholder]:empty::before,
-    figcaption[data-placeholder].is-empty::before,
-    figcaption[data-placeholder]:has(br:only-child)::before {
-        content: attr(data-placeholder);
-        color: #a1a1aa; /* Warna abu-abu samar (zinc-400) */
-        pointer-events: none; /* Agar tidak menghalangi kursor saat diklik */
-        cursor: text;
-    }
-    
-    /* Mencegah tinggi caption anjlok saat kosong */
-    figcaption[data-placeholder] {
-        min-height: 1.5rem; 
-    }
-    
-    figure[data-type="image-block"] figcaption:empty::before {
-        content: attr(data-placeholder);
-        color: #a1a1aa;
-        pointer-events: none;
-    }
-    figure[data-type="image-block"]:focus-within {
-        outline: 2px solid #22c55e; /* samakan warnanya dengan border hijau gambar biasa Anda */
-        outline-offset: 2px;
-        border-radius: 0.5rem;
-    }
+/* 🌟 4. Jika penulis menekan tombol Rata Kanan, label ikut ke kanan */
+.ProseMirror > h1:first-child[style*="text-align: right"]::before {
+    left: auto;
+    right: 0;
+}
+/* 🌟 CSS UNTUK MENGGAMBAR PLACEHOLDER CAPTION GAMBAR */
+figcaption[data-placeholder]:empty::before,
+figcaption[data-placeholder].is-empty::before,
+figcaption[data-placeholder]:has(br:only-child)::before {
+    content: attr(data-placeholder);
+    color: #a1a1aa; /* Warna abu-abu samar (zinc-400) */
+    pointer-events: none; /* Agar tidak menghalangi kursor saat diklik */
+    cursor: text;
+}
+
+/* Mencegah tinggi caption anjlok saat kosong */
+figcaption[data-placeholder] {
+    min-height: 1.5rem; 
+}
+
+figure[data-type="image-block"] figcaption:empty::before {
+    content: attr(data-placeholder);
+    color: #a1a1aa;
+    pointer-events: none;
+}
+figure[data-type="image-block"]:focus-within {
+    outline: 2px solid #22c55e; /* samakan warnanya dengan border hijau gambar biasa Anda */
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+}
+
+/* 🌟 KUSTOMISASI HEADING UNTUK AREA EDITOR (.prose) */
+
+/* Pengaturan H1 */
+.prose h1 {
+    font-size: 42px !important;          /* Memaksa ukuran tepat 42px */
+    color: #064F3B !important;           /* Warna gelap pekat (mirip gray-900) */
+    font-family: 'Plus Jakarta Sans', sans-serif !important; /* Gunakan font Anda */
+    font-weight: 800 !important;         /* Ketebalan teks (Extra Bold) */
+    line-height: 1.2 !important;         /* Jarak antar baris teks yang pas */
+    margin-top: 2.5rem !important;       /* Jarak kosong di atas heading */
+    margin-bottom: 1rem !important;      /* Jarak kosong di bawah heading */
+}
+
+/* Pengaturan H2 (sebagai bonus jika Anda membutuhkannya) */
+.prose h2 {
+    font-size: 32px !important;
+    color: #064F3B !important;           /* Warna sedikit lebih lembut dari H1 */
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 700 !important;         /* Bold */
+    margin-top: 2rem !important;
+    margin-bottom: 0.75rem !important;
+}
+
+/* Pengaturan H3 */
+.prose h3 {
+    font-size: 24px !important;
+    color: #064F3B !important;
+    /* font-family: 'Plus Jakarta Sans', sans-serif !important; */
+    font-weight: 600 !important;         /* Semi Bold */
+}

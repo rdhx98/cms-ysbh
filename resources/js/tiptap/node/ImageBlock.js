@@ -57,6 +57,26 @@ export const ImageBlock = Node.create({
         ];
     },
 
+    // renderHTML({ HTMLAttributes, node }) {
+    //     const img = [
+    //         'img',
+    //         {
+    //             src: node.attrs.src,
+    //             alt: node.attrs.alt || '',
+    //             title: node.attrs.title || '',
+    //             class: node.attrs.imageClass,
+    //             style: 'width: 100%; height: auto;',
+    //             ...(node.attrs['data-token'] ? { 'data-token': node.attrs['data-token'] } : {}),
+    //         },
+    //     ];
+    //     const figcaption = ['figcaption', { class: 'text-center text-sm text-zinc-500 italic mt-2 outline-none' }, 0];
+
+    //     return [
+    //         'figure',
+    //         mergeAttributes(HTMLAttributes, { 'data-type': 'image-block', class: 'flex flex-col my-4' }),
+    //         ...(node.attrs.captionPosition === 'top' ? [figcaption, img] : [img, figcaption]),
+    //     ];
+    // },
     renderHTML({ HTMLAttributes, node }) {
         const img = [
             'img',
@@ -65,33 +85,57 @@ export const ImageBlock = Node.create({
                 alt: node.attrs.alt || '',
                 title: node.attrs.title || '',
                 class: node.attrs.imageClass,
-                style: 'width: 100%; height: auto;',
+                style: node.attrs.style || 'display: block; width: 100%; height: auto;', // 🔧 pakai attrs.style
                 ...(node.attrs['data-token'] ? { 'data-token': node.attrs['data-token'] } : {}),
             },
         ];
-        const figcaption = ['figcaption', { class: 'text-center text-sm text-zinc-500 italic mt-2 outline-none' }, 0];
+        const figcaption = ['figcaption', { class: 'text-center text-sm text-zinc-500 italic mt-2 outline-none', style: 'clear: both;' }, 0];
 
         return [
             'figure',
-            mergeAttributes(HTMLAttributes, { 'data-type': 'image-block', class: 'flex flex-col my-4' }),
+            mergeAttributes(HTMLAttributes, { 'data-type': 'image-block', class: 'my-4' }), // 🔧 hapus flex flex-col
             ...(node.attrs.captionPosition === 'top' ? [figcaption, img] : [img, figcaption]),
         ];
     },
 
     addNodeView() {
         return ({ node, editor, getPos }) => {
+    //         const figure = document.createElement('figure');
+    //         figure.dataset.type = 'image-block';
+    //         figure.className = 'flex flex-col my-4 group relative';
+    //         if (node.attrs.style) figure.setAttribute('style', node.attrs.style);
+
+    //         const img = document.createElement('img');
+    //         img.src = node.attrs.src;
+    //         img.alt = node.attrs.alt || '';
+    //         if (node.attrs.title) img.title = node.attrs.title;
+    //         img.className = node.attrs.imageClass;
+    //         img.style.width = '100%';
+    //         img.style.height = 'auto';
+    //         img.contentEditable = 'false';
+    //         img.draggable = false;
+
+    //         img.addEventListener('click', (e) => {
+    //             e.preventDefault();
+    //             if (typeof getPos === 'function') {
+    //                 editor.commands.setNodeSelection(getPos());
+    //                 window.activeImageBlockRef = { el: img, captionPosition: node.attrs.captionPosition };
+    //             }
+    //         });
+
+    //         const caption = document.createElement('figcaption');
+    //         caption.className = 'text-center text-sm text-zinc-500 italic mt-2 outline-none w-full max-w-full';
+    //         caption.setAttribute('data-placeholder', 'Tulis keterangan gambar…');
             const figure = document.createElement('figure');
             figure.dataset.type = 'image-block';
-            figure.className = 'flex flex-col my-4 group relative';
-            if (node.attrs.style) figure.setAttribute('style', node.attrs.style);
+            figure.className = 'my-4 group relative'; // 🔧 hapus flex flex-col, sudah tidak perlu
 
             const img = document.createElement('img');
             img.src = node.attrs.src;
             img.alt = node.attrs.alt || '';
             if (node.attrs.title) img.title = node.attrs.title;
             img.className = node.attrs.imageClass;
-            img.style.width = '100%';
-            img.style.height = 'auto';
+            img.setAttribute('style', node.attrs.style || 'display: block; width: 100%; height: auto;'); // 🔧 pakai attrs.style
             img.contentEditable = 'false';
             img.draggable = false;
 
@@ -105,6 +149,7 @@ export const ImageBlock = Node.create({
 
             const caption = document.createElement('figcaption');
             caption.className = 'text-center text-sm text-zinc-500 italic mt-2 outline-none w-full max-w-full';
+            caption.style.clear = 'both'; // 🔧 supaya caption tidak "menempel" di samping gambar yang sedang di-float
             caption.setAttribute('data-placeholder', 'Tulis keterangan gambar…');
 
             const toolbar = document.createElement('div');
@@ -162,18 +207,39 @@ export const ImageBlock = Node.create({
             return {
                 dom: figure,
                 contentDOM: caption,
+                // update: (updatedNode) => {
+                //     if (updatedNode.type.name !== 'imageBlock') return false;
+
+                //     img.src = updatedNode.attrs.src;
+                //     img.alt = updatedNode.attrs.alt || '';
+                //     img.className = updatedNode.attrs.imageClass;
+
+                //     if (updatedNode.attrs.style) {
+                //         figure.setAttribute('style', updatedNode.attrs.style);
+                //     } else {
+                //         figure.removeAttribute('style');
+                //     }
+
+                //     if (updatedNode.attrs.captionPosition !== currentPosition) {
+                //         currentPosition = updatedNode.attrs.captionPosition;
+                //         updateToggleLabel(currentPosition);
+                //         applyOrder(currentPosition);
+                //     }
+
+                //     // 🌟 TAMBAHAN: perbarui juga referensi global tiap node ini berubah
+                //     if (window.activeImageBlockRef?.el === img) {
+                //         window.activeImageBlockRef.captionPosition = updatedNode.attrs.captionPosition;
+                //     }
+
+                //     return true;
+                // },
                 update: (updatedNode) => {
                     if (updatedNode.type.name !== 'imageBlock') return false;
 
                     img.src = updatedNode.attrs.src;
                     img.alt = updatedNode.attrs.alt || '';
                     img.className = updatedNode.attrs.imageClass;
-
-                    if (updatedNode.attrs.style) {
-                        figure.setAttribute('style', updatedNode.attrs.style);
-                    } else {
-                        figure.removeAttribute('style');
-                    }
+                    img.setAttribute('style', updatedNode.attrs.style || 'display: block; width: 100%; height: auto;'); // 🔧 GANTI target ke img
 
                     if (updatedNode.attrs.captionPosition !== currentPosition) {
                         currentPosition = updatedNode.attrs.captionPosition;
@@ -181,7 +247,6 @@ export const ImageBlock = Node.create({
                         applyOrder(currentPosition);
                     }
 
-                    // 🌟 TAMBAHAN: perbarui juga referensi global tiap node ini berubah
                     if (window.activeImageBlockRef?.el === img) {
                         window.activeImageBlockRef.captionPosition = updatedNode.attrs.captionPosition;
                     }

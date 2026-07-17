@@ -224,26 +224,12 @@ document.addEventListener('alpine:init', () => {
                     element: this.$refs.editorElement,
                     extensions: [
                         // StarterKit standar
-                        StarterKit.configure({
-                            codeBlock: false,
-                            link: false,
-                            underline: false,
-                            orderedList:false,
-                        }),
+                        StarterKit.configure({ codeBlock: false, link: false, underline: false, orderedList:false, }),
 
                         GlobalDragHandle.configure({
                             dragHandleWidth: 32, // Lebar area deteksi hover (dalam px)
                             scrollTreshold: 100, // Kecepatan scroll saat drag mendekati tepi layar
-                            customNodes: [
-                                'card',
-                                'chip-group',
-                                'callout',
-                                'pull-quote',
-                                'stat-highlight',
-                                'figure',
-                                'cta-button',
-                                'column',
-                            ],
+                            customNodes: [ 'card', 'chip-group', 'callout', 'pull-quote', 'stat-highlight', 'figure', 'cta-button', 'column', ],
                         }),
 
                         Column,
@@ -254,20 +240,11 @@ document.addEventListener('alpine:init', () => {
                         Card,
                         Pill,
                         ImageBlock,
-                        // InfoCard,
                         FontSize,
 
-                        // TransferCard,
-                        // ContactItem,
-                        // ChipGroup,
-
-                        // Biarkan mati saat pertama kali dimuat
                         HiddenMarks.configure({visible: false }),
 
-                        Link.configure({
-                            openOnClick: false,
-                            HTMLAttributes: { class: 'text-forest underline cursor-pointer' }
-                        }),
+                        Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-forest underline cursor-pointer' } }),
 
                         LinkBackspaceHandler,
                         ParagraphIndent,
