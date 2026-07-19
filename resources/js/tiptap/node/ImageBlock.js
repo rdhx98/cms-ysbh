@@ -57,26 +57,7 @@ export const ImageBlock = Node.create({
         ];
     },
 
-    // renderHTML({ HTMLAttributes, node }) {
-    //     const img = [
-    //         'img',
-    //         {
-    //             src: node.attrs.src,
-    //             alt: node.attrs.alt || '',
-    //             title: node.attrs.title || '',
-    //             class: node.attrs.imageClass,
-    //             style: 'width: 100%; height: auto;',
-    //             ...(node.attrs['data-token'] ? { 'data-token': node.attrs['data-token'] } : {}),
-    //         },
-    //     ];
-    //     const figcaption = ['figcaption', { class: 'text-center text-sm text-zinc-500 italic mt-2 outline-none' }, 0];
-
-    //     return [
-    //         'figure',
-    //         mergeAttributes(HTMLAttributes, { 'data-type': 'image-block', class: 'flex flex-col my-4' }),
-    //         ...(node.attrs.captionPosition === 'top' ? [figcaption, img] : [img, figcaption]),
-    //     ];
-    // },
+    // GEMINI TESTING
     renderHTML({ HTMLAttributes, node }) {
         const img = [
             'img',
@@ -85,57 +66,61 @@ export const ImageBlock = Node.create({
                 alt: node.attrs.alt || '',
                 title: node.attrs.title || '',
                 class: node.attrs.imageClass,
-                style: node.attrs.style || 'display: block; width: 100%; height: auto;', // 🔧 pakai attrs.style
+                // 🌟 Gambar di dalam figure SELALU mengambil 100% ruang dari figure
+                style: 'display: block; width: 100%; height: auto;', 
                 ...(node.attrs['data-token'] ? { 'data-token': node.attrs['data-token'] } : {}),
             },
         ];
         const figcaption = ['figcaption', { class: 'text-center text-sm text-zinc-500 italic mt-2 outline-none', style: 'clear: both;' }, 0];
 
+        // 🌟 Memindahkan atribut style (width & alignment) ke pembungkus <figure>
+        const figureAttrs = { 'data-type': 'image-block', class: 'my-4' };
+        if (node.attrs.style) {
+            figureAttrs.style = node.attrs.style;
+        }
+
         return [
             'figure',
-            mergeAttributes(HTMLAttributes, { 'data-type': 'image-block', class: 'my-4' }), // 🔧 hapus flex flex-col
+            mergeAttributes(HTMLAttributes, figureAttrs), 
             ...(node.attrs.captionPosition === 'top' ? [figcaption, img] : [img, figcaption]),
         ];
     },
+    // WORKING
+    // renderHTML({ HTMLAttributes, node }) {
+    //     const img = [
+    //         'img',
+    //         {
+    //             src: node.attrs.src,
+    //             alt: node.attrs.alt || '',
+    //             title: node.attrs.title || '',
+    //             class: node.attrs.imageClass,
+    //             style: node.attrs.style || 'display: block; width: 100%; height: auto;', // 🔧 pakai attrs.style
+    //             ...(node.attrs['data-token'] ? { 'data-token': node.attrs['data-token'] } : {}),
+    //         },
+    //     ];
+    //     const figcaption = ['figcaption', { class: 'text-center text-sm text-zinc-500 italic mt-2 outline-none', style: 'clear: both;' }, 0];
 
+    //     return [
+    //         'figure',
+    //         mergeAttributes(HTMLAttributes, { 'data-type': 'image-block', class: 'my-4' }), // 🔧 hapus flex flex-col
+    //         ...(node.attrs.captionPosition === 'top' ? [figcaption, img] : [img, figcaption]),
+    //     ];
+    // },
+
+    //  IMAGE SCALING BUG, CAPTION BUG ON RIGHT MARGIN
     addNodeView() {
         return ({ node, editor, getPos }) => {
-    //         const figure = document.createElement('figure');
-    //         figure.dataset.type = 'image-block';
-    //         figure.className = 'flex flex-col my-4 group relative';
-    //         if (node.attrs.style) figure.setAttribute('style', node.attrs.style);
-
-    //         const img = document.createElement('img');
-    //         img.src = node.attrs.src;
-    //         img.alt = node.attrs.alt || '';
-    //         if (node.attrs.title) img.title = node.attrs.title;
-    //         img.className = node.attrs.imageClass;
-    //         img.style.width = '100%';
-    //         img.style.height = 'auto';
-    //         img.contentEditable = 'false';
-    //         img.draggable = false;
-
-    //         img.addEventListener('click', (e) => {
-    //             e.preventDefault();
-    //             if (typeof getPos === 'function') {
-    //                 editor.commands.setNodeSelection(getPos());
-    //                 window.activeImageBlockRef = { el: img, captionPosition: node.attrs.captionPosition };
-    //             }
-    //         });
-
-    //         const caption = document.createElement('figcaption');
-    //         caption.className = 'text-center text-sm text-zinc-500 italic mt-2 outline-none w-full max-w-full';
-    //         caption.setAttribute('data-placeholder', 'Tulis keterangan gambar…');
             const figure = document.createElement('figure');
             figure.dataset.type = 'image-block';
-            figure.className = 'my-4 group relative'; // 🔧 hapus flex flex-col, sudah tidak perlu
+            figure.className = 'my-4 group relative';
+            if (node.attrs.style) figure.setAttribute('style', node.attrs.style); // 🔧 style pindah ke sini
 
             const img = document.createElement('img');
             img.src = node.attrs.src;
             img.alt = node.attrs.alt || '';
             if (node.attrs.title) img.title = node.attrs.title;
             img.className = node.attrs.imageClass;
-            img.setAttribute('style', node.attrs.style || 'display: block; width: 100%; height: auto;'); // 🔧 pakai attrs.style
+            img.setAttribute('style', 'display: block; width: 100%; height: auto;'); // 🔧 SELALU tetap, tidak lagi pakai node.attrs.style
             img.contentEditable = 'false';
             img.draggable = false;
 
@@ -143,55 +128,19 @@ export const ImageBlock = Node.create({
                 e.preventDefault();
                 if (typeof getPos === 'function') {
                     editor.commands.setNodeSelection(getPos());
-                    window.activeImageBlockRef = { el: img, captionPosition: node.attrs.captionPosition };
+                    window.activeImageBlockRef = { el: figure, captionPosition: node.attrs.captionPosition }; // 🔧 figure, bukan img
                 }
             });
 
             const caption = document.createElement('figcaption');
             caption.className = 'text-center text-sm text-zinc-500 italic mt-2 outline-none w-full max-w-full';
-            caption.style.clear = 'both'; // 🔧 supaya caption tidak "menempel" di samping gambar yang sedang di-float
             caption.setAttribute('data-placeholder', 'Tulis keterangan gambar…');
+            // 🔧 baris caption.style.clear = 'both' DIHAPUS — tidak perlu lagi, img sudah tidak float sendiri
 
-            const toolbar = document.createElement('div');
-            toolbar.contentEditable = 'false';
-            toolbar.className = 'absolute -top-3 right-2 flex items-center gap-1 bg-white border border-zinc-200 rounded-md p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-sm';
-
-            const toggleBtn = document.createElement('button');
-            toggleBtn.type = 'button';
-            toggleBtn.className = 'text-[11px] px-2 py-0.5 rounded hover:bg-zinc-100 text-zinc-600';
-
-            const removeBtn = document.createElement('button');
-            removeBtn.type = 'button';
-            removeBtn.textContent = 'Hapus Caption';
-            removeBtn.className = 'text-[11px] px-2 py-0.5 rounded hover:bg-red-50 text-red-500';
-            removeBtn.onclick = (e) => {
-                e.preventDefault();
-                if (typeof getPos === 'function') {
-                    editor.chain().setNodeSelection(getPos()).removeImageCaption().run();
-                }
-            };
-
-            // 🔧 PERBAIKAN: variabel pelacak posisi TERPISAH dari `node` yang basi
             let currentPosition = node.attrs.captionPosition;
-
-            const updateToggleLabel = (position) => {
-                toggleBtn.textContent = position === 'top' ? 'Caption ke Bawah' : 'Caption ke Atas';
-            };
-
-            toggleBtn.onclick = (e) => {
-                e.preventDefault();
-                if (typeof getPos === 'function') {
-                    const newPos = currentPosition === 'top' ? 'bottom' : 'top';
-                    editor.chain().setNodeSelection(getPos()).updateAttributes('imageBlock', { captionPosition: newPos }).run();
-                }
-            };
-
-            toolbar.appendChild(toggleBtn);
-            toolbar.appendChild(removeBtn);
 
             const applyOrder = (position) => {
                 figure.innerHTML = '';
-                figure.appendChild(toolbar);
                 if (position === 'top') {
                     figure.appendChild(caption);
                     figure.appendChild(img);
@@ -201,53 +150,30 @@ export const ImageBlock = Node.create({
                 }
             };
 
-            updateToggleLabel(currentPosition);
             applyOrder(currentPosition);
 
             return {
                 dom: figure,
                 contentDOM: caption,
-                // update: (updatedNode) => {
-                //     if (updatedNode.type.name !== 'imageBlock') return false;
-
-                //     img.src = updatedNode.attrs.src;
-                //     img.alt = updatedNode.attrs.alt || '';
-                //     img.className = updatedNode.attrs.imageClass;
-
-                //     if (updatedNode.attrs.style) {
-                //         figure.setAttribute('style', updatedNode.attrs.style);
-                //     } else {
-                //         figure.removeAttribute('style');
-                //     }
-
-                //     if (updatedNode.attrs.captionPosition !== currentPosition) {
-                //         currentPosition = updatedNode.attrs.captionPosition;
-                //         updateToggleLabel(currentPosition);
-                //         applyOrder(currentPosition);
-                //     }
-
-                //     // 🌟 TAMBAHAN: perbarui juga referensi global tiap node ini berubah
-                //     if (window.activeImageBlockRef?.el === img) {
-                //         window.activeImageBlockRef.captionPosition = updatedNode.attrs.captionPosition;
-                //     }
-
-                //     return true;
-                // },
                 update: (updatedNode) => {
                     if (updatedNode.type.name !== 'imageBlock') return false;
 
                     img.src = updatedNode.attrs.src;
                     img.alt = updatedNode.attrs.alt || '';
                     img.className = updatedNode.attrs.imageClass;
-                    img.setAttribute('style', updatedNode.attrs.style || 'display: block; width: 100%; height: auto;'); // 🔧 GANTI target ke img
+
+                    if (updatedNode.attrs.style) {
+                        figure.setAttribute('style', updatedNode.attrs.style); // 🔧 target figure
+                    } else {
+                        figure.removeAttribute('style');
+                    }
 
                     if (updatedNode.attrs.captionPosition !== currentPosition) {
                         currentPosition = updatedNode.attrs.captionPosition;
-                        updateToggleLabel(currentPosition);
                         applyOrder(currentPosition);
                     }
 
-                    if (window.activeImageBlockRef?.el === img) {
+                    if (window.activeImageBlockRef?.el === figure) { // 🔧 bandingkan dengan figure
                         window.activeImageBlockRef.captionPosition = updatedNode.attrs.captionPosition;
                     }
 
@@ -257,6 +183,7 @@ export const ImageBlock = Node.create({
         };
     },
 
+    // GEMINI TESTING
     addCommands() {
         return {
             addImageCaption: () => ({ state, chain, editor }) => {
@@ -273,9 +200,17 @@ export const ImageBlock = Node.create({
                     return false;
                 }
 
-                // 🔧 PERBAIKAN: ikut bawa `style` (lebar & alignment) ke node baru
-                const { src, alt, title, class: imageClass, style } = imageNode.attrs;
+                let { src, alt, title, class: imageClass, style } = imageNode.attrs;
                 const token = imageNode.attrs['data-token'];
+
+                // 🌟 PERBAIKAN: Menggunakan parseFloat agar desimal (seperti 33.33%) tidak hilang
+                style = style || '';
+                const widthMatch = style.match(/width:\s*([\d.]+)%/);
+                if (widthMatch) {
+                    const widthNum = parseFloat(widthMatch[1]); 
+                    const cleanedStyle = style.replace(/width:\s*[^;]+;?/g, '').trim();
+                    style = `width: calc(${widthNum / 100} * min(100%, 64rem)) !important; ${cleanedStyle}`.trim();
+                }
 
                 return chain()
                     .insertContentAt(
@@ -296,9 +231,17 @@ export const ImageBlock = Node.create({
                 const blockNode = state.doc.nodeAt(selection.from);
                 if (!blockNode || blockNode.type.name !== this.name) return false;
 
-                // 🔧 PERBAIKAN: kembalikan juga `style`-nya ke node gambar biasa
-                const { src, alt, title, imageClass, style } = blockNode.attrs;
+                let { src, alt, title, imageClass, style } = blockNode.attrs;
                 const token = blockNode.attrs['data-token'];
+
+                style = style || '';
+                const widthMatch = style.match(/width:\s*calc\(([\d.]+)\s*\*/);
+                if (widthMatch) {
+                    // 🌟 Mengembalikan kembali ke persen dengan presisi 2 desimal (mencegah ukuran menciut)
+                    const widthNum = parseFloat((parseFloat(widthMatch[1]) * 100).toFixed(2));
+                    const cleanedStyle = style.replace(/width:\s*[^;]+;?/g, '').trim();
+                    style = `width: ${widthNum}% !important; ${cleanedStyle}`.trim();
+                }
 
                 return chain()
                     .insertContentAt(
@@ -307,6 +250,153 @@ export const ImageBlock = Node.create({
                     )
                     .run();
             },
+            
+            toggleCaptionPosition: () => ({ state, chain, editor }) => {
+                if (!editor.isActive(this.name)) return false;
+                const blockNode = state.doc.nodeAt(state.selection.from);
+                if (!blockNode || blockNode.type.name !== this.name) return false;
+                const newPos = blockNode.attrs.captionPosition === 'top' ? 'bottom' : 'top';
+                return chain().updateAttributes(this.name, { captionPosition: newPos }).run();
+            },
         };
     },
+
+
+    // GEMINI WORKING
+    // addCommands() {
+    //     return {
+    //         addImageCaption: () => ({ state, chain, editor }) => {
+    //             if (!editor.isActive('image')) return false;
+
+    //             const { selection } = state;
+    //             const imageNode = state.doc.nodeAt(selection.from);
+    //             if (!imageNode || imageNode.type.name !== 'image') return false;
+
+    //             if (imageNode.attrs.alt === '⏳ Mengunggah...') {
+    //                 window.dispatchEvent(new CustomEvent('tampilkan-notifikasi', {
+    //                     detail: { message: 'Tunggu sampai gambar selesai diunggah dulu.', type: 'warning' }
+    //                 }));
+    //                 return false;
+    //             }
+
+    //             let { src, alt, title, class: imageClass, style } = imageNode.attrs;
+    //             const token = imageNode.attrs['data-token'];
+
+    //             // 🌟 TRANSLASI STYLE: Ubah % menjadi calc() untuk imageBlock
+    //             style = style || '';
+    //             const widthMatch = style.match(/width:\s*(\d+)%/);
+    //             if (widthMatch) {
+    //                 const widthNum = parseInt(widthMatch[1], 10);
+    //                 const cleanedStyle = style.replace(/width:\s*[^;]+;?/, '').trim();
+    //                 style = `width: calc(${widthNum / 100} * min(100%, 64rem)) !important; ${cleanedStyle}`.trim();
+    //             }
+
+    //             return chain()
+    //                 .insertContentAt(
+    //                     { from: selection.from, to: selection.from + imageNode.nodeSize },
+    //                     {
+    //                         type: this.name,
+    //                         attrs: { src, alt, title, imageClass, style, 'data-token': token, captionPosition: 'bottom' },
+    //                         content: [],
+    //                     }
+    //                 )
+    //                 .run();
+    //         },
+
+    //         removeImageCaption: () => ({ state, chain, editor }) => {
+    //             if (!editor.isActive(this.name)) return false;
+
+    //             const { selection } = state;
+    //             const blockNode = state.doc.nodeAt(selection.from);
+    //             if (!blockNode || blockNode.type.name !== this.name) return false;
+
+    //             let { src, alt, title, imageClass, style } = blockNode.attrs;
+    //             const token = blockNode.attrs['data-token'];
+
+    //             // 🌟 TRANSLASI STYLE: Ubah calc() kembali menjadi % untuk gambar biasa
+    //             style = style || '';
+    //             const widthMatch = style.match(/width:\s*calc\(([\d.]+)\s*\*/);
+    //             if (widthMatch) {
+    //                 const widthNum = Math.round(parseFloat(widthMatch[1]) * 100);
+    //                 const cleanedStyle = style.replace(/width:\s*[^;]+;?/, '').trim();
+    //                 style = `width: ${widthNum}% !important; ${cleanedStyle}`.trim();
+    //             }
+
+    //             return chain()
+    //                 .insertContentAt(
+    //                     { from: selection.from, to: selection.from + blockNode.nodeSize },
+    //                     { type: 'image', attrs: { src, alt, title, class: imageClass, style, 'data-token': token } }
+    //                 )
+    //                 .run();
+    //         },
+    //         toggleCaptionPosition: () => ({ state, chain, editor }) => {
+    //             if (!editor.isActive(this.name)) return false;
+    //             const blockNode = state.doc.nodeAt(state.selection.from);
+    //             if (!blockNode || blockNode.type.name !== this.name) return false;
+    //             const newPos = blockNode.attrs.captionPosition === 'top' ? 'bottom' : 'top';
+    //             return chain().updateAttributes(this.name, { captionPosition: newPos }).run();
+    //         },
+    //     };
+    // },
+
+    // BEFORE TESTIN GEMINI CODE
+    // addCommands() {
+    //     return {
+    //         addImageCaption: () => ({ state, chain, editor }) => {
+    //             if (!editor.isActive('image')) return false;
+
+    //             const { selection } = state;
+    //             const imageNode = state.doc.nodeAt(selection.from);
+    //             if (!imageNode || imageNode.type.name !== 'image') return false;
+
+    //             if (imageNode.attrs.alt === '⏳ Mengunggah...') {
+    //                 window.dispatchEvent(new CustomEvent('tampilkan-notifikasi', {
+    //                     detail: { message: 'Tunggu sampai gambar selesai diunggah dulu.', type: 'warning' }
+    //                 }));
+    //                 return false;
+    //             }
+
+    //             // 🔧 PERBAIKAN: ikut bawa `style` (lebar & alignment) ke node baru
+    //             const { src, alt, title, class: imageClass, style } = imageNode.attrs;
+    //             const token = imageNode.attrs['data-token'];
+
+    //             return chain()
+    //                 .insertContentAt(
+    //                     { from: selection.from, to: selection.from + imageNode.nodeSize },
+    //                     {
+    //                         type: this.name,
+    //                         attrs: { src, alt, title, imageClass, style, 'data-token': token, captionPosition: 'bottom' },
+    //                         content: [],
+    //                     }
+    //                 )
+    //                 .run();
+    //         },
+
+    //         removeImageCaption: () => ({ state, chain, editor }) => {
+    //             if (!editor.isActive(this.name)) return false;
+
+    //             const { selection } = state;
+    //             const blockNode = state.doc.nodeAt(selection.from);
+    //             if (!blockNode || blockNode.type.name !== this.name) return false;
+
+    //             // 🔧 PERBAIKAN: kembalikan juga `style`-nya ke node gambar biasa
+    //             const { src, alt, title, imageClass, style } = blockNode.attrs;
+    //             const token = blockNode.attrs['data-token'];
+
+    //             return chain()
+    //                 .insertContentAt(
+    //                     { from: selection.from, to: selection.from + blockNode.nodeSize },
+    //                     { type: 'image', attrs: { src, alt, title, class: imageClass, style, 'data-token': token } }
+    //                 )
+    //                 .run();
+    //         },
+    //         toggleCaptionPosition: () => ({ state, chain, editor }) => {
+    //             if (!editor.isActive(this.name)) return false;
+    //             const blockNode = state.doc.nodeAt(state.selection.from);
+    //             if (!blockNode || blockNode.type.name !== this.name) return false;
+    //             const newPos = blockNode.attrs.captionPosition === 'top' ? 'bottom' : 'top';
+    //             return chain().updateAttributes(this.name, { captionPosition: newPos }).run();
+    //         },
+    //     };
+    // },
 });

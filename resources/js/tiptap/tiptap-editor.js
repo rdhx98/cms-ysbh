@@ -1206,39 +1206,6 @@ document.addEventListener('alpine:init', () => {
                 return null;
             },
 
-            setImageAlignment(alignment) {
-                const targetType = this.getActiveImageType();
-                if (!targetType) return;
-
-                const { selection } = window.tiptapEditor.state;
-                const currentPosition = selection.from;
-
-                const currentAttributes = window.tiptapEditor.getAttributes(targetType);
-                const currentStyle = currentAttributes.style || '';
-
-                const widthMatch = currentStyle.match(/width:\s*\d+%/);
-                const existingWidth = widthMatch ? widthMatch[0] + ';' : '';
-
-                let alignmentStyles = '';
-                if (alignment === 'left') {
-                    alignmentStyles = 'float: left; margin-right: 1rem; margin-top: 0.25rem; margin-bottom: 0.5rem; display: inline !important;';
-                } else if (alignment === 'right') {
-                    alignmentStyles = 'float: right; margin-left: 1rem; margin-top: 0.25rem; margin-bottom: 0.5rem; display: inline !important;';
-                } else {
-                    alignmentStyles = 'display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;';
-                }
-
-                window.tiptapEditor.chain()
-                    .focus()
-                    .updateAttributes(targetType, {
-                        style: `${existingWidth} ${alignmentStyles}`.trim()
-                    })
-                    .setNodeSelection(currentPosition)
-                    .run();
-
-                this.updatedAt = Date.now();
-            },
-
             isImageAlignActive(alignment) {
                 this.updatedAt;
                 const targetType = this.getActiveImageType();
@@ -1270,7 +1237,8 @@ document.addEventListener('alpine:init', () => {
                 window.tiptapEditor.chain().focus().deleteSelection().run();
                 this.updatedAt = Date.now();
             },
-
+            
+            // TESTING
             setImageWidth(width) {
                 const targetType = this.getActiveImageType();
                 if (!targetType) return;
@@ -1281,14 +1249,23 @@ document.addEventListener('alpine:init', () => {
                 const currentAttributes = window.tiptapEditor.getAttributes(targetType);
                 const currentStyle = currentAttributes.style || '';
 
-                console.log('[DEBUG setImageWidth] diklik dengan width:', width);
-                console.log('[DEBUG setImageWidth] targetType:', targetType, '| currentPosition:', currentPosition);
-                console.log('[DEBUG setImageWidth] currentStyle (sebelum dibersihkan):', JSON.stringify(currentStyle));
+                // 🌟 Tentukan format nilai width berdasarkan tipe node
+                // CLAUDE, WORKING WITH MINOR BUG
+                const widthValue = targetType === 'imageBlock'
+                    ? `calc(${width / 100} * min(100%, 64rem)) !important`
+                    : `${width}% !important`;
 
-                const cleanedStyle = currentStyle.replace(/width:\s*\d+%;?/, '').trim();
-                const newStyle = `width: ${width}%; ${cleanedStyle}`.trim();
+                // GEMINI TESTING : BUGGING THE isImageWidth
+                // const widthValue = `calc(${width / 100} * min(100%, 64rem)) !important`;
 
-                console.log('[DEBUG setImageWidth] newStyle (yang akan diterapkan):', JSON.stringify(newStyle));
+                // 🔧 Tambahkan flag 'g' di akhir regex agar SEMUA deklarasi width lama terhapus bersih
+                const cleanedStyle = currentStyle.replace(/width:\s*[^;]+;?/g, '').trim(); 
+                
+                // Gabungkan style baru dengan sisa style yang sudah dibersihkan
+                let newStyle = `width: ${widthValue};`;
+                if (cleanedStyle) {
+                    newStyle += ` ${cleanedStyle}`;
+                }
 
                 window.tiptapEditor.chain()
                     .focus()
@@ -1298,7 +1275,79 @@ document.addEventListener('alpine:init', () => {
 
                 this.updatedAt = Date.now();
             },
+            // current
+            // setImageWidth(width) {
+            //     const targetType = this.getActiveImageType();
+            //     if (!targetType) return;
 
+            //     const { selection } = window.tiptapEditor.state;
+            //     const currentPosition = selection.from;
+
+            //     const currentAttributes = window.tiptapEditor.getAttributes(targetType);
+            //     const currentStyle = currentAttributes.style || '';
+
+            //     // 🌟 Untuk imageBlock: hitung lebar terhadap kolom kertas (min(100%, 64rem)),
+            //     // BUKAN terhadap .tiptap yang sebenarnya selebar penuh area krem
+            //     const widthValue = targetType === 'imageBlock'
+            //         ? `calc(${width / 100} * min(100%, 64rem)) !important`
+            //         : `${width}% !important`;
+
+            //     const cleanedStyle = currentStyle.replace(/width:\s*[^;]+;?/, '').trim(); // 🔧 regex diperluas, tadinya cuma cocok pola "25%"
+            //     const newStyle = `width: ${widthValue}; ${cleanedStyle}`.trim();
+
+            //     window.tiptapEditor.chain()
+            //         .focus()
+            //         .updateAttributes(targetType, { style: newStyle })
+            //         .setNodeSelection(currentPosition)
+            //         .run();
+
+            //     this.updatedAt = Date.now();
+            // },
+
+            
+
+            setImageAlignment(alignment) {
+                const targetType = this.getActiveImageType();
+                if (!targetType) return;
+
+                const { selection } = window.tiptapEditor.state;
+                const currentPosition = selection.from;
+
+                const currentAttributes = window.tiptapEditor.getAttributes(targetType);
+                const currentStyle = currentAttributes.style || '';
+
+                // const widthMatch = currentStyle.match(/width:\s*\d+%/);
+                // const existingWidth = widthMatch ? widthMatch[0] + ' !important;' : '';
+
+                const widthMatch = currentStyle.match(/width:\s*[^;]+;?/);
+                let existingWidth = widthMatch ? widthMatch[0].trim() : '';
+
+                // Pastikan diakhiri dengan titik koma agar tidak merusak struktur CSS saat digabung dengan alignment
+                if (existingWidth && !existingWidth.endsWith(';')) {
+                    existingWidth += ';';
+                }
+
+                // 🌟 Meniru manual posisi kolom 64rem yang biasanya otomatis lewat margin:auto —
+                // karena elemen yang di-float tidak bisa pakai margin:auto (selalu dianggap 0 oleh browser)
+                const columnInset = 'max(0px, calc((100% - 64rem) / 2))';
+                console.log(columnInset);
+                let alignmentStyles = '';
+                if (alignment === 'left') {
+                    alignmentStyles = `float: left !important; display: inline-block !important; margin-left: ${columnInset} !important; margin-right: 1rem !important; margin-top: 0.25rem !important; margin-bottom: 0.5rem !important;`;
+                } else if (alignment === 'right') {
+                    alignmentStyles = `float: right !important; display: inline-block !important; margin-right: ${columnInset} !important; margin-left: 1rem !important; margin-top: 0.25rem !important; margin-bottom: 0.5rem !important;`;
+                } else {
+                    alignmentStyles = 'display: block !important; margin-left: auto !important; margin-right: auto !important; margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; float: none !important;';
+                }
+
+                window.tiptapEditor.chain()
+                    .focus()
+                    .updateAttributes(targetType, { style: `${existingWidth} ${alignmentStyles}`.trim() })
+                    .setNodeSelection(currentPosition)
+                    .run();
+
+                this.updatedAt = Date.now();
+            },
 
             isImageAlignActive(alignment) {
                 this.updatedAt;
@@ -1315,26 +1364,45 @@ document.addEventListener('alpine:init', () => {
                 return false;
             },
 
+            // TEST
             isImageWidthActive(width) {
-                this.updatedAt;
+                this.updatedAt; // Trigger reactivity Vue
                 const targetType = this.getActiveImageType();
                 if (!targetType) return false;
 
                 const attrs = window.tiptapEditor.getAttributes(targetType);
                 const style = attrs.style || '';
 
+                if (targetType === 'imageBlock') {
+                    // Cek apakah style mengandung format calc() persis seperti yang kita set
+                    const expectedCalc = `calc(${width / 100} * min(100%, 64rem))`;
+                    return style.includes(expectedCalc);
+                }
+                
+                // Untuk gambar biasa, cek format persen
                 return style.includes(`width: ${width}%`) || style.includes(`width:${width}%`);
             },
+            // WORKING
+            // isImageWidthActive(width) {
+            //     this.updatedAt;
+            //     const targetType = this.getActiveImageType();
+            //     if (!targetType) return false;
+
+            //     const attrs = window.tiptapEditor.getAttributes(targetType);
+            //     const style = attrs.style || '';
+
+            //     if (targetType === 'imageBlock') {
+            //         return style.includes(`calc(${width / 100} * min(100%, 64rem))`);
+            //     }
+            //     return style.includes(`width: ${width}%`) || style.includes(`width:${width}%`);
+            // },
 
             deleteSelectedImage() {
                 if (!this.getActiveImageType()) return;
                 window.tiptapEditor.chain().focus().deleteSelection().run();
                 this.updatedAt = Date.now();
             },
-            
-            
-            
-
+        
             isActive(type, opts = {}) {
                 this.updatedAt; // Trigger reaktivitas visual UI Alpine
                 return window.tiptapEditor ? window.tiptapEditor.isActive(type, opts) : false;
@@ -1705,7 +1773,26 @@ document.addEventListener('alpine:init', () => {
                 this.updatedAt; // Trigger reaktivitas Alpine
                 if (!window.tiptapEditor) return;
                 window.tiptapEditor.chain().focus().addImageCaption().run();
-            }
+            },
+            toggleCaptionPosition() {
+                if (!window.tiptapEditor) return;
+                window.tiptapEditor.chain().focus().toggleCaptionPosition().run();
+                this.updatedAt = Date.now();
+            },
+            removeCurrentImageCaption() {
+                if (!window.tiptapEditor) return;
+                window.tiptapEditor.chain().focus().removeImageCaption().run();
+                this.updatedAt = Date.now();
+            },
+            isImageCaptionActive() {
+                this.updatedAt;
+                return !!window.tiptapEditor?.isActive('imageBlock');
+            },
+            isCaptionPositionTop() {
+                this.updatedAt;
+                if (!window.tiptapEditor?.isActive('imageBlock')) return false;
+                return window.tiptapEditor.getAttributes('imageBlock').captionPosition === 'top';
+            },
         }
     }
 })

@@ -315,18 +315,18 @@ body, html {
     outline: none;
     padding: 1rem 0 0 0 !important;
     min-height: 100%; /* HAPUS 250vh, ganti dengan 100% */
-    display: flex;
-    flex-direction: column;
+    /* display: flex; */
+    /* flex-direction: column; */
 
     /* Menggambar Latar Kertas Putih persis selebar 64rem di tengah layar */
-    /* background-color: transparent;
+    /* background-color: transparent; */
     background-image: linear-gradient(
         to right,
         transparent calc(50% - 32rem),
         #ffffff calc(50% - 32rem),
         #ffffff calc(50% + 32rem),
         transparent calc(50% + 32rem)
-    ); */
+    ); 
 
 }
 
