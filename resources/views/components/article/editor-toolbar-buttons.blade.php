@@ -381,11 +381,13 @@
                     </button>
 
                     {{-- STEP CARD --}}
-                    <button type="button" @click="runCommand('insertStepCard')"
+                    {{-- <button type="button" @click="runCommand('insertStepCard')"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
                         title="Step Card ">
                         <x-dynamic-component :component="'lucide-square-chart-gantt'" class="h-4 w-4" stroke-width="2" />
-                    </button>
+                    </button> --}}
+                    <x-layouts::app.editor-toolbar-btn command="addStep()" activeName="false" activeType="alpine" title="Tambah Langkah Program" icon="list-todo" />
+                    {{-- <x-layouts::app.editor-toolbar-btn command="addCard" activeType="alpine" activeName="isActive('addCard')" title="Step Card" icon="square-chart-gantt" /> --}}
 
                     {{-- SECTION BLOCK --}}
                     <x-layouts::app.editor-toolbar-btn command="insertSectionBlock" activeType="alpine" activeName="isActive('sectionBlock')" title="Blok Seksi" icon="gallery-vertical" />

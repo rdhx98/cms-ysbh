@@ -35,7 +35,8 @@ import { ParagraphIndent } from './extensions/ParagraphIndent.js'
 // import { ContactItem } from './unverified/ContactItem.js'
 
 import { Card } from './node/Card.js'
-import { StepCard } from './node//StepCard.js'
+import { StepCard, StepNumber, StepContent } from './node/StepCard.js'
+// import { TrailingNode } from './node/TrailingNode.js'
 import { TransferCard } from './unverified/TransferCard.js'
 import { MediaPlaceholder } from './node/MediaPlaceholder.js'
 import { SectionBlock } from './node/SectionBlock.js'
@@ -237,6 +238,9 @@ document.addEventListener('alpine:init', () => {
                         SectionBlock,
                         Eyebrow,
                         StepCard,
+                        StepNumber,
+                        StepContent,
+                        // TrailingNode,
                         Card,
                         Pill,
                         ImageBlock,
@@ -331,9 +335,37 @@ document.addEventListener('alpine:init', () => {
                         }),
 
                         Placeholder.configure({
-                            placeholder: 'Mulai menulis artikel hebat Anda di sini...',
-                            emptyEditorClass: 'is-editor-empty'
-                        }),
+                        emptyEditorClass: 'is-editor-empty',
+                        placeholder: ({ node, pos, editor }) => {
+                            // 1. Placeholder untuk Angka (Karena dia Node resmi sekarang, Placeholder Tiptap bisa bekerja padanya!)
+                            if (node.type.name === 'stepNumber') return '01';
+
+                            // 2. Cek apakah kursor berada di dalam Step Card
+                            const $pos = editor.state.doc.resolve(pos);
+                            let isInStepCard = false;
+
+                            for (let i = $pos.depth; i > 0; i--) {
+                                if ($pos.node(i).type.name === 'stepCard') {
+                                    isInStepCard = true;
+                                    break;
+                                }
+                            }
+
+                            if (isInStepCard) {
+                                if (node.type.name === 'heading') return 'Judul langkah...';
+                                if (node.type.name === 'paragraph') return 'Deskripsi langkah...';
+                            }
+
+                            if (node.type.name === 'heading') return 'Ketik judul...'; 
+                            
+                            return 'Mulai menulis artikel hebat Anda di sini...';
+                        }
+                    }),
+
+                        // Placeholder.configure({
+                        //     placeholder: 'Mulai menulis artikel hebat Anda di sini...',
+                        //     emptyEditorClass: 'is-editor-empty'
+                        // }),
 
                         CodeBlockLowlight.configure({ lowlight }),
 
@@ -1645,11 +1677,40 @@ document.addEventListener('alpine:init', () => {
                     }
                 }));
             },
-            insertStepCard() {
-                if (!window.tiptapEditor) return;
-                window.tiptapEditor.chain().focus().insertStepCard({ number: '01' }).run();
-                this.updatedAt = Date.now();
+            // insertStepCard() {
+            //     if (!window.tiptapEditor) return;
+            //     window.tiptapEditor.chain().focus().insertStepCard({ number: '01' }).run();
+            //     this.updatedAt = Date.now();
+            // },
+
+            // TESTIN
+            addStep() {
+                if (!window.tiptapEditor) {
+                    console.error('Editor belum siap dimuat.');
+                    return; 
+                };
+
+                window.tiptapEditor.chain().focus().insertStepCard({
+                    number: '', // KOSONGKAN INI agar placeholder '01' muncul
+                    numBgColor: '#f3f4f6', 
+                    cardBgColor: '#ffffff'
+                }).run();
             },
+
+            // WORKING
+            // addStep() {
+            //     // Anda bisa melempar parameter (opsional) atau membiarkannya kosong
+            //     // if (!window.tiptapEditor) return;
+            //     if (!window.tiptapEditor) {
+            //         console.error('Editor belum siap dimuat.');
+            //         return;
+            //     }
+            //     window.tiptapEditor.chain().focus().insertStepCard({
+            //         number: '01', // Diubah menjadi 01
+            //         numBgColor: '#f3f4f6', 
+            //         cardBgColor: '#ffffff'
+            //     }).run()
+            // },
 
             insertSectionBlock() {
                 if (!window.tiptapEditor) return;

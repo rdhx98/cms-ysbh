@@ -1117,3 +1117,14 @@ figure[data-type="image-block"]:focus-within {
     /* font-family: 'Plus Jakarta Sans', sans-serif !important; */
     font-weight: 600 !important;         /* Semi Bold */
 }
+
+.prose [data-type="step-number"]::before {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+.prose > p:last-child {
+    min-height: 4rem; /* Memberikan area klik kosong minimal sebesar ini */
+    margin-bottom: 5rem; /* Memberikan jarak ekstra ke batas bawah editor */
+}
