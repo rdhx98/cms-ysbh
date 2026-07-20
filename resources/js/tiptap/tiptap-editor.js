@@ -459,18 +459,98 @@ document.addEventListener('alpine:init', () => {
                     ],
 
                     editorProps: {
+                        // handleKeyDown: (view, event) => {
+                        //     const { state } = view;
+                        //     const { selection, doc } = state;
+
+                        //     // 🌟 TAMBAHAN: Kembalikan kursor ke default setelah menekan Enter di Judul (H1)
+                        //     if (event.key === 'Enter' && !event.shiftKey) {
+                        //         const { $from, empty } = selection;
+
+                        //         // Cek apakah kursor berada di dalam Heading 1 dan tidak ada teks yang di-blok
+                        //         if (empty && $from.parent.type.name === 'heading' && $from.parent.attrs.level === 1) {
+
+                        //             // Pastikan kursor berada persis di ujung paling kanan (akhir teks judul)
+                        //             const isAtEnd = $from.parentOffset === $from.parent.content.size;
+
+                        //             if (isAtEnd) {
+                        //                 const editor = window.tiptapEditor;
+                        //                 if (editor) {
+                        //                     event.preventDefault(); // Cegah Enter bawaan Tiptap
+
+                        //                     // Rentetan aksi otomatis ala Tiptap
+                        //                     editor.chain()
+                        //                         .splitBlock()          // 1. Buat baris baru ke bawah
+                        //                         .setNode('paragraph')  // 2. Pastikan jadi paragraf biasa
+                        //                         .clearNodes()          // 3. Hapus gaya text-align (Rata tengah/kanan)
+                        //                         .unsetAllMarks()       // 4. Hapus warna, bold, italic, dll
+                        //                         .run();
+
+                        //                     return true; // Beri tahu browser bahwa aksi sudah selesai
+                        //                 }
+                        //             }
+                        //         }
+                        //     }
+
+                        //     // 🌟 PERBAIKAN 1: Deteksi yang lebih kebal.
+                        //     // ProseMirror terkadang menghitung ukuran node 2 angka lebih kecil/besar di ujung dokumen.
+                        //     // 🌟 PERBAIKAN 1: Deteksi seleksi seluruh teks (Ctrl+A)
+                        //     const isAllSelected = selection.from === 0 && selection.to >= doc.content.size - 2;
+
+                        //     if (isAllSelected) {
+                        //         const editor = window.tiptapEditor;
+                        //         if (!editor) return false;
+
+                        //         // 💡 KUNCI UX: Ambil judul yang masih selamat di kolom input (Livewire)
+                        //         const savedTitle = wireComponent.get('title') || '';
+
+                        //         // 1. Jika menekan Backspace atau Delete
+                        //         if (event.key === 'Backspace' || event.key === 'Delete') {
+                        //             event.preventDefault();
+
+                        //             // 🌟 SMART RESET: Hancurkan isi artikel, tapi kembalikan Judul (H1) dan buat 1 paragraf kosong!
+                        //             editor.commands.setContent(`<h1>${savedTitle}</h1><p></p>`);
+
+                        //             // Pindahkan kursor secara cerdas:
+                        //             if (savedTitle) {
+                        //                 editor.commands.focus('end'); // Jika ada judul, kursor siap nulis isi artikel di paragraf bawah
+                        //             } else {
+                        //                 editor.commands.focus('start'); // Jika judul juga kosong, kursor di H1 atas
+                        //             }
+
+                        //             return true;
+                        //         }
+
+                        //         // 2. Jika langsung mengetik huruf/angka untuk menimpa
+                        //         if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                        //             event.preventDefault();
+
+                        //             // Selamatkan judul, taruh huruf baru yang diketik di paragraf bawah
+                        //             editor.commands.setContent(`<h1>${savedTitle}</h1><p>${event.key}</p>`);
+                        //             editor.commands.focus('end');
+
+                        //             return true;
+                        //         }
+                        //     }
+
+                        //     return false;
+                        // },
                         handleKeyDown: (view, event) => {
                             const { state } = view;
                             const { selection, doc } = state;
 
-                            // 🌟 TAMBAHAN: Kembalikan kursor ke default setelah menekan Enter di Judul (H1)
+                            // =====================================================================
+                            // 🌟 1. PENANGANAN ENTER DI JUDUL (H1 UTAMA - BARIS PERTAMA)
+                            // =====================================================================
                             if (event.key === 'Enter' && !event.shiftKey) {
                                 const { $from, empty } = selection;
 
-                                // Cek apakah kursor berada di dalam Heading 1 dan tidak ada teks yang di-blok
-                                if (empty && $from.parent.type.name === 'heading' && $from.parent.attrs.level === 1) {
+                                // KUNCI PENGAMAN: Pastikan kursor benar-benar ada di baris pertama (Index 0) 
+                                // dan berada di level utama dokumen (Depth 1), bukan di dalam SectionBlock/Card!
+                                const isFirstNode = $from.depth === 1 && $from.index(0) === 0;
 
-                                    // Pastikan kursor berada persis di ujung paling kanan (akhir teks judul)
+                                if (empty && $from.parent.type.name === 'heading' && $from.parent.attrs.level === 1 && isFirstNode) {
+                                    
                                     const isAtEnd = $from.parentOffset === $from.parent.content.size;
 
                                     if (isAtEnd) {
@@ -478,91 +558,64 @@ document.addEventListener('alpine:init', () => {
                                         if (editor) {
                                             event.preventDefault(); // Cegah Enter bawaan Tiptap
 
-                                            // Rentetan aksi otomatis ala Tiptap
+                                            // PERBAIKAN: Gunakan insertContentAt alih-alih splitBlock!
+                                            // Ini menaruh kotak <p> murni tanpa mewariskan gaya aneh dari H1
+                                            const insertPos = $from.after();
+                                            
                                             editor.chain()
-                                                .splitBlock()          // 1. Buat baris baru ke bawah
-                                                .setNode('paragraph')  // 2. Pastikan jadi paragraf biasa
-                                                .clearNodes()          // 3. Hapus gaya text-align (Rata tengah/kanan)
-                                                .unsetAllMarks()       // 4. Hapus warna, bold, italic, dll
+                                                .insertContentAt(insertPos, { type: 'paragraph' })
+                                                .setTextSelection(insertPos + 1) // Pindah kursor ke <p> baru
+                                                .scrollIntoView()
                                                 .run();
 
-                                            return true; // Beri tahu browser bahwa aksi sudah selesai
+                                            return true; 
                                         }
                                     }
                                 }
                             }
 
-                            // 🌟 PERBAIKAN 1: Deteksi yang lebih kebal.
-                            // ProseMirror terkadang menghitung ukuran node 2 angka lebih kecil/besar di ujung dokumen.
-                            // 🌟 PERBAIKAN 1: Deteksi seleksi seluruh teks (Ctrl+A)
+                            // =====================================================================
+                            // 🌟 2. PENANGANAN CTRL+A (SELECT ALL) LALU HAPUS/KETIK BARU
+                            // =====================================================================
+                            // Deteksi apakah pengguna menyeleksi seluruh teks (Toleransi 2 angka ukuran node)
                             const isAllSelected = selection.from === 0 && selection.to >= doc.content.size - 2;
 
                             if (isAllSelected) {
                                 const editor = window.tiptapEditor;
                                 if (!editor) return false;
 
-                                // 💡 KUNCI UX: Ambil judul yang masih selamat di kolom input (Livewire)
+                                // Ambil judul yang masih selamat dari komponen Livewire
                                 const savedTitle = wireComponent.get('title') || '';
 
-                                // 1. Jika menekan Backspace atau Delete
+                                // SKENARIO A: Menekan tombol Backspace atau Delete
                                 if (event.key === 'Backspace' || event.key === 'Delete') {
                                     event.preventDefault();
 
-                                    // 🌟 SMART RESET: Hancurkan isi artikel, tapi kembalikan Judul (H1) dan buat 1 paragraf kosong!
+                                    // Reset bersih: Tulis ulang Judul + Paragraf kosong di bawahnya
                                     editor.commands.setContent(`<h1>${savedTitle}</h1><p></p>`);
 
-                                    // Pindahkan kursor secara cerdas:
                                     if (savedTitle) {
-                                        editor.commands.focus('end'); // Jika ada judul, kursor siap nulis isi artikel di paragraf bawah
+                                        editor.commands.focus('end'); // Jika judul ada, kursor siap nulis di bawah
                                     } else {
-                                        editor.commands.focus('start'); // Jika judul juga kosong, kursor di H1 atas
+                                        editor.commands.focus('start'); // Jika judul kosong, kursor di H1 atas
                                     }
 
                                     return true;
                                 }
 
-                                // 2. Jika langsung mengetik huruf/angka untuk menimpa
+                                // SKENARIO B: Langsung mengetik huruf/angka baru menimpa semua teks
                                 if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
                                     event.preventDefault();
 
-                                    // Selamatkan judul, taruh huruf baru yang diketik di paragraf bawah
+                                    // Reset bersih: Tulis ulang Judul + Taruh huruf yang diketik di paragraf bawah
                                     editor.commands.setContent(`<h1>${savedTitle}</h1><p>${event.key}</p>`);
                                     editor.commands.focus('end');
 
                                     return true;
                                 }
                             }
-                            // const isAllSelected = selection.from === 0 && selection.to >= doc.content.size - 2;
 
-                            // if (isAllSelected) {
-                            //     const editor = window.tiptapEditor;
-                            //     if (!editor) return false;
-
-                            //     // 1. Jika menekan Backspace atau Delete
-                            //     if (event.key === 'Backspace' || event.key === 'Delete') {
-                            //         event.preventDefault();
-
-                            //         // 🌟 PERBAIKAN 2: Opsi Nuklir (Reset Paksa HTML)
-                            //         // Ini akan menghancurkan semua atribut yang 'nyangkut'
-                            //         editor.commands.setContent('<p></p>');
-                            //         editor.commands.focus();
-
-                            //         return true;
-                            //     }
-
-                            //     // 2. Jika langsung mengetik huruf/angka untuk menimpa teks
-                            //     if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-                            //         event.preventDefault();
-
-                            //         // Hancurkan dan langsung isi dengan huruf pertama
-                            //         editor.commands.setContent(`<p>${event.key}</p>`);
-                            //         // Pindahkan kursor ke ujung teks
-                            //         editor.commands.focus('end');
-
-                            //         return true;
-                            //     }
-                            // }
-
+                            // Biarkan aksi keyboard lainnya ditangani oleh ProseMirror bawaan
                             return false;
                         },
                         handleDragOver: (view, event) => {

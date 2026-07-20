@@ -76,7 +76,7 @@
                     </select>
                 </div>
 
-                {{-- PEMBUNGKUS PEMILIH WARNA --}}
+                {{-- COLOR PICKER PEMBUNGKUS PEMILIH WARNA --}}
                 <div x-data="{ openColorMenu: false }" class="relative flex items-center border-l border-zinc-200 pl-2 ml-1">
 
                     {{-- TOMBOL PEMILIH WARNA --}}
@@ -102,9 +102,11 @@
                         <div>
                             <span class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Warna Brand</span>
                             <div class="flex gap-2">
-                                <button type="button" @click="runCommand('setColor', '#064F3B'); openColorMenu = false" class="w-6 h-6 rounded-full bg-[#064F3B] hover:scale-110 transition-transform shadow-sm" title="Forest"></button>
-                                <button type="button" @click="runCommand('setColor', '#EBCC26'); openColorMenu = false" class="w-6 h-6 rounded-full bg-[#EBCC26] hover:scale-110 transition-transform shadow-sm" title="Gold"></button>
-                                <button type="button" @click="runCommand('setColor', '#E42326'); openColorMenu = false" class="w-6 h-6 rounded-full bg-[#E42326] hover:scale-110 transition-transform shadow-sm" title="Coral"></button>
+                                <button type="button" @click="runCommand('setColor', '#000000'); openColorMenu = false" class="w-6 h-6 cursor-pointer hover:border hover:border-coral-muted rounded-full bg-[#000000] hover:scale-110 transition-transform shadow-lg" title="Black"></button>
+                                <button type="button" @click="runCommand('setColor', '#FFFFFF'); openColorMenu = false" class="w-6 h-6 cursor-pointer hover:border hover:border-gray-600 rounded-full bg-[#FFFFFF] hover:scale-110 transition-transform shadow-lg" title="White"></button>
+                                <button type="button" @click="runCommand('setColor', '#064F3B'); openColorMenu = false" class="w-6 h-6 cursor-pointer hover:border hover:border-coral-muted rounded-full bg-[#064F3B] hover:scale-110 transition-transform shadow-lg" title="Forest"></button>
+                                <button type="button" @click="runCommand('setColor', '#EBCC26'); openColorMenu = false" class="w-6 h-6 cursor-pointer hover:border hover:border-gray-600 rounded-full bg-[#EBCC26] hover:scale-110 transition-transform shadow-lg" title="Gold"></button>
+                                <button type="button" @click="runCommand('setColor', '#E42326'); openColorMenu = false" class="w-6 h-6 cursor-pointer hover:border hover:border-gray-600 rounded-full bg-[#E42326] hover:scale-110 transition-transform shadow-lg" title="Coral"></button>
                             </div>
                         </div>
 
