@@ -20,7 +20,7 @@ export const ColumnBlock = Node.create({
                 'data-type': 'column-block',
                 // Tumpuk di HP (flex-col), Berjejer di Desktop (md:flex-row)
                 // Di dalam renderHTML ColumnBlock
-                class: 'flex flex-col md:flex-row gap-2 my-6 w-full px-[2.5rem] [[data-type="section-block"]_&]:px-0'
+                class: 'flex flex-col md:flex-row gap-6 my-6 w-full px-[2.5rem] [[data-type="section-block"]_&]:px-0'
             }),
             0 // Tempat kolom-kolom disisipkan
         ];
@@ -37,12 +37,12 @@ export const ColumnBlock = Node.create({
                 for (let depth = $from.depth; depth > 0; depth--) {
                     const nodeName = $from.node(depth).type.name;
 
-                    // 🌟 KUNCI FLEKSIBILITAS: 
+                    // 🌟 KUNCI FLEKSIBILITAS:
                     // Jika kursor berada di dalam 'card' atau 'sectionBlock',
-                    // kita hentikan pencarian ke atas. Card bertindak sebagai 
+                    // kita hentikan pencarian ke atas. Card bertindak sebagai
                     // pelindung (buffer) yang me-reset aturan sarang (nesting)!
                     if (nodeName === 'card' || nodeName === 'sectionBlock') {
-                        break; 
+                        break;
                     }
 
                     // Jika menabrak kolom secara langsung tanpa ada pelindung Card,
@@ -69,7 +69,7 @@ export const ColumnBlock = Node.create({
                     type: 'columnBlock',
                     content: [
                         { type: 'column', content: [{ type: 'paragraph' }] },
-                        { type: 'column', content: [{ type: 'paragraph' }] } 
+                        { type: 'column', content: [{ type: 'paragraph' }] }
                     ]
                 });
             }
@@ -106,7 +106,7 @@ export const Column = Node.create({
             mergeAttributes(HTMLAttributes, {
                 'data-type': 'column',
                 // class: `flex flex-col gap-2 min-w-0 p-8 has-[[data-type=info-card]]:!p-0 rounded-xl border border-transparent ${spanClass}`
-                class: `flex flex-col gap-4 min-w-0 p-0 has-[[data-type=info-card]]:!p-0  border border-transparent ${spanClass}`
+                class: `flex flex-col gap-2 min-w-0 p-0 has-[[data-type=info-card]]:!p-0  border border-transparent ${spanClass}`
             }),
             0
         ];
@@ -116,7 +116,7 @@ export const Column = Node.create({
             const dom = document.createElement('div');
             const spanClass = node.attrs.span === 2 ? 'md:flex-[2]' : 'md:flex-1';
 
-            dom.className = `group relative flex flex-col gap-4 min-w-0 p-0 has-[[data-type=info-card]]:!p-0 border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
+            dom.className = `group relative flex flex-col gap-2 min-w-0 p-0 has-[[data-type=info-card]]:!p-0 border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
             // dom.className = `group relative flex flex-col gap-2 min-w-0 p-8 has-[[data-type=info-card]]:!p-0 rounded-xl border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
             dom.dataset.type = 'column';
 
@@ -283,7 +283,7 @@ export const Column = Node.create({
                     if (updatedNode.type.name !== 'column') return false;
                     const spanClass = updatedNode.attrs.span === 2 ? 'md:flex-[2]' : 'md:flex-1';
                     // dom.className = `group relative flex flex-col gap-2 min-w-0 p-8 has-[[data-type=info-card]]:!p-0 rounded-xl border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
-                    dom.className = `group relative flex flex-col gap-4 min-w-0 p-0 has-[[data-type=info-card]]:!p-0  border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
+                    dom.className = `group relative flex flex-col gap-6 min-w-0 p-0 has-[[data-type=info-card]]:!p-0  border border-dashed border-zinc-300 focus-within:border-[#064F3B] transition-all ${spanClass}`;
                     spanBtn.innerHTML = updatedNode.attrs.span === 2 ? 'Kecilkan' : 'Lebarkan';
                     return true;
                 }

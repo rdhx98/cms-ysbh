@@ -320,13 +320,13 @@ body, html {
 
     /* Menggambar Latar Kertas Putih persis selebar 64rem di tengah layar */
     /* background-color: transparent; */
-    background-image: linear-gradient(
+    /* background-image: linear-gradient(
         to right,
         transparent calc(50% - 32rem),
         #ffffff calc(50% - 32rem),
         #ffffff calc(50% + 32rem),
         transparent calc(50% + 32rem)
-    ); 
+    );  */
 
 }
 
@@ -1073,7 +1073,7 @@ figcaption[data-placeholder]:has(br:only-child)::before {
 
 /* Mencegah tinggi caption anjlok saat kosong */
 figcaption[data-placeholder] {
-    min-height: 1.5rem; 
+    min-height: 1.5rem;
 }
 
 figure[data-type="image-block"] figcaption:empty::before {

@@ -62,6 +62,8 @@
                         :value="getCurrentFontSize()"
                         class="text-xs md:text-sm border-zinc-200 dark:border-zinc-700 bg-sage-soft dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 rounded-md py-1 pl-2 pr-6 focus:ring-0 focus:border-forest transition-colors cursor-pointer"
                     >
+                        <option value="8px">8</option>
+                        <option value="10px">10</option>
                         <option value="12px">12</option>
                         <option value="14px">14</option>
                         <option value="default">16</option>
