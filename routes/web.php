@@ -35,6 +35,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/dashboard', 'dashboard')->name('dashboard');
     Route::livewire('/article', 'article')->name('article.index');
     Route::livewire('/article/write', 'article.editor')->name('article.editor');
+    Route::livewire('/page', 'page')->name('page.index');
+    Route::livewire('/user', 'user')->name('user.index');
     Route::livewire('/documentation', 'documentation')->name('documentation');
 
     // --- ROUTE UNTUK ARTIKEL ---

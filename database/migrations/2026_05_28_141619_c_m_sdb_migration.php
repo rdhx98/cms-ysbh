@@ -52,6 +52,25 @@ return new class extends Migration
             // Anda bisa tambah kolom 'is_primary' jika ingin menandai penulis utama
             $table->boolean('is_primary')->default(false);
         });
+        Schema::create('pages', function (Blueprint $table) {
+            $table->id();
+            $table->string('title')->unique();
+            $table->string('slug')->unique();
+            $table->longText('content');
+            $table->enum('status', ['draft', 'published'])->default('draft');
+            $table->timestamps();
+        });
+        Schema::create('menus', function (Blueprint $table) {
+            $table->id();
+            $table->string('label')->unique();
+            $table->enum('type', ['page_link', 'custom_url'])->default('custom_url');
+            $table->boolean('editable')->default(true);
+            $table->bigInteger('page_id')->nullable();
+            $table->string('url')->nullable();
+            $table->bigInteger('parent_id')->nullable();
+            $table->integer('order');
+            $table->timestamps();
+        });
     }
 
     /**

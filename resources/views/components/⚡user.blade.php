@@ -1,0 +1,14 @@
+<?php
+
+use Livewire\Component;
+
+new class extends Component
+{
+    //
+};
+?>
+
+<div>
+    {{-- Live as if you were to die tomorrow. Learn as if you were to live forever. - Mahatma Gandhi --}}
+    user shit
+</div>

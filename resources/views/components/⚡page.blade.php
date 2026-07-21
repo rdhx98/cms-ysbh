@@ -1,178 +1,16 @@
 <?php
 
 use Livewire\Component;
-use App\Models\Post;
-use App\Models\Category;
-use App\Models\Tag;
-
-use App\Livewire\Traits\WithNotifications;
-
-use Livewire\Attributes\Computed;
-use Livewire\Attributes\Url;
 
 new class extends Component
 {
-    Use WithNotifications;
-
-    public string $orderDirection;
-    public string $orderColumn;
-
-    public function mount() {
-        $this->orderDirection = "desc";
-        $this->orderColumn = "created_at";
-    }
-    #[Computed]
-    public function statusList() {
-        return collect([
-            (object) ['id' => 'draft', 'name' => 'Draft', 'icon' => 'file-pen-line'],
-            (object) ['id' => 'review', 'name' => 'Review', 'icon' => 'file-clock'],
-            (object) ['id' => 'published', 'name' => 'Published', 'icon' => 'globe'],
-            (object) ['id' => 'archived', 'name' => 'Diarsipkan', 'icon' => 'folder-archive'],
-            (object) ['id' => 'rejected', 'name' => 'Ditolak', 'icon' => 'file-x'],
-        ]);
-    }
-    #[Computed]
-    public function tagList()
-    {
-        return \App\Models\Tag::all();
-    }
-    #[Computed]
-    public function categoryList()
-    {
-        return \App\Models\Category::all();
-    }
     //
-    #[Url]
-    public $titleSearch = '';
-
-    #[Url]
-    public $selectCategory = '';
-
-    #[Url]
-    public $selectStatus = '';
-
-    #[Computed]
-    public function articles()
-    {
-        // Mulai dari query builder kosong
-        $query = Post::query();
-
-        // 1. Filter Pencarian Judul
-        if ($this->titleSearch) {
-            $query->where('title', 'like', '%' . $this->titleSearch . '%');
-        }
-
-        // 2. Filter Kategori
-        if ($this->selectCategory) {
-            $query->where('category_id', $this->selectCategory);
-        }
-
-        // 3. Filter Status
-        if ($this->selectStatus) {
-            $query->where('status', $this->selectStatus);
-        }
-
-        // 4. Logika Sorting Dinamis
-        if ($this->orderColumn === 'category') {
-            // Join tabel categories agar bisa diurutkan berdasarkan namanya
-            $query->join('categories', 'posts.category_id', '=', 'categories.id')
-                  ->select('posts.*') // Cegah tabrakan kolom id jika ada
-                  ->orderBy('categories.name', $this->orderDirection);
-        } else {
-            // Untuk kolom di tabel posts (title, status, created_at)
-            $query->orderBy('posts.' . $this->orderColumn, $this->orderDirection);
-        }
-
-        // Eksekusi query
-        return $query->get();
-    }
-    public function sortBy($column)
-    {
-        // Jika kolom yang diklik sama dengan yang aktif, balikkan arahnya
-        if ($this->orderColumn === $column) {
-            $this->orderDirection = $this->orderDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            // Jika kolom berbeda, set kolom baru dan mulai dari 'asc'
-            $this->orderColumn = $column;
-            $this->orderDirection = 'asc';
-        }
-    }
-    public function deleteArticle($articleId)
-    {
-        $category = \App\Models\Post::find($articleId);
-        if ($category) {
-            $category->delete();
-            $this->notify('Artikel dihapus.', 'success');
-        } else {
-            $this->notify('Artikel tidak ditemukan.', 'error');
-        }
-    }
-    public function deleteCategory($categoryId)
-    {
-        $category = \App\Models\Category::find($categoryId);
-        if ($category) {
-            $category->delete();
-            $this->notify('Kategori dihapus.', 'success');
-        } else {
-            $this->notify('Kategori tidak ditemukan.', 'error');
-        }
-    }
-    public function deleteTag($tagId)
-    {
-        $tag = \App\Models\Tag::find($tagId);
-        if ($tag) {
-            $tag->delete();
-            $this->notify('Tag dihapus.', 'success');
-        } else {
-            $this->notify('Tag tidak ditemukan.', 'error');
-        }
-    }
-    public function createCategory($name)
-    {
-        if (empty(trim($name))) {
-            $this->notify('Kategori tidak boleh kosong.', 'error');
-            return;
-        }
-
-        // Cek apakah sudah ada (opsional)
-        if (Category::where('name', $name)->exists()) {
-            $this->notify('Kategori sudah ada.', 'error');
-            return;
-        }
-
-        Category::create([
-            'name' => $name,
-            'slug' => Str::slug($name),
-        ]);
-
-        $this->notify('Kategori berhasil ditambahkan.', 'success');
-    }
-    public function createTag($name)
-    {
-        if (empty(trim($name))) {
-            $this->notify('Tag tidak boleh kosong.', 'error');
-            return;
-        }
-
-        // Cek apakah sudah ada (opsional)
-        if (Tag::where('name', $name)->exists()) {
-            $this->notify('Tag sudah ada.', 'error');
-            return;
-        }
-
-        Tag::create([
-            'name' => $name,
-            'slug' => Str::slug($name),
-        ]);
-
-        $this->notify('Kategori berhasil ditambahkan.', 'success');
-    }
 };
 ?>
 
 <div class="bg-white rounded-lg w-full  md:max-w-none flex flex-col items-center justify-center p-4 flex-1 grow">
-    <x-slot:title>{{ __('Manage Arcticles') }}</x-slot:title>
-
+    <x-slot:title>{{ __('Manage Pages') }}</x-slot:title>
+    {{-- Act only according to that maxim whereby you can, at the same time, will that it should become a universal law. - Immanuel Kant --}}
     <div class="w-full min-w-0 max-w-7xl" x-data="{ activeSubPanel: 'none', showDeleteModal: false, deleteType: '', deleteId: null, newItemName: '' }">
         {{-- REVISI: Menggunakan flex-col untuk mobile agar menumpuk, dan lg:flex-row untuk desktop --}}
         <div class="flex flex-col lg:flex-row gap-4 items-start w-full">
@@ -239,9 +77,9 @@ new class extends Component
                     <div>
                         <select wire:model.live="selectCategory" class="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sbh-green text-zinc-700 dark:text-zinc-300 cursor-pointer">
                             <option value="">Semua Kategori</option>
-                            @foreach($this->categoryList as $category)
-                                <option value="{{ $category->id }}">{{ $category->name }}</option>
-                            @endforeach
+                            {{-- @foreach($this->categoryList as $category) --}}
+                                {{-- <option value="{{ $category->id }}">{{ $category->name }}</option> --}}
+                            {{-- @endforeach --}}
                         </select>
                     </div>
 
@@ -249,14 +87,14 @@ new class extends Component
                     <div>
                         <select wire:model.live="selectStatus" class="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sbh-green text-zinc-700 dark:text-zinc-300 cursor-pointer">
                             <option value="">Semua Status</option>
-                            @foreach($this->statusList as $status)
-                                <option value="{{ $status->id }}">
+                            {{-- @foreach($this->statusList as $status) --}}
+                                <option value="{{ '$status->id' }}">
                                         <x-dynamic-component :component="'lucide-globe'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
                                         {{-- <x-dynamic-component :component="'lucide-'. $status->icon " class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" /> --}}
-                                        {{ $status->name }}
+                                        {{-- {{ $status->name }} --}}
 
                                 </option>
-                            @endforeach
+                            {{-- @endforeach --}}
                         </select>
                     </div>
                 </div>
@@ -279,9 +117,9 @@ new class extends Component
                                 <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider">
                                     <button wire:click="sortBy('title')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
                                         Judul Artikel
-                                        @if($orderColumn === 'title')
-                                            <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
-                                        @endif
+                                        {{-- @if($orderColumn === 'title') --}}
+                                            {{-- <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" /> --}}
+                                        {{-- @endif --}}
                                     </button>
                                 </th>
 
@@ -289,9 +127,9 @@ new class extends Component
                                 <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider">
                                     <button wire:click="sortBy('created_at')" class="flex items-center justify-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
                                         Tanggal & Waktu dibuat
-                                        @if($orderColumn === 'created_at')
-                                            <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
-                                        @endif
+                                        {{-- @if($orderColumn === 'created_at') --}}
+                                            {{-- <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" /> --}}
+                                        {{-- @endif --}}
                                     </button>
                                 </th>
 
@@ -299,9 +137,9 @@ new class extends Component
                                 <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider">
                                     <button wire:click="sortBy('category')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
                                         Kategori
-                                        @if($orderColumn === 'category')
-                                            <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
-                                        @endif
+                                        {{-- @if($orderColumn === 'category') --}}
+                                            {{-- <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" /> --}}
+                                        {{-- @endif --}}
                                     </button>
                                 </th>
 
@@ -309,9 +147,9 @@ new class extends Component
                                 <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider">
                                     <button wire:click="sortBy('status')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
                                         Status
-                                        @if($orderColumn === 'status')
-                                            <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
-                                        @endif
+                                        {{-- @if($orderColumn === 'status') --}}
+                                            {{-- <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" /> --}}
+                                        {{-- @endif --}}
                                     </button>
                                 </th>
 
@@ -323,17 +161,17 @@ new class extends Component
                         </thead>
                         <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
 
-                            @forelse ($this->articles as $article)
-                                @foreach (range(1, 1) as $i)
+                            {{-- @forelse ($this->articles as $article) --}}
+                                {{-- @foreach (range(1, 1) as $i) --}}
                                     <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
                                         <td class="px-4 py-3.5 text-sm">
-                                            <div class="font-medium text-zinc-900 dark:text-white">{{ $article->title }}</div>
-                                            <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $article->author->name }}</div>
+                                            <div class="font-medium text-zinc-900 dark:text-white">{{-- $article->title --}}</div>
+                                            <div class="text-xs text-zinc-500 dark:text-zinc-400">{{-- $article->author->name --}}</div>
                                         </td>
                                         <td class="px-4 py-0 text-sm h-full align-middle">
                                             <div class="flex gap-2 items-center justify-center h-full min-h-[3.5rem]">
-                                                <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{ $article->created_at->format('D, d/m/y') }} </div>
-                                                <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{ $article->created_at->format('H:i') }} </div>
+                                                <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{-- $article->created_at->format('D,d/m/y') --}} </div>
+                                                <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{-- $article->created_at->format('H:i') --}} </div>
                                             </div>
                                         </td>
                                         {{-- <td class="px-4 py-3.5 text-sm flex gap-2 items-center justify-center shrink-0">
@@ -341,9 +179,9 @@ new class extends Component
                                             <div class="font-medium text-zinc-900 dark:text-white">{{ $article->created_at->format('h:m') }} </div>
                                             <!-- {/{ \Carbon\Carbon::parse($article->created_at)->format('d/m/y') }} -->
                                         </td> --}}
-                                        <td class="px-4 py-3.5 text-sm">{{ $article->category->name }}</td>
+                                        <td class="px-4 py-3.5 text-sm">{{-- $article->category->name --}}</td>
                                         <td class="px-4 py-3.5 text-sm">
-                                            @switch($article->status)
+                                            {{-- @switch($article->status)
                                                 @case('draft')
                                                     <span class="px-2 py-1 text-xs font-medium rounded-full bg-violet-50 text-violet-700 border-2 border-violet-700 dark:bg-violet-950 dark:text-violet-300">
                                                         {{ ucfirst($article->status) }}
@@ -376,13 +214,13 @@ new class extends Component
                                                     @break
                                                 @default
                                                     nu-uh
-                                            @endswitch
+                                            @endswitch --}}
                                         </td>
                                         <td class="px-4 py-3.5 text-sm">
                                             {{-- BUTTONS CONTAINER --}}
                                             <div class="flex justify-center items-center gap-2">
 
-                                                <a wire:navigate href="{{ route('article.edit', $article) }}" class="group p-1.5 rounded-md text-white bg-forest/90 dark:bg-forest/80 relative cursor-pointer hover:bg-forest/70 transition-colors flex items-center justify-center">
+                                                <a wire:navigate href="{{ route('article.edit', '$article') }}" class="group p-1.5 rounded-md text-white bg-forest/90 dark:bg-forest/80 relative cursor-pointer hover:bg-forest/70 transition-colors flex items-center justify-center">
                                                     <flux:icon variant="solid" icon="pencil" class="size-3.5!" />
                                                     <span class="z-30 absolute bottom-full left-0 mb-2 w-max px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-lg dark:bg-gray-100 dark:text-gray-900">
                                                         Sunting
@@ -393,7 +231,7 @@ new class extends Component
                                                     </span>
                                                 </a>
 
-                                                <a wire:navigate href="{{ route('article.preview', $article) }}" class="group p-1.5 rounded-md bg-slate-600 text-white dark:bg-slate-800 relative cursor-pointer hover:bg-slate-700 transition-colors flex items-center justify-center">
+                                                <a wire:navigate href="{{ route('article.preview', '$article') }}" class="group p-1.5 rounded-md bg-slate-600 text-white dark:bg-slate-800 relative cursor-pointer hover:bg-slate-700 transition-colors flex items-center justify-center">
                                                     <flux:icon variant="solid" icon="eye" class="size-3.5!" />
                                                     <span class="z-30 absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-lg dark:bg-gray-100 dark:text-gray-900">
                                                         Pratinjau
@@ -404,7 +242,7 @@ new class extends Component
                                                 </a>
 
                                                 <button
-                                                    @click="deleteType = 'article'; deleteId = {{ $article->id }}; showDeleteModal = true"
+                                                    @click="deleteType = 'article'; deleteId = {{ '$article->id' }}; showDeleteModal = true"
                                                     type="button" class="group p-1.5 rounded-md bg-red-600 text-white dark:bg-red-800 relative cursor-pointer hover:bg-red-700 transition-colors flex items-center justify-center">
                                                     <flux:icon variant="solid" icon="trash" class="size-3.5!" />
 
@@ -420,8 +258,8 @@ new class extends Component
                                             </div>
                                         </td>
                                     </tr>
-                                @endforeach
-                            @empty
+                                {{-- @endforeach --}}
+                            {{-- @empty --}}
                                 {{-- INI AKAN MUNCUL JIKA TIDAK ADA DATA ARTIKEL --}}
                                 <tr>
                                     <td colspan="4" class="px-4 py-12 text-center">
@@ -431,7 +269,7 @@ new class extends Component
                                         </div>
                                     </td>
                                 </tr>
-                            @endforelse
+                            {{-- @endforelse --}}
                         </tbody>
                     </table>
                 </div>
@@ -513,31 +351,31 @@ new class extends Component
                         <div class="max-h-75 lg:max-h-62.5 overflow-y-auto border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 p-2 divide-y divide-zinc-200 dark:divide-zinc-700">
                             <template x-if="activeSubPanel === 'categories'">
                                 <div class="space-y-1">
-                                    @foreach ($this->categoryList as $i)
+                                    {{-- @foreach ($this->categoryList as $i) --}}
                                         <div class="flex justify-between items-center py-2.5 px-2 text-sm hover:bg-forest hover:text-white rounded-lg transition-colors">
-                                            <span class="font-medium">{{ $i->name }}</span>
+                                            <span class="font-medium">{{ '$i->name' }}</span>
                                             <button
-                                                @click="deleteType = 'category'; deleteId = {{ $i->id }}; showDeleteModal = true"
+                                                @click="deleteType = 'category'; deleteId = {{ '$i->id' }}; showDeleteModal = true"
                                                 class="text-white bg-red-500 p-2 rounded-md cursor-pointer">
                                                 <flux:icon variant="outline" icon="trash" class="size-4" />
                                             </button>
                                         </div>
-                                    @endforeach
+                                    {{-- @endforeach --}}
                                 </div>
                             </template>
 
                             <template x-if="activeSubPanel === 'tags'">
                                 <div class="space-y-1">
-                                    @foreach ($this->tagList as $i)
+                                    {{-- @foreach ($this->tagList as $i) --}}
                                         <div class="flex justify-between items-center py-2.5 px-2 text-sm hover:bg-forest hover:text-white rounded-lg transition-colors">
-                                            <span class="font-medium">{{ $i->name }}</span>
+                                            <span class="font-medium">{{ '$i->name' }}</span>
                                             <button
-                                                @click="deleteType = 'tag'; deleteId = {{ $i->id }}; showDeleteModal = true"
+                                                @click="deleteType = 'tag'; deleteId = {{ '$i->id' }}; showDeleteModal = true"
                                                 class="text-white bg-red-500 p-2 rounded-md cursor-pointer">
                                                 <flux:icon variant="outline" icon="trash" class="size-4" />
                                             </button>
                                         </div>
-                                    @endforeach
+                                    {{-- @endforeach --}}
                                 </div>
                             </template>
                         </div>
@@ -622,5 +460,4 @@ new class extends Component
 
         </div>
     </div>
-
 </div>

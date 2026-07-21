@@ -68,13 +68,8 @@
             {{ __('Articles') }}
         </x-layouts.app.sidebar-link>
 
-        <x-layouts::app.sidebar-link
-        route="{{ route('documentation') }}"
-        :active="request()->routeIs('documentation')"
-        icon="chevrons-left-right-ellipsis"
-        iconSize="5">
-            {{ __('Laman') }}
-        </x-layouts.app.sidebar-link>
+        <x-layouts::app.sidebar-link route="{{ route('page.index') }}" :active="request()->routeIs('page.index')"  icon="chevrons-left-right-ellipsis" iconSize="5">  {{ __('Pages') }}  </x-layouts.app.sidebar-link>
+        <x-layouts::app.sidebar-link route="{{ route('user.index') }}" :active="request()->routeIs('user.index')"  icon="users-round" iconSize="5">  {{ __('Users') }}  </x-layouts.app.sidebar-link>
 
     </nav>
     {{-- <div class="border-t-2 border-forest my-2"></div> --}}

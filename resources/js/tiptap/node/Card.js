@@ -101,6 +101,10 @@ export const Card = Node.create({
             toolbar.className = 'absolute -top-3 right-4 flex items-center gap-1.5 bg-white border border-zinc-200 rounded-md p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-sm';
             toolbar.contentEditable = 'false';
 
+            toolbar.addEventListener('mousedown', (e) => {
+                e.preventDefault(); 
+            });
+
             // --- TOMBOL WARNA LATAR (Looping Otomatis) ---
             colorKeys.forEach(colorName => {
                 const colorData = CARD_COLORS[colorName];
