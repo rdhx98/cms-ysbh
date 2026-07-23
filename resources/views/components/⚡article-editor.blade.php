@@ -41,7 +41,7 @@ new class extends Component {
     public ?string $selected_image_url = null; // Menyimpan URL gambar yang dipilih penulis
 
 
-    public function mount($post = null) {
+    public function mount($category = null, $post = null) {
         // 1. JIKA ADA PARAMETER DI URL (Masuk Mode Edit)
         if ($post) {
 

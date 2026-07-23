@@ -13,7 +13,7 @@ new class extends Component
     //
     public Post $article;
 
-    public function mount($category, $post = null) {
+    public function mount($category, Post $post = null) {
         
         $this->article = $post;
         
