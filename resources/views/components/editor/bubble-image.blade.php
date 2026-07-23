@@ -58,7 +58,7 @@
             </button>
         </div>
     </template>
-    <x-layouts::app.editor-toolbar-btn command="createImageCaption" activeType="alpine" activeName="isActive('caption')" title="Caption" icon="captions" />
+    <x-editor.toolbar-button command="createImageCaption" activeType="alpine" activeName="isActive('caption')" title="Caption" icon="captions" />
 
     <div class="h-4 w-px bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
 

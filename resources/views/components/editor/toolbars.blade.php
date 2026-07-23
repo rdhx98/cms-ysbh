@@ -14,13 +14,13 @@
 
                 {{-- BOLD | ITALIC | STRIKE | UNDERLINE --}}
                 <div class="flex items-center gap-1 shrink-0">
-                    <x-layouts::app.editor-toolbar-btn command="toggleBold" activeName="bold"
+                    <x-editor.toolbar-button command="toggleBold" activeName="bold"
                         title="Tebal (Ctrl+B)" icon="bold" />
-                    <x-layouts::app.editor-toolbar-btn command="toggleItalic" activeName="italic"
+                    <x-editor.toolbar-button command="toggleItalic" activeName="italic"
                         title="Miring (Ctrl+I)" icon="italic" />
-                    <x-layouts::app.editor-toolbar-btn command="toggleStrike" activeName="strike"
+                    <x-editor.toolbar-button command="toggleStrike" activeName="strike"
                         title="Coretan (Ctrl+⇑+X)" icon="strikethrough" />
-                    <x-layouts::app.editor-toolbar-btn command="toggleUnderline"
+                    <x-editor.toolbar-button command="toggleUnderline"
                         activeName="underline" title="Garis Bawah (Ctrl+U)" icon="underline" />
                 </div>
 
@@ -136,7 +136,7 @@
 
                 {{-- PILCROW --}}
                 <div class="shrink-0 flex items-center">
-                    <x-layouts::app.editor-toolbar-btn command="toggleHiddenMarks()"
+                    <x-editor.toolbar-button command="toggleHiddenMarks()"
                         activeName="showMarks" activeParams="{}" activeType="alpine"
                         title="Tampilkan Tanda Baca Terselubung" icon="pilcrow" />
                 </div>
@@ -144,19 +144,19 @@
                 {{-- INDENTATION --}}
                 <div
                     class="flex items-center gap-1 md:border-l md:border-zinc-300 md:dark:border-zinc-700 md:pl-2 shrink-0">
-                    <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="left"
+                    <x-editor.toolbar-button command="setTextAlign" activeName="left"
                         activeParams="{ textAlign: 'left' }" activeType="textAlign" title="Rata Kiri"
                         icon="align-left" />
-                    <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="center"
+                    <x-editor.toolbar-button command="setTextAlign" activeName="center"
                         activeParams="{ textAlign: 'center' }" activeType="textAlign"
                         title="Rata Tengah" icon="align-center" />
-                    <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="right"
+                    <x-editor.toolbar-button command="setTextAlign" activeName="right"
                         activeParams="{ textAlign: 'right' }" activeType="textAlign"
                         title="Rata Kanan" icon="align-right" />
-                    <x-layouts::app.editor-toolbar-btn command="setTextAlign" activeName="justify"
+                    <x-editor.toolbar-button command="setTextAlign" activeName="justify"
                         activeParams="{ textAlign: 'justify' }" activeType="textAlign"
                         title="Rata Kiri Kanan" icon="align-justify" />
-                    <x-layouts::app.editor-toolbar-btn command="toggleIndent" activeName="paragraph"
+                    <x-editor.toolbar-button command="toggleIndent" activeName="paragraph"
                         activeParams="{ indent: true }" activeType="default"
                         title="Menjorokkan Baris (Tab)" icon="list-indent-increase" />
                 </div>
@@ -166,13 +166,13 @@
 
                 {{-- HEADINGs --}}
                 <div class="flex items-center gap-1 shrink-0">
-                    <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="1"
+                    <x-editor.toolbar-button command="toggleHeading" activeName="1"
                         activeParams="{ level: 1 }" activeType="heading" title="Heading 1"
                         icon="heading-1" />
-                    <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="2"
+                    <x-editor.toolbar-button command="toggleHeading" activeName="2"
                         activeParams="{ level: 2 }" activeType="heading" title="Heading 2"
                         icon="heading-2" />
-                    <x-layouts::app.editor-toolbar-btn command="toggleHeading" activeName="3"
+                    <x-editor.toolbar-button command="toggleHeading" activeName="3"
                         activeParams="{ level: 3 }" activeType="heading" title="Heading 3"
                         icon="heading-3" />
                 </div>
@@ -182,23 +182,23 @@
 
                 {{-- BULLET LISTS --}}
                 <div class="flex items-center gap-1 shrink-0">
-                    <x-layouts::app.editor-toolbar-btn command="toggleBulletList" activeName=""
+                    <x-editor.toolbar-button command="toggleBulletList" activeName=""
                         activeParams="{}" activeType="heading" title="Bullet list" icon="list" />
-                    <x-layouts::app.editor-toolbar-btn command="toggleTaskList" activeName="taskList"
+                    <x-editor.toolbar-button command="toggleTaskList" activeName="taskList"
                         title="Daftar Tugas" icon="list-todo" />
-                    <x-layouts::app.editor-toolbar-btn command="none" activeName="number"
+                    <x-editor.toolbar-button command="none" activeName="number"
                         activeParams="{ listStyle: 'number' }" activeType="orderedList"
                         title="Daftar Angka" icon="list-tree">
                         <span class="text-[10px] font-bold ml-0.5">1.</span>
-                    </x-layouts::app.editor-toolbar-btn>
-                    <x-layouts::app.editor-toolbar-btn command="none" activeName="alpha"
+                    </x-editor.toolbar-button>
+                    <x-editor.toolbar-button command="none" activeName="alpha"
                         activeParams="{ listStyle: 'alpha' }" activeType="orderedList"
                         title="Daftar Kapital" icon="list-tree">
                         <span class="text-[10px] font-bold ml-0.5">A.</span>
-                    </x-layouts::app.editor-toolbar-btn>
+                    </x-editor.toolbar-button>
 
-                    {{-- <x-layouts::app.editor-toolbar-btn command="toggleEyebrow" activeName="eyebrow" title="Judul Kecil (Eyebrow)" icon="tag"/> --}}
-                    {{-- <x-layouts::app.editor-toolbar-btn command="updateEyebrowStyle"  activeParams="{ color: '#BE1417', size: '18px' }"  activeName="eyebrow"  title="Gaya Judul Merah"  icon="palette"/> --}}
+                    {{-- <x-editor.toolbar-button command="toggleEyebrow" activeName="eyebrow" title="Judul Kecil (Eyebrow)" icon="tag"/> --}}
+                    {{-- <x-editor.toolbar-button command="updateEyebrowStyle"  activeParams="{ color: '#BE1417', size: '18px' }"  activeName="eyebrow"  title="Gaya Judul Merah"  icon="palette"/> --}}
                     {{-- EYEBROW --}}
                     <div class="relative inline-block">
                         <button
@@ -322,9 +322,9 @@
 
                 {{-- QUOTES --}}
                 <div class="flex items-center gap-1 shrink-0">
-                    <x-layouts::app.editor-toolbar-btn command="toggleBlockquote"
+                    <x-editor.toolbar-button command="toggleBlockquote"
                         activeName="blockquote" title="Kutipan" icon="quote" />
-                    <x-layouts::app.editor-toolbar-btn command="toggleCodeBlock"
+                    <x-editor.toolbar-button command="toggleCodeBlock"
                         activeName="codeBlock" title="Blok Kode" icon="code-xml" />
                 </div>
 
@@ -391,14 +391,14 @@
                         title="Step Card ">
                         <x-dynamic-component :component="'lucide-square-chart-gantt'" class="h-4 w-4" stroke-width="2" />
                     </button> --}}
-                    <x-layouts::app.editor-toolbar-btn command="addStep()" activeName="false" activeType="alpine" title="Tambah Langkah Program" icon="list-todo" />
-                    {{-- <x-layouts::app.editor-toolbar-btn command="addCard" activeType="alpine" activeName="isActive('addCard')" title="Step Card" icon="square-chart-gantt" /> --}}
+                    <x-editor.toolbar-button command="addStep()" activeName="false" activeType="alpine" title="Tambah Langkah Program" icon="list-todo" />
+                    {{-- <x-editor.toolbar-button command="addCard" activeType="alpine" activeName="isActive('addCard')" title="Step Card" icon="square-chart-gantt" /> --}}
 
                     {{-- SECTION BLOCK --}}
-                    <x-layouts::app.editor-toolbar-btn command="insertSectionBlock" activeType="alpine" activeName="isActive('sectionBlock')" title="Blok Seksi" icon="gallery-vertical" />
+                    <x-editor.toolbar-button command="insertSectionBlock" activeType="alpine" activeName="isActive('sectionBlock')" title="Blok Seksi" icon="gallery-vertical" />
 
                     {{-- CARD BLOCK --}}
-                    <x-layouts::app.editor-toolbar-btn command="setCard" activeName="setCard" title="Blok Kartu" icon="gallery-thumbnails" />
+                    <x-editor.toolbar-button command="setCard" activeName="setCard" title="Blok Kartu" icon="gallery-thumbnails" />
 
                 </div>
 

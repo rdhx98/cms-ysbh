@@ -324,7 +324,7 @@ new class extends Component
                         <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
 
                             @forelse ($this->articles as $article)
-                                @foreach (range(1, 1) as $i)
+                                @foreach (range(1, 30) as $i)
                                     <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
                                         <td class="px-4 py-3.5 text-sm">
                                             <div class="font-medium text-zinc-900 dark:text-white">{{ $article->title }}</div>
@@ -382,7 +382,7 @@ new class extends Component
                                             {{-- BUTTONS CONTAINER --}}
                                             <div class="flex justify-center items-center gap-2">
 
-                                                <a wire:navigate href="{{ route('article.edit', $article) }}" class="group p-1.5 rounded-md text-white bg-forest/90 dark:bg-forest/80 relative cursor-pointer hover:bg-forest/70 transition-colors flex items-center justify-center">
+                                                <a wire:navigate href="{{ route('article.edit', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" class="group p-1.5 rounded-md text-white bg-forest/90 dark:bg-forest/80 relative cursor-pointer hover:bg-forest/70 transition-colors flex items-center justify-center">
                                                     <flux:icon variant="solid" icon="pencil" class="size-3.5!" />
                                                     <span class="z-30 absolute bottom-full left-0 mb-2 w-max px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-lg dark:bg-gray-100 dark:text-gray-900">
                                                         Sunting
@@ -393,7 +393,7 @@ new class extends Component
                                                     </span>
                                                 </a>
 
-                                                <a wire:navigate href="{{ route('article.preview', $article) }}" class="group p-1.5 rounded-md bg-slate-600 text-white dark:bg-slate-800 relative cursor-pointer hover:bg-slate-700 transition-colors flex items-center justify-center">
+                                                <a wire:navigate href="{{ route('article.preview', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" class="group p-1.5 rounded-md bg-slate-600 text-white dark:bg-slate-800 relative cursor-pointer hover:bg-slate-700 transition-colors flex items-center justify-center">
                                                     <flux:icon variant="solid" icon="eye" class="size-3.5!" />
                                                     <span class="z-30 absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-lg dark:bg-gray-100 dark:text-gray-900">
                                                         Pratinjau
@@ -623,4 +623,4 @@ new class extends Component
         </div>
     </div>
 
-</div>
+</div> 

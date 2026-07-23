@@ -54,25 +54,22 @@
     </div>
 
     <button
-            @click="userMenuExpand = !userMenuExpand"
-            @click.away="userMenuExpand = false"
-            {{ $attributes->merge([
-                'class' => 'cursor-pointer flex justify-center items-center rounded-2xl group border-2 border-forest whitespace-nowrap transition-all duration-300 easew-full-in-out h-11 w-11 bg-sage-soft text-white font-semibold shadow-sm '
+        @click="userMenuExpand = !userMenuExpand"
+        @click.away="userMenuExpand = false"
+        {{ $attributes->merge([
+            'class' => 'cursor-pointer flex justify-center items-center rounded-2xl group border-2 border-forest whitespace-nowrap transition-all duration-300 easew-full-in-out h-11 w-11 bg-sage-soft text-white font-semibold shadow-sm '
 
-            ]) }}
-            >
-            <div class="flex items-center justify-center w-9 h-9 shrink-0 transition-transform duration-200 group-hover:scale-105 ">
-                @if(auth()->user()->avatar)
-                    {{-- avatar here --}}
-                @else
-                    <x-dynamic-component
-                        :component="'lucide-circle-user'"
-                        class="h-5 w-5 text-forest"
-                        stroke-width="2"
-                    />
-                @endif
-            </div>
-        </button>
+        ]) }}
+        >
+        <div class="flex items-center justify-center w-9 h-9 shrink-0 transition-transform duration-200 group-hover:scale-105 ">
+            @if(auth()->user()->avatar)
+                {{-- avatar here --}}
+            @else
+                <span class="text-foresty">{{ auth()->user()->initials() }}</span>
+                {{-- <x-dynamic-component :component="'lucide-circle-user'" class="h-5 w-5 text-forest" stroke-width="2"/> --}}
+            @endif
+        </div>
+    </button>
 
     <!-- Container Profil (Sudut Kanan Atas) -->
     <div class="fixed top-12 right-2 z-50">
@@ -86,18 +83,43 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
             x-transition:leave-end="opacity-0 scale-95 translate-y-[-10px]"
-            class="absolute right-0 mt-3 w-56 bg-white rounded-3xl shadow-xl border border-zinc-100 overflow-hidden py-2"
+            class="absolute right-0 mt-3 w-56 bg-white rounded-3xl shadow-xl border border-foresty overflow-hidden py-2"
         >
             <!-- Header Info (Opsional) -->
-            <div class="px-4 py-3 border-b border-zinc-50 mb-1">
+            {{-- <div class="px-4 py-3 border-b border-zinc-100 mb-1">
                 <p class="text-xs text-zinc-400 font-medium uppercase tracking-wider">Akun Saya</p>
-                <p class="text-sm font-bold text-forest truncate">{{ auth()->user()->name ?? 'Administrator' }}</p>
+                <p class="text-sm font-bold text-forest truncate">
+                    Alfrida Charlotta Kristiani Inameri
+                    {{-- {{ auth()->user()->name ?? 'Administrator' }}  --}
+                    <span class="bg-goldy rounded-4xl px-2 py-0.5 text-xs text-center"> {{auth()->user()->handle() ?? ''}}</span>
+                </p> 
+            </div> --}}
+            
+            <!-- Header Info -->
+            <div class="px-4 py-3 border-b border-zinc-100 mb-1">
+                <p class="text-xs text-zinc-400 font-medium uppercase tracking-wider mb-1">Akun Saya</p>
+                
+                {{-- Container FlexWrap --}}
+                <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+                    
+                    {{-- KUNCI: Tambahkan 'max-w-full' berdampingan dengan 'truncate' --}}
+                    <p class="text-sm font-bold text-forest max-w-full truncate">
+                        Alfrida 
+                        {{-- {{ auth()->user()->name ?? 'Administrator' }}  --}}
+                    </p> 
+                    
+                    {{-- Handle User --}}
+                    <span class="bg-goldy rounded-4xl px-2 py-0.5 text-xs text-center shrink-0 whitespace-nowrap">
+                        {{ auth()->user()->handle() ?? '' }}
+                    </span>
+                    
+                </div>
             </div>
 
             <!-- Menu Items -->
             <div class="flex flex-col space-y-0.5 px-2">
                 <!-- Profil -->
-                <a href="#" class="flex items-center px-3 py-2.5 text-sm font-medium text-zinc-600 rounded-2xl hover:bg-zinc-50 hover:text-forest transition-all group">
+                <a href="{{ route('user.detail', auth()->user()) }}" class="flex items-center px-3 py-2.5 text-sm font-medium text-zinc-600 rounded-2xl hover:bg-zinc-50 hover:text-forest transition-all group">
                     <svg class="w-5 h-5 mr-3 text-zinc-400 group-hover:text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     Profil
                 </a>

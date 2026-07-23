@@ -24,30 +24,40 @@ class CMSdbSeeder extends Seeder
          //buat user
         User::factory()->create([
             'name' => 'Test User',
+            'handle' => 'guest',
+            'active' => true,
             'email' => 'test@example.com',
-            'job_title' =>'Gembel',
+            'job_title' =>'Staff',
             'password' => Hash::make('husada'),
         ]);
         User::factory()->create([
             'name' => 'Alfrida Pabasi',
+            'handle' => 'apabasi',
+            'active' => true,
             'email' => 'midar@mail.com',
             'job_title' =>'Ketua Yayasan',
             'password' => Hash::make('husada'),
         ]);
         User::factory()->create([
             'name' => 'ELizabeth Kristiani',
+            'handle' => 'ekristiani',
+            'active' => true,
             'email' => 'liza@mail.com',
             'job_title' =>'Bendahara',
             'password' => Hash::make('husada'),
         ]);
         User::factory()->create([
             'name' => 'Ruth Charlota Yakoba Fouw',
+            'handle' => 'rfouw',
+            'active' => true,
             'email' => 'utha@example.com',
             'job_title' =>'Program Officer Kesehatan Ibu & Anak',
             'password' => Hash::make('husada'),
         ]);
         User::factory()->create([
             'name' => 'Leon Dolfus Mangonto',
+            'handle' => 'lmangonto',
+            'active' => false,
             'email' => 'leon@mail.com',
             'job_title' =>'Program Officer KIA',
             'password' => Hash::make('husada'),
@@ -58,6 +68,11 @@ class CMSdbSeeder extends Seeder
         $roleWriter = Role::create(['name' => 'writer']);
 
         // Memberikan role ke user
+        $user1 = User::find(1);
+        $user1->assignRole('admin');
+        $user1->assignRole('editor');
+        $user1->assignRole('writer');
+
         $user2 = User::find(2);
         $user2->assignRole('admin');
 

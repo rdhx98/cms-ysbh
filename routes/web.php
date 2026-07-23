@@ -33,25 +33,22 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/dashboard', 'dashboard')->name('dashboard');
-    Route::livewire('/article', 'article')->name('article.index');
-    Route::livewire('/article/write', 'article.editor')->name('article.editor');
-    Route::livewire('/page', 'page')->name('page.index');
-    Route::livewire('/user', 'user')->name('user.index');
+
+    Route::livewire('/article', 'article-index')->name('article.index');
+    Route::livewire('/article/write', 'article-editor')->name('article.editor');
+    Route::livewire('/article/edit/{category}/{post:slug}', 'article-editor')->name('article.edit');
+    Route::livewire('/article/preview/{category}/{post:slug}', 'article-preview')->name('article.preview');
+
+    Route::post('/editor/upload-image', [EditorImageUploadController::class, 'store'])->name('editor.upload-image');
+
+    Route::livewire('/page', 'page-index')->name('page.index');
+
+    // Route::livewire('/user/edit/{user:handle}', 'user-edit')->name('user.edit');
+    Route::livewire('/user', 'user-index')->name('user.index');
+    Route::livewire('/user/create', 'user-detail')->name('user.create');
+    Route::livewire('/user/detail/{user:handle}', 'user-detail')->name('user.detail');
+
     Route::livewire('/documentation', 'documentation')->name('documentation');
-
-    // --- ROUTE UNTUK ARTIKEL ---
-    // 1. Create: Membuat artikel baru (TIDAK ADA parameter)
-    // Route::livewire('/article/write', 'article.editor')->name('article.editor');
-
-    // 2. Edit: Menyunting artikel lama (MENGGUNAKAN parameter {post} dan komponen editor yang sama)
-    Route::livewire('/article/edit/{post:slug}', 'article.editor')->name('article.edit');
-
-    // 3. Preview: Melihat artikel baca-saja (MENGGUNAKAN parameter {post} dan komponen preview baru)
-    Route::livewire('/article/preview/{post:slug}', 'article.preview')->name('article.preview');
-
-    Route::post('/editor/upload-image', [EditorImageUploadController::class, 'store'])
-    // ->middleware(['auth']) // sesuaikan dengan middleware yang dipakai route artikel Anda
-    ->name('editor.upload-image');
 
 });
 

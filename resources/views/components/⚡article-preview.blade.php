@@ -13,11 +13,20 @@ new class extends Component
     //
     public Post $article;
 
-    public function mount($post = null) {
-        // 1. JIKA ADA PARAMETER DI URL (Masuk Mode Edit)
-        if ($post) {
-            $this->article = Post::where('slug', $post)->firstOrFail();
+    public function mount($category, $post = null) {
+        
+        $this->article = $post;
+        
+        // (Opsional tapi disarankan) Validasi kesesuaian kategori di URL dengan database
+        if ($post->category->slug !== $category) {
+            abort(404, 'Artikel tidak ditemukan di kategori ini.');
         }
+        
+        
+        // 1. JIKA ADA PARAMETER DI URL (Masuk Mode Edit)
+        // if ($post) {
+        //     $this->article = Post::where('slug', $post)->firstOrFail();
+        // }
     }
 };
 ?>

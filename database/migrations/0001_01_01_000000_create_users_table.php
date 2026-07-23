@@ -14,9 +14,12 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('handle')->unique();
             $table->string('email')->unique();
-            $table->string('job_title')->unique();
+            $table->string('job_title');
+            $table->boolean('active')->default(true);
             $table->timestamp('email_verified_at')->nullable();
+            $table->string('avatar')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
@@ -43,11 +46,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tags');
-        Schema::dropIfExists('post_categories');
-        Schema::dropIfExists('posts');
-        Schema::dropIfExists('post_tags');
-        Schema::dropIfExists('post_users');
+        // Schema::dropIfExists('tags');
+        // Schema::dropIfExists('post_categories');
+        // Schema::dropIfExists('posts');
+        // Schema::dropIfExists('post_tags');
+        // Schema::dropIfExists('post_users');
 
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
