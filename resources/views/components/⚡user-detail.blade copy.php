@@ -23,20 +23,20 @@ new class extends Component
     public $job_title;
     public array $roles = [];
     public bool $active; // Harus bool agar Alpine.js Toggle tidak error!
-    
+
     public function mount(User $user)
     {
         $this->user = $user;
-        
+
         // Isi form dengan data user saat ini
         $this->name = $user->name;
         $this->handle = $user->handle;
         $this->email = $user->email;
         $this->job_title = $user->job_title;
-        
+
         // Pastikan active murni boolean
-        $this->active = (bool) $user->active; 
-        
+        $this->active = (bool) $user->active;
+
         // Mengambil Role dari Spatie (Ambil role pertama, karena 1 user 1 role)
         // Jika belum punya role, set default ke 'writer'
         // $this->role = $user->roles->first()->name ?? 'writer';
@@ -59,7 +59,7 @@ new class extends Component
             'roles'     => 'required|array|min:1',
             'roles.*'   => 'in:writer,editor,admin',
             // 'role'      => 'required|in:writer,editor,admin',
-            
+
             // Validasi Unique yang mengabaikan ID user saat ini (agar bisa di-save tanpa error)
         ], [
             'roles.required' => 'Pengguna harus memiliki minimal 1 peran.',
@@ -104,7 +104,7 @@ new class extends Component
         $this->notifyFlash('Akun dihapus', 'success');
         return $this->redirect(route('user.index'), navigate: true);
     }
-    
+
     public function cancel()
     {
         $this->mount($this->user);
@@ -113,20 +113,21 @@ new class extends Component
 };
 ?>
 
-<div class="bg-white rounded-lg w-full  md:max-w-none flex flex-col items-center justify-center p-4 flex-1 grow">
+<x-main-wrapper>
+<!-- <div class="bg-white rounded-lg w-full  md:max-w-none flex flex-col items-center justify-center p-4 flex-1 grow"> -->
     <x-slot:title>{{ __('Users Detail').' | '.auth()->user()->name }}</x-slot:title>
     <!-- If you do not have a consistent goal in life, you can not live it in a consistent way. - Marcus Aurelius -->
-    
+
     {{-- MAIN --}}
-    <div x-data="{showDeleteModal: false}"  class="w-full min-w-0 max-w-7xl max-h-[calc(93vh)] h-full flex flex-col justify-start items-center">
-        <div class="overflow-x-auto overflow-y-auto max-h-full border-zinc-200 dark:border-zinc-700 w-full max-w-screen">
+    <!-- <div  class="w-full min-w-0 max-w-7xl max-h-[calc(93vh)] h-full flex flex-col justify-start items-center"> -->
+        <div x-data="{showDeleteModal: false}" class="overflow-x-auto overflow-y-auto max-h-full border-zinc-200 dark:border-zinc-700 w-full max-w-screen">
             <!-- Header Halaman -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                     <h2 class="text-2xl font-bold text-forest dark:text-zinc-100">Detail Pengguna</h2>
                     <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Lihat detail dan kelola informasi akun staf.</p>
                 </div>
-                
+
                 <!-- Tombol Kembali -->
                 <a href="{{ route('user.index') }}" wire:navigate class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm">
                     <x-dynamic-component :component="'lucide-arrow-left'" class="w-4 h-4" />
@@ -136,12 +137,12 @@ new class extends Component
 
             <!-- Grid Layout Utama -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
+
                 <!-- 👈 KOLOM KIRI: KARTU IDENTITAS (col-span-4) -->
                 <div class="lg:col-span-4 space-y-6">
                     <!-- Kartu Profil Utama -->
                     <div class="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 flex flex-col items-center text-center shadow-sm relative overflow-hidden">
-                        
+
                         <!-- Ornamen Latar Belakang -->
                         <div class="absolute top-0 left-0 right-0 h-24 bg-sage-soft dark:bg-zinc-800/50"></div>
 
@@ -180,7 +181,7 @@ new class extends Component
                 <!-- 👉 KOLOM KANAN: FORMULIR DETAIL & EDIT (col-span-8) -->
                 <div class="lg:col-span-8">
                     <form wire:submit="save" x-data="{ isEditing: false }" @close-edit-mode.window="isEditing = false" class="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                        
+
                         <!-- Header Form -->
                         <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex justify-between items-center">
                             <h3 class="text-base font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
@@ -191,7 +192,7 @@ new class extends Component
 
                         <!-- Area Input Data -->
                         <div class="p-6 space-y-6">
-                            
+
                             <!-- Baris 1: Nama Lengkap -->
                             <div>
                                 <label class="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Nama Lengkap</label>
@@ -219,40 +220,40 @@ new class extends Component
 
                             <!-- Divider -->
                             <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800 my-4"></div>
-                            
+
                             <!-- ROLES WORKIN -->
                             <div x-data="{ selectedRoles: @entangle('roles') }">
                                 <label class="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
                                     Akses Wewenang
                                 </label>
-                                
+
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 transition-opacity duration-300"
                                     x-bind:class="!isEditing ? 'pointer-events-none opacity-80' : ''">
-                                    
+
                                     <!-- KARTU 1: WRITER -->
                                     <label class="relative block group" x-bind:class="isEditing ? 'cursor-pointer' : ''">
                                         <input x-bind:disabled="!isEditing" type="checkbox" wire:model="roles" value="writer" class="peer sr-only">
-                                        
+
                                         <div class="h-full p-4 border-2 rounded-2xl bg-white dark:bg-zinc-900 transition-all duration-200"
                                             x-bind:class="selectedRoles.includes('writer') ? 'border-foresty bg-sage-soft/30 dark:bg-foresty/10' : 'border-zinc-200 dark:border-zinc-700 hover:border-foresty/50'">
-                                            
+
                                             <div class="flex items-center gap-2 mb-1.5">
                                                 {{-- KUNCI PERBAIKAN: Gunakan x-bind:class pada x-dynamic-component --}}
-                                                <x-dynamic-component :component="'lucide-feather'" 
+                                                <x-dynamic-component :component="'lucide-feather'"
                                                     class="w-5 h-5 transition-colors"
                                                     x-bind:class="selectedRoles.includes('writer') ? 'text-foresty' : 'text-zinc-400 group-hover:text-foresty/70'" />
-                                                
+
                                                 <span class="font-bold transition-colors"
                                                     x-bind:class="selectedRoles.includes('writer') ? 'text-foresty' : 'text-zinc-800 dark:text-zinc-200'">
                                                     Writer
                                                 </span>
                                             </div>
-                                            
+
                                             <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed select-none">
                                                 Dapat membuat dan mengelola draf artikel miliknya sendiri.
                                             </p>
                                         </div>
-                                        
+
                                         <div class="absolute top-4 right-4 transition-opacity"
                                             x-bind:class="selectedRoles.includes('writer') ? 'opacity-100 text-foresty' : 'opacity-0 text-zinc-400'">
                                             <x-dynamic-component :component="'lucide-circle-check'" class="w-5 h-5 fill-foresty/10" />
@@ -262,26 +263,26 @@ new class extends Component
                                     <!-- KARTU 2: EDITOR -->
                                     <label class="relative block group" x-bind:class="isEditing ? 'cursor-pointer' : ''">
                                         <input x-bind:disabled="!isEditing" type="checkbox" wire:model="roles" value="editor" class="peer sr-only">
-                                        
+
                                         <div class="h-full p-4 border-2 rounded-2xl bg-white dark:bg-zinc-900 transition-all duration-200"
                                             x-bind:class="selectedRoles.includes('editor') ? 'border-foresty bg-sage-soft/30 dark:bg-foresty/10' : 'border-zinc-200 dark:border-zinc-700 hover:border-foresty/50'">
-                                            
+
                                             <div class="flex items-center gap-2 mb-1.5">
-                                                <x-dynamic-component :component="'lucide-clipboard-check'" 
+                                                <x-dynamic-component :component="'lucide-clipboard-check'"
                                                     class="w-5 h-5 transition-colors"
                                                     x-bind:class="selectedRoles.includes('editor') ? 'text-foresty' : 'text-zinc-400 group-hover:text-foresty/70'" />
-                                                
+
                                                 <span class="font-bold transition-colors"
                                                     x-bind:class="selectedRoles.includes('editor') ? 'text-foresty' : 'text-zinc-800 dark:text-zinc-200'">
                                                     Editor
                                                 </span>
                                             </div>
-                                            
+
                                             <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed select-none">
                                                 Dapat menyunting semua artikel dan menyetujui publikasi.
                                             </p>
                                         </div>
-                                        
+
                                         <div class="absolute top-4 right-4 transition-opacity"
                                             x-bind:class="selectedRoles.includes('editor') ? 'opacity-100 text-foresty' : 'opacity-0 text-zinc-400'">
                                             <x-dynamic-component :component="'lucide-circle-check'" class="w-5 h-5 fill-foresty/10" />
@@ -291,26 +292,26 @@ new class extends Component
                                     <!-- KARTU 3: ADMIN -->
                                     <label class="relative block group" x-bind:class="isEditing ? 'cursor-pointer' : ''">
                                         <input x-bind:disabled="!isEditing" type="checkbox" wire:model="roles" value="admin" class="peer sr-only">
-                                        
+
                                         <div class="h-full p-4 border-2 rounded-2xl bg-white dark:bg-zinc-900 transition-all duration-200"
                                             x-bind:class="selectedRoles.includes('admin') ? 'border-foresty bg-sage-soft/30 dark:bg-foresty/10' : 'border-zinc-200 dark:border-zinc-700 hover:border-foresty/50'">
-                                            
+
                                             <div class="flex items-center gap-2 mb-1.5">
-                                                <x-dynamic-component :component="'lucide-shield-check'" 
+                                                <x-dynamic-component :component="'lucide-shield-check'"
                                                     class="w-5 h-5 transition-colors"
                                                     x-bind:class="selectedRoles.includes('admin') ? 'text-foresty' : 'text-zinc-400 group-hover:text-foresty/70'" />
-                                                
+
                                                 <span class="font-bold transition-colors"
                                                     x-bind:class="selectedRoles.includes('admin') ? 'text-foresty' : 'text-zinc-800 dark:text-zinc-200'">
                                                     Admin
                                                 </span>
                                             </div>
-                                            
+
                                             <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed select-none">
                                                 Akses penuh ke semua pengaturan sistem dan pengguna.
                                             </p>
                                         </div>
-                                        
+
                                         <div class="absolute top-4 right-4 transition-opacity"
                                             x-bind:class="selectedRoles.includes('admin') ? 'opacity-100 text-foresty' : 'opacity-0 text-zinc-400'">
                                             <x-dynamic-component :component="'lucide-circle-check'" class="w-5 h-5 fill-foresty/10" />
@@ -335,7 +336,7 @@ new class extends Component
                                         </div>
                                     </div>
                                 </div> -->
-                                
+
                                 @error('roles') <span class="text-xs text-red-500 mt-2 block font-semibold">{{ $message }}</span> @enderror
                             </div>
 
@@ -357,15 +358,15 @@ new class extends Component
                                     <h4 class="text-sm font-bold text-zinc-800 dark:text-zinc-200">Status Akun Aktif</h4>
                                     <p class="text-xs text-zinc-500 mt-0.5">Jika dimatikan, pengguna ini tidak akan bisa login ke dalam CMS.</p>
                                 </div>
-                                
+
                                 <!-- Toggle Switch Alpine -->
                                 <!-- KUNCI: Hapus "cursor-pointer" statis, ganti dengan binding dinamis -->
-                                <label x-data="{ checked: @entangle('active') }" 
+                                <label x-data="{ checked: @entangle('active') }"
                                     class="relative inline-flex items-center"
                                     :class="isEditing ? 'cursor-pointer' : 'cursor-default pointer-events-none'">
-                                    
+
                                     <input x-bind:disabled="!isEditing" type="checkbox" x-model="checked" class="sr-only peer">
-                                    
+
                                     <div class="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-forest"></div>
                                 </label>
                             </div>
@@ -373,7 +374,7 @@ new class extends Component
 
                         <!-- Footer Area (Action Buttons) -->
                         <div class="px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex justify-end gap-3">
-                            <button x-show="!isEditing" x-cloak type="button" 
+                            <button x-show="!isEditing" x-cloak type="button"
                                 @click="showDeleteModal = true"
                                 class="px-5 py-2.5 text-sm font-bold text-foresty bg-coral-muted hover:bg-red-700 hover:text-goldy rounded-xl shadow-md transition-colors flex items-center gap-2 cursor-pointer select-none">
                                 <x-dynamic-component :component="'lucide-shredder'" class="w-4 h-4" />
@@ -385,12 +386,12 @@ new class extends Component
                                 <span wire:loading.remove wire:target="save">Simpan Perubahan</span>
                                 <span wire:loading wire:target="save">Menyimpan...</span>
                             </button>
-                            <button x-show="isEditing" x-cloak @click="isEditing = false" type="button" wire:click="cancel" 
+                            <button x-show="isEditing" x-cloak @click="isEditing = false" type="button" wire:click="cancel"
                             class="px-5 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-200 bg-zinc-100 rounded-xl transition-colors cursor-pointer select-none">
                                 Batal
                             </button>
-                            <button type="button" 
-                                x-show="!isEditing" 
+                            <button type="button"
+                                x-show="!isEditing"
                                 @click="isEditing = true"
                                 x-transition:enter="transition ease-out duration-200"
                                 x-transition:enter-start="opacity-0 scale-95"
@@ -400,7 +401,7 @@ new class extends Component
                                 Edit Profil
                             </button>
                         </div>
-                        
+
                     </form>
                 </div>
 
@@ -449,5 +450,6 @@ new class extends Component
 
             </div>
         </div>
-    </div>
-</div>
+    <!-- </div>
+</div> -->
+</x-main-wrapper>
