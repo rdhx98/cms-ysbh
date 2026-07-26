@@ -408,7 +408,7 @@ new class extends Component {
 };
 ?>
 <x-slot:title>{{ __('Write Article') }}</x-slot:title>
-<div class="w-full h-[calc(100vh-4rem)] flex flex-row pt-2 md:pt-0">
+<div class="w-full h-[calc(100vh-4rem)] flex-1 min-h-0 gap-2 overflow-hidden flex flex-col md:flex-row pt-2 md:pt-0">
 
     {{-- Gunakan wire:submit="save" yang merupakan standar Livewire 3 --}}
     <form wire:submit="save" @submit.capture="flushEditorSync()" x-data="setupEditor('content', $wire)" @buka-modal-link.window="isLinkOpen = true" 
@@ -421,7 +421,7 @@ new class extends Component {
                 class="w-full pt-4 pb-3 px-4 md:px-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
 
                 {{-- Input Judul --}}
-                <div class="relative flex flex-col justify-start items-start w-full">
+                <div class="relative flex flex-col justify-start items-start w-full max-w-4xl">
                     @error('title')
                         {{-- Teks error dibuat absolute agar melayang di bawah tanpa mendorong elemen lain --}}
                         <span class="absolute -top-2 left-3 text-xs text-red-500 font-semibold tracking-wide whitespace-nowrap">
@@ -432,23 +432,22 @@ new class extends Component {
 
                 </div>
 
-                <div x-data="{ errors: false }"
+                {{-- <div x-data="{ errors: false }"
                     x-on:livewire-upload-error.window="errors = true"
                     @if($errors->any()) x-init="setTimeout(() => $dispatch('notify', { message: 'Gagal menyimpan! Periksa form Anda.', type: 'error' }), 100)" @endif>
-                </div>
+                </div> --}}
 
                 {{-- 🌟 TOMBOL BUKA MODAL THUMBNAIL (Dipindah ke sini) --}}
                 <div class="flex items-center justify-end md:justify-between gap-2 shrink-0 md:ml-4">
-
+                    {{-- COVER MODAL --}}
+                    <button type="button" wire:click="scanEditorImages" @click="$dispatch('buka-featured-modal')"
+                        class="shrink-0 p-2 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer md:w-[45%] md:w-auto"
+                        title="Pilih Gambar Sampul">
+                        <x-dynamic-component :component="'lucide-image'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
+                        <span class="hidden md:inline">Sampul Artikel</span>
+                        <span class="md:hidden">Sampul</span>
+                    </button>
                     @if(isset($article_id) && $status === 'draft')
-                        {{-- COVER MODAL --}}
-                        <button type="button" wire:click="scanEditorImages" @click="$dispatch('buka-featured-modal')"
-                            class="shrink-0 p-2 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer md:w-[45%] md:w-auto"
-                            title="Pilih Gambar Sampul">
-                            <x-dynamic-component :component="'lucide-image'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                            <span class="hidden md:inline">Sampul Artikel</span>
-                            <span class="md:hidden">Sampul</span>
-                        </button>
 
                         {{-- META MODAL --}}
                         <button type="button" @click="isMetaOpen = true" class="relative shrink-0 p-2 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer md:w-[45%] md:w-auto" title="Pengaturan Artikel">
@@ -511,7 +510,17 @@ new class extends Component {
                             </div>
                         </button>
                     @endif
-
+                    
+                    <div class="mx-4 text-xs">
+                        {{ $status }}
+                    </div>
+                    <!-- 🎛️ TOMBOL TOGGLE PANEL AUDIT (Desktop & Mobile) -->
+                    <button type="button" @click="isAuditOpen = !isAuditOpen" 
+                        class="p-2 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300 transition-colors flex items-center gap-1.5 text-xs md:text-sm font-medium cursor-pointer border border-zinc-200 dark:border-zinc-700"
+                        :title="isAuditOpen ? 'Tutup Panel Audit' : 'Buka Panel Audit'">
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        <span class="hidden md:inline" x-text="isAuditOpen ? 'Tutup Audit' : 'Riwayat Audit'"></span>
+                    </button>
                 </div>
 
                 {{-- ================== UNIVERSAL MODAL / BOTTOM SHEET ================== --}}
@@ -647,36 +656,53 @@ new class extends Component {
         <x-editor :editable="$canEdit"/>
     </form>
 
-    <div x-show="isAuditOpen" 
+    {{-- <div x-show="isAuditOpen" 
                  x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0 translate-x-10 md:translate-y-0 translate-y-full"
                  x-transition:enter-end="opacity-100 translate-x-0 translate-y-0"
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-x-0 translate-y-0"
                  x-transition:leave-end="opacity-0 translate-x-10 md:translate-y-0 translate-y-full"
-                 class="bg-white border border-zinc-200 dark:border-zinc-800 rounded-xl flex flex-col p-2 overflow-hidden shadow-sm shrink-0 h-48 md:h-full ml-4">
-        <div class="p-2 text-xl">
-            Audit Tracker
+                 class="bg-white border border-zinc-200 dark:border-zinc-800 rounded-xl flex flex-col overflow-hidden shadow-md shrink-0 h-48 md:h-full ml-4"> --}}
+                 <!-- 📱/💻 PANEL RIWAYAT AUDIT (Responsive: Laci Bawah di Mobile, Sidebar Kanan di Desktop) -->
+    {{-- <div x-show="isAuditOpen" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-4 md:translate-y-0 md:translate-x-10"
+         x-transition:enter-end="opacity-100 translate-y-0 md:translate-x-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0 md:translate-x-0"
+         x-transition:leave-end="opacity-0 translate-y-4 md:translate-y-0 md:translate-x-10"
+         class="w-full md:w-80 h-56 md:h-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex flex-col overflow-hidden shadow-sm shrink-0">
+        
+        <!-- Header Panel Audit -->
+        <div class="p-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50 shrink-0">
+            <h3 class="text-xs font-bold text-zinc-700 dark:text-zinc-300 tracking-wide uppercase">Riwayat Audit Dokumen</h3>
+            <button type="button" @click="isAuditOpen = false" class="text-zinc-400 hover:text-red-500 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
         </div>
-        <ul class="-mb-8 overflow-y-auto px-2">
+        {{-- <div class="p-4 text-xl text-foresty bg-zinc-200 ">
+            Audit Tracker
+        </div> --
+        <ul class="-mb-8 overflow-y-auto px-6 py-4">
             @forelse($this->auditTrail as $index => $log)
                 @foreach (range(1, 1) as $i)
                     <li>
                         <div class="relative pb-8">
-                            {{-- Garis vertikal penghubung antar titik (disembunyikan di item terakhir) --}}
+                            {{-- Garis vertikal penghubung antar titik (disembunyikan di item terakhir) --
                             @if (!$loop->last)
                                 <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-zinc-200 dark:bg-zinc-800" aria-hidden="true"></span>
                             @endif
                             
                             <div class="relative flex space-x-3 items-center">
-                                {{-- Icon Titik Timeline berdasarkan jenis log --}}
+                                {{-- Icon Titik Timeline berdasarkan jenis log --
                                 <div>
                                     <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-zinc-900 
                                         @if(str_contains($log->description, 'dihapus')) bg-red-500 text-white
                                         @elseif(str_contains($log->description, 'diajukan')) bg-blue-500 text-white
                                         @else bg-emerald-500 text-white @endif">
                                         
-                                        {{-- Gunakan dynamic component Lucide icons --}}
+                                        {{-- Gunakan dynamic component Lucide icons --
                                         @if(str_contains($log->description, 'dihapus'))
                                             <x-dynamic-component :component="'lucide-trash-2'" class="w-4 h-4" />
                                         @elseif(str_contains($log->description, 'diajukan'))
@@ -687,7 +713,7 @@ new class extends Component {
                                     </span>
                                 </div>
 
-                                {{-- Konten Informasi Log --}}
+                                {{-- Konten Informasi Log --
                                 <div class="min-w-0 flex-1 flex justify-between space-x-4">
                                     <div>
                                         <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -696,7 +722,7 @@ new class extends Component {
                                         <p class="text-xs text-zinc-500 dark:text-zinc-400">
                                             Oleh: <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ optional($log->causer)->name ?? 'Sistem / Tamu' }}</span>
                                             
-                                            {{-- Menampilkan info tambahan dari properties jika ada --}}
+                                            {{-- Menampilkan info tambahan dari properties jika ada --}
                                             @if(isset($log->properties['status_saat_dihapus']))
                                                 <span class="ml-1 px-1.5 py-0.5 text-[10px] bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400">
                                                     Status: {{ $log->properties['status_saat_dihapus'] }}
@@ -720,7 +746,72 @@ new class extends Component {
                 </li>
             @endforelse
         </ul>
+    </div> --}}
+
+    <!-- 📜 CONTAINER UTAMA / WRAPPER UNTUK DRAWER & BACKDROP -->
+<div x-show="isAuditOpen" class="relative z-50">
+    
+    <!-- 🌑 BACKDROP OVERLAY GELAP -->
+    <div x-show="isAuditOpen" 
+         x-transition:enter="transition-opacity ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="isAuditOpen = false" 
+         class="fixed inset-0 bg-black/50 backdrop-blur-xs md:hidden" 
+         style="display: none;">
     </div>
+
+    <!-- 📜 PANEL RIWAYAT AUDIT (Drawer dari Bawah di Mobile, Sidebar Kanan di Desktop) -->
+    <div x-show="isAuditOpen" 
+         x-transition:enter="transition ease-out duration-300 transform"
+         x-transition:enter-start="translate-y-full md:translate-y-0 md:translate-x-10"
+         x-transition:enter-end="translate-y-0 md:translate-x-0"
+         x-transition:leave="transition ease-in duration-200 transform"
+         x-transition:leave-start="translate-y-0 md:translate-x-0"
+         x-transition:leave-end="translate-y-full md:translate-y-0 md:translate-x-10"
+         class="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl md:static md:w-80 md:rounded-xl h-[60vh] md:h-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col overflow-hidden shadow-2xl md:shadow-sm shrink-0"
+         style="display: none;">
+        
+        <!-- Header Panel Audit -->
+        <div class="p-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50 shrink-0 relative">
+            <!-- Indikator Handle kecil khas laci mobile di tengah -->
+            <div class="md:hidden w-10 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full absolute left-1/2 -translate-x-1/2 top-1.5"></div>
+            
+            <h3 class="text-xs font-bold text-zinc-700 dark:text-zinc-300 tracking-wide uppercase mt-1 md:mt-0">Riwayat Audit Dokumen</h3>
+            <button type="button" @click="isAuditOpen = false" class="text-zinc-400 hover:text-red-500 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- List Riwayat Audit -->
+        <div class="flex-1 p-4 overflow-y-auto space-y-4">
+            <ul class="-mb-8">
+                <li>
+                    <div class="relative pb-6">
+                        <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-zinc-200 dark:bg-zinc-800" aria-hidden="true"></span>
+                        <div class="relative flex space-x-3 items-center">
+                            <div>
+                                <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-zinc-900 bg-emerald-500 text-white">
+                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                                </span>
+                            </div>
+                            <div class="min-w-0 flex-1 flex justify-between space-x-4">
+                                <div>
+                                    <p class="text-xs font-medium text-zinc-900 dark:text-zinc-100">updated</p>
+                                    <p class="text-[11px] text-zinc-500">Oleh: <span class="font-semibold">Ruth Charlota</span></p>
+                                </div>
+                                <div class="text-right text-[10px] text-zinc-400">3 hours ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
 
     @include('components.editor.modal-thumbnail')
     @include('components.editor.modal-review')

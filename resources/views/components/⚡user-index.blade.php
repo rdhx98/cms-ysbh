@@ -110,7 +110,7 @@ new class extends Component
             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
 
                 @forelse ($this->userList as $user)
-                    @foreach (range(1, 21) as $i)
+                    @foreach (range(1, 1) as $i)
                         <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
                             <td class="px-4 py-3.5 text-sm">
                                 <div class="font-medium text-zinc-900 dark:text-white">{{ $user->name }}</div>
