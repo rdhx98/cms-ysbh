@@ -32,15 +32,23 @@ new class extends Component
 {{-- Live as if you were to die tomorrow. Learn as if you were to live forever. - Mahatma Gandhi --}}
 {{-- <div class="">
     --}}
+<x-slot:title>{{ __('Manage Users') }}</x-slot:title>
 <x-main-wrapper>
-    <x-slot:title>{{ __('Manage Users') }}</x-slot:title>
     <!--HEADER CONTAINER -->
     <div class="mb-4  flex justify-between w-full items-center">
-        <div class="left"></div>
+        <div class="font-bold text-2xl"> {{ __('Users List') }} </div>
         <div class="">
-            <a href="{{ route('user.create') }}" wire:navigate class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm">
+            {{-- <a href="{{ route('user.create') }}" wire:navigate class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm">
                 <x-dynamic-component :component="'lucide-user-plus'" class="w-4 h-4" />
-                Buat Akun
+                {{ __('Create') }}
+            </a> --}}
+            <a href="{{ route('user.create') }}" wire:navigate 
+                x-data="{isAnimating: false,  playAnim() { this.isAnimating = false;  this.$nextTick(() => { this.isAnimating = true; setTimeout(() => this.isAnimating = false, 500); }); }}"
+                {{-- x-on:click=" playAnim(); deleteType = 'category'; deleteId = {{ $i->id }}; showDeleteModal = true " --}}
+                x-on:mouseenter="playAnim()"
+                class="p-2 gap-2 cursor-pointer inline-flex items-center text-sm font-semibold text-foresty bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm">
+                <x-dynamic-component :component="'lucide-user-plus'" class="h-5 w-5 origin-center" stroke-width="2" x-bind:class="isAnimating ? 'animate-save' : ''" />
+                {{ __('Create') }}
             </a>
         </div>
     </div>
@@ -48,18 +56,10 @@ new class extends Component
     <!-- TABLE CONTAINER -->
     <div class="overflow-x-auto overflow-y-auto  rounded-xl border max-h-full border-zinc-200 dark:border-zinc-700 w-full max-w-screen">
         <table class="w-full min-w-max text-left border-collapse">
-            {{-- <thead class="bg-sbh-green text-xs text-white dark:bg-green-950 dark:text-green-300">
-                <tr>
-                    <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider">Judul Artikel</th>
-                    <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider">Kategori</th>
-                    <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider">Status</th>
-                    <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider text-center">Kelola</th>
-                </tr>
-            </thead> --}}
-            <thead class="bg-sbh-green text-xs text-white dark:bg-green-950 dark:text-green-300">
+            <thead class="bg-sbh-green text-xs text-foresty bg-misty">
                 <tr>
                     <!-- Header Judul -->
-                    <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider">
+                    <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase tracking-wider bg-misty">
                         <button wire:click="sortBy('name')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
                             Nama
                             @if($orderColumn === 'name')
@@ -69,7 +69,7 @@ new class extends Component
                     </th>
 
                     <!-- Tanggal -->
-                    <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider">
+                    <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase tracking-wider bg-misty">
                         <button wire:click="sortBy('created_at')" class="flex items-center justify-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
                             handle
                             @if($orderColumn === 'created_at')
@@ -79,7 +79,7 @@ new class extends Component
                     </th>
 
                     <!-- Header Kategori -->
-                    <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider">
+                    <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase tracking-wider bg-misty">
                         <button wire:click="sortBy('category')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
                             E-mail
                             @if($orderColumn === 'category')
@@ -89,7 +89,7 @@ new class extends Component
                     </th>
 
                     <!-- Header Status -->
-                    <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider">
+                    <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase tracking-wider bg-misty">
                         <button wire:click="sortBy('status')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
                             Status
                             @if($orderColumn === 'status')
@@ -97,12 +97,12 @@ new class extends Component
                             @endif
                         </button>
                     </th>
-                    <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider text-center">
+                    <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase tracking-wider bg-misty text-center">
                         {{ __('roles') }}
                     </th>
 
                     <!-- Header Kelola (Tidak perlu sorting) -->
-                    <th class="sticky top-0 z-10 lg:z-20 bg-forest dark:bg-green-950 px-4 py-3 font-semibold uppercase tracking-wider text-center">
+                    <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase tracking-wider bg-misty text-center">
                         Kelola
                     </th>
                 </tr>
@@ -110,7 +110,7 @@ new class extends Component
             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
 
                 @forelse ($this->userList as $user)
-                    @foreach (range(1, 1) as $i)
+                    @foreach (range(1, 21) as $i)
                         <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
                             <td class="px-4 py-3.5 text-sm">
                                 <div class="font-medium text-zinc-900 dark:text-white">{{ $user->name }}</div>
@@ -126,8 +126,8 @@ new class extends Component
                             <td class="px-4 py-3.5 text-sm text-center align-middle">
                                 @if($user->active)
                                     {{-- Tambahkan inline-block agar padding span dirender sempurna --}}
-                                    <span class="inline-flex items-center gap-2 px-2.5 py-0.5 text-xs font-medium rounded-full bg-misty text-foresty border-2 border-foresty dark:bg-violet-950 dark:text-violet-300">
-                                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-forest"></span>Aktif
+                                    <span class="inline-flex items-center gap-2 px-2.5 py-0.5 text-xs font-medium rounded-full bg-misty text-foresty border-2 border-foresty bg-misty dark:bg-violet-950 dark:text-violet-300">
+                                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-foresty"></span>Aktif
                                     </span>
                                 @else
                                     <span class="inline-flex items-center gap-2 px-2.5 py-0.5text-xs font-medium rounded-full bg-coral-muted text-red-700 border-2 border-red-700 dark:bg-yellow-950 dark:text-yellow-300">
@@ -148,7 +148,18 @@ new class extends Component
                             </td> --}}
                             <td class="px-4 py-3.5 text-sm align-middle">
                                 <div class="flex items-center gap-4">
-                                    @foreach ($user->roles as $role)
+                                    @forelse($user->getRoleNames() as $role)
+                                        <div class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border gap-2 {{ $user->getRoleColor($role) }}">
+                                            <x-dynamic-component component="{{ $user->getRoleIcon($role) }}" class="h-4 w-4" stroke-width="2.5" />
+                                            {{ ucfirst($role) }}
+                                        </div>
+                                    @empty
+                                        <!-- Jika user tidak punya role sama sekali -->
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-zinc-50 text-zinc-700 border-zinc-700">
+                                            Tanpa Wewenang
+                                        </span>
+                                    @endforelse
+                                    {{-- @foreach ($user->roles as $role)
 
                                         @switch( $role->name )
                                             @case('admin')
@@ -174,7 +185,7 @@ new class extends Component
 
                                         @endswitch
 
-                                    @endforeach
+                                    @endforeach --}}
                                 </div>
                             </td>
                             <td class="px-4 py-3.5 text-sm">

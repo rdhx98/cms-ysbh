@@ -123,33 +123,50 @@ new class extends Component
     public function save()
     {
         $userId = $this->user->id ?? '';
+        
+        // 1. Cek apakah yang menekan tombol adalah Admin
+        $isAdmin = auth()->user()->hasRole('admin'); 
 
+        // ==========================================
+        // BAGIAN 1: ATURAN VALIDASI
+        // ==========================================
+
+        // Aturan dasar yang berlaku untuk SEMUA orang
         $rules = [
             'name'      => 'required|string|max:255',
-            'job_title' => 'required|string|max:255',
-            'active'    => 'boolean',
             'handle'    => 'required|string|max:255|unique:users,handle,' . $userId,
-            'email'     => 'required|email|max:255|unique:users,email,' . $userId,
-            'roles'     => 'required|array|min:1',
-            'roles.*'   => 'in:writer,editor,admin',
         ];
 
-        // Validasi Dinamis: Tambahkan aturan 'confirmed'
-        // Ini akan otomatis mencocokkan dengan $password_confirmation
         if ($this->isCreateMode) {
             $rules['password'] = 'required|string|min:8|confirmed';
         } else {
             $rules['password'] = 'nullable|string|min:8|confirmed';
         }
 
+        // Aturan tambahan HANYA jika yang mengeksekusi adalah Admin
+        if ($isAdmin) {
+            $rules['job_title'] = 'required|string|max:255';
+            $rules['active']    = 'boolean';
+            $rules['email']     = 'required|email|max:255|unique:users,email,' . $userId;
+            $rules['roles']     = 'required|array|min:1';
+            $rules['roles.*']   = 'in:writer,editor,admin';
+        }
+
         $this->validate($rules, [
             'roles.required'     => 'Pengguna harus memiliki minimal 1 peran.',
             'password.required'  => 'Kata sandi wajib diisi untuk pengguna baru.',
             'password.min'       => 'Kata sandi minimal 8 karakter.',
-            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.', // Pesan error khusus
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
         ]);
 
+        // ==========================================
+        // BAGIAN 2: EKSEKUSI PENYIMPANAN
+        // ==========================================
+
         if ($this->isCreateMode) {
+            // Keamanan Ekstra: Cegah user biasa membuat akun baru lewat celah apa pun
+            abort_if(!$isAdmin, 403, 'Hanya Admin yang dapat membuat pengguna baru.');
+
             $newUser = User::create([
                 'name'      => $this->name,
                 'handle'    => $this->handle,
@@ -165,29 +182,140 @@ new class extends Component
             return $this->redirect(route('user.index'), navigate: true);
 
         } else {
+            
+            // Keamanan Ekstra: Cegah user biasa mengedit akun milik orang lain
+            abort_if(!$isAdmin && auth()->id() !== $this->user->id, 403, 'Anda hanya diizinkan mengubah profil Anda sendiri.');
+
+            // Data yang boleh diubah oleh SEMUA orang
             $updateData = [
-                'name'      => $this->name,
-                'handle'    => $this->handle,
-                'email'     => $this->email,
-                'job_title' => $this->job_title,
-                'active'    => $this->active,
+                'name'   => $this->name,
+                'handle' => $this->handle,
             ];
+
+            // Memasukkan data sensitif HANYA jika pelakunya Admin
+            if ($isAdmin) {
+                $updateData['email']     = $this->email;
+                $updateData['job_title'] = $this->job_title;
+                $updateData['active']    = $this->active;
+            }
 
             if (!empty($this->password)) {
                 $updateData['password'] = Hash::make($this->password);
             }
 
             $this->user->update($updateData);
-            $this->user->syncRoles($this->roles);
 
-            // Bersihkan field password setelah simpan berhasil
+            // Hanya Admin yang berhak menyinkronisasi/mengubah peran (role)
+            if ($isAdmin) {
+                $this->user->syncRoles($this->roles);
+            }
+
+            // Pencatatan Log Aktivitas jika kata sandi diubah
+            if (!empty($this->password)) {
+                activity('security')
+                    ->performedOn($this->user)
+                    ->causedBy(auth()->user())
+                    ->withProperties([
+                        'ip_address' => request()->ip(),
+                        'browser' => request()->userAgent(),
+                        'type' => 'password_update' 
+                    ])->log('Kata sandi berhasil diperbarui');
+            }
+
+            $handleBerubah = $this->user->wasChanged('handle');
+
             $this->password = null;
             $this->password_confirmation = null;
 
-            $this->dispatch('close-edit-mode');
-            $this->notify('Perubahan Disimpan', 'success');
+            if ($handleBerubah) {
+                $this->notifyFlash('Perubahan Disimpan', 'success');
+                return $this->redirect(route('user.detail', $this->handle), navigate: true);
+            } else {
+                // Jika handle tidak berubah, cukup tutup mode edit seperti biasa
+                $this->dispatch('close-edit-mode');
+                $this->notifyFlash('Perubahan Disimpan', 'success');
+            }
         }
     }
+    // public function save()
+    // {
+    //     $userId = $this->user->id ?? '';
+
+    //     $rules = [
+    //         'name'      => 'required|string|max:255',
+    //         'job_title' => 'required|string|max:255',
+    //         'active'    => 'boolean',
+    //         'handle'    => 'required|string|max:255|unique:users,handle,' . $userId,
+    //         'email'     => 'required|email|max:255|unique:users,email,' . $userId,
+    //         'roles'     => 'required|array|min:1',
+    //         'roles.*'   => 'in:writer,editor,admin',
+    //     ];
+
+    //     // Validasi Dinamis: Tambahkan aturan 'confirmed'
+    //     // Ini akan otomatis mencocokkan dengan $password_confirmation
+    //     if ($this->isCreateMode) {
+    //         $rules['password'] = 'required|string|min:8|confirmed';
+    //     } else {
+    //         $rules['password'] = 'nullable|string|min:8|confirmed';
+    //     }
+
+    //     $this->validate($rules, [
+    //         'roles.required'     => 'Pengguna harus memiliki minimal 1 peran.',
+    //         'password.required'  => 'Kata sandi wajib diisi untuk pengguna baru.',
+    //         'password.min'       => 'Kata sandi minimal 8 karakter.',
+    //         'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.', // Pesan error khusus
+    //     ]);
+
+    //     if ($this->isCreateMode) {
+    //         $newUser = User::create([
+    //             'name'      => $this->name,
+    //             'handle'    => $this->handle,
+    //             'email'     => $this->email,
+    //             'job_title' => $this->job_title,
+    //             'active'    => $this->active,
+    //             'password'  => Hash::make($this->password),
+    //         ]);
+
+    //         $newUser->syncRoles($this->roles);
+
+    //         $this->notifyFlash('Pengguna baru berhasil ditambahkan', 'success');
+    //         return $this->redirect(route('user.index'), navigate: true);
+
+    //     } else {
+    //         $updateData = [
+    //             'name'      => $this->name,
+    //             'handle'    => $this->handle,
+    //             'email'     => $this->email,
+    //             'job_title' => $this->job_title,
+    //             'active'    => $this->active,
+    //         ];
+
+    //         if (!empty($this->password)) {
+    //             $updateData['password'] = Hash::make($this->password);
+    //         }
+
+    //         $this->user->update($updateData);
+    //         $this->user->syncRoles($this->roles);
+
+    //         if (!empty($this->password)) {
+    //             activity('security')
+    //                 ->performedOn($this->user)         // Target: Akun siapa yang sedang diubah
+    //                 ->causedBy(auth()->user())         // Pelaku: Siapa yang sedang login & mengeklik tombol
+    //                 ->withProperties([
+    //                     'ip_address' => request()->ip(),
+    //                     'browser' => request()->userAgent(),
+    //                     'type' => 'password_update' 
+    //                 ])->log('Kata sandi berhasil diperbarui secara manual');
+    //         }
+
+    //         // Bersihkan field password setelah simpan berhasil
+    //         $this->password = null;
+    //         $this->password_confirmation = null;
+
+    //         $this->dispatch('close-edit-mode');
+    //         $this->notify('Perubahan Disimpan', 'success');
+    //     }
+    // }
 
     public function deleteUser()
     {
@@ -216,9 +344,9 @@ new class extends Component
 };
 ?>
 
+<x-slot:title>{{ $isCreateMode ? __('Tambah Pengguna') : __('Users Detail').' | '.auth()->user()->name }}</x-slot:title>
 <x-main-wrapper>
-    <x-slot:title>{{ $isCreateMode ? __('Tambah Pengguna') : __('Users Detail').' | '.auth()->user()->name }}</x-slot:title>
-    <div x-data="{showDeleteModal: false}"  class="overflow-x-auto overflow-y-auto max-h-full border-zinc-200 dark:border-zinc-700 w-full max-w-screen">
+    <div x-data="{showDeleteModal: false}"  class="overflow-x-auto overflow-y-auto max-h-full border-zinc-200 dark:border-zinc-700 w-full max-w-screen mb-8">
 
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
@@ -230,9 +358,17 @@ new class extends Component
                 </p>
             </div>
             @if(!$isCreateMode)
-                <a href="{{ route('user.index') }}" wire:navigate class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm">
+                {{-- <a href="{{ route('user.index') }}" wire:navigate class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm">
                     <x-dynamic-component :component="'lucide-arrow-left'" class="w-4 h-4" />
                     Kembali ke Daftar
+                </a> --}}
+                <a href="{{ route('user.index') }}" wire:navigate 
+                    x-data="{isAnimating: false,  playAnim() { this.isAnimating = false;  this.$nextTick(() => { this.isAnimating = true; setTimeout(() => this.isAnimating = false, 500); }); }}"
+                    {{-- x-on:click=" playAnim(); deleteType = 'category'; deleteId = {{ $i->id }}; showDeleteModal = true " --}}
+                    x-on:mouseenter="playAnim()"
+                    class="py-2 px-3 gap-2 cursor-pointer inline-flex items-center text-sm font-semibold text-foresty bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm">
+                    <x-dynamic-component :component="'lucide-arrow-left'" class="h-5 w-5 origin-center" stroke-width="2" x-bind:class="isAnimating ? 'animate-back' : ''" />
+                    {{ __('Back') }}
                 </a>
             @endif
         </div>
@@ -375,6 +511,7 @@ new class extends Component
 
                         <div class="h-px w-full bg-zinc-100 dark:bg-zinc-800 my-4"></div>
 
+                        @hasrole('admin')
                         <!-- ROLES -->
                         <div x-data="{ selectedRoles: @entangle('roles') }">
                             <label class="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
@@ -475,15 +612,22 @@ new class extends Component
                                 <div class="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-forest"></div>
                             </label>
                         </div>
+                        @endhasrole
                     </div>
 
                     <!-- Footer Area (Action Buttons) -->
                     <div class="px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex justify-between items-center w-full">
-
                         <!-- KIRI: Tombol Hapus -->
-                        @if(!$isCreateMode)
-                            <button x-show="!isEditing" x-cloak type="button" @click="showDeleteModal = true" class="px-5 py-2.5 text-sm font-bold text-foresty bg-coral-muted hover:bg-red-700 hover:text-goldy rounded-xl shadow-md transition-colors flex items-center gap-2 cursor-pointer select-none">
-                                <x-dynamic-component :component="'lucide-shredder'" class="w-4 h-4" />
+                        @if(!$isCreateMode && auth()->user()->hasRole('admin'))
+                            <button
+                                x-show="!isEditing" 
+                                type="button" 
+                                x-cloak 
+                                x-data="{  isAnimating: false,  playAnim() { this.isAnimating = false;  this.$nextTick(() => { this.isAnimating = true; setTimeout(() => this.isAnimating = false, 500); }); }}"
+                                x-on:click=" playAnim(); showDeleteModal = true;"
+                                x-on:mouseenter="playAnim()"
+                                class="p-2 text-sm font-bold text-foresty bg-coral-muted hover:bg-red-700 hover:text-goldy rounded-xl shadow-md transition-colors flex items-center gap-2 cursor-pointer select-none">
+                                <x-dynamic-component :component="'lucide-trash-2'" class="h-5 w-5 origin-center group-hover:animate-trash" stroke-width="2" x-bind:class="isAnimating ? 'animate-trash' : ''" />
                                 <span>Hapus Pengguna</span>
                             </button>
                         @endif
@@ -491,18 +635,46 @@ new class extends Component
                         <!-- KANAN: Group Tombol Aksi (Otomatis terdorong ke kanan karena ml-auto) -->
                         <div class="flex items-center gap-3 ml-auto">
 
-                            <button x-show="isEditing" x-cloak type="submit" class="px-5 py-2.5 text-sm font-bold bg-misty text-foresty hover:text-goldy hover:bg-forest rounded-xl shadow-md transition-colors flex items-center gap-2 cursor-pointer select-none">
-                                <x-dynamic-component :component="'lucide-save'" class="w-4 h-4" />
+                            {{-- SAVE or CREATE --}}
+                            @if(auth()->user()->hasRole('admin') || auth()->id() === optional($user)->id)
+                            <button 
+                                x-data="{  isAnimating: false,  playAnim() { this.isAnimating = false;  this.$nextTick(() => { this.isAnimating = true; setTimeout(() => this.isAnimating = false, 500); }); }}"
+                                x-on:mouseenter="playAnim()"
+                                x-on:click="playAnim()"
+                                x-show="isEditing" 
+                                x-cloak 
+                                type="submit" 
+                                class="px-5 py-2.5 text-sm font-bold bg-misty text-foresty hover:text-goldy hover:bg-forest rounded-xl shadow-md transition-colors flex items-center gap-2 cursor-pointer select-none">
+                                <x-dynamic-component :component="'lucide-save'" class="w-4 h-4" x-bind:class="isAnimating ? 'animate-save' : ''" />
                                 <span wire:loading.remove wire:target="save">{{ $isCreateMode ? 'Tambahkan Pengguna' : 'Simpan Perubahan' }}</span>
                                 <span wire:loading wire:target="save">Menyimpan...</span>
                             </button>
+                            @endif
 
-                            @if($isCreateMode)
+                            @if($isCreateMode && auth()->user()->hasRole('admin') )
                                 <a href="{{ route('user.index') }}" wire:navigate class="px-5 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-200 bg-zinc-100 rounded-xl transition-colors cursor-pointer select-none flex items-center">Batal</a>
-                            @else
-                                <button x-show="isEditing" x-cloak @click="isEditing = false" type="button" wire:click="cancel" class="px-5 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-200 bg-zinc-100 rounded-xl transition-colors cursor-pointer select-none">Batal</button>
-                                <button type="button" x-show="!isEditing" @click="isEditing = true" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-forest bg-sage-soft/30 hover:bg-sage-soft rounded-lg transition-colors border border-forest/10 select-none cursor-pointer">
-                                    <x-dynamic-component :component="'lucide-pencil'" class="w-4 h-4" />
+                            @elseif(auth()->user()->hasRole('admin') || auth()->id() === optional($user)->id)
+                                <button 
+                                    x-show="isEditing" 
+                                    x-cloak 
+                                    x-on:click="isEditing = false" 
+                                    type="button" 
+                                    wire:click="cancel" 
+                                    class="px-5 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-200 bg-zinc-100 rounded-xl transition-colors cursor-pointer select-none">
+                                    Batal
+                                </button>
+                                
+                                <button 
+                                type="button" 
+                                x-data="{  isAnimating: false,  playAnim() { this.isAnimating = false;  this.$nextTick(() => { this.isAnimating = true; setTimeout(() => this.isAnimating = false, 500); }); }}"
+                                x-on:mouseenter="playAnim()"
+                                x-show="!isEditing" 
+                                x-on:click="playAnim(); isEditing = true" 
+                                x-transition:enter="transition ease-out duration-200" 
+                                x-transition:enter-start="opacity-0 scale-95" 
+                                x-transition:enter-end="opacity-100 scale-100" 
+                                class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-forest bg-sage-soft/30 hover:bg-sage-soft rounded-lg transition-colors border border-forest/10 select-none cursor-pointer">
+                                    <x-dynamic-component :component="'lucide-pencil'" class="w-4 h-4"  x-bind:class="isAnimating ? 'animate-stroke' : ''" />
                                     Edit Profil
                                 </button>
                             @endif
@@ -514,7 +686,7 @@ new class extends Component
             </div>
 
             {{-- DELETE MODAL --}}
-            @if(!$isCreateMode)
+            @if(!$isCreateMode && auth()->user()->hasRole('admin'))
                 <div x-show="showDeleteModal" class="relative z-99" aria-labelledby="modal-title" role="dialog" aria-modal="true" x-cloak>
                     <div x-show="showDeleteModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-zinc-900/50 backdrop-blur-sm transition-opacity"></div>
                     <div class="fixed inset-0 z-10 w-screen overflow-y-auto">

@@ -48,7 +48,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/user/create', 'user-detail')->name('user.create');
     Route::livewire('/user/detail/{user:handle}', 'user-detail')->name('user.detail');
 
-    Route::livewire('/documentation', 'documentation')->name('documentation');
+    Route::livewire('/documentation', 'json-viewer')->name('documentation');
 
 });
 

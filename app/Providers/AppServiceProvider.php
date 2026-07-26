@@ -9,6 +9,12 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Blade;
 
+use Illuminate\Support\Facades\Event;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Spatie\Activitylog\Support\activity;
+
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -30,6 +36,28 @@ class AppServiceProvider extends ServiceProvider
 
         // 2. Daftarkan folder 'auth' (Jalur: resources/views/auth)
         Blade::anonymousComponentPath(resource_path('views/auth'), 'auth'); // [!code highlight]
+
+        Event::listen(function (Login $event) {
+            // 3. Catat menggunakan Spatie Activitylog
+            activity('security')
+                ->causedBy($event->user) // Otomatis mengaitkan ke user yang sedang login
+                ->withProperties([
+                    'ip_address' => request()->ip(), // Catat IP address
+                    'browser' => request()->userAgent() // Catat jenis peramban (browser)
+                ])
+                ->log('Pengguna berhasil masuk ke sistem');
+        });
+        // Menangkap event Logout manual
+        Event::listen(function (Logout $event) {
+            activity('security')
+                ->causedBy($event->user)
+                ->withProperties([
+                    'ip_address' => request()->ip(),
+                    'browser' => request()->userAgent(),
+                    'type' => 'manual_logout' // Penanda bahwa ini keluar sendiri
+                ])
+                ->log('Pengguna keluar dari sistem (Logout)');
+        });
     }
 
     /**

@@ -7,6 +7,8 @@ use App\Models\Category;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
+use Spatie\Activitylog\Models\Activity;
+
 use Illuminate\Validation\Rule;
 use App\Livewire\Traits\WithNotifications; // Import trait-nya
 use Illuminate\Support\Str;
@@ -80,41 +82,6 @@ new class extends Component {
             $this->tags = [];
         }
     }
-
-    // public function mount(?Post $post = null) {
-    //     // JIKA MODE EDIT (Ada data Post dari URL)
-    //     if ($post && $post->exists) {
-    //         $this->article_id = $post->id;
-    //         $this->title = $post->title;
-    //         $this->slug = $post->slug;
-    //         $this->content = $post->content;
-    //         $this->category_id = $post->category_id;
-    //         $this->user_id = $post->user_id;
-    //         $this->status = $post->status;
-    //         $this->created_at = $post->created_at->format('Y-m-d');
-
-    //         // Ambil ID tags untuk TomSelect
-    //         $this->tags = $post->tags->pluck('id')->toArray();
-
-    //         // Atur gambar sampul
-    //         $this->featured_image = $post->featured_image;
-    //         $this->selected_image_url = asset('storage/articles/' . $post->featured_image);
-
-    //         // Pindai gambar dari konten lama
-    //         $this->scanEditorImages();
-    //     }
-    //     // JIKA MODE TULIS BARU
-    //     else {
-    //         $this->created_at = now()->format('Y-m-d');
-    //         $this->user_id = auth()->id() ?? 1; // Pastikan ada fallback user ID
-    //         $this->content = '';
-    //         $this->title = '';
-    //         $this->slug = '';
-    //         $this->featured_image = 'default.webp';
-    //         $this->status = 'draft';
-    //         $this->tags = [];
-    //     }
-    // }
 
 
     public function scanEditorImages() {
@@ -214,6 +181,36 @@ new class extends Component {
         ];
     }
 
+    public function submitForReview($latestContent)
+    {
+        // 1. Simpan dulu perubahan terakhirnya (meminjam logika saveArticle)
+        // Pastikan Anda memanggil fungsi saveArticle agar gambar & tag ikut tersimpan.
+        $this->saveArticle($latestContent);
+
+        // 2. Ambil artikel yang baru saja disave
+        $article = \App\Models\Post::find($this->article_id);
+
+        if ($article) {
+            // 3. Ubah statusnya menjadi pending
+            $article->update([
+                'status' => 'review'
+            ]);
+
+            // 4. Sinkronkan properti komponen
+            $this->status = 'review';
+
+            // 5. Catat log
+            activity('article_updates')
+                ->performedOn($article)
+                ->causedBy(auth()->user())
+                ->log('Artikel diajukan untuk review editor');
+
+            // 6. Lempar notifikasi dan tendang kembali ke halaman daftar artikel
+            $this->notifyFlash('Artikel berhasil diajukan! Menunggu review editor.', 'success');
+            return $this->redirect(route('article.index'), navigate: true);
+        }
+    }
+
     public function saveArticle($latestContent) {
         $this->content = $latestContent;
         // 1. Biarkan Carbon membaca tanggalnya secara otomatis
@@ -308,6 +305,7 @@ new class extends Component {
                 // 'created_at' => $this->created_at,
             ],
         );
+        $urlTelahBerubah = $article->wasRecentlyCreated || $article->wasChanged(['slug', 'category_id']);
 
         // Jika ini adalah artikel baru yang baru dibuat, ikat ID-nya ke properti komponen
         if (!isset($this->article_id)) {
@@ -343,6 +341,21 @@ new class extends Component {
         // Hubungkan (sync) semua ID tag yang terkumpul ke artikel ini
         // Asumsinya Anda sudah punya relasi tags() di model Post Anda
         $article->tags()->sync($finalTagIds);
+
+        if ($urlTelahBerubah) {
+            $categorySlug = \Illuminate\Support\Facades\DB::table('categories')
+                ->where('id', $this->category_id)
+                ->value('slug') ?? 'umum';
+
+            // ✅ Gunakan notifyFlash() buatan Anda sendiri!
+            $this->notifyFlash('Artikel berhasil disimpan!', 'success');
+
+            // Redirect ke halaman edit dengan URL yang baru
+            return $this->redirect(route('article.edit', [
+                'category' => $categorySlug,
+                'post'     => $article->slug
+            ]), navigate: true);
+        }
 
         $this->notify('Artikel disimpan!', 'success');
         // session()->flash('message', 'Artikel berhasil disimpan!');
@@ -381,13 +394,25 @@ new class extends Component {
 
         return asset('storage/' . $path);
     }
+    public function getAuditTrailProperty()
+    {
+        if (!isset($this->article_id)) {
+            return collect(); // Jika artikel baru/belum disave, kosongkan
+        }
+
+        return Activity::forSubject(\App\Models\Post::find($this->article_id))
+            ->with('causer') // Ambil data siapa yang melakukan aksi
+            ->latest()
+            ->get();
+    }
 };
 ?>
-<div class="w-full h-[calc(100vh-4rem)] flex flex-col pt-2 md:pt-0">
-    <x-slot:title>{{ __('Write Article') }}</x-slot:title>
+<x-slot:title>{{ __('Write Article') }}</x-slot:title>
+<div class="w-full h-[calc(100vh-4rem)] flex flex-row pt-2 md:pt-0">
 
     {{-- Gunakan wire:submit="save" yang merupakan standar Livewire 3 --}}
-    <form wire:submit="save" @submit.capture="flushEditorSync()" x-data="setupEditor('content', $wire)" @buka-modal-link.window="isLinkOpen = true" class="flex flex-col w-full h-full bg-zinc-50 dark:bg-zinc-950 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
+    <form wire:submit="save" @submit.capture="flushEditorSync()" x-data="setupEditor('content', $wire)" @buka-modal-link.window="isLinkOpen = true" 
+        class="flex flex-col w-full  bg-zinc-50 dark:bg-zinc-950 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
         
         {{-- HEADER, META, BUTTONS, TOOLBARS --}}
         <div class="flex-none w-full bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 z-40">
@@ -415,51 +440,77 @@ new class extends Component {
                 {{-- 🌟 TOMBOL BUKA MODAL THUMBNAIL (Dipindah ke sini) --}}
                 <div class="flex items-center justify-end md:justify-between gap-2 shrink-0 md:ml-4">
 
-                    {{-- COVER MODAL --}}
-                    <button type="button" wire:click="scanEditorImages" @click="$dispatch('buka-featured-modal')"
-                        class="shrink-0 p-2 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer md:w-[45%] md:w-auto"
-                        title="Pilih Gambar Sampul">
-                        <x-dynamic-component :component="'lucide-image'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                        <span class="hidden md:inline">Sampul Artikel</span>
-                        <span class="md:hidden">Sampul</span>
-                    </button>
+                    @if(isset($article_id) && $status === 'draft')
+                        {{-- COVER MODAL --}}
+                        <button type="button" wire:click="scanEditorImages" @click="$dispatch('buka-featured-modal')"
+                            class="shrink-0 p-2 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer md:w-[45%] md:w-auto"
+                            title="Pilih Gambar Sampul">
+                            <x-dynamic-component :component="'lucide-image'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
+                            <span class="hidden md:inline">Sampul Artikel</span>
+                            <span class="md:hidden">Sampul</span>
+                        </button>
 
-                    {{-- META MODAL --}}
-                    <button type="button" @click="isMetaOpen = true"
-                        class="relative shrink-0 p-2 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer md:w-[45%] md:w-auto" title="Pengaturan Artikel">
+                        {{-- META MODAL --}}
+                        <button type="button" @click="isMetaOpen = true" class="relative shrink-0 p-2 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer md:w-[45%] md:w-auto" title="Pengaturan Artikel">
 
-                        <x-dynamic-component :component="'lucide-file-sliders'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                        <span class="hidden md:inline">Pengaturan Dokumen</span>
-                        <span class="md:hidden">Pengaturan</span>
+                            <x-dynamic-component :component="'lucide-file-sliders'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
+                            <span class="hidden md:inline">Pengaturan Dokumen</span>
+                            <span class="md:hidden">Pengaturan</span>
 
-                        {{-- 🚨 INDIKATOR DOT MERAH ERROR 🚨 --}}
-                        @if($errors->hasAny(['category_id', 'tags']))
-                            {{-- Wrapper absolute diletakkan di luar jangkauan flex --}}
-                            <span class="absolute -top-1.5 -right-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-zinc-900 z-10">
-                                !
-                                {{-- Efek ping/denyut opsional agar lebih menarik perhatian --}}
-                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                            {{-- 🚨 INDIKATOR DOT MERAH ERROR 🚨 --}}
+                            @if($errors->hasAny(['category_id', 'tags']))
+                                {{-- Wrapper absolute diletakkan di luar jangkauan flex --}}
+                                <span class="absolute -top-1.5 -right-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-zinc-900 z-10">
+                                    !
+                                    {{-- Efek ping/denyut opsional agar lebih menarik perhatian --}}
+                                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                                </span>
+                            @endif
+                        </button>
+                    @endif
+
+                    @php
+                        // $canEdit = auth()->user()->hasRole(['admin', 'editor']) || in_array($status, ['draft', null]);
+                        $canEdit =  in_array($status, ['draft', null]);
+                    @endphp
+                    @if(isset($article_id) && $status === 'draft')
+
+                        {{-- Tombol Pemicu Modal --}}
+                        <button type="button"
+                            x-on:click="$dispatch('buka-modal-review')"
+                            wire:loading.attr="disabled"
+                            class="p-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm shadow cursor-pointer disabled:opacity-70 flex items-center justify-center min-w-[140px] transition-colors">
+                            
+                            <span class="flex items-center justify-center gap-2" wire:loading.remove wire:target="submitForReview">
+                                <x-dynamic-component :component="'lucide-send'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
+                                <span class="hidden md:block"> Ajukan Review </span>
+                                <span class="md:hidden"> Ajukan </span>
                             </span>
-                        @endif
-                    </button>
 
+                            <div wire:loading.flex wire:target="submitForReview" class="flex-row items-center justify-center gap-2">
+                                <span>Mengirim...</span>
+                            </div>
+                        </button>
+                    @endif
 
-                    <button type="button"
-                        x-on:click="if(window.tiptapEditor) { $wire.saveArticle(window.tiptapEditor.getHTML()) }"
-                        wire:loading.attr="disabled"
-                        class="p-2 bg-forest hover:bg-forest/90 text-white font-medium rounded-lg text-sm shadow cursor-pointer disabled:opacity-70 flex items-center justify-center min-w-[140px]">
+                    @if(isset($article_id) && $status === 'draft')
+                        <button type="button"
+                            x-on:click="if(window.tiptapEditor) { $wire.saveArticle(window.tiptapEditor.getHTML()) }"
+                            wire:loading.attr="disabled"
+                            class="p-2 bg-forest hover:bg-forest/90 text-white font-medium rounded-lg text-sm shadow cursor-pointer disabled:opacity-70 flex items-center justify-center min-w-[140px]">
 
-                        <!-- PENTING: Ubah wire:target menjadi saveArticle -->
-                        <span class="flex items-center justify-center gap-2" wire:loading.remove wire:target="saveArticle">
-                            <x-dynamic-component :component="'lucide-save'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                            <span class="hidden md:block"> {{ __('Simpan Artikel') }} </span>
-                            <span class="md:hidden"> {{ __('Simpan') }} </span>
-                        </span>
+                            <!-- PENTING: Ubah wire:target menjadi saveArticle -->
+                            <span class="flex items-center justify-center gap-2" wire:loading.remove wire:target="saveArticle">
+                                <x-dynamic-component :component="'lucide-save'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
+                                <span class="hidden md:block"> {{ __('Simpan Artikel') }} </span>
+                                <span class="md:hidden"> {{ __('Simpan') }} </span>
+                            </span>
 
-                        <div wire:loading.flex wire:target="saveArticle" class="flex-row items-center justify-center gap-2">
-                            <span>Memproses...</span>
-                        </div>
-                    </button>
+                            <div wire:loading.flex wire:target="saveArticle" class="flex-row items-center justify-center gap-2">
+                                <span>Memproses...</span>
+                            </div>
+                        </button>
+                    @endif
 
                 </div>
 
@@ -593,7 +644,84 @@ new class extends Component {
         </div>
 
         {{-- EDITOR WAS HERE --}}
-        <x-editor/>
+        <x-editor :editable="$canEdit"/>
     </form>
+
+    <div x-show="isAuditOpen" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-x-10 md:translate-y-0 translate-y-full"
+                 x-transition:enter-end="opacity-100 translate-x-0 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-x-0 translate-y-0"
+                 x-transition:leave-end="opacity-0 translate-x-10 md:translate-y-0 translate-y-full"
+                 class="bg-white border border-zinc-200 dark:border-zinc-800 rounded-xl flex flex-col p-2 overflow-hidden shadow-sm shrink-0 h-48 md:h-full ml-4">
+        <div class="p-2 text-xl">
+            Audit Tracker
+        </div>
+        <ul class="-mb-8 overflow-y-auto px-2">
+            @forelse($this->auditTrail as $index => $log)
+                @foreach (range(1, 1) as $i)
+                    <li>
+                        <div class="relative pb-8">
+                            {{-- Garis vertikal penghubung antar titik (disembunyikan di item terakhir) --}}
+                            @if (!$loop->last)
+                                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-zinc-200 dark:bg-zinc-800" aria-hidden="true"></span>
+                            @endif
+                            
+                            <div class="relative flex space-x-3 items-center">
+                                {{-- Icon Titik Timeline berdasarkan jenis log --}}
+                                <div>
+                                    <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-zinc-900 
+                                        @if(str_contains($log->description, 'dihapus')) bg-red-500 text-white
+                                        @elseif(str_contains($log->description, 'diajukan')) bg-blue-500 text-white
+                                        @else bg-emerald-500 text-white @endif">
+                                        
+                                        {{-- Gunakan dynamic component Lucide icons --}}
+                                        @if(str_contains($log->description, 'dihapus'))
+                                            <x-dynamic-component :component="'lucide-trash-2'" class="w-4 h-4" />
+                                        @elseif(str_contains($log->description, 'diajukan'))
+                                            <x-dynamic-component :component="'lucide-send'" class="w-4 h-4" />
+                                        @else
+                                            <x-dynamic-component :component="'lucide-check'" class="w-4 h-4" />
+                                        @endif
+                                    </span>
+                                </div>
+
+                                {{-- Konten Informasi Log --}}
+                                <div class="min-w-0 flex-1 flex justify-between space-x-4">
+                                    <div>
+                                        <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                            {{ $log->description }}
+                                        </p>
+                                        <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                                            Oleh: <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ optional($log->causer)->name ?? 'Sistem / Tamu' }}</span>
+                                            
+                                            {{-- Menampilkan info tambahan dari properties jika ada --}}
+                                            @if(isset($log->properties['status_saat_dihapus']))
+                                                <span class="ml-1 px-1.5 py-0.5 text-[10px] bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400">
+                                                    Status: {{ $log->properties['status_saat_dihapus'] }}
+                                                </span>
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <div class="text-right text-xs whitespace-nowrap text-zinc-400 dark:text-zinc-500">
+                                        <time datetime="{{ $log->created_at }}">
+                                            {{ $log->created_at->diffForHumans() }}
+                                        </time>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                @endforeach
+            @empty
+                <li class="text-center py-4 text-sm text-zinc-400">
+                    Belum ada riwayat audit untuk artikel ini.
+                </li>
+            @endforelse
+        </ul>
+    </div>
+
     @include('components.editor.modal-thumbnail')
+    @include('components.editor.modal-review')
 </div>

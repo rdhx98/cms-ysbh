@@ -220,9 +220,12 @@ document.addEventListener('alpine:init', () => {
                         }, 500); // Beri jeda setengah detik untuk pemulihan browser
                     }
                 });
+                
+                const isEditable = editorElement.getAttribute('data-editable') === 'true';
 
                 window.tiptapEditor = new Editor({
                     element: this.$refs.editorElement,
+                    editable: isEditable,
                     extensions: [
                         // StarterKit standar
                         StarterKit.configure({ codeBlock: false, link: false, underline: false, orderedList:false, }),

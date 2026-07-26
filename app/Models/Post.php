@@ -7,11 +7,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Attributes\Table;
 
+// HAPUS BARIS LAMA INI:
+// use Spatie\Activitylog\Traits\LogsActivity;
+
+// GANTI MENJADI ALAMAT YANG BARU:
+// Ganti sesuai namespace yang tertera di file LogOptions.php
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
+
+
 
 #[Table('posts')]
 class Post extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
+    
 
     // Field yang boleh diisi massal
     protected $fillable = [
@@ -19,13 +29,29 @@ class Post extends Model
         'category_id',
         'title',
         'slug',
-        'content',
+        'content', 
         'featured_image',
-        'status',
+        'status', // ['draft', 'review', 'published', 'scheduled', 'archived', 'rejected']
         'created_at',
         'updated_at',
         'published_at',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            // Tentukan kolom mana saja yang ingin dilacak
+            ->logOnly(['title', 'content', 'status']) 
+            
+            // 🌟 SANGAT PENTING: Hanya catat kolom yang nilainya benar-benar berubah!
+            ->logOnlyDirty() 
+            
+            // Opsional: Jangan rekam saat artikel pertama kali dibuat (hanya rekam perubahannya saja)
+            // ->dontLogIfAttributesChangedOnlyAfterUpdate() 
+            
+            // Beri nama log ini agar mudah dicari (misal: 'article_updates')
+            ->useLogName('article_updates'); 
+    }
 
     // Mengubah string tanggal menjadi objek Carbon/Datetime secara otomatis
     protected $casts = [
@@ -63,5 +89,17 @@ class Post extends Model
     public function tags()
     {
         return $this->belongsToMany(Tag::class, 'post_tags');
+    }
+    public function getStatusColorAttribute()
+    {
+        return match ($this->status) {
+            'draft'     => 'bg-violet-50 text-violet-700 border-violet-700 dark:bg-violet-950 dark:text-violet-300',
+            'review'    => 'bg-yellow-50 text-yellow-700 border-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+            'published' => 'bg-green-50 text-green-700 border-green-700 dark:bg-green-950 dark:text-green-300',
+            'scheduled' => 'bg-orange-50 text-orange-700 border-orange-700 dark:bg-orange-950 dark:text-orange-300',
+            'archived'  => 'bg-blue-50 text-blue-700 border-blue-700 dark:bg-blue-950 dark:text-blue-300',
+            'rejected'  => 'bg-red-50 text-red-700 border-red-700 dark:bg-red-950 dark:text-red-300',
+            default     => 'bg-violet-50 text-violet-700 border-violet-700 dark:bg-violet-950 dark:text-violet-300',
+        };
     }
 }

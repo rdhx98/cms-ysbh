@@ -8,8 +8,8 @@ new class extends Component
 };
 ?>
 
+<x-slot:title>{{ __('Manage Pages') }}</x-slot:title>
 <x-main-wrapper>
-    <x-slot:title>{{ __('Manage Pages') }}</x-slot:title>
-    Pages shit
+    Pages stuff
 </x-main-wrapper>
 

@@ -2,8 +2,8 @@
 
 namespace App\Actions\Fortify;
 
-use App\Concerns\PasswordValidationRules;
 use App\Models\User;
+use App\Concerns\PasswordValidationRules;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
 
@@ -25,5 +25,15 @@ class ResetUserPassword implements ResetsUserPasswords
         $user->forceFill([
             'password' => $input['password'],
         ])->save();
+
+        activity('security')
+            ->performedOn($user)
+            ->causedBy($user) 
+            ->withProperties([
+                'ip_address' => request()->ip(),
+                'browser' => request()->userAgent(),
+                'type' => 'password_reset' // Penanda bahwa ini hasil dari fitur lupa password
+            ])
+            ->log('Kata sandi berhasil direset (Lupa Password)');
     }
 }

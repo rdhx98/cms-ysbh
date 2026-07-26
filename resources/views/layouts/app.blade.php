@@ -12,7 +12,7 @@
 
     {{-- <div class="flex flex-col md:flex-row h-screen overflow-hidden min-h-screen" x-data="{ isExpanded: Alpine.$persist(true), userMenuExpand: false }" > --}}
     {{-- <div class="flex flex-col md:flex-row " x-data="{ isExpanded: Alpine.$persist(true), userMenuExpand: false }" > --}}
-    <div class="flex flex-col md:flex-row h-dvh w-full" x-data="{ isExpanded: Alpine.$persist(true), userMenuExpand: false }" >
+    <div class="flex flex-col md:flex-row h-dvh w-full" x-data="{ isExpanded: Alpine.$persist(true), userMenuExpand: false, isAuditOpen: true }" >
 
         <x-layouts::app.sidebar />
         <main class="flex-1 min-w-0 flex flex-col md:p-[0.5rem_0.5rem_0.5rem_0rem] p-[0.5rem_0.5rem_0.5rem_0.5rem] space-y-2">

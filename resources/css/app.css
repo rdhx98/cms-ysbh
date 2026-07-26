@@ -1128,3 +1128,209 @@ figure[data-type="image-block"]:focus-within {
     min-height: 4rem; /* Memberikan area klik kosong minimal sebesar ini */
     margin-bottom: 5rem; /* Memberikan jarak ekstra ke batas bawah editor */
 }
+
+/* Titik 1: Melompat ke sudut kiri bawah dan memutar pena */
+/* Titik 2: Menarik garis ke atas membentuk lengkungan kurva */
+/* Titik 3: Kembali berhenti di posisi tengah (normal) */
+@keyframes draw-feather {
+    0% {
+        transform: translate(-16px, 16px) rotate(-30deg);
+    }
+    50% {
+        transform: translate(4px, 2px) rotate(15deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
+
+/* Class kustom untuk memicu animasi saat tombol (group) di-hover */
+/* .group:hover .group-hover\:animate-draw {
+    animation: draw-feather 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+} */
+
+/* Titik 1: Pena berada jauh di kiri bawah, miring ke belakang bersiap menulis */
+/* Titik 2: Satu tarikan panjang dan mulus ke kanan atas (mengayun) */
+/* Titik 3: Berhenti dengan sangat halus ke posisi tengah */
+/* ease-out adalah kunci agar ayunannya tidak kaku (cepat di awal, lambat di akhir) */
+@keyframes elegant-yank {
+    0% {
+        transform: translate(-18px, 14px) rotate(-25deg);
+    }
+    60% {
+        transform: translate(4px, -4px) rotate(10deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
+
+/* ease-out adalah kunci agar ayunannya tidak kaku (cepat di awal, lambat di akhir) */
+/* Titik 1: Pena berada jauh di kiri bawah, miring ke belakang bersiap menulis */
+/* Titik 2: Satu tarikan panjang dan mulus ke kanan atas (mengayun) */
+/* Titik 3: Berhenti dengan sangat halus ke posisi tengah */
+@keyframes elegant-write {
+    0% {
+        transform: translate(-18px, 14px) rotate(-25deg);
+    }
+    60% {
+        transform: translate(4px, -4px) rotate(10deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
+/*
+.group:hover .group-hover\:animate-write {
+    animation: elegant-write 1s ease-out forwards;
+} */
+ @keyframes elegant-stroke {
+        0% {
+            /* Ujung pena tetap menempel di kertas (poros). 
+               Badan pena dimiringkan ke belakang (kiri) bersiap untuk mengayun. */
+            transform: rotate(-45deg);
+        }
+        100% {
+            /* Ayunan mulus ke posisi tegak (tengah). 
+               Ujung pena tidak bergeser sama sekali dari posisinya. */
+            transform: rotate(0deg);
+        }
+    }
+    
+/* cubic-bezier memberikan efek ayunan tangan manusia yang nyata: 
+    Cepat saat mulai menarik garis, lalu melambat dengan sangat halus di ujung. */
+.group:hover .group-hover\:animate-stroke {
+    animation: elegant-yank 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.animate-stroke {
+    animation: elegant-yank 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes swing-tag {
+        0% {
+            /* Posisi diam */
+            transform: rotate(0deg);
+        }
+        30% {
+            /* Mengayun ke atas secara dinamis saat disentuh */
+            transform: rotate(25deg) scale(1.1);
+        }
+        60% {
+            /* Berayun balik melewati titik tengah (hukum gravitasi) */
+            transform: rotate(-10deg) scale(1);
+        }
+        80% {
+            /* Ayunan kecil terakhir sebelum berhenti */
+            transform: rotate(5deg);
+        }
+        100% {
+            /* Kembali diam sempurna */
+            transform: rotate(0deg);
+        }
+    }
+
+.animate-tag {
+/* .animate-tag { */
+    animation: swing-tag 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes sort-blocks {
+        0% {
+            /* Posisi diam di tanah */
+            transform: translateY(0) rotate(0) scale(1);
+        }
+        35% {
+            /* Diangkat: Melompat sedikit ke atas, membesar, dan miring ke kiri */
+            transform: translateY(-4px) rotate(-6deg) scale(1.05);
+        }
+        65% {
+            /* Mendarat: Jatuh menekan pijakan (squish) dan miring sedikit ke kanan */
+            transform: translateY(1px) rotate(3deg) scale(0.95);
+        }
+        100% {
+            /* Tersusun rapi: Kembali ke posisi presisi awal */
+            transform: translateY(0) rotate(0) scale(1);
+        }
+    }
+    
+    /* Durasi 0.5s membuat efek ketukan (snap) terasa cepat, responsif, dan memuaskan */
+    /* .group:hover .group-hover\:animate-blocks .animate-blocks { */
+    .animate-blocks {
+        animation: sort-blocks 0.5s ease-in-out forwards;
+    }
+
+@keyframes save-stamp {
+        0% {
+            transform: translateY(0) scale(1);
+        }
+        30% {
+            /* Ancang-ancang: Terangkat sedikit dan sedikit membesar */
+            transform: translateY(-3px) scale(1.05);
+        }
+        60% {
+            /* Stempel: Ditekan keras ke bawah, sedikit gepeng (squish) */
+            transform: translateY(2px) scale(0.9);
+        }
+        80% {
+            /* Rebound: Pantulan pegas ke atas */
+            transform: translateY(-1px) scale(1.02);
+        }
+        100% {
+            /* Normal kembali */
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .animate-save {
+        /* Durasi 0.6s agar hentakannya terlihat jelas */
+        animation: save-stamp 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+@keyframes trash-wiggle {
+        0% {
+            /* Diam di tempat */
+            transform: translateY(0) rotate(0deg) scale(1);
+        }
+        25% {
+            /* Terangkat, membesar, dan miring tajam ke kiri (ancang-ancang) */
+            transform: translateY(-3px) rotate(-15deg) scale(1.15);
+        }
+        50% {
+            /* Bergetar/Banting setir tajam ke kanan */
+            transform: translateY(-3px) rotate(12deg) scale(1.15);
+        }
+        75% {
+            /* Bergetar kembali ke kiri dengan ayunan yang lebih kecil */
+            transform: translateY(-3px) rotate(-8deg) scale(1.15);
+        }
+        100% {
+            /* Dibanting kembali menapak ke tanah dengan stabil */
+            transform: translateY(0) rotate(0deg) scale(1);
+        }
+    }
+
+    .animate-trash {
+        /* 0.5s adalah waktu yang pas agar getarannya terasa cepat dan waspada */
+        animation: trash-wiggle 0.5s ease-in-out forwards;
+    }
+@keyframes arrow-bounce-left {
+    0% {
+        /* Posisi awal */
+        transform: translateX(0);
+    }
+    40% {
+        /* Melesat tajam ke kiri seolah menunjuk jalan kembali */
+        transform: translateX(-6px);
+    }
+    70% {
+        /* Memantul sedikit melewati titik tengah karena momentum */
+        transform: translateX(2px);
+    }
+    100% {
+        /* Kembali diam di tempat */
+        transform: translateX(0);
+    }
+}
+
+.animate-back {
+    /* Durasi 0.5s dengan kurva ease-in-out agar pantulannya terasa natural (tidak kaku) */
+    animation: arrow-bounce-left 0.5s ease-in-out forwards;
+}

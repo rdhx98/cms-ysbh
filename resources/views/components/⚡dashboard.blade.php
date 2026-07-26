@@ -11,8 +11,8 @@ new class extends Component
 
 
 
+<x-slot:tequila>Wakumba</x-slot:tequila>
+<x-slot:title>{{ __('Dashboard') }}</x-slot:title>
 <x-main-wrapper>
-    <x-slot:tequila>Wakumba</x-slot:tequila>
-    <x-slot:title>{{ __('Dashboard') }}</x-slot:title>
     Dashboard
 </x-main-wrapper>

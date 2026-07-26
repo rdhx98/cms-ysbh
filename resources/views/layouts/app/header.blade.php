@@ -5,53 +5,54 @@
 {{ $attributes->merge(['class' => 'flex flex-row items-center justify-between bg-white text-forest rounded-lg h-10 p-2 z-50']) }}
 :class="isExpanded ? '' : ''"
 >
-    <button
-        @click="isExpanded = !isExpanded"
+    <div class="">
 
-        class="p-2 flex md:hidden hover:bg-sage-soft text-forest rounded-lg focus:outline-none">
-            <div class="relative flex items-center justify-center w-5 h-5">
-            <span x-cloak
-                :class="isExpanded ? 'rotate-45 translate-y-0' : '-translate-y-1.5'"
-                class="absolute block h-0.5 w-5 bg-current transition-all duration-300">
-            </span>
+        <button x-on:click="isExpanded = !isExpanded" class="p-2 flex md:hidden hover:bg-sage-soft text-forest rounded-lg focus:outline-none">
+                <div class="relative flex items-center justify-center w-5 h-5">
+                <span x-cloak
+                    :class="isExpanded ? 'rotate-45 translate-y-0' : '-translate-y-1.5'"
+                    class="absolute block h-0.5 w-5 bg-current transition-all duration-300">
+                </span>
 
-            <span x-cloak
-                :class="isExpanded ? 'opacity-0' : 'opacity-100'"
-                class="absolute block h-0.5 w-5 bg-current transition-all duration-300">
-            </span>
+                <span x-cloak
+                    :class="isExpanded ? 'opacity-0' : 'opacity-100'"
+                    class="absolute block h-0.5 w-5 bg-current transition-all duration-300">
+                </span>
 
-            <span x-cloak
-                :class="isExpanded ? '-rotate-45 translate-y-0' : 'translate-y-1.5'"
-                class="absolute block h-0.5 w-5 bg-current transition-all duration-300">
-            </span>
+                <span x-cloak
+                    :class="isExpanded ? '-rotate-45 translate-y-0' : 'translate-y-1.5'"
+                    class="absolute block h-0.5 w-5 bg-current transition-all duration-300">
+                </span>
+            </div>
+        </button>
+
+        <div class="text-sm font-bold text-forest tracking-wide p-2 flex items-center gap-4">
+            {{ $title }}
         </div>
-    </button>
-
-    <div class="text-sm font-bold text-forest tracking-wide p-2 flex items-center gap-4">
-        {{ $title }}
-        <div class=" bg-sage-soft py-1 px-2 rounded-4xl">
-            {{ now()->format('d M Y') }}
-            <span 
-                x-data="{ time: '' }" 
-                x-init="
-                    const updateTime = () => {
-                        // Memaksa zona waktu ke Jayapura, format 24 jam, tanpa detik
-                        time = new Date().toLocaleTimeString('id-ID', { 
-                            timeZone: 'Asia/Jayapura', 
-                            hour: '2-digit', 
-                            minute: '2-digit',
-                            hour12: false
-                        });
-                    };
-                    updateTime(); // Jalankan pertama kali
-                    setInterval(updateTime, 1000); // Perbarui setiap detik
-                "
-                x-text="time"
-                class="font-bold text-gray-700"
-            >
-            </span>
-        </div> 
     </div>
+
+    <div class="md:inline-flex hidden items-center gap-4 bg-sage-soft py-0.5 px-4 rounded-4xl">
+        {{ now()->format('d M Y') }}
+        <div 
+            x-data="{ time: '' }" 
+            x-init="
+                const updateTime = () => {
+                    // Memaksa zona waktu ke Jayapura, format 24 jam, tanpa detik
+                    time = new Date().toLocaleTimeString('id-ID', { 
+                        timeZone: 'Asia/Jayapura', 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                };
+                updateTime(); // Jalankan pertama kali
+                setInterval(updateTime, 1000); // Perbarui setiap detik
+            "
+            x-text="time"
+            class="font-bold text-gray-700"
+        >
+        </div>
+    </div> 
 
     <button
         @click="userMenuExpand = !userMenuExpand"
@@ -104,8 +105,7 @@
                     
                     {{-- KUNCI: Tambahkan 'max-w-full' berdampingan dengan 'truncate' --}}
                     <p class="text-sm font-bold text-forest max-w-full truncate">
-                        Alfrida 
-                        {{-- {{ auth()->user()->name ?? 'Administrator' }}  --}}
+                        {{ auth()->user()->name ?? 'Administrator' }} 
                     </p> 
                     
                     {{-- Handle User --}}
@@ -119,7 +119,7 @@
             <!-- Menu Items -->
             <div class="flex flex-col space-y-0.5 px-2">
                 <!-- Profil -->
-                <a href="{{ route('user.detail', auth()->user()) }}" class="flex items-center px-3 py-2.5 text-sm font-medium text-zinc-600 rounded-2xl hover:bg-zinc-50 hover:text-forest transition-all group">
+                <a href="{{ route('user.detail', auth()->user()) }}" wire:navigate class="flex items-center px-3 py-2.5 text-sm font-medium text-zinc-600 rounded-2xl hover:bg-zinc-50 hover:text-forest transition-all group">
                     <svg class="w-5 h-5 mr-3 text-zinc-400 group-hover:text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     Profil
                 </a>
