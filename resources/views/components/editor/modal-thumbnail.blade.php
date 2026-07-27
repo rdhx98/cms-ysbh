@@ -1,5 +1,6 @@
 {{-- THuMBNAIL SELECTOR MODAL --}}
-<div x-data="{ isOpen: false }" @buka-featured-modal.window="isOpen = true" class="relative">
+<div x-data="{ isOpen: false }" @buka-featured-modal.window="isOpen = true" class="fixed inset-0 pointer-events-none z-[99]">
+{{-- <div x-data="{ isOpen: false }" @buka-featured-modal.window="isOpen = true" class="relative"> --}}
 
     {{-- ========================================================================= --}}
     {{-- 💻 LAYOUT MODAL THUMBNAIL: DESKTOP (md:flex)                              --}}
@@ -11,8 +12,7 @@
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="isOpen = false"></div>
 
         {{-- THUMBNAIL MODAL AREA --}}
-        <div
-            class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 w-full max-w-3xl max-h-[85vh] flex flex-col z-10 overflow-hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 w-full max-w-3xl max-h-[85vh] flex flex-col z-10 overflow-hidden pointer-events-auto">
             {{-- Header Modal --}}
             <div
                 class="p-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-gray-900">
@@ -106,8 +106,8 @@
             x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
             class="fixed inset-0 bg-black/60 backdrop-blur-xs" @click="isOpen = false"></div>
 
-        {{-- Animasi Laci: Meluncur dari bawah (translate-y-full) ke atas (translate-y-0) --}}
-        <div x-show="isOpen" x-transition:enter="transition ease-out duration-300 transform"
+            {{-- Animasi Laci: Meluncur dari bawah (translate-y-full) ke atas (translate-y-0) --}}
+        <div x-show="isOpen" x-transition:enter="transition ease-out duration-300 transform pointer-events-auto"
             x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0"
             x-transition:leave="transition ease-in duration-200 transform"
             x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full"

@@ -31,16 +31,16 @@
         </div>
     </div>
 
-    <div class="md:inline-flex hidden items-center gap-4 bg-sage-soft py-0.5 px-4 rounded-4xl">
+    {{-- <div class="md:inline-flex hidden items-center gap-4 bg-sage-soft py-0.5 px-4 rounded-4xl">
         {{ now()->format('d M Y') }}
-        <div 
-            x-data="{ time: '' }" 
+        <div
+            x-data="{ time: '' }"
             x-init="
                 const updateTime = () => {
                     // Memaksa zona waktu ke Jayapura, format 24 jam, tanpa detik
-                    time = new Date().toLocaleTimeString('id-ID', { 
-                        timeZone: 'Asia/Jayapura', 
-                        hour: '2-digit', 
+                    time = new Date().toLocaleTimeString('id-ID', {
+                        timeZone: 'Asia/Jayapura',
+                        hour: '2-digit',
                         minute: '2-digit',
                         hour12: false
                     });
@@ -52,8 +52,8 @@
             class="font-bold text-gray-700"
         >
         </div>
-    </div> 
-    
+    </div>  --}}
+
 
     <button
         @click="userMenuExpand = !userMenuExpand"
@@ -94,26 +94,26 @@
                     Alfrida Charlotta Kristiani Inameri
                     {{-- {{ auth()->user()->name ?? 'Administrator' }}  --}
                     <span class="bg-goldy rounded-4xl px-2 py-0.5 text-xs text-center"> {{auth()->user()->handle() ?? ''}}</span>
-                </p> 
+                </p>
             </div> --}}
-            
+
             <!-- Header Info -->
             <div class="px-4 py-3 border-b border-zinc-100 mb-1">
                 <p class="text-xs text-zinc-400 font-medium uppercase tracking-wider mb-1">Akun Saya</p>
-                
+
                 {{-- Container FlexWrap --}}
                 <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
-                    
+
                     {{-- KUNCI: Tambahkan 'max-w-full' berdampingan dengan 'truncate' --}}
                     <p class="text-sm font-bold text-forest max-w-full truncate">
-                        {{ auth()->user()->name ?? 'Administrator' }} 
-                    </p> 
-                    
+                        {{ auth()->user()->name ?? 'Administrator' }}
+                    </p>
+
                     {{-- Handle User --}}
                     <span class="bg-goldy rounded-4xl px-2 py-0.5 text-xs text-center shrink-0 whitespace-nowrap">
                         {{ auth()->user()->handle() ?? '' }}
                     </span>
-                    
+
                 </div>
             </div>
 

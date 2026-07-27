@@ -21,7 +21,6 @@ use Spatie\Activitylog\Support\LogOptions;
 class Post extends Model
 {
     use HasFactory, LogsActivity;
-    
 
     // Field yang boleh diisi massal
     protected $fillable = [
@@ -29,28 +28,45 @@ class Post extends Model
         'category_id',
         'title',
         'slug',
-        'content', 
+        'content',
         'featured_image',
         'status', // ['draft', 'review', 'published', 'scheduled', 'archived', 'rejected']
         'created_at',
         'updated_at',
         'published_at',
     ];
-
+    // 1. BUKU ATURAN
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            // Tentukan kolom mana saja yang ingin dilacak
-            ->logOnly(['title', 'content', 'status']) 
-            
-            // 🌟 SANGAT PENTING: Hanya catat kolom yang nilainya benar-benar berubah!
-            ->logOnlyDirty() 
-            
-            // Opsional: Jangan rekam saat artikel pertama kali dibuat (hanya rekam perubahannya saja)
-            // ->dontLogIfAttributesChangedOnlyAfterUpdate() 
-            
-            // Beri nama log ini agar mudah dicari (misal: 'article_updates')
-            ->useLogName('article_updates'); 
+            ->logOnly(['title', 'content', 'status'])
+            ->logOnlyDirty()
+            ->useLogName('article_updates');
+    }
+
+    // 2. PEMBERI LABEL PINTAR
+    public function getDescriptionForEvent(string $eventName): string
+    {
+        if ($eventName === 'updated') {
+        if (array_key_exists('status', $this->getChanges())) {
+            return match($this->status) {
+                'review' => 'status_review',
+                'draft' => 'status_draft',
+                'published' => 'status_published',
+                'scheduled' => 'status_scheduled',
+                'rejected' => 'status_rejected',
+                'archived' => 'status_archived',
+                default => 'updated_general',
+            };
+        }
+        return 'updated_general';
+    }
+
+        return match ($eventName) {
+            'created' => 'created',
+            'deleted' => 'deleted',
+            default => "unknown",
+        };
     }
 
     // Mengubah string tanggal menjadi objek Carbon/Datetime secara otomatis

@@ -2,7 +2,11 @@
 @props(['editable' => true])
 <div class="transition-colors duration-300 ease-in-out w-full flex-1 flex flex-col min-h-0">
 
-    @include('components.editor.toolbars')
+    <div class="w-full transition-opacity duration-200"
+         :class="{ 'opacity-50 pointer-events-none select-none': !@js($editable) }">
+        @include('components.editor.toolbars')
+    </div>
+    {{-- @include('components.editor.toolbars') --}}
     @include('components.editor.bubble-image')
     @include('components.editor.bubble-text')
 
@@ -89,7 +93,7 @@
                 <div class="relative w-full flex-1 rounded-xl transition-all" wire:key="tiptap-parent-container">
                     {{-- 2. PELINDUNG EDITOR (Area ini di-skip oleh Livewire agar Tiptap tidak terhapus) --}}
                     <div wire:ignore wire:key="tiptap-instance-permanen">
-                        <div id="editor" x-ref="editorElement" class="w-full h-full focus:outline-none" data-editable="{{ $editable ? 'true' : 'false' }}">
+                        <div id="editor" x-ref="editorElement" class="w-full h-full focus:outline-none scroll-smooth" data-editable="{{ $editable ? 'true' : 'false' }}">
                         </div>
                     </div>
                 </div>
@@ -104,12 +108,6 @@
             </div>
         </div>
 
-        {{-- 🌟 WORD COUNTER MELAYANG (FLOATING) --}}
-        {{-- <div class="fixed bottom-6 right-8 pointer-events-none z-50">
-            <div class="bg-sage-soft dark:bg-zinc-800/90 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700 text-foresty dark:text-zinc-400 text-[10px] md:text-xs px-2.5 py-1 rounded-md shadow-sm font-medium tracking-wide">
-                <span x-text="`${wordCount} kata`"></span>
-            </div>
-        </div> --}}
         <!-- 🌟 WORD COUNTER KEMBALI KE POSISI FLOATING DI DALAM AREA EDITOR 🌟 -->
         <div class="absolute bottom-6 right-8 pointer-events-none z-40">
             <div class="bg-sage-soft dark:bg-zinc-800/90 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700 text-foresty dark:text-zinc-400 text-[10px] md:text-xs px-2.5 py-1 rounded-md shadow-sm font-medium tracking-wide">

@@ -37,6 +37,35 @@ new class extends Component
         $this->article->save();
         $this->notify('Status berhasil diubah.', 'success');
     }
+    public function submitForReview()
+    {
+        // 1. Simpan dulu perubahan terakhirnya (meminjam logika saveArticle)
+        // Pastikan Anda memanggil fungsi saveArticle agar gambar & tag ikut tersimpan.
+        // $this->saveArticle($latestContent);
+
+        // 2. Ambil artikel yang baru saja disave
+        // $article = \App\Models\Post::find($this->article_id);
+
+        if ($article) {
+            // 3. Ubah statusnya menjadi pending
+            $article->update([
+                'status' => 'review'
+            ]);
+
+            // 4. Sinkronkan properti komponen
+            $this->status = 'review';
+
+            // 5. Catat log
+            activity('article_updates')
+                ->performedOn($article)
+                ->causedBy(auth()->user())
+                ->log('Artikel diajukan untuk review editor');
+
+            // 6. Lempar notifikasi dan tendang kembali ke halaman daftar artikel
+            $this->notifyFlash('Artikel berhasil diajukan! Menunggu review editor.', 'success');
+            return $this->redirect(route('article.index'), navigate: true);
+        }
+    }
 };
 ?>
 
@@ -46,15 +75,15 @@ new class extends Component
 
     <!-- STATUS CONFIRMATION MODAL -->
     <div x-show="showConfirmationModal" class="relative z-99" aria-labelledby="modal-title" role="dialog" aria-modal="true" x-cloak>
-        
+
         <!-- Backdrop -->
-        <div x-show="showConfirmationModal" 
-            x-transition:enter="ease-out duration-300" 
-            x-transition:enter-start="opacity-0" 
-            x-transition:enter-end="opacity-100" 
-            x-transition:leave="ease-in duration-200" 
-            x-transition:leave-start="opacity-100" 
-            x-transition:leave-end="opacity-0" 
+        <div x-show="showConfirmationModal"
+            x-transition:enter="ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
             class="fixed inset-0 bg-zinc-900/50 backdrop-blur-sm transition-opacity">
         </div>
 
@@ -70,29 +99,29 @@ new class extends Component
                     x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                     @click.away="showConfirmationModal = false"
                     class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 px-4 pb-4 pt-5 text-left shadow-xl transition-all w-full max-w-sm sm:my-8 sm:p-6">
-                    
+
                     <div>
                         <!-- Ikon Info/Konfirmasi (Warna netral/biru, bukan merah) -->
                         <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
                             <flux:icon variant="outline" icon="arrow-path" class="h-6 w-6 text-blue-600 dark:text-blue-400" />
                         </div>
-                        
+
                         <div class="mt-3 text-center sm:mt-5">
                             <h3 class="text-base font-bold leading-6 text-zinc-900 dark:text-white" id="modal-title">
                                 Konfirmasi Perubahan Status
                             </h3>
                             <div class="mt-2">
                                 <p class="text-sm text-zinc-500 dark:text-zinc-400">
-                                    Apakah Anda yakin ingin mengubah status dokumen ini menjadi 
+                                    Apakah Anda yakin ingin mengubah status dokumen ini menjadi
                                     <span class="font-bold text-zinc-800 dark:text-zinc-200 uppercase" x-text="targetStatus"></span>?
                                 </p>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Tombol Aksi -->
                     <div class="mt-5 sm:mt-6 flex flex-col sm:flex-row-reverse gap-3">
-                        
+
                         <!-- Tombol Konfirmasi -->
                         <button type="button"
                                 class="inline-flex cursor-pointer w-full justify-center rounded-xl bg-forest px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-foresty transition-colors sm:w-auto"
@@ -102,14 +131,14 @@ new class extends Component
                                 ">
                             Ya, Ubah Status
                         </button>
-                        
+
                         <!-- Tombol Batal -->
                         <button type="button"
                                 x-on:click="showConfirmationModal = false; targetStatus = ''; "
                                 class="inline-flex cursor-pointer w-full justify-center rounded-xl bg-white dark:bg-zinc-800 px-3 py-2 text-sm font-semibold text-zinc-900 dark:text-zinc-300 shadow-sm ring-1 ring-inset ring-zinc-300 dark:ring-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors sm:w-auto">
                             Batal
                         </button>
-                        
+
                     </div>
                 </div>
             </div>
@@ -185,32 +214,32 @@ new class extends Component
                 Kembali
             </a> --}}
             <a href="{{ route('article.index') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm">
-    
+
                 <!-- Wrapper Ikon (Ukuran tetap agar teks tidak melompat) -->
                 <div class="relative flex items-center justify-center w-4 h-4 overflow-hidden">
-                    
+
                     <!-- Chevron Left: Tampil secara default, geser ke kiri dan memudar saat hover -->
                     <div class="absolute transition-all duration-300 ease-out translate-x-0 opacity-100 group-hover:-translate-x-4 group-hover:opacity-0">
                         <x-dynamic-component :component="'lucide-chevron-left'" class="w-4 h-4" />
                         {{-- <x-dynamic-component :component="'lucide-arrow-left'" class="w-4 h-4" /> --}}
                     </div>
-                    
+
                     <!-- Arrow Left: Tersembunyi di kanan, geser ke tengah dan muncul saat hover -->
                     <div class="absolute transition-all duration-300 ease-out translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100">
                         <x-dynamic-component :component="'lucide-arrow-left'" class="w-4 h-4" />
                         {{-- <x-dynamic-component :component="'lucide-chevron-left'" class="w-4 h-4" /> --}}
                     </div>
-                    
+
                 </div>
                 {{ __('Back') }}
-            
+
             </a>
-                
+
             <h1 class="text-xl font-bold text-zinc-800 dark:text-zinc-100 line-clamp-1">
                 {!! $article->title !!}
             </h1>
-            
-            
+
+
             <!-- Contoh Badge Status -->
             <span class="px-2.5 py-1 text-xs font-bold rounded-full border {{ $article->status_color }}">
                 {{ strtoupper($article->status) }}
@@ -222,7 +251,7 @@ new class extends Component
 
         <!-- Kanan: Tombol Aksi Berdasarkan Role & Status -->
         <div class="flex items-center gap-2 ">
-            
+
             <!-- LOGIKA UNTUK PENULIS -->
             @if(auth()->user()->hasRole('writer'))
                 @if($article->status === 'draft' || $article->status === 'rejected')
@@ -271,7 +300,7 @@ new class extends Component
                     </button>
                 @endif
             @endif
-            
+
         </div>
     </x-slot:header>
 
