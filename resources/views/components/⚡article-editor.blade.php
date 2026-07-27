@@ -450,70 +450,88 @@ new class extends Component {
                 <div class="flex items-center justify-end md:justify-between gap-2 shrink-0 md:ml-4">
                     @php $canEdit =  in_array($status, ['draft', null]); @endphp
 
-
-                    <a href="{{ route('article.editor') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
-                        <x-dynamic-component :component="'lucide-feather'" class="h-5 w-5 origin-bottom-left group-hover:animate-stroke" stroke-width="2"  />
-                        {{ __('Write') }}
-                    </a>
                     @if(empty($article_id) || $status === 'draft')
                         {{-- COVER MODAL BUTTON --}}
                         <button type="button" wire:click="scanEditorImages" @click="$dispatch('buka-featured-modal')"
-                            class="shrink-0 p-2 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer md:w-[45%] md:w-auto"
+                            class="group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none"
                             title="Pilih Gambar Sampul">
-                            <x-dynamic-component :component="'lucide-image'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                            <span class="hidden md:inline">Sampul Artikel</span>
+                            <x-dynamic-component :component="'lucide-image'" class="h-5 w-5 origin-center group-hover:animate-blocks" stroke-width="2" />
+                            <span class="hidden 2xl:inline">Sampul Artikel</span>
                             <span class="md:hidden">Sampul</span>
                         </button>
 
                         {{-- META MODAL BUTTON --}}
-                        <button type="button" @click="isMetaOpen = true" class="relative shrink-0 p-2 text-xs md:text-sm font-medium text-zinc-600 hover:text-forest dark:text-zinc-400 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 cursor-pointer md:w-[45%] md:w-auto" title="Pengaturan Artikel">
+                        <button type="button" @click="isMetaOpen = true" 
+                            class="relative group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none" 
+                            title="Pengaturan Artikel">
 
-                            <x-dynamic-component :component="'lucide-file-sliders'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                            <span class="hidden md:inline">Pengaturan Dokumen</span>
+                            <x-dynamic-component :component="'lucide-file-sliders'" class="h-5 w-5 origin-center group-hover:animate-tag" stroke-width="2" />
+                            <span class="hidden 2xl:inline">Pengaturan Dokumen</span>
                             <span class="md:hidden">Pengaturan</span>
 
                             {{-- 🚨 INDIKATOR DOT MERAH ERROR 🚨 --}}
                             @if($errors->hasAny(['category_id', 'tags']))
                                 {{-- Wrapper absolute diletakkan di luar jangkauan flex --}}
-                                <span class="absolute -top-1.5 -right-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-zinc-900 z-10">
+                                <span class="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-zinc-900 z-10">
                                     !
                                     {{-- Efek ping/denyut opsional agar lebih menarik perhatian --}}
                                     <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
                                 </span>
                             @endif
                         </button>
-                        {{-- REVIEW MODAL BUTTON --}}
-                        <button type="button"
-                            x-on:click="$dispatch('buka-modal-review')"
-                            wire:loading.attr="disabled"
-                            class="p-2 bg-zinc-100 hover:bg-misty text-zinc-600 font-medium rounded-lg text-sm shadow cursor-pointer disabled:opacity-70 flex items-center justify-center min-w-[140px] transition-colors">
 
-                            <span class="flex items-center justify-center gap-2" wire:loading.remove wire:target="submitForReview">
-                                <x-dynamic-component :component="'lucide-send'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                                <span class="hidden md:block"> Ajukan Review </span>
-                                <span class="md:hidden"> Ajukan </span>
-                            </span>
+                        {{-- META MODAL BUTTON --}}
+                        {{-- <button type="button" @click="isMetaOpen = true" class="group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none" title="Pengaturan Artikel">
 
-                            <div wire:loading.flex wire:target="submitForReview" class="flex-row items-center justify-center gap-2">
-                                <span>Mengirim...</span>
-                            </div>
-                        </button>
+                            <x-dynamic-component :component="'lucide-file-sliders'" class="h-5 w-5 origin-center group-hover:animate-tag" stroke-width="2" />
+                            <span class="hidden 2xl:inline">Pengaturan Dokumen</span>
+                            <span class="md:hidden">Pengaturan</span> --}}
 
+                            {{-- 🚨 INDIKATOR DOT MERAH ERROR 🚨 --}}
+                            {{-- Wrapper absolute diletakkan di luar jangkauan flex --}}
+                            {{-- Efek ping/denyut opsional agar lebih menarik perhatian --}}
+                            {{-- @if($errors->hasAny(['category_id', 'tags']))
+                                <span class="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-zinc-900 z-10">
+                                    !
+                                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                                </span>
+                            @endif
+                        </button> --}}
+
+                        @if(!empty($article_id) && $status === 'draft')
+                            {{-- REVIEW MODAL BUTTON --}}
+                            <button type="button"
+                                x-on:click="$dispatch('buka-modal-review')"
+                                wire:loading.attr="disabled"
+                                class="group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none">
+                                
+                                <span class="flex items-center justify-center gap-2" wire:loading.remove wire:target="submitForReview">
+                                    <x-dynamic-component :component="'lucide-send'" class="h-5 w-5 origin-center group-hover:animate-save" stroke-width="2" />
+                                    <span class="hidden 2xl:block"> Ajukan Review </span>
+                                    {{-- <span class="md:hidden"> Ajukan </span> --}}
+                                </span>
+
+                                <div wire:loading.flex wire:target="submitForReview" class="flex-row items-center justify-center gap-2">
+                                    <span>Mengirim...</span>
+                                </div>
+                            </button>
+                        @endif
+                    
                         {{-- SAVE BUTTON --}}
                         <button type="button"
                             x-on:click="if(window.tiptapEditor) { $wire.saveArticle(window.tiptapEditor.getHTML()) }"
                             wire:loading.attr="disabled"
-                            class="p-2 bg-misty hover:bg-sage-soft text-zinc-600 font-medium rounded-lg text-sm shadow cursor-pointer disabled:opacity-70 flex items-center justify-center min-w-[140px]">
+                            class="group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none">
 
                             <!-- PENTING: Ubah wire:target menjadi saveArticle -->
-                            <span class="flex items-center justify-center gap-2" wire:loading.remove wire:target="saveArticle">
-                                <x-dynamic-component :component="'lucide-save'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                                <span class="hidden md:block"> {{ __('Simpan Artikel') }} </span>
+                            <span class="flex items-center justify-center gap-2" >
+                                <x-dynamic-component :component="'lucide-save'" class="h-5 w-5 origin-center group-hover:animate-save" stroke-width="2" />
+                                <span wire:loading.remove wire:target="saveArticle" class="hidden 2xl:block"> {{ __('Simpan Artikel') }} </span>
                                 <span class="md:hidden"> {{ __('Simpan') }} </span>
                             </span>
 
-                            <div wire:loading.flex wire:target="saveArticle" class="flex-row items-center justify-center gap-2">
-                                <span>Memproses...</span>
+                            <div  class="hidden 2xl:block flex-row items-center justify-center gap-2">
+                                <span wire:loading.flex wire:target="saveArticle">Memproses...</span>
                             </div>
                         </button>
                     @endif
@@ -521,11 +539,14 @@ new class extends Component {
 
                     <!-- 🎛️ TOMBOL TOGGLE PANEL AUDIT (Desktop & Mobile) -->
                     <button type="button" @click="isAuditOpen = !isAuditOpen"
-                        class="p-2 bg-zinc-100 hover:bg-sage-soft dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-zinc-600 dark:text-zinc-300 transition-colors flex items-center gap-1.5 text-xs md:text-sm font-medium cursor-pointer border border-zinc-200 dark:border-zinc-700"
-                        :title="isAuditOpen ? 'Tutup Panel Audit' : 'Buka Panel Audit'">
-                        <x-dynamic-component :component="'lucide-clock-fading'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                        {{-- <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> --}}
-                        <span class="hidden md:inline" x-text="isAuditOpen ? 'Tutup Audit' : 'Riwayat Audit'"></span>
+                        class="group inline-flex items-center gap-2 p-2 text-sm font-semibold border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none"
+                        :title="isAuditOpen ? 'Tutup Panel Audit' : 'Buka Panel Audit'"
+                        :class="isAuditOpen ? 'bg-foresty text-goldy' : 'bg-white text-zinc-600'" >
+                        
+                        {{-- 🔥 Ganti class menjadi group-hover:animate-tick --}}
+                        <x-dynamic-component :component="'lucide-clock-fading'" class="h-5 w-5 origin-center group-hover:animate-tick" stroke-width="2" />
+                        
+                        <span class="hidden 2xl:inline" x-text="isAuditOpen ? 'Tutup Audit' : 'Riwayat Audit'"></span>
                     </button>
 
                 </div>

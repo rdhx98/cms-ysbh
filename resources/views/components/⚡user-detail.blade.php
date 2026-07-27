@@ -364,8 +364,8 @@ new class extends Component
                 </a> --}}
                 <a href="{{ route('user.index') }}" wire:navigate 
                     x-data="{isAnimating: false,  playAnim() { this.isAnimating = false;  this.$nextTick(() => { this.isAnimating = true; setTimeout(() => this.isAnimating = false, 500); }); }}"
-                    {{-- x-on:click=" playAnim(); deleteType = 'category'; deleteId = {{ $i->id }}; showDeleteModal = true " --}}
                     x-on:mouseenter="playAnim()"
+                    {{-- x-on:click=" playAnim(); deleteType = 'category'; deleteId = {{ $i->id }}; showDeleteModal = true " --}}
                     class="py-2 px-3 gap-2 cursor-pointer inline-flex items-center text-sm font-semibold text-foresty bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm">
                     <x-dynamic-component :component="'lucide-arrow-left'" class="h-5 w-5 origin-center" stroke-width="2" x-bind:class="isAnimating ? 'animate-back' : ''" />
                     {{ __('Back') }}

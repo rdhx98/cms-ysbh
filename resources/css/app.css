@@ -1153,17 +1153,7 @@ figure[data-type="image-block"]:focus-within {
 /* Titik 2: Satu tarikan panjang dan mulus ke kanan atas (mengayun) */
 /* Titik 3: Berhenti dengan sangat halus ke posisi tengah */
 /* ease-out adalah kunci agar ayunannya tidak kaku (cepat di awal, lambat di akhir) */
-@keyframes elegant-yank {
-    0% {
-        transform: translate(-18px, 14px) rotate(-25deg);
-    }
-    60% {
-        transform: translate(4px, -4px) rotate(10deg);
-    }
-    100% {
-        transform: translate(0, 0) rotate(0deg);
-    }
-}
+
 
 /* ease-out adalah kunci agar ayunannya tidak kaku (cepat di awal, lambat di akhir) */
 /* Titik 1: Pena berada jauh di kiri bawah, miring ke belakang bersiap menulis */
@@ -1202,6 +1192,17 @@ figure[data-type="image-block"]:focus-within {
 .group:hover .group-hover\:animate-stroke {
     animation: elegant-yank 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
+@keyframes elegant-yank {
+    0% {
+        transform: translate(-18px, 14px) rotate(-25deg);
+    }
+    60% {
+        transform: translate(4px, -4px) rotate(10deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
 .animate-stroke {
     animation: elegant-yank 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
@@ -1232,6 +1233,10 @@ figure[data-type="image-block"]:focus-within {
 /* .animate-tag { */
     animation: swing-tag 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
+.group:hover .group-hover\:animate-tag {
+/* .animate-tag { */
+    animation: swing-tag 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
 
 @keyframes sort-blocks {
         0% {
@@ -1255,6 +1260,9 @@ figure[data-type="image-block"]:focus-within {
     /* Durasi 0.5s membuat efek ketukan (snap) terasa cepat, responsif, dan memuaskan */
     /* .group:hover .group-hover\:animate-blocks .animate-blocks { */
     .animate-blocks {
+        animation: sort-blocks 0.5s ease-in-out forwards;
+    }
+    .group:hover .group-hover\:animate-blocks {
         animation: sort-blocks 0.5s ease-in-out forwards;
     }
 
@@ -1281,6 +1289,10 @@ figure[data-type="image-block"]:focus-within {
     }
 
     .animate-save {
+        /* Durasi 0.6s agar hentakannya terlihat jelas */
+        animation: save-stamp 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    .group:hover .group-hover\:animate-save {
         /* Durasi 0.6s agar hentakannya terlihat jelas */
         animation: save-stamp 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }
@@ -1311,6 +1323,10 @@ figure[data-type="image-block"]:focus-within {
         /* 0.5s adalah waktu yang pas agar getarannya terasa cepat dan waspada */
         animation: trash-wiggle 0.5s ease-in-out forwards;
     }
+    .group:hover .group-hover\:animate-trash {
+        /* 0.5s adalah waktu yang pas agar getarannya terasa cepat dan waspada */
+        animation: trash-wiggle 0.5s ease-in-out forwards;
+    }
 @keyframes arrow-bounce-left {
     0% {
         /* Posisi awal */
@@ -1333,4 +1349,29 @@ figure[data-type="image-block"]:focus-within {
 .animate-back {
     /* Durasi 0.5s dengan kurva ease-in-out agar pantulannya terasa natural (tidak kaku) */
     animation: arrow-bounce-left 0.5s ease-in-out forwards;
+}
+.group:hover .group-hover\:animate-back {
+    /* Durasi 0.5s dengan kurva ease-in-out agar pantulannya terasa natural (tidak kaku) */
+    animation: arrow-bounce-left 0.5s ease-in-out forwards;
+}
+
+@keyframes tick-fade {
+        0%, 100% {
+            opacity: 1;
+            transform: rotate(0deg) scale(1);
+        }
+        50% {
+            opacity: 0.4;
+            transform: rotate(-25deg) scale(0.95);
+        }
+    }
+
+/* 2. Buat kelas pemicu animasinya */
+.animate-tick {
+    animation: tick-fade 1s ease-in-out forwards;
+    /* animation: tick-fade 2s ease-in-out infinite; */
+}
+.group:hover .group-hover\:animate-tick {
+    animation: tick-fade 1s ease-in-out forwards;
+    /* animation: tick-fade 2s ease-in-out infinite; */
 }
