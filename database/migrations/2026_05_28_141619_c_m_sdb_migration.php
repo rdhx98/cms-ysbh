@@ -33,6 +33,8 @@ return new class extends Migration
             $table->string('title')->unique();
             $table->string('slug')->unique();
             $table->longText('content');
+            $table->json('meta_title')->nullable();
+            $table->json('meta_description')->nullable();
             $table->string('featured_image')->nullable(); // Jalur file di FTP Hostinger
             $table->enum('status', ['draft', 'review', 'published', 'scheduled', 'archived', 'rejected'])->default('draft');
             $table->timestamp('published_at')->nullable();
@@ -52,14 +54,19 @@ return new class extends Migration
             // Anda bisa tambah kolom 'is_primary' jika ingin menandai penulis utama
             $table->boolean('is_primary')->default(false);
         });
+
         Schema::create('pages', function (Blueprint $table) {
             $table->id();
             $table->string('title')->unique();
             $table->string('slug')->unique();
             $table->longText('content');
-            $table->enum('status', ['draft', 'published'])->default('draft');
+            $table->enum('status', ['online', 'offline'])->default('offline');
+            $table->json('meta_title')->nullable();
+            $table->json('meta_description')->nullable();
+            $table->timestamp('published_at')->nullable();
             $table->timestamps();
         });
+
         Schema::create('menus', function (Blueprint $table) {
             $table->id();
             $table->string('label')->unique();
