@@ -121,8 +121,9 @@ document.addEventListener('alpine:init', () => {
     // Simpan instance murni global agar terbebas dari Proxy Observer Alpine
     window.tiptapEditor = null;
 
-    window.setupEditor = function (wireModelName, wireComponent) {
+    window.setupEditor = function (wireModelName, wireComponent, translations = {}) {
         return {
+            translations: translations,
             updatedAt: Date.now(),
             uploadQueue: [],
             isUploading: false,
@@ -220,7 +221,7 @@ document.addEventListener('alpine:init', () => {
                         }, 500); // Beri jeda setengah detik untuk pemulihan browser
                     }
                 });
-                
+
                 const isEditable = editorElement.getAttribute('data-editable') === 'true';
 
                 window.tiptapEditor = new Editor({
@@ -359,9 +360,10 @@ document.addEventListener('alpine:init', () => {
                                 if (node.type.name === 'paragraph') return 'Deskripsi langkah...';
                             }
 
-                            if (node.type.name === 'heading') return 'Ketik judul...'; 
-                            
-                            return 'Mulai menulis artikel hebat Anda di sini...';
+                            if (node.type.name === 'heading') return 'Ketik judul...';
+
+                            // return 'Mulai menulis artikel hebat Anda di sini...';
+                            return translations.default || 'Mulai menulis artikel hebat Anda di sini...';
                         }
                     }),
 
@@ -548,12 +550,12 @@ document.addEventListener('alpine:init', () => {
                             if (event.key === 'Enter' && !event.shiftKey) {
                                 const { $from, empty } = selection;
 
-                                // KUNCI PENGAMAN: Pastikan kursor benar-benar ada di baris pertama (Index 0) 
+                                // KUNCI PENGAMAN: Pastikan kursor benar-benar ada di baris pertama (Index 0)
                                 // dan berada di level utama dokumen (Depth 1), bukan di dalam SectionBlock/Card!
                                 const isFirstNode = $from.depth === 1 && $from.index(0) === 0;
 
                                 if (empty && $from.parent.type.name === 'heading' && $from.parent.attrs.level === 1 && isFirstNode) {
-                                    
+
                                     const isAtEnd = $from.parentOffset === $from.parent.content.size;
 
                                     if (isAtEnd) {
@@ -564,14 +566,14 @@ document.addEventListener('alpine:init', () => {
                                             // PERBAIKAN: Gunakan insertContentAt alih-alih splitBlock!
                                             // Ini menaruh kotak <p> murni tanpa mewariskan gaya aneh dari H1
                                             const insertPos = $from.after();
-                                            
+
                                             editor.chain()
                                                 .insertContentAt(insertPos, { type: 'paragraph' })
                                                 .setTextSelection(insertPos + 1) // Pindah kursor ke <p> baru
                                                 .scrollIntoView()
                                                 .run();
 
-                                            return true; 
+                                            return true;
                                         }
                                     }
                                 }
@@ -1325,7 +1327,7 @@ document.addEventListener('alpine:init', () => {
                 window.tiptapEditor.chain().focus().deleteSelection().run();
                 this.updatedAt = Date.now();
             },
-            
+
             // TESTING
             setImageWidth(width) {
                 const targetType = this.getActiveImageType();
@@ -1347,8 +1349,8 @@ document.addEventListener('alpine:init', () => {
                 // const widthValue = `calc(${width / 100} * min(100%, 64rem)) !important`;
 
                 // 🔧 Tambahkan flag 'g' di akhir regex agar SEMUA deklarasi width lama terhapus bersih
-                const cleanedStyle = currentStyle.replace(/width:\s*[^;]+;?/g, '').trim(); 
-                
+                const cleanedStyle = currentStyle.replace(/width:\s*[^;]+;?/g, '').trim();
+
                 // Gabungkan style baru dengan sisa style yang sudah dibersihkan
                 let newStyle = `width: ${widthValue};`;
                 if (cleanedStyle) {
@@ -1392,7 +1394,7 @@ document.addEventListener('alpine:init', () => {
             //     this.updatedAt = Date.now();
             // },
 
-            
+
 
             setImageAlignment(alignment) {
                 const targetType = this.getActiveImageType();
@@ -1466,7 +1468,7 @@ document.addEventListener('alpine:init', () => {
                     const expectedCalc = `calc(${width / 100} * min(100%, 64rem))`;
                     return style.includes(expectedCalc);
                 }
-                
+
                 // Untuk gambar biasa, cek format persen
                 return style.includes(`width: ${width}%`) || style.includes(`width:${width}%`);
             },
@@ -1490,7 +1492,7 @@ document.addEventListener('alpine:init', () => {
                 window.tiptapEditor.chain().focus().deleteSelection().run();
                 this.updatedAt = Date.now();
             },
-        
+
             isActive(type, opts = {}) {
                 this.updatedAt; // Trigger reaktivitas visual UI Alpine
                 return window.tiptapEditor ? window.tiptapEditor.isActive(type, opts) : false;
@@ -1743,12 +1745,12 @@ document.addEventListener('alpine:init', () => {
             addStep() {
                 if (!window.tiptapEditor) {
                     console.error('Editor belum siap dimuat.');
-                    return; 
+                    return;
                 };
 
                 window.tiptapEditor.chain().focus().insertStepCard({
                     number: '', // KOSONGKAN INI agar placeholder '01' muncul
-                    numBgColor: '#f3f4f6', 
+                    numBgColor: '#f3f4f6',
                     cardBgColor: '#ffffff'
                 }).run();
             },
@@ -1763,7 +1765,7 @@ document.addEventListener('alpine:init', () => {
             //     }
             //     window.tiptapEditor.chain().focus().insertStepCard({
             //         number: '01', // Diubah menjadi 01
-            //         numBgColor: '#f3f4f6', 
+            //         numBgColor: '#f3f4f6',
             //         cardBgColor: '#ffffff'
             //     }).run()
             // },

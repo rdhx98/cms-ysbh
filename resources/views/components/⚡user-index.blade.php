@@ -32,7 +32,7 @@ new class extends Component
 {{-- Live as if you were to die tomorrow. Learn as if you were to live forever. - Mahatma Gandhi --}}
 {{-- <div class="">
     --}}
-<x-slot:title>{{ __('Manage Users') }}</x-slot:title>
+<x-slot:title>{{ __('ui.header.user') }}</x-slot:title>
 <x-main-wrapper>
     <!--HEADER CONTAINER -->
     <div class="mb-4  flex justify-between w-full items-center">
@@ -42,7 +42,7 @@ new class extends Component
                 <x-dynamic-component :component="'lucide-user-plus'" class="w-4 h-4" />
                 {{ __('Create') }}
             </a> --}}
-            <a href="{{ route('user.create') }}" wire:navigate 
+            <a href="{{ route('user.create') }}" wire:navigate
                 x-data="{isAnimating: false,  playAnim() { this.isAnimating = false;  this.$nextTick(() => { this.isAnimating = true; setTimeout(() => this.isAnimating = false, 500); }); }}"
                 {{-- x-on:click=" playAnim(); deleteType = 'category'; deleteId = {{ $i->id }}; showDeleteModal = true " --}}
                 x-on:mouseenter="playAnim()"

@@ -55,11 +55,22 @@ return new class extends Migration
             $table->boolean('is_primary')->default(false);
         });
 
+        // Schema::create('pages', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('title')->unique();
+        //     $table->string('slug')->unique();
+        //     $table->longText('content');
+        //     $table->enum('status', ['online', 'offline'])->default('offline');
+        //     $table->json('meta_title')->nullable();
+        //     $table->json('meta_description')->nullable();
+        //     $table->timestamp('published_at')->nullable();
+        //     $table->timestamps();
+        // });
         Schema::create('pages', function (Blueprint $table) {
             $table->id();
-            $table->string('title')->unique();
-            $table->string('slug')->unique();
-            $table->longText('content');
+            $table->json('title');
+            $table->json('slug')->unique();
+            $table->json('content')->nullable();
             $table->enum('status', ['online', 'offline'])->default('offline');
             $table->json('meta_title')->nullable();
             $table->json('meta_description')->nullable();

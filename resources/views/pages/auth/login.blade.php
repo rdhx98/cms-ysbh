@@ -1,4 +1,4 @@
-<x-layouts::auth :title="__('Log in')" >
+<x-layouts::auth :title="__('auth.title_page')" >
     {{-- CETAKAN SVG LUBANG KUSTOM (objectBoundingBox) --}}
 
     <div class="w-full h-screen flex flex-col md:flex-row-reverse overflow-hidden relative">
@@ -10,7 +10,7 @@
             <div
             class="bg-sage-soft w-full h-full md:max-w-none md:h-full flex flex-col justify-center items-center p-8">
             <div class="font-montserrat">
-                Yayasan Sinar Bhakti Husada
+                {{ __('auth.title') }}
             </div>
                 <form method="POST" action="{{ route('login.store') }}" class=" ">
                     @csrf
@@ -36,7 +36,7 @@
                             peer-focus:top-0 peer-focus:text-xs peer-focus:text-terracotta
                             peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-forest"
                         >
-                            {{ __("e-mail address") }}
+                            {{ __("auth.form.email") }}
                         </label>
                     </div>
 
@@ -60,7 +60,7 @@
                             peer-focus:top-0 peer-focus:text-xs peer-focus:text-terracotta
                             peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-forest"
                         >
-                            {{ __("password") }}
+                            {{ __("auth.form.password") }}
                         </label>
 
                         <button
@@ -82,7 +82,7 @@
                     <div class="flex items-center mt-4">
                         <input type="checkbox" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }} class="rounded-lg w-4 h-4 accent-forest border-2 border-forest rounded focus:ring-forest">
                         <label for="remember" class="ml-2 text-sm text-forest/80 cursor-pointer select-none">
-                                {{ __('Remember me') }}
+                                {{ __('auth.button.persist') }}
                         </label>
                     </div>
 
@@ -92,7 +92,7 @@
                         type="submit"
                         class="bg-forest p-4 rounded-2xl w-full text-white cursor-pointer"
                         data-test="login-button">
-                            {{ __('Log in') }}
+                            {{ __('auth.button.login') }}
                         </button>
                     </div>
                 </form>

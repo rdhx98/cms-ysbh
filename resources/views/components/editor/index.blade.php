@@ -111,7 +111,7 @@
         <!-- 🌟 WORD COUNTER KEMBALI KE POSISI FLOATING DI DALAM AREA EDITOR 🌟 -->
         <div class="absolute bottom-6 right-8 pointer-events-none z-40">
             <div class="bg-sage-soft dark:bg-zinc-800/90 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700 text-foresty dark:text-zinc-400 text-[10px] md:text-xs px-2.5 py-1 rounded-md shadow-sm font-medium tracking-wide">
-                <span x-text="`${wordCount} kata`"></span>
+                <span x-text="`${wordCount} {{ __('ui.word') }}`"></span>
             </div>
         </div>
 

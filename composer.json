@@ -20,6 +20,7 @@
         "mallardduck/blade-lucide-icons": "^1.26",
         "spatie/laravel-activitylog": "^5.0",
         "spatie/laravel-permission": "^7.4",
+        "spatie/laravel-translatable": "^6.14",
         "ueberdosis/tiptap-php": "^2.1"
     },
     "require-dev": {

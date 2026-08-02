@@ -28,10 +28,10 @@
             <!-- Indikator Handle kecil khas laci mobile di tengah -->
             <div class="md:hidden w-10 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full absolute left-1/2 -translate-x-1/2 top-1.5"></div>
 
-            <h3 class="text-xs font-bold text-zinc-700 dark:text-zinc-300 tracking-wide uppercase mt-1 md:mt-0">Riwayat Audit Dokumen</h3>
-            <button type="button" @click="isAuditOpen = false" class="text-zinc-400 hover:text-red-500 cursor-pointer">
+            <h3 class="text-xs font-bold text-zinc-700 dark:text-zinc-300 tracking-wide uppercase mt-1 md:mt-0"> {{ __('ui.modal_audit.title') }} </h3>
+            {{-- <button type="button" @click="isAuditOpen = false" class="text-zinc-400 hover:text-red-500 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
+            </button> --}}
         </div>
 
         <!-- List Riwayat Audit -->
@@ -60,88 +60,6 @@
         </div> --}}
         <div class="flow-root min-h-full overflow-y-auto pointer-events-auto">
             <ul class="-mb-8 ">
-                {{-- 🔥 Lakukan looping pada variabel data log Anda --}}
-                {{-- @forelse($this->auditTrail as $log)
-                    @php
-                        // $isCreated = str_contains(strtolower($log->description), 'dibuat');
-                        // $isReview = str_contains(strtolower($log->description), 'review');
-                        // $isDeleted = str_contains(strtolower($log->description), 'dihapus');
-                        // $isDrafted = str_contains(strtolower($log->description), 'dikembalikan');
-
-                        $isCreated = $log->description === 'created';
-                        $isDeleted = $log->description === 'deleted';
-                        $isUpdated = $log->description === 'updated_general';
-
-                        $isDraft = $log->description === 'status_draft';
-                        $isReview = $log->description === 'status_review';
-                        $isPublished = $log->description === 'status_published';
-                        $isScheduled = $log->description === 'status_scheduled';
-                        $isRejected = $log->description === 'status_rejected';
-                        $isReview = $log->description === 'status_archived';
-                    @endphp
-                    <li>
-                        <div class="relative px-4 pb-6">
-                            {{-- Garis vertikal penghubung --}
-                            @if (!$loop->last)
-                                <span class="absolute top-4 left-4 ml-4  h-full w-0.5 bg-zinc-200 dark:bg-zinc-800" aria-hidden="true"></span>
-                            @endif
-
-                            <div class="relative flex space-x-3 items-center">
-                                {{-- Icon Ikon Titik Timeline --}}
-                                <div>
-                                    {{-- <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-zinc-900 bg-emerald-500 text-white">
-                                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M20 6 9 17l-5-5"/>
-                                        </svg>
-                                    </span> --}
-                                    <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-zinc-900 text-white
-                                        @if($isCreated) bg-emerald-500
-                                        @elseif($isReview) bg-blue-500
-                                        @elseif($isDeleted) bg-red-500
-                                        @else bg-amber-500 @endif">
-
-                                        {{-- Icon Dinamis --}
-                                        @if($isCreated)
-                                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                                        @elseif($isReview)
-                                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                                        @else
-                                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-                                        @endif
-                                    </span>
-                                </div>
-
-                                {{-- Informasi Detail Log --}
-                                <div class="min-w-0 flex-1 flex justify-between space-x-4">
-                                    <div>
-                                        {{-- Menampilkan deskripsi log (contoh: "updated" atau "created") --}
-                                        <p class="text-xs font-medium text-zinc-900 dark:text-zinc-100 capitalize">
-                                            {{ $log->description }}
-                                        </p>
-
-                                        {{-- Menampilkan nama pengguna yang melakukan aksi --}
-                                        <p class="text-[11px] text-zinc-500 dark:text-zinc-400">
-                                            Oleh: <span class="font-semibold text-zinc-700 dark:text-zinc-300">
-                                                {{ optional($log->causer)->name ?? 'Sistem' }}
-                                            </span>
-                                        </p>
-                                    </div>
-
-                                    {{-- Waktu Log (Menggunakan Carbon untuk format ramah manusia) --}
-                                    <div class="text-right text-[10px] whitespace-nowrap text-zinc-400 dark:text-zinc-500">
-                                        <time datetime="{{ $log->created_at }}">
-                                            {{ $log->created_at->diffForHumans() }}
-                                        </time>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </li>
-                @empty
-                    <li class="text-center py-4 text-xs text-zinc-400">
-                        Belum ada riwayat audit untuk artikel ini.
-                    </li>
-                @endforelse --}}
                 @forelse($this->auditTrail as $log)
                     @php
                         // 1. Gunakan match() PHP 8 untuk menentukan warna (Jauh lebih ringkas dari switch!)
@@ -216,7 +134,7 @@
                                     <div>
                                         {{-- Menggunakan file terjemahan yang sudah kita buat sebelumnya --}}
                                         <p class="text-xs font-medium text-zinc-900 dark:text-zinc-100 ">
-                                            {{ __('audit.' . $log->description) }}
+                                            {{ __('audit-modal.' . $log->description) }}
                                         </p>
                                         <p class="text-[11px] text-zinc-500 dark:text-zinc-400">
                                             Oleh: <span class="font-semibold text-zinc-700 dark:text-zinc-300">
@@ -235,7 +153,7 @@
                     </li>
                 @empty
                     <li class="text-center py-4 text-xs text-zinc-400">
-                        Belum ada riwayat audit untuk artikel ini.
+                        {{ __('ui.modal_audit.no_trail') }}
                     </li>
                 @endforelse
             </ul>

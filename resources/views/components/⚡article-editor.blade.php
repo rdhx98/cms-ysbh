@@ -410,12 +410,24 @@ new class extends Component {
     }
 };
 ?>
-<x-slot:title>{{ __('Write Article') }}</x-slot:title>
+<x-slot:title>{{ __('ui.header.write_article') }}</x-slot:title>
 <div class="w-full h-[calc(100vh-4rem)] flex-1 min-h-0 gap-2 overflow-hidden flex flex-col md:flex-row pt-2 md:pt-0">
 
     {{-- Gunakan wire:submit="save" yang merupakan standar Livewire 3 --}}
     <form
-        wire:submit="save" @submit.capture="flushEditorSync()" x-data="setupEditor('content', $wire)" @buka-modal-link.window="isLinkOpen = true"
+        x-data="setupEditor(
+            'content',
+            $wire,
+            {
+                step_number: '01',
+                step_heading: '{{ __('ui.editor.step_heading') }}',
+                step_description: '{{ __('ui.editor.step_description') }}',
+                heading: '{{ __('ui.editor.heading') }}',
+                default: '{{ __('ui.placeholder.editor') }}'
+            }
+        )"
+        wire:submit="save" @submit.capture="flushEditorSync()"
+        @buka-modal-link.window="isLinkOpen = true"
         class="flex flex-col w-full bg-zinc-50 dark:bg-zinc-950 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm transition-all duration-300 ease-in-out">
 
         {{-- HEADER, META, BUTTONS, TOOLBARS --}}
@@ -437,7 +449,7 @@ new class extends Component {
                             {{ $message }}
                         </span>
                     @enderror
-                    <input type="text" x-model="title" placeholder="Judul Artikel..." class="w-full p-2.5 text-2xl md:text-3xl font-bold bg-transparent outline-none focus:outline-none focus:ring-0 border-0 border-b-2 border-zinc-200 focus:border-zinc-400 dark:border-zinc-800 dark:focus:border-zinc-600 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 transition-colors" />
+                    <input type="text" x-model="title" placeholder="{{ __('ui.articles.title') }}" class="w-full p-2.5 text-2xl md:text-3xl font-bold bg-transparent outline-none focus:outline-none focus:ring-0 border-0 border-b-2 border-zinc-200 focus:border-zinc-400 dark:border-zinc-800 dark:focus:border-zinc-600 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 transition-colors" />
 
                 </div>
 
@@ -454,20 +466,18 @@ new class extends Component {
                         {{-- COVER MODAL BUTTON --}}
                         <button type="button" wire:click="scanEditorImages" @click="$dispatch('buka-featured-modal')"
                             class="group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none"
-                            title="Pilih Gambar Sampul">
+                            title="{{ __('ui.tip.cover') }}">
                             <x-dynamic-component :component="'lucide-image'" class="h-5 w-5 origin-center group-hover:animate-blocks" stroke-width="2" />
-                            <span class="hidden 2xl:inline">Sampul Artikel</span>
-                            <span class="md:hidden">Sampul</span>
+                            <span class="hidden 2xl:inline">{{ __('ui.button.cover') }}</span>
                         </button>
 
                         {{-- META MODAL BUTTON --}}
-                        <button type="button" @click="isMetaOpen = true" 
-                            class="relative group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none" 
-                            title="Pengaturan Artikel">
+                        <button type="button" @click="isMetaOpen = true"
+                            class="relative group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none"
+                            title="{{ __('ui.tip.properties') }}">
 
                             <x-dynamic-component :component="'lucide-file-sliders'" class="h-5 w-5 origin-center group-hover:animate-tag" stroke-width="2" />
-                            <span class="hidden 2xl:inline">Pengaturan Dokumen</span>
-                            <span class="md:hidden">Pengaturan</span>
+                            <span class="hidden 2xl:inline">{{ __('ui.button.properties') }}</span>
 
                             {{-- 🚨 INDIKATOR DOT MERAH ERROR 🚨 --}}
                             @if($errors->hasAny(['category_id', 'tags']))
@@ -480,58 +490,41 @@ new class extends Component {
                             @endif
                         </button>
 
-                        {{-- META MODAL BUTTON --}}
-                        {{-- <button type="button" @click="isMetaOpen = true" class="group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none" title="Pengaturan Artikel">
-
-                            <x-dynamic-component :component="'lucide-file-sliders'" class="h-5 w-5 origin-center group-hover:animate-tag" stroke-width="2" />
-                            <span class="hidden 2xl:inline">Pengaturan Dokumen</span>
-                            <span class="md:hidden">Pengaturan</span> --}}
-
-                            {{-- 🚨 INDIKATOR DOT MERAH ERROR 🚨 --}}
-                            {{-- Wrapper absolute diletakkan di luar jangkauan flex --}}
-                            {{-- Efek ping/denyut opsional agar lebih menarik perhatian --}}
-                            {{-- @if($errors->hasAny(['category_id', 'tags']))
-                                <span class="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-zinc-900 z-10">
-                                    !
-                                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                                </span>
-                            @endif
-                        </button> --}}
-
                         @if(!empty($article_id) && $status === 'draft')
                             {{-- REVIEW MODAL BUTTON --}}
                             <button type="button"
                                 x-on:click="$dispatch('buka-modal-review')"
                                 wire:loading.attr="disabled"
+                                title="{{ __('ui.tip.review') }}"
                                 class="group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none">
-                                
+
                                 <span class="flex items-center justify-center gap-2" wire:loading.remove wire:target="submitForReview">
                                     <x-dynamic-component :component="'lucide-send'" class="h-5 w-5 origin-center group-hover:animate-save" stroke-width="2" />
-                                    <span class="hidden 2xl:block"> Ajukan Review </span>
+                                    <span class="hidden 2xl:block"> {{ __('ui.button.review') }} </span>
                                     {{-- <span class="md:hidden"> Ajukan </span> --}}
                                 </span>
 
                                 <div wire:loading.flex wire:target="submitForReview" class="flex-row items-center justify-center gap-2">
-                                    <span>Mengirim...</span>
+                                    <span>{{ __('ui.button.sending') }}...</span>
                                 </div>
                             </button>
                         @endif
-                    
+
                         {{-- SAVE BUTTON --}}
                         <button type="button"
                             x-on:click="if(window.tiptapEditor) { $wire.saveArticle(window.tiptapEditor.getHTML()) }"
                             wire:loading.attr="disabled"
+                            :title="$wire.article_id ? '{{ __('ui.tip.save') }}' : '{{ __('ui.tip.create') }}'"
                             class="group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none">
 
                             <!-- PENTING: Ubah wire:target menjadi saveArticle -->
                             <span class="flex items-center justify-center gap-2" >
                                 <x-dynamic-component :component="'lucide-save'" class="h-5 w-5 origin-center group-hover:animate-save" stroke-width="2" />
-                                <span wire:loading.remove wire:target="saveArticle" class="hidden 2xl:block"> {{ __('Simpan Artikel') }} </span>
-                                <span class="md:hidden"> {{ __('Simpan') }} </span>
+                                <span wire:loading.remove wire:target="saveArticle" class="hidden 2xl:block" x-text="$wire.article_id ? '{{ __('ui.button.save') }}' : '{{ __('ui.button.create') }}'"></span>
                             </span>
 
                             <div  class="hidden 2xl:block flex-row items-center justify-center gap-2">
-                                <span wire:loading.flex wire:target="saveArticle">Memproses...</span>
+                                <span wire:loading.flex wire:target="saveArticle">{{ __('ui.button.saving') }}...</span>
                             </div>
                         </button>
                     @endif
@@ -540,13 +533,13 @@ new class extends Component {
                     <!-- 🎛️ TOMBOL TOGGLE PANEL AUDIT (Desktop & Mobile) -->
                     <button type="button" @click="isAuditOpen = !isAuditOpen"
                         class="group inline-flex items-center gap-2 p-2 text-sm font-semibold border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none"
-                        :title="isAuditOpen ? 'Tutup Panel Audit' : 'Buka Panel Audit'"
+                        :title="isAuditOpen ? '{{ __('ui.tip.audit_trail_close') }}' : '{{ __('ui.tip.audit_trail_open') }}'"
                         :class="isAuditOpen ? 'bg-foresty text-goldy' : 'bg-white text-zinc-600'" >
-                        
+
                         {{-- 🔥 Ganti class menjadi group-hover:animate-tick --}}
                         <x-dynamic-component :component="'lucide-clock-fading'" class="h-5 w-5 origin-center group-hover:animate-tick" stroke-width="2" />
-                        
-                        <span class="hidden 2xl:inline" x-text="isAuditOpen ? 'Tutup Audit' : 'Riwayat Audit'"></span>
+
+                        <span class="hidden 2xl:inline" x-text="isAuditOpen ? '{{ __('ui.button.close') }}' : '{{ __('ui.button.audit_trail') }}'"></span>
                     </button>
 
                 </div>

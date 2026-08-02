@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 // HAPUS BARIS LAMA INI:
 // use Spatie\Activitylog\Traits\LogsActivity;
@@ -23,18 +23,8 @@ class Post extends Model
     use HasFactory, LogsActivity;
 
     // Field yang boleh diisi massal
-    protected $fillable = [
-        'user_id',
-        'category_id',
-        'title',
-        'slug',
-        'content',
-        'featured_image',
-        'status', // ['draft', 'review', 'published', 'scheduled', 'archived', 'rejected']
-        'created_at',
-        'updated_at',
-        'published_at',
-    ];
+    protected $fillable = ['user_id','category_id','title','slug','content','featured_image','status', 'created_at','updated_at','published_at',];
+    // ['draft', 'review', 'published', 'scheduled', 'archived', 'rejected']
     // 1. BUKU ATURAN
     public function getActivitylogOptions(): LogOptions
     {

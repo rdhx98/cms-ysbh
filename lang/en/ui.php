@@ -1,0 +1,100 @@
+<?php
+
+return [
+    'word' => 'word',
+    'button' => [
+        'save' => 'Save',
+        'cancel' => 'Cancel',
+        'delete' => 'Delete',
+        'create_new' => 'Create New',
+        'create' => 'Create',
+        'write' => 'Write',
+        'Preview' => 'Preview',
+        'edit' => 'Edit',
+        'log_out' => 'Log Out',
+        'profile' => 'Profile',
+        'settings' => 'Settings',
+        'cover' => 'Cover',
+        'properties' => 'Properties',
+        'review' => 'Review',
+        'audit' => 'Audit',
+        'sending' => 'Sending',
+        'saving' => 'Saving',
+        'audit_trail' => 'Audit Trail', //Jejak Audit
+        'close' => 'Close',
+        '' => '',
+    ],
+    'tip' => [
+        'cover' => 'Select cover image', //Pilih Gambar Sampul
+        'properties' => 'Article properties', //Pengaturan Artikel
+        'review' => 'Submit article for review',
+        'audit_trail_open' => 'Open Audit Trail Panel', //Jejak Audit
+        'audit_trail_close' => 'Close Audit Trail Panel', //Jejak Audit
+        'save' => 'Save change',
+        'create' => 'Create',
+        'cancel' => 'Cancel',
+        'delete' => 'Delete',
+        'create_new' => 'Create New',
+        'write' => 'Write',
+        'Preview' => 'Preview',
+        'edit' => 'Edit',
+        'log_out' => 'Log Out',
+        'profile' => 'Profile',
+        'settings' => 'Settings',
+        'audit' => 'Audit',
+        'sending' => 'Sending',
+        'saving' => 'Saving',
+        'close' => 'Close',
+        '' => '',
+    ],
+    'nav' => [
+        'dashboard' => 'Dashboard',
+        'article' => 'Articles',
+        'page' => 'Pages',
+        'user' => 'Users',
+        'documentation' => 'Documentations',
+    ],
+    'header' => [
+        'dashboard' => 'Dashboard',
+        'article' => 'Manage Articles',
+        'page' => 'Manage Pages',
+        'user' => 'Manage Users',
+        'documentation' => 'Documentations',
+        'write_article' => 'Write Article',
+    ],
+    'modal_audit'=>[
+        'title'=>'Audit Trail',
+        'no_trail'=>'There is no audit trail for this article.', //Tidak ada jejak audit untuk artikel ini.
+    ],
+    'articles' => [
+        'index' => 'Articles',
+        'status' => 'Status',
+        'manage' => 'Manage',
+        'all_tags' => 'All tags',
+        'all_status' => 'All Status',
+        'all_categories' => 'All Categories',
+        'categories' => 'Categories',
+        'category' => 'Category',
+        'manage_categories' => 'Manage Categories',
+        'new_categories' => 'New Category Name',
+        'example_categories' => 'Example : Internal News',
+        'tags' => 'Tags',
+        'manage_tags' => 'Manage Tags',
+        'new_tags' => 'New Tag Name',
+        'example_tags' => 'Example: #stunting',
+        // 'write' => 'Write',
+        'title_search' => 'Find article',
+        'title' => 'Article Title',
+        'dates_created' => 'Date & time created',
+        'dates_updated' => 'Date & time updated',
+        // '' => 'Documentations',
+    ],
+    'placeholder' => [
+        'editor' => 'Start writing your great articles here...', //Mulai menulis artikel hebat Anda di sini...
+        'error_delete' => 'Gagal menghapus data.',
+    ],
+    'alert' => [
+        'success_save' => 'Data berhasil disimpan!',
+        'error_delete' => 'Gagal menghapus data.',
+    ],
+];

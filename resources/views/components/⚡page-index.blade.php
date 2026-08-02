@@ -22,45 +22,94 @@ new class extends Component
         $this->orderColumn = "created_at";
     }
 
+    // #[Url(as: 'status')]
+    #[Url]
+    public $statusFilter = '';
+
+    #[Url]
+    public $titleSearch = '';
+
     #[Computed]
     public function pages()
     {
         // Mulai dari query builder kosong
         $query = Page::query();
 
-        // 1. Filter Pencarian Judul
+        // 1. Filter Pencarian Judul (Sesuai bahasa yang aktif)
         // if ($this->titleSearch) {
-        //     $query->where('title', 'like', '%' . $this->titleSearch . '%');
-        // }
+        //     // Ambil kode bahasa saat ini (misal: 'id' atau 'en')
+        //     $locale = app()->getLocale();
 
-        // // 2. Filter Kategori
-        // if ($this->selectCategory) {
-        //     $query->where('category_id', $this->selectCategory);
+        //     // Cari hanya di dalam JSON key bahasa tersebut
+        //     $query->where("title->{$locale}", 'like', '%' . $this->titleSearch . '%');
         // }
+        // 1. Filter Pencarian Judul
+        if ($this->titleSearch) {
+            $locale = app()->getLocale();
 
-        // // 3. Filter Status
-        // if ($this->selectStatus) {
-        //     $query->where('status', $this->selectStatus);
-        // }
+            // Ubah input user menjadi huruf kecil
+            $searchTerm = strtolower($this->titleSearch);
 
-        // // 4. Logika Sorting Dinamis
-        // if ($this->orderColumn === 'category') {
-        //     // Join tabel categories agar bisa diurutkan berdasarkan namanya
-        //     $query->join('categories', 'posts.category_id', '=', 'categories.id')
-        //           ->select('posts.*') // Cegah tabrakan kolom id jika ada
-        //           ->orderBy('categories.name', $this->orderDirection);
-        // } else {
-        //     // Untuk kolom di tabel posts (title, status, created_at)
-        //     $query->orderBy('posts.' . $this->orderColumn, $this->orderDirection);
-        // }
+            // Gunakan whereRaw dengan JSON_EXTRACT eksplisit
+            $query->whereRaw(
+                "LOWER(JSON_UNQUOTE(JSON_EXTRACT(title, '$.{$locale}'))) LIKE ?",
+                ['%' . $searchTerm . '%']
+            );
+        }
+
+        // 2. Filter Status
+        if ($this->statusFilter) {
+            $query->where('status', $this->statusFilter);
+        }
 
         // Eksekusi query
         return $query->get();
     }
+    // #[Computed]
+    // public function pages()
+    // {
+    //     // Mulai dari query builder kosong
+    //     $query = Page::query();
+
+    //     // 1. Filter Pencarian Judul
+    //     if ($this->titleSearch) {
+    //         $query->where('title', 'like', '%' . $this->titleSearch . '%');
+    //     }
+    //     if ($this->titleSearch) {
+    //         // Ambil kode bahasa yang sedang aktif ('id' atau 'en')
+    //         $locale = app()->getLocale();
+
+    //         $query->where("title->{$locale}", 'like', '%' . $this->titleSearch . '%');
+    //     }
+
+    //     // // 2. Filter Kategori
+    //     // if ($this->selectCategory) {
+    //     //     $query->where('category_id', $this->selectCategory);
+    //     // }
+
+    //     // // 3. Filter Status
+    //     if ($this->statusFilter) {
+    //         $query->where('status', $this->statusFilter);
+    //     }
+
+    //     // // 4. Logika Sorting Dinamis
+    //     // if ($this->orderColumn === 'category') {
+    //     //     // Join tabel categories agar bisa diurutkan berdasarkan namanya
+    //     //     $query->join('categories', 'posts.category_id', '=', 'categories.id')
+    //     //           ->select('posts.*') // Cegah tabrakan kolom id jika ada
+    //     //           ->orderBy('categories.name', $this->orderDirection);
+    //     // } else {
+    //     //     // Untuk kolom di tabel posts (title, status, created_at)
+    //     //     $query->orderBy('posts.' . $this->orderColumn, $this->orderDirection);
+    //     // }
+
+    //     // Eksekusi query
+    //     return $query->get();
+    // }
 };
 ?>
 
-<x-slot:title>{{ __('Manage Pages') }}</x-slot:title>
+<x-slot:title>{{ __('ui.header.page') }}</x-slot:title>
 <x-main-wrapper>
     <div x-data="{ activeSubPanel: 'none', showDeleteModal: false, deleteType: '', deleteId: null, newItemName: '' }" class="flex flex-col lg:flex-row gap-4 items-start w-full">
         <!-- MAIN UX (KONTAINER UTAMA) -->
@@ -72,105 +121,47 @@ new class extends Component
                 <!-- Group Tombol Navigasi/Aksi -->
                 <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
 
-                    <!-- Tombol Kategori (Mengubah state ke 'categories') -->
-                    <button
-                        x-data="{ 
-                            isAnimating: false,
-                            playAnim() {
-                                // 1. Matikan animasi sejenak (reset)
-                                this.isAnimating = false;
-                                
-                                // 2. Tunggu 1 kedipan sistem (nextTick), lalu nyalakan lagi
-                                this.$nextTick(() => {
-                                    this.isAnimating = true;
-                                    // 3. Matikan otomatis setelah 500ms (sesuai durasi CSS)
-                                    setTimeout(() => this.isAnimating = false, 500);
-                                });
-                            }
-                        }"
-                        x-on:mouseenter="playAnim()"
-                        x-on:click="playAnim(); activeSubPanel = (activeSubPanel === 'categories' ? 'none' : 'categories'); "
-                        x-bind:class="activeSubPanel === 'categories' ? 'bg-forest text-goldy' : 'bg-white text-foresty'"
-                        class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold  border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer">
-                        <!-- Perhatikan perubahan pada origin-bottom dan nama animasinya -->
-                        <x-dynamic-component :component="'lucide-blocks'" class="h-5 w-5 origin-bottom group-hover:animate-blocks" stroke-width="2" x-bind:class="isAnimating ? 'animate-blocks' : ''" />
-                        {{ __('Category') }}
-                    </button>
-
-
-                    <button
-                        x-data="{ 
-                            isAnimating: false,
-                            playAnim() {
-                                // 1. Matikan animasi sejenak (reset)
-                                this.isAnimating = false;
-                                
-                                // 2. Tunggu 1 kedipan sistem (nextTick), lalu nyalakan lagi
-                                this.$nextTick(() => {
-                                    this.isAnimating = true;
-                                    // 3. Matikan otomatis setelah 500ms (sesuai durasi CSS)
-                                    setTimeout(() => this.isAnimating = false, 500);
-                                });
-                            }
-                        }"
-                        x-on:mouseenter="playAnim()"
-                        x-on:click="playAnim(); activeSubPanel = (activeSubPanel === 'tags' ? 'none' : 'tags');"
-                        x-bind:class="activeSubPanel === 'tags' ? 'bg-forest text-goldy' : 'bg-white text-forest'"
-                        class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer" >
-                        <x-dynamic-component :component="'lucide-tag'" class="h-5 w-5 origin-top-left group-hover:animate-tag" stroke-width="2" x-bind:class="isAnimating ? 'animate-tag' : ''" />
-                        {{ __('Tags') }}
-                    </button>
-
                     <!-- Kode Tombol Anda -->
                     <a href="{{ route('article.editor') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
-                        <x-dynamic-component :component="'lucide-feather'" class="h-5 w-5 origin-bottom-left group-hover:animate-stroke" stroke-width="2"  />
+                        <x-dynamic-component :component="'lucide-panels-top-left'" class="h-5 w-5 origin-bottom-left group-hover:animate-stroke" stroke-width="2"  />
                         {{ __('Create') }}
                     </a>
                 </div>
             </div>
 
             <!-- BARIS FILTER SEDERHANA-->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white dark:bg-zinc-900 px-2 py-4 mb-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+            <div x-data="{statusSelected: @entangle('statusFilter').live }" class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white dark:bg-zinc-900 px-2 py-4 mb-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                 <!-- 1. Input Pencarian -->
-                <div class="md:col-span-2 relative">
+                <div class="md:col-span-3 col-span-2 relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
                         <flux:icon variant="outline" icon="magnifying-glass" class="w-4 h-4" />
                     </div>
                     <input
                         type="text"
-                        placeholder="Cari judul artikel..."
+                        placeholder="Cari halaman..."
                         class="w-full pl-9 pr-4 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sbh-green focus:border-transparent text-zinc-700 dark:text-zinc-300"
                         wire:model.live="titleSearch"
                     >
                 </div>
+                <div class=" md:col-span-1 col-span-2 flex flex-col md:flex-row gap-2">
 
-                <!-- 2. Dropdown Kategori -->
-                <div>
-                    <select wire:model.live="selectCategory" class="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sbh-green text-zinc-700 dark:text-zinc-300 cursor-pointer">
-                        <option value="">Semua Kategori</option>
-                        {{-- @foreach($this->categoryList as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach --}}
-                    </select>
+                    <button
+                    type="button"
+                    x-on:click="statusSelected = (statusSelected === 'online' ? '' : 'online');"
+                    x-bind:class="statusSelected === 'online' ? 'bg-misty text-foresty' : 'bg-zinc-50 text-forest '"
+                    class="w-full select-none cursor-pointer p-2 text-sm rounded-full focus:outline-none border border-zinc-200 hover:bg-misty ">
+                        Online
+                    </button>
+                    <button
+                    x-on:click="statusSelected = (statusSelected === 'offline' ? '' : 'offline');"
+                    x-bind:class="statusSelected === 'offline' ? 'bg-misty text-foresty' : 'bg-zinc-50 text-forest '"
+                    class="w-full select-none cursor-pointer p-2 text-sm rounded-full focus:outline-none border border-zinc-200 hover:bg-misty ">
+                        Offline
+                    </button>
                 </div>
 
-                <!-- 3. Dropdown Status -->
-                <div>
-                    <select wire:model.live="selectStatus" class="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sbh-green text-zinc-700 dark:text-zinc-300 cursor-pointer">
-                        <option value="">Semua Status</option>
-                        <option value="online">Online</option>
-                        <option value="offline">Offline</option>
-                        {{-- @foreach($this->statusList as $status)
-                            <option value="{{ $status->id }}">
-                                    <x-dynamic-component :component="'lucide-globe'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
-                                    {{-- <x-dynamic-component :component="'lucide-'. $status->icon " class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" /> --}
-                                    {{ $status->name }}
-
-                            </option>
-                        @endforeach --}}
-                    </select>
-                </div>
             </div>
+
 
             {{-- REVISI: Penambahan komputasi max-height responsif agar di mobile tidak meluber ke bawah --}}
             <!-- TABEL UTAMA -->
@@ -179,7 +170,7 @@ new class extends Component
                     <thead class="bg-misty text-xs text-foresty dark:bg-green-950 dark:text-green-300">
                         <tr>
                             <!-- Header Judul -->
-                            <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider">
+                            <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider border-r-2 border-sage-soft ">
                                 <button wire:click="sortBy('title')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
                                     Judul Halaman
                                     @if($orderColumn === 'title')
@@ -187,30 +178,30 @@ new class extends Component
                                     @endif
                                 </button>
                             </th>
+                            <!-- PATH -->
+                            <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider select-none border-r-2 border-sage-soft">
+                                {{-- <button wire:click="sortBy('title')" class="flex justify-center items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors"> --}}
+                                    Path
+                                    {{-- @if($orderColumn === 'title')
+                                        <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                                    @endif --}}
+                                {{-- </button> --}}
+                            </th>
 
                             <!-- Tanggal -->
-                            <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider">
-                                <button wire:click="sortBy('created_at')" class="flex items-center justify-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
+                            <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider border-r-2 border-sage-soft whitespace-nowrap">
+                                <button wire:click="sortBy('created_at')"
+                                class="flex justify-center items-center w-full gap-2 uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
                                     Tanggal & Waktu dibuat
-                                    @if($orderColumn === 'created_at')
+                                    {{-- @if($orderColumn === 'created_at')
                                         <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
-                                    @endif
+                                    @endif --}}
                                 </button>
                             </th>
 
-                            <!-- Header Kategori -->
-                            {{-- <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider">
-                                <button wire:click="sortBy('category')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
-                                    Kategori
-                                    @if($orderColumn === 'category')
-                                        <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
-                                    @endif
-                                </button>
-                            </th> --}}
-
-                            <!-- Header Status -->
-                            <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider">
-                                <button wire:click="sortBy('status')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
+                            <!-- STATUS -->
+                            <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider border-r-2 border-sage-soft">
+                                <button wire:click="sortBy('status')" class="flex justify-center items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
                                     Status
                                     @if($orderColumn === 'status')
                                         <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
@@ -219,7 +210,7 @@ new class extends Component
                             </th>
 
                             <!-- Header Kelola (Tidak perlu sorting) -->
-                            <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider text-center">
+                            <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider text-center select-none">
                                 Kelola
                             </th>
                         </tr>
@@ -229,29 +220,35 @@ new class extends Component
                         @forelse ($this->pages as $page)
                             @foreach (range(1, 1) as $i)
                                 <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
-                                    <td class="px-4 py-3.5 text-sm">
-                                        <div class="font-medium text-zinc-900 dark:text-white">{{ $page->title }}</div>
+                                    <!-- TITLE -->
+                                    <td class="w-[30%] px-4 py-3.5 text-sm">
+                                        <div class="font-medium text-zinc-900 dark:text-white">{{ $page->getTranslation('title', 'id') }}</div>
                                         {{-- <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $article->author->name }}</div> --}}
                                     </td>
-                                    <td class="px-4 py-0 text-sm h-full align-middle">
-                                        <div class="flex gap-2 items-center justify-center h-full min-h-[3.5rem]">
-                                            <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{ $article->created_at->format('D, d/m/y') }} </div>
-                                            <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{ $article->created_at->format('H:i') }} </div>
+
+                                    <!-- PATH -->
+                                    <td class="w-[30%] px-4 py-0 text-sm h-full align-middle">
+                                        <div class="flex gap-2 items-center justify-start h-full min-h-14">
+                                            /{{ $page->slug }}
+                                            {{-- <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{ $article->created_at->format('D, d/m/y') }} </div> --}}
+                                            {{-- <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{ $article->created_at->format('H:i') }} </div> --}}
                                         </div>
                                     </td>
-                                    {{-- <td class="px-4 py-3.5 text-sm flex gap-2 items-center justify-center shrink-0">
-                                        <div class="font-medium text-zinc-900 dark:text-white">{{ $article->created_at->format('D, d/m/y') }} </div>
-                                        <div class="font-medium text-zinc-900 dark:text-white">{{ $article->created_at->format('h:m') }} </div>
-                                        <!-- {/{ \Carbon\Carbon::parse($article->created_at)->format('d/m/y') }} -->
-                                    </td> --}}
-                                    {{-- <td class="px-4 py-3.5 text-sm">{{ $article->category->name }}</td> --}}
+
+                                    <!-- DATE -->
                                     <td class="px-4 py-3.5 text-sm">
+                                        {{ $page->created_at }}
+                                    </td>
+
+                                    <!-- STATUS -->
+                                    <td class="px-2 py-3.5 text-sm text-center">
                                         <span class="px-2 py-1 text-xs font-medium rounded-full border-2 {{ $page->status_color ?? '' }}">
                                             {{ ucfirst($page->status) }}
                                         </span>
                                     </td>
+
+                                    {{-- BUTTONS  --}}
                                     <td class="px-4 py-3.5 text-sm">
-                                        {{-- BUTTONS CONTAINER --}}
                                         <div class="flex justify-center items-center gap-2">
 
                                             {{-- <a wire:navigate href="{{ route('article.edit', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" class="group p-1.5 rounded-md text-white bg-forest/90 dark:bg-forest/80 relative cursor-pointer hover:bg-forest/70 transition-colors flex items-center justify-center">
@@ -299,7 +296,7 @@ new class extends Component
                                 <td colspan="5" class="px-4 py-12 text-center">
                                     <div class="flex flex-col items-center justify-center">
                                         <flux:icon variant="outline" icon="document-text" class="size-8 text-zinc-400 mb-2" />
-                                        <span class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Tidak ada artikel yang ditemukan.</span>
+                                        <span class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Tidak ada halaman yang ditemukan.</span>
                                     </div>
                                 </td>
                             </tr>

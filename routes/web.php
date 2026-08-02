@@ -5,6 +5,9 @@ use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 use Laravel\Fortify\Http\Controllers\RegisteredUserController;
 use App\Http\Controllers\EditorImageUploadController;
 
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Redirect;
+
 
 // Route::view('/', 'welcome')->name('home');
 // 1. Logika untuk Halaman Utama "/" CMS
@@ -51,5 +54,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/documentation', 'json-viewer')->name('documentation');
 
 });
+
+Route::get('/language/{locale}', function ($locale) {
+    // Daftar bahasa yang diizinkan (mencegah error jika user manipulasi URL)
+    if (! in_array($locale, ['en', 'id'])) {
+        abort(400);
+    }
+
+    // Simpan ke session
+    Session::put('locale', $locale);
+
+    // Kembalikan user ke halaman sebelumnya
+    return Redirect::back();
+})->name('language.switch');
 
 require __DIR__.'/settings.php';

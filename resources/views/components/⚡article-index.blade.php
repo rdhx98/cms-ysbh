@@ -159,7 +159,7 @@ new class extends Component
         // ==========================================
         // 4. EKSEKUSI: Log Aktivitas & Penghapusan
         // ==========================================
-        
+
         // Kita catat log-nya SEBELUM di-delete, agar data judulnya masih bisa dibaca
         activity('article_updates')
             ->performedOn($article)
@@ -217,7 +217,7 @@ new class extends Component
     }
     public function createTag($name)
     {
-        
+
         if (empty(trim($name))) {
             $this->notify('Tag tidak boleh kosong.', 'error');
             return;
@@ -236,12 +236,12 @@ new class extends Component
 
         $this->notify('Kategori berhasil ditambahkan.', 'success');
     }
-    
+
 };
 ?>
 
 {{-- <div class="bg-white rounded-lg w-full  md:max-w-none flex flex-col items-center justify-center p-4 flex-1 grow"> --}}
-<x-slot:title>{{ __('Manage Arcticles') }}</x-slot:title>
+<x-slot:title>{{ __('ui.header.article') }}</x-slot:title>
 
 <x-main-wrapper>
 
@@ -251,19 +251,19 @@ new class extends Component
         <div x-bind:class="activeSubPanel !== 'none' ? 'w-full lg:w-2/3 transition-all duration-300' : 'w-full transition-all duration-300'" class="min-w-0">
             {{-- REVISI: Merapikan header fleksibel --}}
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center px-2 pb-4 gap-3">
-                <span class="text-2xl font-bold text-foresty dark:text-zinc-100">{{ __('Index') }}</span>
+                <span class="text-2xl font-bold text-foresty dark:text-zinc-100">{{ __('ui.articles.index') }}</span>
 
                 <!-- Group Tombol Navigasi/Aksi -->
                 <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
 
                     <!-- Tombol Kategori (Mengubah state ke 'categories') -->
                     <button
-                        x-data="{ 
+                        x-data="{
                             isAnimating: false,
                             playAnim() {
                                 // 1. Matikan animasi sejenak (reset)
                                 this.isAnimating = false;
-                                
+
                                 // 2. Tunggu 1 kedipan sistem (nextTick), lalu nyalakan lagi
                                 this.$nextTick(() => {
                                     this.isAnimating = true;
@@ -278,17 +278,17 @@ new class extends Component
                         class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold  border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer">
                         <!-- Perhatikan perubahan pada origin-bottom dan nama animasinya -->
                         <x-dynamic-component :component="'lucide-blocks'" class="h-5 w-5 origin-bottom group-hover:animate-blocks" stroke-width="2" x-bind:class="isAnimating ? 'animate-blocks' : ''" />
-                        {{ __('Category') }}
+                        {{ __('ui.articles.categories') }}
                     </button>
 
 
                     <button
-                        x-data="{ 
+                        x-data="{
                             isAnimating: false,
                             playAnim() {
                                 // 1. Matikan animasi sejenak (reset)
                                 this.isAnimating = false;
-                                
+
                                 // 2. Tunggu 1 kedipan sistem (nextTick), lalu nyalakan lagi
                                 this.$nextTick(() => {
                                     this.isAnimating = true;
@@ -302,13 +302,13 @@ new class extends Component
                         x-bind:class="activeSubPanel === 'tags' ? 'bg-forest text-goldy' : 'bg-white text-forest'"
                         class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer" >
                         <x-dynamic-component :component="'lucide-tag'" class="h-5 w-5 origin-top-left group-hover:animate-tag" stroke-width="2" x-bind:class="isAnimating ? 'animate-tag' : ''" />
-                        {{ __('Tags') }}
+                        {{ __('ui.articles.tags') }}
                     </button>
 
                     <!-- Kode Tombol Anda -->
                     <a href="{{ route('article.editor') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
                         <x-dynamic-component :component="'lucide-feather'" class="h-5 w-5 origin-bottom-left group-hover:animate-stroke" stroke-width="2"  />
-                        {{ __('Write') }}
+                        {{ __('ui.button.write') }}
                     </a>
                 </div>
             </div>
@@ -322,7 +322,8 @@ new class extends Component
                     </div>
                     <input
                         type="text"
-                        placeholder="Cari judul artikel..."
+                        {{-- placeholder="Cari judul artikel..." --}}
+                        placeholder="{{ __('ui.articles.title_search') }}"
                         class="w-full pl-9 pr-4 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sbh-green focus:border-transparent text-zinc-700 dark:text-zinc-300"
                         wire:model.live="titleSearch"
                     >
@@ -331,7 +332,7 @@ new class extends Component
                 <!-- 2. Dropdown Kategori -->
                 <div>
                     <select wire:model.live="selectCategory" class="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sbh-green text-zinc-700 dark:text-zinc-300 cursor-pointer">
-                        <option value="">Semua Kategori</option>
+                        <option value="">{{__('ui.articles.all_categories')}}</option>
                         @foreach($this->categoryList as $category)
                             <option value="{{ $category->id }}">{{ $category->name }}</option>
                         @endforeach
@@ -341,7 +342,7 @@ new class extends Component
                 <!-- 3. Dropdown Status -->
                 <div>
                     <select wire:model.live="selectStatus" class="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sbh-green text-zinc-700 dark:text-zinc-300 cursor-pointer">
-                        <option value="">Semua Status</option>
+                        <option value="">{{__('ui.articles.all_tags')}}</option>
                         @foreach($this->statusList as $status)
                             <option value="{{ $status->id }}">
                                     <x-dynamic-component :component="'lucide-globe'" class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" />
@@ -363,7 +364,7 @@ new class extends Component
                             <!-- Header Judul -->
                             <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider">
                                 <button wire:click="sortBy('title')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
-                                    Judul Artikel
+                                    {{ __('ui.articles.title') }}
                                     @if($orderColumn === 'title')
                                         <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
                                     @endif
@@ -373,7 +374,7 @@ new class extends Component
                             <!-- Tanggal -->
                             <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider">
                                 <button wire:click="sortBy('created_at')" class="flex items-center justify-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
-                                    Tanggal & Waktu dibuat
+                                    {{ __('ui.articles.dates_created') }}
                                     @if($orderColumn === 'created_at')
                                         <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
                                     @endif
@@ -383,7 +384,7 @@ new class extends Component
                             <!-- Header Kategori -->
                             <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider">
                                 <button wire:click="sortBy('category')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
-                                    Kategori
+                                    {{ __('ui.articles.category') }}
                                     @if($orderColumn === 'category')
                                         <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
                                     @endif
@@ -393,7 +394,7 @@ new class extends Component
                             <!-- Header Status -->
                             <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider">
                                 <button wire:click="sortBy('status')" class="flex items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors">
-                                    Status
+                                    {{ __('ui.articles.status') }}
                                     @if($orderColumn === 'status')
                                         <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
                                     @endif
@@ -402,7 +403,7 @@ new class extends Component
 
                             <!-- Header Kelola (Tidak perlu sorting) -->
                             <th class="sticky top-0 z-10 lg:z-20 px-4 py-3 font-semibold uppercase bg-misty tracking-wider text-center">
-                                Kelola
+                                {{ __('ui.articles.manage') }}
                             </th>
                         </tr>
                     </thead>
