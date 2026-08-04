@@ -2,9 +2,9 @@
 
 return [
     'title' => 'Yayasan Sinar Bhakti Husada',
-    'title_page' => 'Sign in',
+    'title_page' => 'Masuk',
     'button' => [
-        'login' => 'masuk',
+        'login' => 'Masuk',
         'persist' => 'Ingat saya',
     ],
     'form' => [

@@ -68,4 +68,31 @@ class Page extends Model
 
         return parent::resolveRouteBinding($value, $field);
     }
+    public function getParsedContentAttribute()
+    {
+        $content = $this->content;
+
+        // Pola Regex baru: Mencari href="internal://tipe/slug"
+        $pattern = '/href="internal:\/\/(page|article)\/([^"]+)"/';
+
+        // Terjemahkan URL internal menjadi URL asli Laravel
+        return preg_replace_callback($pattern, function ($matches) {
+            $type = $matches[1]; // Hasil: 'page' atau 'article'
+            $slug = $matches[2]; // Hasil: 'transparansi'
+
+            try {
+                // Hasilkan URL valid berbasis route Laravel Anda
+                $url = $type === 'article'
+                    ? route('article.show', $slug)
+                    : route('page.show', $slug);
+
+                // Ganti pseudo-URL dengan URL yang sebenarnya
+                return 'href="' . $url . '"';
+            } catch (\Exception $e) {
+                // Jika route tidak ditemukan, kembalikan ke # agar tidak crash
+                return 'href="#"';
+            }
+
+        }, $content);
+    }
 }

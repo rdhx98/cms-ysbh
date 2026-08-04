@@ -89,6 +89,12 @@ return new class extends Migration
             $table->integer('order');
             $table->timestamps();
         });
+            Schema::create('settings', function (Blueprint $table) {
+            $table->id();
+            $table->string('key')->unique();
+            $table->text('value')->nullable();
+            $table->timestamps();
+        });
     }
 
     /**
@@ -102,5 +108,8 @@ return new class extends Migration
         Schema::dropIfExists('posts');
         Schema::dropIfExists('post_tags');
         Schema::dropIfExists('post_users');
+        Schema::dropIfExists('pages');
+        Schema::dropIfExists('menus');
+        Schema::dropIfExists('settings');
     }
 };

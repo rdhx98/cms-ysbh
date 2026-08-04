@@ -2,6 +2,7 @@
 
 return [
     'title' => 'Sinar Bhakti Husada Foundation',
+    'title_page' => 'Sign in',
     'button' => [
         'login' => 'Log in',
         'persist' => 'Remember me',

@@ -8,10 +8,32 @@
         notifications: [],
         notifIdCounter: 0,
 
-        addNotification(detail) {
+        {{-- addNotification(detail) {
             const id = ++this.notifIdCounter;
             const message = typeof detail === 'string' ? detail : detail.message;
             const type = detail.type || 'info';
+
+            // Induk HANYA menambah data. Logika waktu diserahkan ke gelembung.
+            this.notifications.push({ id, message, type });
+        }, --}}
+        addNotification(detail) {
+            // 1. Ekstrak objek jika Livewire membungkusnya dalam Array
+            let data = Array.isArray(detail) ? detail[0] : detail;
+
+            // 2. Cegah error jika parameter kosong
+            if (!data) return;
+
+            const id = ++this.notifIdCounter;
+
+            // 3. Ambil pesan dan tipe dengan aman
+            const message = typeof data === 'string' ? data : data.message;
+            const type = data.type || 'info';
+
+            // 4. Jika pesan tetap tidak ada, batalkan agar tidak error
+            if (!message) {
+                console.warn('Format notifikasi tidak dikenali:', detail);
+                return;
+            }
 
             // Induk HANYA menambah data. Logika waktu diserahkan ke gelembung.
             this.notifications.push({ id, message, type });

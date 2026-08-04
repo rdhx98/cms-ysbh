@@ -3,6 +3,21 @@
 
     <div class="w-full h-screen flex flex-col md:flex-row-reverse overflow-hidden relative">
 
+        <!-- 🌟 TOGGLE BAHASA (MENGAMBANG DI KANAN ATAS) 🌟 -->
+        <div class="absolute top-6 right-6 md:right-8 md:top-8 z-50">
+            <div class="flex items-center bg-white/40 backdrop-blur-md border border-forest/20 rounded-full p-1 shadow-sm">
+                <a href="{{ route('language.switch', 'id') }}"
+                   class="px-3 py-1 text-xs font-bold rounded-full transition-all {{ app()->getLocale() === 'id' ? 'bg-forest text-white shadow-md' : 'text-forest/70 hover:text-forest hover:bg-forest/10' }}">
+                    ID
+                </a>
+                <a href="{{ route('language.switch', 'en') }}"
+                   class="px-3 py-1 text-xs font-bold rounded-full transition-all {{ app()->getLocale() === 'en' ? 'bg-forest text-white shadow-md' : 'text-forest/70 hover:text-forest hover:bg-forest/10' }}">
+                    EN
+                </a>
+            </div>
+        </div>
+        <!-- 🌟 END TOGGLE BAHASA 🌟 -->
+
         {{-- Left side content --}}
         <div class="w-full h-screen md:w-1/2 shrink-0 text-forest z-0 flex flex-col justify-center items-center md:p-0 ">
             {{-- form wrapper --}}

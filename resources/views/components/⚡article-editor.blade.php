@@ -427,7 +427,8 @@ new class extends Component {
             }
         )"
         wire:submit="save" @submit.capture="flushEditorSync()"
-        @buka-modal-link.window="isLinkOpen = true"
+        {{-- @buka-modal-link.window="isLinkOpen = true" --}}
+        @buka-modal-link.window=" isLinkOpen = true; linkInputText = $event.detail.text || '';"
         class="flex flex-col w-full bg-zinc-50 dark:bg-zinc-950 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm transition-all duration-300 ease-in-out">
 
         {{-- HEADER, META, BUTTONS, TOOLBARS --}}
@@ -673,6 +674,7 @@ new class extends Component {
 
         {{-- EDITOR WAS HERE --}}
         <x-editor :editable="$canEdit"/>
+        <livewire:link-selector />
     </form>
 
     @include('components.editor.modal-audit')

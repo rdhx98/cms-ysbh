@@ -403,7 +403,7 @@
                 </div>
 
                 {{-- NOTIFY  BUTTONs --}}
-                {{-- <div class="flex items-center gap-1 shrink-0">
+                <div class="flex items-center gap-1 shrink-0">
                     <button type="button" @click="notifyTheUser('putangina','warning');" :disabled="isUploading"
                         :class="checkButtonActive('link', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
                         class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
@@ -425,7 +425,7 @@
                         <x-dynamic-component :component="'lucide-bell'" class="h-5 w-5" stroke-width="2.5" />
                     </button>
                 </div>
-                --}}
+
             </div>
 
             {{-- ================= AKSI KANAN TOOLBAR ================= --}}

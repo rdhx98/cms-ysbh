@@ -53,6 +53,8 @@ return [
         'page' => 'Pages',
         'user' => 'Users',
         'documentation' => 'Documentations',
+        'settings' => 'Settings',
+        'block' => 'Blocks',
     ],
     'header' => [
         'dashboard' => 'Dashboard',
@@ -61,6 +63,8 @@ return [
         'user' => 'Manage Users',
         'documentation' => 'Documentations',
         'write_article' => 'Write Article',
+        'settings' => 'Settings',
+        'blocks' => 'Manage Blocks',
     ],
     'modal_audit'=>[
         'title'=>'Audit Trail',

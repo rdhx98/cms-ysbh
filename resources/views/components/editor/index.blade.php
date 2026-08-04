@@ -28,7 +28,7 @@
         </div>
 
         {{-- MODAL INPUT LINK: Sekarang posisinya mutlak di tengah atas AREA TEKS saja --}}
-        <div x-show="isLinkOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 -translate-y-2 scale-95" @click.away="isLinkOpen = false; clearLinkInputs();" {{-- 💡 KUNCI POSISI: top-4 membuat modal berjarak sedikit dari batas bawah toolbar --}} class="absolute left-1/2 top-4 -translate-x-1/2 w-80 bg-white p-4 rounded-md shadow-2xl ring-1 ring-black ring-opacity-5 z-40 border border-zinc-200" style="display: none;">
+        {{-- <div x-show="isLinkOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 -translate-y-2 scale-95" @click.away="isLinkOpen = false; clearLinkInputs();"  class="absolute left-1/2 top-4 -translate-x-1/2 w-80 bg-white p-4 rounded-md shadow-2xl ring-1 ring-black ring-opacity-5 z-40 border border-zinc-200" style="display: none;">
             <div class="flex flex-col gap-3">
                 <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">Teks Tautan (Title)</label>
@@ -61,7 +61,8 @@
                     </button>
                 </div>
             </div>
-        </div>
+        </div> --}}
+
 
         {{-- UPLOADING IMAGES INDICATOR wire:loading --}}
         <div x-show="isUploading" x-transition class="absolute left-1/2 top-4 -translate-x-1/2 z-40"

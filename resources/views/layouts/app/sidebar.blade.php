@@ -62,6 +62,9 @@
         </x-layouts.app.sidebar-link>
 
         <x-layouts::app.sidebar-link route="{{ route('page.index') }}" :active="request()->routeIs('page.index')"  icon="chevrons-left-right-ellipsis" iconSize="5">  {{ __('ui.nav.page') }}  </x-layouts.app.sidebar-link>
+
+        <x-layouts::app.sidebar-link route="{{ route('block.index') }}" :active="request()->routeIs('block.index')"  icon="layout-template" iconSize="5">  {{ __('ui.nav.block') }}  </x-layouts.app.sidebar-link>
+
         <x-layouts::app.sidebar-link route="{{ route('user.index') }}" :active="request()->routeIs('user.index')"  icon="users-round" iconSize="5">  {{ __('ui.nav.user') }}  </x-layouts.app.sidebar-link>
 
     </nav>
@@ -69,11 +72,7 @@
     <div class="flex-1 grow"></div>
     {{-- <div class="border-t-2 border-forest my-2"></div> --}}
     <nav class="flex w-full flex-col space-y-2 mb-2">
-        <x-layouts::app.sidebar-link
-            route="{{ route('documentation') }}"
-            :active="request()->routeIs('documentation')"
-            icon="book-open-text">
-            {{ __('ui.nav.documentation') }}
-        </x-layouts.app.sidebar-link>
+        <x-layouts::app.sidebar-link route="{{ route('settings.manager') }}" :active="request()->routeIs('settings.manager')" icon="cog"> {{ __('ui.nav.settings') }} </x-layouts.app.sidebar-link>
+        <x-layouts::app.sidebar-link route="{{ route('documentation') }}" :active="request()->routeIs('documentation')" icon="book-open-text"> {{ __('ui.nav.documentation') }} </x-layouts.app.sidebar-link>
     </nav>
 </aside>

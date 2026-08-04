@@ -88,23 +88,35 @@
                 <!-- 🌟 TOGGLE BAHASA (BARU) 🌟 -->
                 <div class="flex items-center justify-between px-3 py-2 text-sm font-medium text-zinc-600 rounded-2xl hover:bg-zinc-50 transition-all group">
                     <div class="flex items-center">
-                        <svg class="w-5 h-5 mr-3 text-zinc-400 group-hover:text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {{-- <svg class="w-5 h-5 mr-3 text-zinc-400 group-hover:text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
+                        </svg> --}}
+                        <x-dynamic-component :component="'lucide-earth'" class="w-5 h-5 mr-3 text-zinc-400 group-hover:text-forest" stroke-width="2.5" />
+
                         Bahasa
                     </div>
 
                     <!-- Kotak Switch Bahasa -->
-                    <div class="flex items-center bg-zinc-100 rounded-xl p-1 gap-1 border border-zinc-200">
+                    {{-- <div class="flex items-center bg-zinc-100 rounded-xl p-1 gap-1 border border-zinc-200">
                         <a href="{{ route('language.switch', 'id') }}"
-                           class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all {{ app()->getLocale() === 'id' ? 'bg-white text-forest shadow-sm border border-zinc-200/50' : 'text-zinc-400 hover:text-zinc-600' }}">
+                           class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all {{ app()->getLocale() === 'id' ? 'bg-foresty text-white shadow-sm border border-zinc-200/50' : 'text-zinc-400 hover:text-zinc-600' }}">
                             ID
                         </a>
                         <a href="{{ route('language.switch', 'en') }}"
-                           class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all {{ app()->getLocale() === 'en' ? 'bg-white text-forest shadow-sm border border-zinc-200/50' : 'text-zinc-400 hover:text-zinc-600' }}">
+                           class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all {{ app()->getLocale() === 'en' ? 'bg-foresty   text-white shadow-sm border border-zinc-200/50' : 'text-zinc-400 hover:text-zinc-600' }}">
                             EN
                         </a>
-                    </div>
+                    </div> --}}
+                    <div class="flex items-center bg-white/40 backdrop-blur-md border border-forest/20 rounded-full p-1 shadow-sm">
+                            <a href="{{ route('language.switch', 'id') }}"
+                            class="px-3 py-1 text-xs font-bold rounded-full transition-all {{ app()->getLocale() === 'id' ? 'bg-forest text-white shadow-md' : 'text-forest/70 hover:text-forest hover:bg-forest/10' }}">
+                                ID
+                            </a>
+                            <a href="{{ route('language.switch', 'en') }}"
+                            class="px-3 py-1 text-xs font-bold rounded-full transition-all {{ app()->getLocale() === 'en' ? 'bg-forest text-white shadow-md' : 'text-forest/70 hover:text-forest hover:bg-forest/10' }}">
+                                EN
+                            </a>
+                        </div>
                 </div>
                 <!-- 🌟 END TOGGLE BAHASA 🌟 -->
 

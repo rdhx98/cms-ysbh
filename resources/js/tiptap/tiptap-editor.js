@@ -865,6 +865,26 @@ document.addEventListener('alpine:init', () => {
                     }
                 });
 
+                // 🌟 TANGKAP EVENT DARI MODAL LIVEWIRE (SHORTCODE)
+                window.addEventListener('insert-to-editor', (event) => {
+                    if (window.tiptapEditor && event.detail && event.detail.code) {
+
+                        // Hapus teks yang diblok sebelumnya agar tidak menumpuk dengan shortcode
+                        if (!window.tiptapEditor.state.selection.empty) {
+                            window.tiptapEditor.commands.deleteSelection();
+                        }
+
+                        // Masukkan shortcode dan tambahkan spasi kosong setelahnya
+                        window.tiptapEditor.chain()
+                            .focus()
+                            .insertContent(event.detail.code)
+                            .insertContent(' ')
+                            .run();
+
+                        _this.updatedAt = Date.now();
+                    }
+                });
+
                 Alpine.effect(() => {
                     const loading = _this.isUploading;
                     const editorElement = _this.$refs.editorElement;
@@ -1548,6 +1568,43 @@ document.addEventListener('alpine:init', () => {
                     this.linkInputUrl = '';
                 }
             },
+
+            openAutocompleteModal() {
+                if (!window.tiptapEditor) return;
+
+                const { state } = window.tiptapEditor;
+                const { from, to } = state.selection;
+
+                // Gunakan properti bawaan yang sudah ada di JS Anda
+                this.hasSelection = from !== to;
+
+                // Ambil teks jika ada yang diblok
+                const selectedText = this.hasSelection ? state.doc.textBetween(from, to, ' ') : '';
+
+                // Tembakkan event sesuai permintaan Anda
+                window.dispatchEvent(new CustomEvent('buka-modal-link', {
+                    detail: { text: selectedText }
+                }));
+            },
+
+            // openAutocompleteModal() {
+            //     if (!window.tiptapEditor) return;
+
+            //     const { state } = window.tiptapEditor;
+            //     const { from, to } = state.selection;
+
+            //     // Cek apakah pengguna memblok teks sebelum klik ikon link
+            //     this.hasSelection = from !== to;
+
+            //     // Ambil teks yang diblok untuk dijadikan default "Teks Tautan" di modal
+            //     const selectedText = this.hasSelection ? state.doc.textBetween(from, to, ' ') : '';
+
+            //     // Tembakkan event untuk membuka modal Livewire
+            //     // sambil membawa teks yang diblok
+            //     window.dispatchEvent(new CustomEvent('open-link-modal', {
+            //         detail: { text: selectedText }
+            //     }));
+            // },
 
 
             submitLink() {

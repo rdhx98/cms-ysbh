@@ -46,10 +46,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('/page', 'page-index')->name('page.index');
 
+    Route::livewire('/block', 'block-index')->name('block.index');
+
     // Route::livewire('/user/edit/{user:handle}', 'user-edit')->name('user.edit');
     Route::livewire('/user', 'user-index')->name('user.index');
     Route::livewire('/user/create', 'user-detail')->name('user.create');
     Route::livewire('/user/detail/{user:handle}', 'user-detail')->name('user.detail');
+
+    Route::livewire('/preferences', 'settings-manager')->name('settings.manager');
 
     Route::livewire('/documentation', 'json-viewer')->name('documentation');
 

@@ -41,6 +41,8 @@ return [
         'page' => 'Halaman',
         'user' => 'Pengguna',
         'documentation' => 'Dokumentasi',
+        'settings' => 'Pengaturan',
+        'block' => 'Blok',
     ],
     'header' => [
         'dashboard' => 'Dasbor',
@@ -49,6 +51,8 @@ return [
         'user' => 'Kelola Pengguna',
         'documentation' => 'Dokumentasi',
         'write_article' => 'Tulis Artikel',
+        'settings' => 'Kelola Pengaturan',
+        'blocks' => 'Kelola Blok',
     ],
     'modal_audit'=>[
         'title'=>'Jejak Audit',
