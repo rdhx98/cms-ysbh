@@ -23,6 +23,18 @@
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 @livewireStyles
+
+@php
+    // Ambil warna dari DB, gunakan #FBF7EA jika belum diset
+    $landingBg = \App\Models\Setting::where('key', 'landing_bg_color')->value('value') ?? '#FBF7EA';
+@endphp
+
+<style>
+    :root {
+        /* Menimpa warna CSS di Tailwind dengan pilihan dari CMS */
+        --color-paper: {{ $landingBg }};
+    }
+</style>
 {{-- @fluxAppearance --}}
 <script>
     console.log('✅ Vite Assets from HEAD Loaded Successfully!');

@@ -43,13 +43,6 @@ new class extends Component
         {{-- The best way to take care of the future is to take care of the present moment. - Thich Nhat Hanh --}}
         <div class="w-full mx-auto">
 
-            {{-- <!-- Pesan Sukses (Jika Ada) -->
-            @if (session()->has('message'))
-                <div class="mb-4 p-4 bg-green-100 text-green-800 rounded-xl">
-                    {{ session('message') }}
-                </div>
-            @endif --}}
-
             <!-- 🌟 BUNGKUSAN UTAMA DENGAN ALPINE.JS STATE 🌟 -->
             <div x-data="{ activeTab: 'appearance' }" class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
 

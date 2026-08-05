@@ -27,43 +27,6 @@
             </div>
         </div>
 
-        {{-- MODAL INPUT LINK: Sekarang posisinya mutlak di tengah atas AREA TEKS saja --}}
-        {{-- <div x-show="isLinkOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 -translate-y-2 scale-95" @click.away="isLinkOpen = false; clearLinkInputs();"  class="absolute left-1/2 top-4 -translate-x-1/2 w-80 bg-white p-4 rounded-md shadow-2xl ring-1 ring-black ring-opacity-5 z-40 border border-zinc-200" style="display: none;">
-            <div class="flex flex-col gap-3">
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">Teks Tautan (Title)</label>
-                    <input type="text" x-model="linkInputText" placeholder="Masukkan teks tampilan..."
-                        class="w-full text-sm px-2 py-1.5 border rounded focus:outline-none focus:border-emerald-500 bg-white text-zinc-800"
-                        @keydown.enter.prevent="submitLink(); isLinkOpen = false;" />
-                </div>
-
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">URL Tujuan</label>
-                    <input type="text" x-model="linkInputUrl" placeholder="https://example.com"
-                        class="w-full text-sm px-2 py-1.5 border rounded focus:outline-none focus:border-emerald-500 bg-white text-zinc-800"
-                        @keydown.enter.prevent="submitLink(); isLinkOpen = false;" />
-                </div>
-
-                <div class="flex justify-end gap-2 text-xs pt-1 border-t border-gray-100">
-                    <template x-if="checkButtonActive('link', {}, 'default')">
-                        <button type="button" @click="unsetLink(); isLinkOpen = false;"
-                            class="text-red-500 px-2 py-1 hover:underline mr-auto cursor-pointer">
-                            Copot Link
-                        </button>
-                    </template>
-                    <button type="button" @click="isLinkOpen = false; clearLinkInputs();"
-                        class="text-gray-500 px-3 py-1 hover:bg-gray-100 rounded cursor-pointer">
-                        Batal
-                    </button>
-                    <button type="button" @click="submitLink(); isLinkOpen = false;"
-                        class="bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 font-medium cursor-pointer">
-                        Terapkan
-                    </button>
-                </div>
-            </div>
-        </div> --}}
-
-
         {{-- UPLOADING IMAGES INDICATOR wire:loading --}}
         <div x-show="isUploading" x-transition class="absolute left-1/2 top-4 -translate-x-1/2 z-40"
             style="display: none;">

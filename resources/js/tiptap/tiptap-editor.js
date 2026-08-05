@@ -252,8 +252,15 @@ document.addEventListener('alpine:init', () => {
 
                         HiddenMarks.configure({visible: false }),
 
-                        Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-forest underline cursor-pointer' } }),
-
+                        // Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-forest underline cursor-pointer' } }),
+                        Link.configure({ 
+                            openOnClick: false, 
+                            HTMLAttributes: { 
+                                // Hapus 'underline', ganti dengan font-semibold dan efek hover yang modern
+                                // class: 'text-forest font-semibold hover:text-terracotta hover:underline transition-colors cursor-pointer' 
+                                class: 'transition-colors cursor-pointer' 
+                            } 
+                        }),
                         LinkBackspaceHandler,
                         ParagraphIndent,
 
