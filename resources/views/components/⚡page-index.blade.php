@@ -122,7 +122,7 @@ new class extends Component
                 <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
 
                     <!-- Kode Tombol Anda -->
-                    <a href="{{ route('article.editor') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
+                    <a href="{{ route('page.create') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
                         <x-dynamic-component :component="'lucide-panels-top-left'" class="h-5 w-5 origin-bottom-left group-hover:animate-stroke" stroke-width="2"  />
                         {{ __('Create') }}
                     </a>

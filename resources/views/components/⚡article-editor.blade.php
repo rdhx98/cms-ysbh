@@ -6,11 +6,11 @@ use App\Models\Category;
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use App\Livewire\Traits\WithNotifications; 
 
 use Spatie\Activitylog\Models\Activity;
 
 use Illuminate\Validation\Rule;
-use App\Livewire\Traits\WithNotifications; // Import trait-nya
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -410,7 +410,7 @@ new class extends Component {
     }
 };
 ?>
-<x-slot:title>{{ __('ui.header.write_article') }}</x-slot:title>
+<x-slot:title>{{ __('ui.header.write_article') }}</x-slot:title> 
 <div class="w-full h-[calc(100vh-4rem)] flex-1 min-h-0 gap-2 overflow-hidden flex flex-col md:flex-row pt-2 md:pt-0">
 
     {{-- Gunakan wire:submit="save" yang merupakan standar Livewire 3 --}}
@@ -453,11 +453,6 @@ new class extends Component {
                     <input type="text" x-model="title" placeholder="{{ __('ui.articles.title') }}" class="w-full p-2.5 text-2xl md:text-3xl font-bold bg-transparent outline-none focus:outline-none focus:ring-0 border-0 border-b-2 border-zinc-200 focus:border-zinc-400 dark:border-zinc-800 dark:focus:border-zinc-600 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 transition-colors" />
 
                 </div>
-
-                {{-- <div x-data="{ errors: false }"
-                    x-on:livewire-upload-error.window="errors = true"
-                    @if($errors->any()) x-init="setTimeout(() => $dispatch('notify', { message: 'Gagal menyimpan! Periksa form Anda.', type: 'error' }), 100)" @endif>
-                </div> --}}
 
                 {{-- BUTTONS --}}
                 <div class="flex items-center justify-end md:justify-between gap-2 shrink-0 md:ml-4">
@@ -669,7 +664,6 @@ new class extends Component {
                     </div>
                 </template>
             </div>
-
         </div>
 
         {{-- EDITOR WAS HERE --}}

@@ -35,6 +35,7 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    
     Route::livewire('/dashboard', 'dashboard')->name('dashboard');
 
     Route::livewire('/article', 'article-index')->name('article.index');
@@ -45,6 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/editor/upload-image', [EditorImageUploadController::class, 'store'])->name('editor.upload-image');
 
     Route::livewire('/page', 'page-index')->name('page.index');
+    Route::livewire('/page/create', 'page-editor')->name('page.create');
 
     Route::livewire('/block', 'block-index')->name('block.index');
 

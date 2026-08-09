@@ -53,13 +53,9 @@
     <div class="border-t border-forest my-2"></div>
     <nav class="flex flex-col w-full space-y-2">
 
-        <x-layouts::app.sidebar-link route="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')" icon="home">
-            {{ __('ui.nav.dashboard') }}
-        </x-layouts.app.sidebar-link>
+        <x-layouts::app.sidebar-link route="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')" icon="home"> {{ __('ui.nav.dashboard') }} </x-layouts.app.sidebar-link>
 
-        <x-layouts::app.sidebar-link route="{{ route('article.index') }}" :active="request()->routeIs('article.*')" icon="newspaper">
-            {{ __('ui.nav.article') }}
-        </x-layouts.app.sidebar-link>
+        <x-layouts::app.sidebar-link route="{{ route('article.index') }}" :active="request()->routeIs('article.*')" icon="newspaper">  {{ __('ui.nav.article') }}  </x-layouts.app.sidebar-link>
 
         <x-layouts::app.sidebar-link route="{{ route('page.index') }}" :active="request()->routeIs('page.index')"  icon="chevrons-left-right-ellipsis" iconSize="5">  {{ __('ui.nav.page') }}  </x-layouts.app.sidebar-link>
 

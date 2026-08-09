@@ -5,14 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Attributes\Table;
+
 use Spatie\Translatable\Attributes\Translatable;
 use Spatie\Translatable\HasTranslations;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
+
+
 
 #[Table('pages')]
 #[Translatable('title', 'slug', 'content', 'meta_title', 'meta_description')]
 class Page extends Model
 {
-    use HasFactory, HasTranslations;
+    use HasFactory, LogsActivity, HasTranslations;
 
     // Field yang boleh diisi massal
     protected $fillable = ['title', 'slug', 'content', 'status', 'meta_title','meta_description', 'published_at', 'created_at', 'updated_at'];
