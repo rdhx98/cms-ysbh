@@ -1,4 +1,4 @@
-@props(['title' => null])
+@props(['title' => null, 'header' => null])
 
 <aside
 {{ $attributes->merge(['class' => 'flex flex-row items-center justify-between bg-white text-forest rounded-lg h-10 p-2 z-50']) }}
@@ -23,7 +23,7 @@
         </button>
 
         <div class="text-sm font-bold text-forest tracking-wide p-2 flex items-center gap-4">
-            {{ $title }}
+            {{ $title }} {{ $header}}
         </div>
     </div>
 

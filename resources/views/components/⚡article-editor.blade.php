@@ -6,7 +6,7 @@ use App\Models\Category;
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Livewire\Traits\WithNotifications; 
+use App\Livewire\Traits\WithNotifications;
 
 use Spatie\Activitylog\Models\Activity;
 
@@ -36,6 +36,9 @@ new class extends Component {
     public string $published_at;
     public string $created_at;
 
+    public string $pageTitle = '';
+    public string $headerTitle = '';
+
     public $photo;
     public $editorPhoto;
 
@@ -45,6 +48,8 @@ new class extends Component {
 
 
     public function mount($category = null, $post = null) {
+
+
         // 1. JIKA ADA PARAMETER DI URL (Masuk Mode Edit)
         if ($post) {
 
@@ -82,6 +87,18 @@ new class extends Component {
             $this->featured_image = 'default.webp';
             $this->status = 'draft';
             $this->tags = [];
+        }
+
+
+        if (request()->routeIs('article.edit')) {
+            $this->pageTitle = __('ui.header.edit_article') . ":";
+            // $this->headerTitle = $this->title ?? 'Awoogaa';
+        } elseif (request()->routeIs('article.write')) {
+            $this->pageTitle = __('ui.header.write_article');
+            // $this->headerTitle = 'Awoogaa';
+        } else {
+            $this->pageTitle = 'Editor CMS'; // Fallback
+            // $this->headerTitle = 'Awoogaa';
         }
     }
 
@@ -410,7 +427,10 @@ new class extends Component {
     }
 };
 ?>
-<x-slot:title>{{ __('ui.header.write_article') }}</x-slot:title> 
+
+<x-slot:header> {{ $this->headerTitle }} </x-slot:header>
+<x-slot:title> {{ $this->pageTitle }} </x-slot:title>
+
 <div class="w-full h-[calc(100vh-4rem)] flex-1 min-h-0 gap-2 overflow-hidden flex flex-col md:flex-row pt-2 md:pt-0">
 
     {{-- Gunakan wire:submit="save" yang merupakan standar Livewire 3 --}}
@@ -450,7 +470,7 @@ new class extends Component {
                             {{ $message }}
                         </span>
                     @enderror
-                    <input type="text" x-model="title" placeholder="{{ __('ui.articles.title') }}" class="w-full p-2.5 text-2xl md:text-3xl font-bold bg-transparent outline-none focus:outline-none focus:ring-0 border-0 border-b-2 border-zinc-200 focus:border-zinc-400 dark:border-zinc-800 dark:focus:border-zinc-600 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 transition-colors" />
+                    <input type="text" x-model="title" placeholder="{{ __('ui.articles.title') }}" class="w-full p-2 text-sm md:text-md font-bold bg-transparent outline-none focus:outline-none focus:ring-0 border-0 border-b-2 border-zinc-200 focus:border-zinc-400 dark:border-zinc-800 dark:focus:border-zinc-600 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 transition-colors" />
 
                 </div>
 

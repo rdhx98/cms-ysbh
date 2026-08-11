@@ -107,20 +107,24 @@ class PostSeeder extends Seeder
             // Parameter 1: Kriteria pencarian (cari halaman yang slug-nya 'landing')
             // ['slug' => 'landing'],
             [
-                'slug' => [
-                    'id'=>'landas',
-                    'en'=>'landing'
-                ]
+                'slug->en' => 'landing', // atau 'slug->id' => 'landas'
             ],
 
             // Parameter 2: Data yang diisi jika halamannya belum ada
             [
                 // Wajib menggunakan array untuk kolom bertipe JSON
+                'slug' => [
+                    'id' => 'landas',
+                    'en' => 'landing'
+                ],
                 'title'             => [
                     'id' => 'Sinar Bhakti Husada',
                     'en' => 'Sinar Bhakti Husada'
                     ],
-                'content'           => ['id' => ''],
+                'content'           => [
+                    'id' => '',
+                    'en' => '',
+                    ],
                 'status'            => 'online',
                 'meta_title'        => [
                     'id' => 'Yayasan Sinar Bhakti Husada',
@@ -139,15 +143,17 @@ class PostSeeder extends Seeder
             // Parameter 1: Kriteria pencarian (cari halaman yang slug-nya 'landing')
             // ['slug' => 'profile'],
             [
-                'slug' => [
-                    'id'=>'profil',
-                    'en'=>'profile'
-                ]
+                'slug->en' => 'profile',
+
             ],
 
             // Parameter 2: Data yang diisi jika halamannya belum ada
             [
                 // Wajib menggunakan array untuk kolom bertipe JSON
+                'slug' => [
+                    'id' => 'profil',
+                    'en' => 'profile'
+                    ],
                 'title'             => [
                     'id' => 'Profile Yayasan',
                     'en' => 'Foundation Profile'
@@ -171,15 +177,16 @@ class PostSeeder extends Seeder
             // Parameter 1: Kriteria pencarian (cari halaman yang slug-nya 'landing')
             // ['slug' => 'programs'],
             [
-                'slug' => [
-                    'id'=>'program',
-                    'en'=>'programs'
-                ]
+                'slug->en' => 'programs',
             ],
 
             // Parameter 2: Data yang diisi jika halamannya belum ada
             [
                 // Wajib menggunakan array untuk kolom bertipe JSON
+                'slug' => [
+                    'id'=>'program',
+                    'en'=>'programs'
+                ],
                 'title'             => [
                     'id' => 'Daftar Program YSBH',
                     'en' => 'YSBH Programs'
@@ -203,15 +210,16 @@ class PostSeeder extends Seeder
             // Parameter 1: Kriteria pencarian (cari halaman yang slug-nya 'landing')
             // ['slug' => 'transparancy'],
             [
-                'slug' => [
-                    'id'=>'transparansi',
-                    'en'=>'transparancy'
-                ]
+                'slug->en' => "transparancy"
             ],
 
             // Parameter 2: Data yang diisi jika halamannya belum ada
             [
                 // Wajib menggunakan array untuk kolom bertipe JSON
+                'slug' => [
+                    'id'=>'transparansi',
+                    'en'=>'transparancy'
+                ],
                 'title'             => [
                     'id' => 'Transparansi Yayasan',
                     'en' => 'Foundation Transparency'
@@ -235,15 +243,16 @@ class PostSeeder extends Seeder
             // Parameter 1: Kriteria pencarian (cari halaman yang slug-nya 'landing')
             // ['slug' => 'transparancy'],
             [
-                'slug' => [
-                    'id'=>'kredibilitas',
-                    'en'=>'credibility'
-                ]
+                'slug->end' => "credibility"
             ],
 
             // Parameter 2: Data yang diisi jika halamannya belum ada
             [
                 // Wajib menggunakan array untuk kolom bertipe JSON
+                'slug' => [
+                    'id'=>'kredibilitas',
+                    'en'=>'credibility'
+                ],
                 'title'             => [
                     'id' => 'Kredibilitasn Yayasan',
                     'en' => 'Foundation Credibility'
@@ -267,15 +276,16 @@ class PostSeeder extends Seeder
             // Parameter 1: Kriteria pencarian (cari halaman yang slug-nya 'landing')
             // ['slug' => 'transparancy'],
             [
-                'slug' => [
-                    'id'=>'dampak',
-                    'en'=>'impact'
-                ]
+                'slug->en' => "impact"
             ],
 
             // Parameter 2: Data yang diisi jika halamannya belum ada
             [
                 // Wajib menggunakan array untuk kolom bertipe JSON
+                'slug' => [
+                    'id'=>'dampak',
+                    'en'=>'impact'
+                ],
                 'title'             => [
                     'id' => 'Dampak Yayasan',
                     'en' => 'Foundation Impact'

@@ -4,14 +4,52 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Livewire\Traits\WithNotifications;
 
+use App\Models\Page;
+use Spatie\Activitylog\Models\Activity;
+
 new class extends Component
 {
     use WithFileUploads;
     use WithNotifications;
 
     public string $title;
-    public ?int $page_id = null;
+    public string $slug;
+    public string $content;
+    public string $status;
+    public string $meta_title;
+    public string $meta_description;
     public string $created_at;
+
+    public bool $isPage = true;
+
+    public ?int $page_id = null;
+
+    public function mount(Page $page)
+    {
+        if ($page->exists) {
+            // $pageModel = Page::where('slug', $page)->firstOrFail();
+            // if (! $pageModel) {
+            //     dd("Data dengan slug: '{$page}' benar-benar tidak ditemukan di database!");
+            // }
+            $this->page_id = $page->id;
+            $this->title = $page->title;
+            $this->slug = $page->slug;
+            $this->content = $page->content;
+            $this->status = $page->status;
+            $this->meta_title = $page->meta_title;
+            $this->meta_description = $page->meta_description;
+            $this->created_at = $page->created_at ? $page->created_at->format('Y-m-d') : '';
+        } else {
+            // Default values for a new page
+            $this->title = '';
+            $this->slug = '';
+            $this->content = '';
+            $this->status = 'offline'; // Default status for new pages else in 'online'
+            $this->meta_title = '';
+            $this->meta_description = '';
+            $this->created_at = now()->format('Y-m-d');
+        }
+    }
 
     public function getAuditTrailProperty()
     {
@@ -28,11 +66,14 @@ new class extends Component
 ?>
 
 {{-- Live as if you were to die tomorrow. Learn as if you were to live forever. - Mahatma Gandhi --}}
-<x-slot:title>{{ __('ui.header.write_page') }}</x-slot:title> 
+
+<x-slot:title>{{ __('ui.header.write_page') }}</x-slot:title>
+
 <div class="w-full md:h-[calc(100vh-4rem)] flex-1 min-h-0 gap-2 overflow-hidden flex flex-col md:flex-row pt-2 md:pt-0">
     <form
         x-data="setupEditor(
             'content',
+            @this,
             $wire,
             {
                 step_number: '01',
@@ -44,20 +85,21 @@ new class extends Component
                 {{-- default: '{{ __('ui.placeholder.editor') }}' --}}
             }
         )"
+        x-init="isPage = @json($isPage)"
         wire:submit="save" @submit.capture="flushEditorSync()"
         {{-- @buka-modal-link.window="isLinkOpen = true" --}}
         @buka-modal-link.window=" isLinkOpen = true; linkInputText = $event.detail.text || '';"
         class="flex flex-col w-full bg-zinc-50 dark:bg-zinc-950 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm transition-all duration-300 ease-in-out">
 
-        
+
         {{-- HEADER, META, BUTTONS, TOOLBARS --}}
         <div class="flex-none w-full bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 z-40">
             {{-- META's --}}
-            <div 
-            x-data="{ 
-                isMetaOpen: false, 
-                title: @entangle('title'), 
-                {{-- categoryId: @entangle('category_id'), 
+            <div
+            x-data="{
+                isMetaOpen: false,
+                title: @entangle('title'),
+                {{-- categoryId: @entangle('category_id'),
                 selectedTags: @entangle('tags'),  --}}
                 createdAt: @entangle('created_at') }"
                 class="w-full pt-4 pb-3 px-4 md:px-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -214,24 +256,14 @@ new class extends Component
                                 </div>
 
                                 {{-- Kategori --}}
-                                {{-- <div class="space-y-1.5" wire:ignore x-data="{
-                                    tom: null,
-                                    init() {
-                                        this.tom = new window.TomSelect(this.$refs.catInput, {
-                                            create: false,
-                                            placeholder: 'Pilih Kategori...'
-                                        });
-                                        this.tom.setValue(this.categoryId, true);
-                                        this.tom.on('change', val => this.categoryId = val);
-                                    } }">
-                                    <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Kategori</label>
-                                    <select x-ref="catInput">
-                                        <option value="">Pilih Kategori...</option>
-                                        @foreach (\App\Models\Category::all() as $cat)
-                                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                        @endforeach
+                                <div class="space-y-1.5">
+                                    <label class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Status</label>
+                                    <select x-ref="catInput" class="w-full p-2.5 text-sm rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-forest/20 focus:border-forest text-zinc-800 dark:text-zinc-200">
+                                        <option value="">Pilih Status...</option>
+                                        <option value="online">Online</option>
+                                        <option value="offline">Offline</option>
                                     </select>
-                                </div> --}}
+                                </div>
 
                                 {{-- @error('category_id')
                                     <span class="text-xs text-red-500 font-bold block mt-1">{{ $message }}</span>

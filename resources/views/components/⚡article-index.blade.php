@@ -306,7 +306,7 @@ new class extends Component
                     </button>
 
                     <!-- Kode Tombol Anda -->
-                    <a href="{{ route('article.editor') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
+                    <a href="{{ route('article.write') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
                         <x-dynamic-component :component="'lucide-feather'" class="h-5 w-5 origin-bottom-left group-hover:animate-stroke" stroke-width="2"  />
                         {{ __('ui.button.write') }}
                     </a>

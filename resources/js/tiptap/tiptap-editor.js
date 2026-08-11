@@ -142,6 +142,7 @@ document.addEventListener('alpine:init', () => {
             isLocalDrag: false,
             syncTimeout: null,
             isFullscreen: false,
+            isPage: false,
 
 
 
@@ -155,6 +156,33 @@ document.addEventListener('alpine:init', () => {
             },
 
             init() {
+                const initialTitle = wireComponent.title || '';
+                const isPage = wireComponent.isPage || false;
+
+                // Susun konten awal berdasarkan apakah ini page atau bukan
+                // let initialContent = [];
+                let initialContentBlocks = [];
+
+                if (!isPage) {
+                    // JIKA ARTIKEL: Masukkan H1 title di baris pertama
+                    initialContentBlocks.push({
+                        type: 'heading',
+                        attrs: { level: 1 },
+                        content: initialTitle ? [{ type: 'text', text: initialTitle }] : []
+                    });
+                }
+
+                const dbContent = wireComponent.get(wireModelName);
+                if (dbContent) {
+                    // Jika sudah ada konten dari database, kita bisa memuatnya.
+                    // (Catatan: Jika dbContent berbentuk HTML string, Tiptap menerimanya langsung di opsi 'content')
+                }
+
+                // Selalu pastikan ada minimal satu paragraf kosong di bawah
+                initialContentBlocks.push({
+                    type: 'paragraph',
+                    content: []
+                });
 
                 if
                 (
@@ -169,7 +197,8 @@ document.addEventListener('alpine:init', () => {
 
                 const _this = this;
                 const editorElement = this.$refs.editorElement;
-                const initialContent = wireComponent.get(wireModelName) || '';
+
+                // const initialContent = wireComponent.get(wireModelName) || '';
                 const initialDiv = document.getElementById('initialContent');
                 const startingHTML = initialDiv ? initialDiv.innerHTML : '';
 
@@ -253,13 +282,13 @@ document.addEventListener('alpine:init', () => {
                         HiddenMarks.configure({visible: false }),
 
                         // Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-forest underline cursor-pointer' } }),
-                        Link.configure({ 
-                            openOnClick: false, 
-                            HTMLAttributes: { 
+                        Link.configure({
+                            openOnClick: false,
+                            HTMLAttributes: {
                                 // Hapus 'underline', ganti dengan font-semibold dan efek hover yang modern
-                                // class: 'text-forest font-semibold hover:text-terracotta hover:underline transition-colors cursor-pointer' 
-                                class: 'transition-colors cursor-pointer' 
-                            } 
+                                // class: 'text-forest font-semibold hover:text-terracotta hover:underline transition-colors cursor-pointer'
+                                class: 'transition-colors cursor-pointer'
+                            }
                         }),
                         LinkBackspaceHandler,
                         ParagraphIndent,
@@ -346,33 +375,37 @@ document.addEventListener('alpine:init', () => {
                         }),
 
                         Placeholder.configure({
-                        emptyEditorClass: 'is-editor-empty',
-                        placeholder: ({ node, pos, editor }) => {
-                            // 1. Placeholder untuk Angka (Karena dia Node resmi sekarang, Placeholder Tiptap bisa bekerja padanya!)
-                            if (node.type.name === 'stepNumber') return '01';
+                            emptyEditorClass: 'is-editor-empty',
+                            placeholder: ({ node, pos, editor }) => {
+                                // 1. Placeholder untuk Angka (Karena dia Node resmi sekarang, Placeholder Tiptap bisa bekerja padanya!)
+                                if (node.type.name === 'stepNumber') return '01';
 
-                            // 2. Cek apakah kursor berada di dalam Step Card
-                            const $pos = editor.state.doc.resolve(pos);
-                            let isInStepCard = false;
+                                // 2. Cek apakah kursor berada di dalam Step Card
+                                const $pos = editor.state.doc.resolve(pos);
+                                let isInStepCard = false;
 
-                            for (let i = $pos.depth; i > 0; i--) {
-                                if ($pos.node(i).type.name === 'stepCard') {
-                                    isInStepCard = true;
-                                    break;
+                                for (let i = $pos.depth; i > 0; i--) {
+                                    if ($pos.node(i).type.name === 'stepCard') {
+                                        isInStepCard = true;
+                                        break;
+                                    }
                                 }
+
+                                if (isInStepCard) {
+                                    if (node.type.name === 'heading') return 'Judul langkah...';
+                                    if (node.type.name === 'paragraph') return 'Deskripsi langkah...';
+                                }
+
+                                // if (node.type.name === 'heading') return 'Ketik judul...';
+
+                                if (node.type.name === 'heading' && node.attrs.level === 1) {
+                                    return 'Judul artikel...';
+                                }
+
+                                // return 'Mulai menulis artikel hebat Anda di sini...';
+                                return translations.default || 'Mulai menulis artikel hebat Anda di sini...';
                             }
-
-                            if (isInStepCard) {
-                                if (node.type.name === 'heading') return 'Judul langkah...';
-                                if (node.type.name === 'paragraph') return 'Deskripsi langkah...';
-                            }
-
-                            if (node.type.name === 'heading') return 'Ketik judul...';
-
-                            // return 'Mulai menulis artikel hebat Anda di sini...';
-                            return translations.default || 'Mulai menulis artikel hebat Anda di sini...';
-                        }
-                    }),
+                        }),
 
                         // Placeholder.configure({
                         //     placeholder: 'Mulai menulis artikel hebat Anda di sini...',
@@ -550,6 +583,9 @@ document.addEventListener('alpine:init', () => {
                         handleKeyDown: (view, event) => {
                             const { state } = view;
                             const { selection, doc } = state;
+                            if (isPage) {
+                                return false; // Jika page, biarkan Tiptap berjalan normal tanpa aturan H1 khusus
+                            }
 
                             // =====================================================================
                             // 🌟 1. PENANGANAN ENTER DI JUDUL (H1 UTAMA - BARIS PERTAMA)
@@ -811,8 +847,22 @@ document.addEventListener('alpine:init', () => {
                         },
                     },
 
-                    content: initialContent,
-
+                    // content: initialContent,
+                    content: {
+                        type: 'doc',
+                        content: initialContentBlocks
+                        // content: [
+                        //     {
+                        //         type: 'heading',
+                        //         attrs: { level: 1 },
+                        //         content: initialTitle ? [{ type: 'text', text: initialTitle }] : []
+                        //     },
+                        //     {
+                        //         type: 'paragraph',
+                        //         content: []
+                        //     }
+                        // ]
+                    },
                     onCreate: ({ editor }) => {
                         // 🌟 PERBAIKAN: Gunakan penghitung manual seperti di onUpdate
                         const text = editor.getText();
@@ -822,11 +872,13 @@ document.addEventListener('alpine:init', () => {
                         // 🔥 IKAT INSTANCE: Simpan Tiptap ke dalam elemen HTML-nya secara fisik
                         editorElement.__tiptap = editor;
 
-                        // 🌟 PERBAIKAN 2: Ambil langsung dari komponen Livewire
-                        setTimeout(() => {
-                            const judulAwal = wireComponent.get('title') || '';
-                            _this.syncTitleToEditor(judulAwal);
-                        }, 100);
+                        // Sinkronisasi awal judul hanya jika BUKAN page
+                        if (!isPage) {
+                            setTimeout(() => {
+                                const judulAwal = wireComponent.get('title') || '';
+                                _this.syncTitleToEditor(judulAwal);
+                            }, 100);
+                        }
                     },
 
                     onUpdate({ editor }) {
@@ -836,21 +888,53 @@ document.addEventListener('alpine:init', () => {
                         const text = editor.getText();
                         _this.wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
 
-                        const firstNode = editor.state.doc.firstChild;
-                        if (firstNode && firstNode.type.name === 'heading' && firstNode.attrs.level === 1) {
-                            const h1Text = firstNode.textContent;
+                        // const firstNode = editor.state.doc.firstChild;
+                        // if (firstNode && firstNode.type.name === 'heading' && firstNode.attrs.level === 1) {
+                        //     const h1Text = firstNode.textContent;
 
-                            // 🌟 PERBAIKAN 3: Gunakan wireComponent untuk mengecek dan menyimpan data
-                            if (wireComponent.get('title') !== h1Text) {
-                                wireComponent.set('title', h1Text, false); // false = jangan trigger network request/loading
+                        //     // 🌟 PERBAIKAN 3: Gunakan wireComponent untuk mengecek dan menyimpan data
+                        //     if (wireComponent.get('title') !== h1Text) {
+                        //         wireComponent.set('title', h1Text, false); // false = jangan trigger network request/loading
+                        //     }
+                        // }
+                        // Sinkronisasi judul ke Livewire hanya jika BUKAN page
+                        if (!isPage) {
+                            const firstNode = editor.state.doc.firstChild;
+                            if (firstNode && firstNode.type.name === 'heading' && firstNode.attrs.level === 1) {
+                                const h1Text = firstNode.textContent;
+                                if (wireComponent.get('title') !== h1Text) {
+                                    wireComponent.set('title', h1Text, false);
+                                }
                             }
                         }
 
+                        // if (_this.isUploading) return;
+                        // clearTimeout(_this.syncTimeout);
+                        // _this.syncTimeout = setTimeout(() => {
+                        //     if (window.tiptapEditor) {
+                        //         wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
+                        //     }
+                        // }, 500);
                         if (_this.isUploading) return;
                         clearTimeout(_this.syncTimeout);
                         _this.syncTimeout = setTimeout(() => {
                             if (window.tiptapEditor) {
-                                wireComponent.set(wireModelName, window.tiptapEditor.getHTML(), false);
+                                // 1. Ambil seluruh HTML dari editor
+                                const fullHtml = window.tiptapEditor.getHTML();
+
+                                // 2. Buang tag H1 pertama agar tidak ikut masuk ke kolom 'content' database
+                                const parser = new DOMParser();
+                                const doc = parser.parseFromString(fullHtml, 'text/html');
+                                const firstH1 = doc.querySelector('h1');
+
+                                if (firstH1) {
+                                    firstH1.remove(); // Hapus H1 visual dari string yang akan disimpan
+                                }
+
+                                const cleanContent = doc.body.innerHTML;
+
+                                // 3. Kirim konten yang sudah bersih ke Livewire
+                                wireComponent.set(wireModelName, cleanContent, false);
                             }
                         }, 500);
 
@@ -943,6 +1027,8 @@ document.addEventListener('alpine:init', () => {
 
             // 🌟 FUNGSI BARU: Sinkronisasi Teks ke Editor Tanpa Merusak Warna/Format
             syncTitleToEditor(newTitle) {
+                if (this.isPage) return;
+
                 if (!window.tiptapEditor) return;
 
                 const { state, view } = window.tiptapEditor;

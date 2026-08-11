@@ -63,6 +63,8 @@ return [
         'user' => 'Manage Users',
         'documentation' => 'Documentations',
         'write_article' => 'Write Article',
+        'edit_article' => 'Edit Article',
+        'preview_article' => 'Preview Article',
         'settings' => 'Settings',
         'blocks' => 'Manage Blocks',
     ],

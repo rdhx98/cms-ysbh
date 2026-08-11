@@ -35,11 +35,11 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    
+
     Route::livewire('/dashboard', 'dashboard')->name('dashboard');
 
     Route::livewire('/article', 'article-index')->name('article.index');
-    Route::livewire('/article/write', 'article-editor')->name('article.editor');
+    Route::livewire('/article/write', 'article-editor')->name('article.write');
     Route::livewire('/article/edit/{category}/{post:slug}', 'article-editor')->name('article.edit');
     Route::livewire('/article/preview/{category}/{post:slug}', 'article-preview')->name('article.preview');
 
@@ -47,6 +47,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('/page', 'page-index')->name('page.index');
     Route::livewire('/page/create', 'page-editor')->name('page.create');
+    Route::livewire('/page/edit/{page:slug}', 'page-editor')->name('page.edit');
+    Route::livewire('/page/preview/{page:slug}', 'page-preview')->name('page.preview');
 
     Route::livewire('/block', 'block-index')->name('block.index');
 

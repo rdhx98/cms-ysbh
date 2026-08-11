@@ -251,7 +251,7 @@ new class extends Component
                                     <td class="px-4 py-3.5 text-sm">
                                         <div class="flex justify-center items-center gap-2">
 
-                                            {{-- <a wire:navigate href="{{ route('article.edit', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" class="group p-1.5 rounded-md text-white bg-forest/90 dark:bg-forest/80 relative cursor-pointer hover:bg-forest/70 transition-colors flex items-center justify-center">
+                                            <a wire:navigate href="{{ route('page.edit',['page'=>$page->slug]) }}" class="group p-1.5 rounded-md text-white bg-forest/90 dark:bg-forest/80 relative cursor-pointer hover:bg-forest/70 transition-colors flex items-center justify-center">
                                                 <flux:icon variant="solid" icon="pencil" class="size-3.5!" />
                                                 <span class="z-30 absolute bottom-full left-0 mb-2 w-max px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-lg dark:bg-gray-100 dark:text-gray-900">
                                                     Sunting
@@ -260,9 +260,9 @@ new class extends Component
                                                         <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
                                                     </svg>
                                                 </span>
-                                            </a> --}}
+                                            </a>
 
-                                            {{-- <a wire:navigate href="{{ route('article.preview', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" class="group p-1.5 rounded-md bg-slate-600 text-white dark:bg-slate-800 relative cursor-pointer hover:bg-slate-700 transition-colors flex items-center justify-center">
+                                            <a wire:navigate href="{{ route('page.preview',['page'=>$page->slug]) }}" class="group p-1.5 rounded-md bg-slate-600 text-white dark:bg-slate-800 relative cursor-pointer hover:bg-slate-700 transition-colors flex items-center justify-center">
                                                 <flux:icon variant="solid" icon="eye" class="size-3.5!" />
                                                 <span class="z-30 absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-lg dark:bg-gray-100 dark:text-gray-900">
                                                     Pratinjau
@@ -270,7 +270,7 @@ new class extends Component
                                                         <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
                                                     </svg>
                                                 </span>
-                                            </a> --}}
+                                            </a>
 
                                             {{-- <button
                                                 @click="deleteType = 'article'; deleteId = {{ $article->id }}; showDeleteModal = true"

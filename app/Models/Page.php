@@ -24,10 +24,10 @@ class Page extends Model
     // public $translatable = ['title', 'content', 'meta_title', 'meta_description'];
     protected $casts = [  'published_at' => 'datetime', ];
 
-    // public function getRouteKeyName()
-    // {
-    //     return 'slug';
-    // }
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
 
     public function getStatusColorAttribute()
     {
@@ -37,16 +37,35 @@ class Page extends Model
             default     => 'bg-zinc-50 text-zinc-700 border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300',
         };
     }
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field === 'slug') {
+            return $this->query()->where(function ($query) use ($value) {
+
+                // Ambil semua bahasa yang didukung (id dan en)
+                $locales = config('app.supported_locales', ['id', 'en']);
+
+                // Cek ke semua bahasa JSON
+                foreach ($locales as $locale) {
+                    $query->orWhere("slug->{$locale}", $value);
+                }
+
+                // Cadangan jika berupa teks biasa
+                $query->orWhere('slug', $value);
+
+            })->firstOrFail();
+        }
+
+        return parent::resolveRouteBinding($value, $field);
+    }
     // public function resolveRouteBinding($value, $field = null)
     // {
     //     if ($field === 'slug') {
-    //         return $this->where(function ($query) use ($value) {
+    //         // Tambahkan ->query() sebelum ->where()
+    //         return $this->query()->where(function ($query) use ($value) {
 
-    //             // Ambil daftar bahasa dari config/app.php
-    //             // Fallback ke ['id', 'en'] jika config belum diset
     //             $locales = config('app.supported_locales', ['id', 'en']);
 
-    //             // Lakukan pencarian ke semua bahasa secara dinamis
     //             foreach ($locales as $locale) {
     //                 $query->orWhere("slug->{$locale}", $value);
     //             }
@@ -56,23 +75,6 @@ class Page extends Model
 
     //     return parent::resolveRouteBinding($value, $field);
     // }
-    public function resolveRouteBinding($value, $field = null)
-    {
-        if ($field === 'slug') {
-            // Tambahkan ->query() sebelum ->where()
-            return $this->query()->where(function ($query) use ($value) {
-
-                $locales = config('app.supported_locales', ['id', 'en']);
-
-                foreach ($locales as $locale) {
-                    $query->orWhere("slug->{$locale}", $value);
-                }
-
-            })->firstOrFail();
-        }
-
-        return parent::resolveRouteBinding($value, $field);
-    }
     public function getParsedContentAttribute()
     {
         $content = $this->content;
