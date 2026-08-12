@@ -161,6 +161,7 @@ document.addEventListener('alpine:init', () => {
 
                 // Susun konten awal berdasarkan apakah ini page atau bukan
                 // let initialContent = [];
+                const dbContent = wireComponent.get(wireModelName) || '';
                 let initialContentBlocks = [];
 
                 if (!isPage) {
@@ -170,12 +171,6 @@ document.addEventListener('alpine:init', () => {
                         attrs: { level: 1 },
                         content: initialTitle ? [{ type: 'text', text: initialTitle }] : []
                     });
-                }
-
-                const dbContent = wireComponent.get(wireModelName);
-                if (dbContent) {
-                    // Jika sudah ada konten dari database, kita bisa memuatnya.
-                    // (Catatan: Jika dbContent berbentuk HTML string, Tiptap menerimanya langsung di opsi 'content')
                 }
 
                 // Selalu pastikan ada minimal satu paragraf kosong di bawah
@@ -253,7 +248,8 @@ document.addEventListener('alpine:init', () => {
 
                 const isEditable = editorElement.getAttribute('data-editable') === 'true';
 
-                window.tiptapEditor = new Editor({
+                // window.tiptapEditor = new Editor({
+                this.tiptapEditor = new Editor({
                     element: this.$refs.editorElement,
                     editable: isEditable,
                     extensions: [
@@ -377,13 +373,12 @@ document.addEventListener('alpine:init', () => {
                         Placeholder.configure({
                             emptyEditorClass: 'is-editor-empty',
                             placeholder: ({ node, pos, editor }) => {
-                                // 1. Placeholder untuk Angka (Karena dia Node resmi sekarang, Placeholder Tiptap bisa bekerja padanya!)
+                                // 1. Placeholder khusus untuk nomor step
                                 if (node.type.name === 'stepNumber') return '01';
 
                                 // 2. Cek apakah kursor berada di dalam Step Card
                                 const $pos = editor.state.doc.resolve(pos);
                                 let isInStepCard = false;
-
                                 for (let i = $pos.depth; i > 0; i--) {
                                     if ($pos.node(i).type.name === 'stepCard') {
                                         isInStepCard = true;
@@ -396,16 +391,48 @@ document.addEventListener('alpine:init', () => {
                                     if (node.type.name === 'paragraph') return 'Deskripsi langkah...';
                                 }
 
-                                // if (node.type.name === 'heading') return 'Ketik judul...';
-
+                                // 3. Placeholder H1 khusus artikel
                                 if (node.type.name === 'heading' && node.attrs.level === 1) {
                                     return 'Judul artikel...';
                                 }
 
-                                // return 'Mulai menulis artikel hebat Anda di sini...';
+                                // 4. Placeholder default untuk paragraf biasa (Pastikan mengembalikan STRING)
                                 return translations.default || 'Mulai menulis artikel hebat Anda di sini...';
                             }
                         }),
+
+                        // Placeholder.configure({
+                        //     emptyEditorClass: 'is-editor-empty',
+                        //     placeholder: ({ node, pos, editor }) => {
+                        //         // 1. Placeholder untuk Angka (Karena dia Node resmi sekarang, Placeholder Tiptap bisa bekerja padanya!)
+                        //         if (node.type.name === 'stepNumber') return '01';
+
+                        //         // 2. Cek apakah kursor berada di dalam Step Card
+                        //         const $pos = editor.state.doc.resolve(pos);
+                        //         let isInStepCard = false;
+
+                        //         for (let i = $pos.depth; i > 0; i--) {
+                        //             if ($pos.node(i).type.name === 'stepCard') {
+                        //                 isInStepCard = true;
+                        //                 break;
+                        //             }
+                        //         }
+
+                        //         if (isInStepCard) {
+                        //             if (node.type.name === 'heading') return 'Judul langkah...';
+                        //             if (node.type.name === 'paragraph') return 'Deskripsi langkah...';
+                        //         }
+
+                        //         // if (node.type.name === 'heading') return 'Ketik judul...';
+
+                        //         if (node.type.name === 'heading' && node.attrs.level === 1) {
+                        //             return 'Judul artikel...';
+                        //         }
+
+                        //         // return 'Mulai menulis artikel hebat Anda di sini...';
+                        //         return translations.default || 'Mulai menulis artikel hebat Anda di sini...';
+                        //     }
+                        // }),
 
                         // Placeholder.configure({
                         //     placeholder: 'Mulai menulis artikel hebat Anda di sini...',
@@ -848,7 +875,7 @@ document.addEventListener('alpine:init', () => {
                     },
 
                     // content: initialContent,
-                    content: {
+                    content: dbContent ? dbContent : {
                         type: 'doc',
                         content: initialContentBlocks
                         // content: [
@@ -881,7 +908,8 @@ document.addEventListener('alpine:init', () => {
                         }
                     },
 
-                    onUpdate({ editor }) {
+                    // onUpdate({ editor }) {
+                    onUpdate:({ editor }) => {
                         _this.updatedAt = Date.now();
 
                         // Penghitungan kata manual
@@ -918,9 +946,11 @@ document.addEventListener('alpine:init', () => {
                         if (_this.isUploading) return;
                         clearTimeout(_this.syncTimeout);
                         _this.syncTimeout = setTimeout(() => {
-                            if (window.tiptapEditor) {
+                            // if (window.tiptapEditor) {
+                            if (editor) {
                                 // 1. Ambil seluruh HTML dari editor
-                                const fullHtml = window.tiptapEditor.getHTML();
+                                // const fullHtml = window.tiptapEditor.getHTML();
+                                const fullHtml = editor.getHTML(); // <-- Dulu window.tiptapEditor.getHTML()
 
                                 // 2. Buang tag H1 pertama agar tidak ikut masuk ke kolom 'content' database
                                 const parser = new DOMParser();
@@ -948,6 +978,9 @@ document.addEventListener('alpine:init', () => {
                         _this.updatedAt = Date.now();
                     }
                 });
+
+                window.editors = window.editors || {};
+                window.editors[wireModelName] = this.editor;
 
                 // 🌟 TAMBAHAN: Sabuk pengaman agar editor tidak kosong setelah tombol 'Simpan' ditekan
                 window.addEventListener('article-saved', (event) => {

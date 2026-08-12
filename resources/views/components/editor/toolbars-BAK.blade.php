@@ -1,48 +1,17 @@
-{{-- BENJAMIN BUTTONS V2 DENGAN SISTEM TAB TERPISAH --}}
-<div x-data="{ expanded: false, activeTab: 'format' }" class="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 w-full flex flex-col">
-    
-    {{-- ================= BARIS 1: MENU TAB NAVIGASI (Bisa digeser horizontal di HP) ================= --}}
-    <div class="flex items-center gap-1 overflow-x-auto scrollbar-none border-b border-zinc-200 dark:border-zinc-700 px-2 pt-1.5 shrink-0 bg-white dark:bg-zinc-900/40">
-        {{-- <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider px-1 hidden sm:inline-block shrink-0">Menu:</span> --}}
-        
-        <button type="button" @click="activeTab = 'format'" 
-            :class="activeTab === 'format' ? 'bg-zinc-200 dark:bg-zinc-800 text-foresty shadow-xs font-semibold' : 'text-zinc-600 hover:bg-zinc-200/60'"
-            class="px-3 py-2 text-xs rounded-t-md transition-colors whitespace-nowrap cursor-pointer">
-            Format & Teks
-        </button>
-        
-        {{-- <button type="button" @click="activeTab = 'style'" 
-            :class="activeTab === 'style' ? 'bg-white dark:bg-zinc-800 text-forest shadow-xs font-semibold' : 'text-zinc-600 hover:bg-zinc-200/60'"
-            class="px-3 py-1 text-xs rounded-md transition-colors whitespace-nowrap cursor-pointer">
-            Gaya & Warna
-        </button> --}}
-        
-        {{-- <button type="button" @click="activeTab = 'insert'" 
-            :class="activeTab === 'insert' ? 'bg-white dark:bg-zinc-800 text-forest shadow-xs font-semibold' : 'text-zinc-600 hover:bg-zinc-200/60'"
-            class="px-3 py-1 text-xs rounded-md transition-colors whitespace-nowrap cursor-pointer">
-            Sisipkan
-        </button> --}}
-        
-        <button type="button" @click="activeTab = 'layout'" 
-            :class="activeTab === 'layout' ? 'bg-zinc-200 dark:bg-zinc-800 text-foresty shadow-xs font-semibold' : 'text-zinc-600 hover:bg-zinc-200/60'"
-            class="px-3 py-2 text-xs rounded-t-md transition-colors whitespace-nowrap cursor-pointer">
-            Media & Layout
-        </button>
-    </div>
+{{-- BENJAMIN BUTTONS V2 --}}
+<div x-data="{ expanded: false }" class="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 w-full">
+    <div class="px-2 md:px-6 flex items-start md:items-center w-full">
+        <div class="flex items-start md:items-center w-full">
+            <div x-data="{ isMobile: window.matchMedia('(pointer: coarse)').matches }"
+                @resize.window.debounce.100ms="isMobile = window.matchMedia('(pointer: coarse)').matches"
+                :class="isMobile
+                    ?
+                    (expanded ? 'flex-wrap max-h-[45vh] overflow-y-auto' :
+                        'flex-nowrap overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden') :
+                    (expanded ? 'flex-wrap max-h-[45vh] overflow-y-auto' :
+                        'md:flex-wrap md:overflow-visible items-center')"
+                class="flex flex-1 gap-1.5 p-2 transition-all scroll-smooth">
 
-    {{-- ================= BARIS 2: KONTEN TOOLS & AKSI KANAN ================= --}}
-    <div class="flex items-center justify-between w-full px-2 md:px-6 min-h-14">
-        
-        {{-- Area Tombol Tools Berdasarkan Tab yang Aktif --}}
-        <div x-data="{ isMobile: window.matchMedia('(pointer: coarse)').matches }"
-            @resize.window.debounce.100ms="isMobile = window.matchMedia('(pointer: coarse)').matches"
-            :class="isMobile
-                ? (expanded ? 'flex-wrap max-h-[45vh] overflow-y-auto py-2' : 'flex-nowrap overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden py-2')
-                : (expanded ? 'flex-wrap max-h-[45vh] overflow-y-auto py-2' : 'md:flex-wrap md:overflow-visible items-center py-1.5')"
-            class="flex flex-1 gap-1.5 transition-all scroll-smooth">
-
-            {{-- TAB 1: FORMAT & TEKS --}}
-            <div x-show="activeTab === 'format'" class="flex items-center gap-1.5 flex-wrap">
                 {{-- BOLD | ITALIC | STRIKE | UNDERLINE --}}
                 <div class="flex items-center gap-1 shrink-0">
                     <x-editor.toolbar-button command="toggleBold" activeName="bold"
@@ -70,21 +39,6 @@
                         <option value="Times New Roman" style="font-family: 'Times New Roman', serif;">Times New Roman</option>
                     </select>
                 </div>
-                {{-- <div class="relative flex items-center">
-                    <select
-                        @change="setFontSize($event.target.value)"
-                        :value="getCurrentFontSize()"
-                        class="text-xs md:text-sm border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 rounded-md py-1 pl-2 pr-6 focus:ring-0 focus:border-forest transition-colors cursor-pointer"
-                    >
-                        <option value="default">Ukuran Default</option>
-                        <option value="12px">12px (Sangat Kecil)</option>
-                        <option value="14px">14px (Kecil)</option>
-                        <option value="16px">16px (Normal)</option>
-                        <option value="18px">18px (Besar)</option>
-                        <option value="20px">20px (Sangat Besar)</option>
-                        <option value="24px">24px (Judul)</option>
-                    </select>
-                </div> --}}
 
                 {{-- FONT SIZES --}}
                 <div class="relative flex items-center">
@@ -169,7 +123,7 @@
                 <div class="shrink-0 flex items-center">
                     <x-editor.toolbar-button command="toggleHiddenMarks()"
                         activeName="showMarks" activeParams="{}" activeType="alpine"
-                        title="Tampilkan Tanda Baca Terselubung" icon="pilcrow" label="Tanda Baca" mode="icon-hover" />
+                        title="Tampilkan Tanda Baca Terselubung" icon="pilcrow" />
                 </div>
 
                 {{-- INDENTATION --}}
@@ -378,88 +332,42 @@
                     --}}
 
                 <!-- DIVIDER -->
-                <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
+                    <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
 
-                
-            </div>
-
-            {{-- TAB 2: GAYA & WARNA --}}
-            {{-- <div x-show="activeTab === 'style'" class="flex items-center gap-1.5 flex-wrap" style="display: none;">
-                <div class="relative flex items-center">
-                    <select @change="setFontSize($event.target.value)" :value="getCurrentFontSize()"
-                        class="text-xs md:text-sm border-zinc-200 dark:border-zinc-700 bg-sage-soft dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 rounded-md py-1 pl-2 pr-6 focus:ring-0 focus:border-forest transition-colors cursor-pointer">
-                        <option value="12px">12</option>
-                        <option value="14px">14</option>
-                        <option value="default">16</option>
-                        <option value="18px">18</option>
-                        <option value="20px">20</option>
-                        <option value="24px">24</option>
-                    </select>
-                </div>
-
-                <div class="flex items-center gap-1 md:border-l md:border-zinc-300 md:dark:border-zinc-700 md:pl-2 shrink-0">
-                    <x-editor.toolbar-button command="setTextAlign" activeName="left" activeParams="{ textAlign: 'left' }" activeType="textAlign" title="Rata Kiri" icon="align-left" />
-                    <x-editor.toolbar-button command="setTextAlign" activeName="center" activeParams="{ textAlign: 'center' }" activeType="textAlign" title="Rata Tengah" icon="align-center" />
-                    <x-editor.toolbar-button command="setTextAlign" activeName="right" activeParams="{ textAlign: 'right' }" activeType="textAlign" title="Rata Kanan" icon="align-right" />
-                    <x-editor.toolbar-button command="toggleIndent" activeName="paragraph" activeParams="{ indent: true }" activeType="default" title="Menjorok" icon="list-indent-increase" />
-                </div>
-            </div> --}}
-
-            {{-- TAB 3: SISIPKAN --}}
-            {{-- <div x-show="activeTab === 'insert'" class="flex items-center gap-1.5 flex-wrap" style="display: none;">
-                <div class="flex items-center gap-1 shrink-0">
-                    <x-editor.toolbar-button command="toggleBlockquote" activeName="blockquote" title="Kutipan" icon="quote" />
-                    <x-editor.toolbar-button command="toggleCodeBlock" activeName="codeBlock" title="Blok Kode" icon="code-xml" />
-                </div>
-
-                <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
-
-                <div class="flex items-center gap-1 shrink-0">
-                    <button type="button" @click="openLinkModal(); $dispatch('buka-modal-link');"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center text-sm cursor-pointer border border-transparent">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                    </button>
-                    <button type="button" @click="insertMediaPlaceholder()"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center text-sm cursor-pointer border border-transparent">
-                        <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
-                    </button>
-                </div>
-            </div> --}}
-
-            {{-- TAB 4: LAYOUT & BLOK --}}
-            <div x-show="activeTab === 'layout'" class="flex items-center gap-1.5 flex-wrap" style="display: none;">
-                {{-- LAYOUTS --}}
-                <div class="flex items-center gap-1 shrink-0">
-
-                    {{-- MEDIA & LINK --}}
+                {{-- MEDIA & LINK --}}
                 <div class="flex items-center gap-1 shrink-0">
                     <button type="button" @click="openLinkModal(); $dispatch('buka-modal-link');"
                         :disabled="isUploading"
                         :class="checkButtonActive('link', {}, 'default') ?
                             'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-2 text-xs cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
-                        <x-dynamic-component :component="'lucide-link'" class="h-4 w-4" stroke-width="2" />
-                        Tautan
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
                     </button>
-
                     <button type="button" @click="insertMediaPlaceholder()" :disabled="isUploading"
                         :class="checkButtonActive('mediaPlaceholder', {}, 'default') ?
                             'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-2 text-xs cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50">
                         <x-dynamic-component :component="'lucide-image-plus'" class="h-4 w-4" stroke-width="2" />
-                        Gambar
+
                     </button>
 
                 </div>
 
+                <!-- DIVIDER -->
+                <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
+
+                {{-- LAYOUTS --}}
+                <div class="flex items-center gap-1 shrink-0">
+
                     {{-- COLUMN BLOK --}}
                     <button type="button" @click="runCommand('insertManualColumns')"
-                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-2 text-xs cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
+                        class="p-1.5 min-w-9 h-9 hover:bg-sage-soft hover:text-forest transition rounded flex items-center justify-center gap-1 text-sm cursor-pointer border border-transparent disabled:hover:bg-zinc-50"
                         title="Blok Grid">
                         <x-dynamic-component :component="'lucide-columns-2'" class="h-4 w-4" stroke-width="2" />
-                        Blok Kolom
                     </button>
 
                     {{-- STEP CARD --}}
@@ -468,19 +376,16 @@
                         title="Step Card ">
                         <x-dynamic-component :component="'lucide-square-chart-gantt'" class="h-4 w-4" stroke-width="2" />
                     </button> --}}
-                    <x-editor.toolbar-button command="addStep()" activeName="false" activeType="alpine" title="Tambah Langkah Program" label="Blok Langkah" icon="list-todo" />
+                    <x-editor.toolbar-button command="addStep()" activeName="false" activeType="alpine" title="Tambah Langkah Program" icon="list-todo" />
                     {{-- <x-editor.toolbar-button command="addCard" activeType="alpine" activeName="isActive('addCard')" title="Step Card" icon="square-chart-gantt" /> --}}
 
                     {{-- SECTION BLOCK --}}
-                    <x-editor.toolbar-button command="insertSectionBlock" activeType="alpine" activeName="isActive('sectionBlock')" title="Blok Seksi" label="Blok Seksi" icon="gallery-vertical" />
+                    <x-editor.toolbar-button command="insertSectionBlock" activeType="alpine" activeName="isActive('sectionBlock')" title="Blok Seksi" icon="gallery-vertical" />
 
                     {{-- CARD BLOCK --}}
-                    <x-editor.toolbar-button command="setCard" activeName="setCard" title="Blok Kartu" label="Blok Kartu" icon="gallery-thumbnails" />
+                    <x-editor.toolbar-button command="setCard" activeName="setCard" title="Blok Kartu" icon="gallery-thumbnails" />
 
                 </div>
-
-                <!-- DIVIDER -->
-                <div class="h-5 w-px bg-zinc-300 dark:bg-zinc-600 mx-0.5 shrink-0"></div>
 
                 {{-- NOTIFY  BUTTONs --}}
                 <div class="flex items-center gap-1 shrink-0">
@@ -505,24 +410,40 @@
                         <x-dynamic-component :component="'lucide-bell'" class="h-5 w-5" stroke-width="2.5" />
                     </button>
                 </div>
+
             </div>
 
+            {{-- ================= AKSI KANAN TOOLBAR ================= --}}
+            <div
+                class="flex items-center gap-1.5 p-2 pl-3 border-l border-zinc-200 dark:border-zinc-700 shrink-0 bg-zinc-50 dark:bg-zinc-800 z-10 shadow-[-4px_0_10px_rgba(0,0,0,0.02)] md:shadow-none">
+
+                {{-- 🌟 TOMBOL LAYAR PENUH (Sekarang aman di dalam scope editor) --}}
+                <button type="button" @click="isFullscreen = !isFullscreen"
+                    class="p-1.5 text-zinc-500 hover:text-forest dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors cursor-pointer"
+                    title="Layar Penuh">
+                    <x-dynamic-component x-show="!isFullscreen" :component="'lucide-maximize'"
+                        class="h-5 w-5 md:h-4 md:w-4" stroke-width="2" />
+                    <x-dynamic-component x-show="isFullscreen" :component="'lucide-minimize'"
+                        class="h-5 w-5 md:h-4 md:w-4" stroke-width="2" style="display: none;" />
+                </button>
+
+                {{-- TOMBOL EXPAND (KHUSUS HP) --}}
+                <button type="button" @click="expanded = !expanded"
+                    class="md:hidden p-1.5 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer">
+                    <x-dynamic-component x-show="!expanded" :component="'lucide-chevron-up'" class="h-5 w-5"
+                        stroke-width="2.5" />
+                    <x-dynamic-component x-show="expanded" :component="'lucide-chevron-down'" class="h-5 w-5"
+                        stroke-width="2.5" style="display: none;" />
+                </button>
+
+            </div>
+
+            {{-- TOMBOL EXPAND (MENU PANEL NAIK DARI BAWAH KHUSUS HP) --}}
+            {{-- <button type="button" @click="expanded = !expanded"
+            class="md:hidden m-2 p-1.5 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700 shrink-0 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+            <x-dynamic-component x-show="!expanded" :component="'lucide-chevron-up'" class="h-5 w-5" stroke-width="2.5" />
+            <x-dynamic-component x-show="expanded" :component="'lucide-chevron-down'" class="h-5 w-5" stroke-width="2.5" style="display: none;" />
+        </button> --}}
         </div>
-
-        {{-- ================= AKSI KANAN TOOLBAR (Fullscreen & Expand) ================= --}}
-        <div class="flex items-center gap-1.5 pl-3 border-l border-zinc-200 dark:border-zinc-700 shrink-0 bg-zinc-50 dark:bg-zinc-800 z-10 py-1.5">
-            <button type="button" @click="isFullscreen = !isFullscreen"
-                class="p-1.5 text-zinc-500 hover:text-forest rounded-lg transition-colors cursor-pointer" title="Layar Penuh">
-                <x-dynamic-component x-show="!isFullscreen" :component="'lucide-maximize'" class="h-5 w-5 md:h-4 md:w-4" stroke-width="2" />
-                <x-dynamic-component x-show="isFullscreen" :component="'lucide-minimize'" class="h-5 w-5 md:h-4 md:w-4" stroke-width="2" style="display: none;" />
-            </button>
-
-            <button type="button" @click="expanded = !expanded"
-                class="md:hidden p-1.5 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-zinc-200 text-zinc-600">
-                <x-dynamic-component x-show="!expanded" :component="'lucide-chevron-up'" class="h-5 w-5" stroke-width="2.5" />
-                <x-dynamic-component x-show="expanded" :component="'lucide-chevron-down'" class="h-5 w-5" stroke-width="2.5" style="display: none;" />
-            </button>
-        </div>
-
     </div>
 </div>

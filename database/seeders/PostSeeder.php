@@ -102,6 +102,7 @@ class PostSeeder extends Seeder
         $post5->tags()->sync(3, 7, 2);
         $post6->tags()->sync(4, 6, 5);
         $post7->tags()->sync(5, 4, 6);
+        $chapter6 = 'hoe........ what';
 
         Page::firstOrCreate(
             // Parameter 1: Kriteria pencarian (cari halaman yang slug-nya 'landing')
@@ -122,8 +123,8 @@ class PostSeeder extends Seeder
                     'en' => 'Sinar Bhakti Husada'
                     ],
                 'content'           => [
-                    'id' => '',
-                    'en' => '',
+                    'id' => 'content nu eh di halaman landas',
+                    'en' => $chapter6,
                     ],
                 'status'            => 'online',
                 'meta_title'        => [

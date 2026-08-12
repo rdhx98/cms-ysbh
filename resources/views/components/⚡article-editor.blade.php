@@ -479,7 +479,8 @@ new class extends Component {
                     @php $canEdit =  in_array($status, ['draft', null]); @endphp
 
                     @if(empty($article_id) || $status === 'draft')
-                        {{-- COVER MODAL BUTTON --}}
+                        
+                    {{-- COVER MODAL BUTTON --}}
                         <button type="button" wire:click="scanEditorImages" @click="$dispatch('buka-featured-modal')"
                             class="group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none"
                             title="{{ __('ui.tip.cover') }}">

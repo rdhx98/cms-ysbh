@@ -65,47 +65,6 @@ new class extends Component
         // Eksekusi query
         return $query->get();
     }
-    // #[Computed]
-    // public function pages()
-    // {
-    //     // Mulai dari query builder kosong
-    //     $query = Page::query();
-
-    //     // 1. Filter Pencarian Judul
-    //     if ($this->titleSearch) {
-    //         $query->where('title', 'like', '%' . $this->titleSearch . '%');
-    //     }
-    //     if ($this->titleSearch) {
-    //         // Ambil kode bahasa yang sedang aktif ('id' atau 'en')
-    //         $locale = app()->getLocale();
-
-    //         $query->where("title->{$locale}", 'like', '%' . $this->titleSearch . '%');
-    //     }
-
-    //     // // 2. Filter Kategori
-    //     // if ($this->selectCategory) {
-    //     //     $query->where('category_id', $this->selectCategory);
-    //     // }
-
-    //     // // 3. Filter Status
-    //     if ($this->statusFilter) {
-    //         $query->where('status', $this->statusFilter);
-    //     }
-
-    //     // // 4. Logika Sorting Dinamis
-    //     // if ($this->orderColumn === 'category') {
-    //     //     // Join tabel categories agar bisa diurutkan berdasarkan namanya
-    //     //     $query->join('categories', 'posts.category_id', '=', 'categories.id')
-    //     //           ->select('posts.*') // Cegah tabrakan kolom id jika ada
-    //     //           ->orderBy('categories.name', $this->orderDirection);
-    //     // } else {
-    //     //     // Untuk kolom di tabel posts (title, status, created_at)
-    //     //     $query->orderBy('posts.' . $this->orderColumn, $this->orderDirection);
-    //     // }
-
-    //     // Eksekusi query
-    //     return $query->get();
-    // }
 };
 ?>
 

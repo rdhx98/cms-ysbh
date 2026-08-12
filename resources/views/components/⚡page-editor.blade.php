@@ -7,47 +7,68 @@ use App\Livewire\Traits\WithNotifications;
 use App\Models\Page;
 use Spatie\Activitylog\Models\Activity;
 
+// #[Translatable('title', 'slug', 'content', 'meta_title', 'meta_description')]
+// #[Fillable('title', 'slug', 'content', 'status', 'meta_title','meta_description', 'published_at', 'created_at', 'updated_at')]
+
 new class extends Component
 {
     use WithFileUploads;
     use WithNotifications;
 
-    public string $title;
-    public string $slug;
-    public string $content;
+    public ?Page $page;
+
+    public array $title =[];
+    public array $slug = [];
+    public array $content = [];
+    public array $meta_title = [];
+    public array $meta_description = [];
+
     public string $status;
-    public string $meta_title;
-    public string $meta_description;
     public string $created_at;
 
     public bool $isPage = true;
 
     public ?int $page_id = null;
 
-    public function mount(Page $page)
+    public array $activeLocales = [];
+
+    public function mount (?Page $page = null)
     {
-        if ($page->exists) {
-            // $pageModel = Page::where('slug', $page)->firstOrFail();
-            // if (! $pageModel) {
-            //     dd("Data dengan slug: '{$page}' benar-benar tidak ditemukan di database!");
-            // }
-            $this->page_id = $page->id;
-            $this->title = $page->title;
-            $this->slug = $page->slug;
-            $this->content = $page->content;
-            $this->status = $page->status;
-            $this->meta_title = $page->meta_title;
-            $this->meta_description = $page->meta_description;
-            $this->created_at = $page->created_at ? $page->created_at->format('Y-m-d') : '';
-        } else {
-            // Default values for a new page
-            $this->title = '';
-            $this->slug = '';
-            $this->content = '';
-            $this->status = 'offline'; // Default status for new pages else in 'online'
-            $this->meta_title = '';
-            $this->meta_description = '';
-            $this->created_at = now()->format('Y-m-d');
+        $this->page = $page ?? new Page();
+
+        // 1. Cek bahasa apa saja yang sudah disimpan di database untuk halaman ini
+        $existingLocales = array_keys($this->page->getTranslations('title') ?: []);
+        
+        // 2. Jika artikel baru, jadikan 'id' sebagai bahasa default pertama
+        if (empty($existingLocales)) {
+            $existingLocales = ['id'];
+        }
+        
+        $existingLocales = array_keys($this->page->getTranslations('title') ?: []);
+
+        $this->activeLocales = empty($existingLocales) ? ['id'] : $existingLocales;
+
+        // 🌟 2. Muat data SEMUA kolom untuk setiap bahasa yang aktif
+        foreach ($this->activeLocales as $locale) {
+            $this->title[$locale]            = $this->page->getTranslation('title', $locale, false) ?: '';
+            $this->slug[$locale]             = $this->page->getTranslation('slug', $locale, false) ?: '';
+            $this->content[$locale]          = $this->page->getTranslation('content', $locale, false) ?: '';
+            $this->meta_title[$locale]       = $this->page->getTranslation('meta_title', $locale, false) ?: '';
+            $this->meta_description[$locale] = $this->page->getTranslation('meta_description', $locale, false) ?: '';
+        }
+
+        $this->status = $this->page->status;
+
+    }
+
+    public function addLanguage($localeCode)
+    {
+        if (!in_array($localeCode, $this->activeLocales)) {
+            $this->activeLocales[] = $localeCode;
+            
+            // Siapkan wadah kosong agar tidak error
+            $this->title[$localeCode] = '';
+            $this->content[$localeCode] = '';
         }
     }
 
@@ -62,6 +83,64 @@ new class extends Component
             ->latest()
             ->get();
     }
+    // 'title', 'slug', 'content', 'status', 'meta_title','meta_description',
+    protected function rules() {
+        return [
+            'title.*'             => ['required', Rule::unique('pages')->ignore($this->article_id)],
+            'slug.*'              => ['required', Rule::unique('pages')->ignore($this->article_id)],
+            'content.*'           => 'required|min:5',
+            'meta_title.*'        => 'required|min:5',
+            'meta_description.*'  => 'required|min:5',
+        ];
+            // 'category_id'       => 'required|numeric',
+            // 'tags'              => 'required|array|min:1',
+            // 'featured_image'    => 'required',
+    }
+    protected function messages() {
+        return [
+            // Format: 'nama_variabel.nama_rule' => 'Pesan kustom'
+
+            'title.required' => __('Judul artikel tidak boleh dikosongkan.'),
+            'title.unique'   => __('Judul ini sudah dipakai di artikel lain. Silakan buat yang berbeda.'),
+
+            'category_id.required' => __('Anda belum memilih kategori artikel.'),
+
+            'content.required' => __('Isi tulisan tidak boleh kosong.'),
+            'content.min'      => __('Tulisan terlalu pendek, minimal 5 karakter.'),
+
+            'tags.required' => __('Anda wajib menambahkan minimal satu tag.'),
+            'tags.min'      => __('Minimal pilih satu tag dari daftar.'),
+
+            'featured_image.required' => __('Tolong tentukan gambar sampul untuk artikel ini.'),
+        ];
+    }
+
+    public function savePage($content)
+    {
+        $this->content = $content;
+
+        $validatedData = $this->validate([
+            'title' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:pages,slug,' . $this->page_id,
+            'content' => 'nullable|string',
+            'status' => 'required|in:online,offline',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'created_at' => 'nullable|date',
+        ]);
+
+        if ($this->page_id) {
+            // Update existing page
+            $page = Page::findOrFail($this->page_id);
+            $page->update($validatedData);
+        } else {
+            // Create new page
+            $page = Page::create($validatedData);
+            $this->page_id = $page->id; // Set the page_id for future updates
+        }
+
+        $this->notify(__('ui.notification.page_saved'), 'success',);
+    }
 };
 ?>
 
@@ -73,14 +152,13 @@ new class extends Component
     <form
         x-data="setupEditor(
             'content',
-            @this,
             $wire,
             {
                 step_number: '01',
                 step_heading: '{{ __('ui.editor.step_heading') }}',
                 step_description: '{{ __('ui.editor.step_description') }}',
                 heading: '{{ __('matata') }}',
-                default: '{{ __('hakuna') }}'
+                default: 'Page content here...'
                 {{-- heading: '{{ __('ui.editor.heading') }}', --}}
                 {{-- default: '{{ __('ui.placeholder.editor') }}' --}}
             }
@@ -110,14 +188,14 @@ new class extends Component
                         <span class="mx-1 px-2 py-1 text-xs font-medium rounded-full border-2 {{ $status_color }}">
                             {{ ucfirst($status) }}
                         </span>
-                    @endif
+                    @endif --}}
                     @error('title')
                         <!-- Teks error dibuat absolute agar melayang di bawah tanpa mendorong elemen lain -->
                         <span class="absolute -top-2 left-3 text-xs text-red-500 font-semibold tracking-wide whitespace-nowrap">
                             {{ $message }}
                         </span>
-                    @enderror --}}
-                    <input type="text" x-model="title" placeholder="{{ __('ui.articles.title') }}" class="w-full p-2.5 text-2xl md:text-3xl font-bold bg-transparent outline-none focus:outline-none focus:ring-0 border-0 border-b-2 border-zinc-200 focus:border-zinc-400 dark:border-zinc-800 dark:focus:border-zinc-600 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 transition-colors" />
+                    @enderror
+                    <input type="text" x-model="title" placeholder="{{ __('ui.page.title') }}" class="w-full p-2.5 text-sm md:text-md font-bold bg-transparent outline-none focus:outline-none focus:ring-0 border-0 border-b-2 border-zinc-200 focus:border-zinc-400 dark:border-zinc-800 dark:focus:border-zinc-600 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 transition-colors" />
 
                 </div>
 
@@ -174,8 +252,9 @@ new class extends Component
                         @endif
 
                         {{-- SAVE BUTTON --}}
-                        <button type="button"
-                            x-on:click="if(window.tiptapEditor) { $wire.saveArticle(window.tiptapEditor.getHTML()) }"
+                        <button 
+                            type="button"
+                            x-on:click="if(window.tiptapEditor) { $wire.savePage(window.tiptapEditor.getHTML()) }"
                             wire:loading.attr="disabled"
                             :title="$wire.article_id ? '{{ __('ui.tip.save') }}' : '{{ __('ui.tip.create') }}'"
                             class="group inline-flex items-center gap-2 p-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer select-none">
@@ -187,7 +266,7 @@ new class extends Component
                             </span>
 
                             <div  class="hidden 2xl:block flex-row items-center justify-center gap-2">
-                                <span wire:loading.flex wire:target="saveArticle">{{ __('ui.button.saving') }}...</span>
+                                <span wire:loading.flex wire:target="savePage">{{ __('ui.button.saving') }}...</span>
                             </div>
                         </button>
                     {{-- @endif --}}

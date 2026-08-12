@@ -27,6 +27,8 @@
         </div>
     </div>
 
+    <div class="hidden md:block">v.22/Aug/26 11:41</div>
+
     <button
         @click="userMenuExpand = !userMenuExpand"
         @click.away="userMenuExpand = false"
