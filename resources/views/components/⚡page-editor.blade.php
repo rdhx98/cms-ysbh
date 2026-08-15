@@ -23,7 +23,7 @@ new class extends Component
     public array $meta_title = [];
     public array $meta_description = [];
 
-    public string $status;
+    public  $status;
     public string $created_at;
 
     public bool $isPage = true;
@@ -83,19 +83,54 @@ new class extends Component
             ->latest()
             ->get();
     }
-    // 'title', 'slug', 'content', 'status', 'meta_title','meta_description',
-    protected function rules() {
-        return [
-            'title.*'             => ['required', Rule::unique('pages')->ignore($this->article_id)],
-            'slug.*'              => ['required', Rule::unique('pages')->ignore($this->article_id)],
-            'content.*'           => 'required|min:5',
-            'meta_title.*'        => 'required|min:5',
-            'meta_description.*'  => 'required|min:5',
-        ];
-            // 'category_id'       => 'required|numeric',
-            // 'tags'              => 'required|array|min:1',
-            // 'featured_image'    => 'required',
+
+    protected function rules() 
+    {
+        $rules = [];
+        
+        // Asumsi Anda memiliki $this->activeLocales di komponen Livewire Anda
+        // Atau bisa panggil dari config: config('app.supported_locales', ['id', 'en'])
+        foreach ($this->activeLocales as $locale) {
+            
+            // 1. Judul (Biasanya tidak wajib unik, tapi jika Anda ingin unik, gunakan format ini)
+            $rules["title.{$locale}"] = [
+                'required', 
+                'string',
+                'min:3'
+            ];
+
+            // 2. Slug (WAJIB UNIK berdasarkan bahasanya)
+            // Perhatikan bagian "slug->{$locale}"
+            $rules["slug.{$locale}"] = [
+                'required', 
+                'string',
+                // Ganti 'posts' dengan nama tabel artikel Anda yang sebenarnya!
+                Rule::unique('posts', "slug->{$locale}")->ignore($this->article_id)
+            ];
+
+            // 3. Konten Utama
+            $rules["content.{$locale}"] = 'required|min:5';
+
+            // 4. SEO Meta Data (Ditambahkan batas maksimal agar bagus untuk SEO)
+            $rules["meta_title.{$locale}"] = 'required|min:5|max:60'; 
+            $rules["meta_description.{$locale}"] = 'required|min:5|max:160';
+        }
+
+        return $rules;
     }
+    // 'title', 'slug', 'content', 'status', 'meta_title','meta_description',
+    // protected function rules() {
+    //     return [
+    //         'title.*'             => ['required', Rule::unique('pages')->ignore($this->page_id)],
+    //         'slug.*'              => ['required', Rule::unique('pages')->ignore($this->page_id)],
+    //         'content.*'           => 'required|min:5',
+    //         'meta_title.*'        => 'required|min:5',
+    //         'meta_description.*'  => 'required|min:5',
+    //     ];
+    // }
+        // 'category_id'       => 'required|numeric',
+        // 'tags'              => 'required|array|min:1',
+        // 'featured_image'    => 'required',
     protected function messages() {
         return [
             // Format: 'nama_variabel.nama_rule' => 'Pesan kustom'
@@ -404,7 +439,10 @@ new class extends Component
         </div>
 
         {{-- <x-editor :editable="$canEdit"/> --}}
-        <x-editor/>
+        <x-editor
+            :locale="$locale" 
+            content-model="content.{{ $locale }}" 
+            title-model="title.{{ $locale }}"/>
         <livewire:link-selector />
         @include('components.editor.modal-audit')
         {{-- @include('components.editor.modal-thumbnail') --}}
