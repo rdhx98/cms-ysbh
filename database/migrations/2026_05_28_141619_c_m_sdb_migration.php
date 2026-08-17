@@ -14,15 +14,15 @@ return new class extends Migration
         //
         Schema::create('tags', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('slug')->unique();
+            $table->json('name');
+            $table->json('slug');
             $table->timestamps();
         });
 
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('slug')->unique();
+            $table->json('name');
+            $table->json('slug');
             $table->timestamps();
         });
 
@@ -30,9 +30,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Relasi ke Penulis
             $table->foreignId('category_id')->constrained()->onDelete('cascade'); // Relasi ke Kategori
-            $table->string('title')->unique();
-            $table->string('slug')->unique();
-            $table->longText('content');
+            $table->json('title')->unique();
+            $table->json('slug')->unique();
+            $table->json('content');
             $table->json('meta_title')->nullable();
             $table->json('meta_description')->nullable();
             $table->string('featured_image')->nullable(); // Jalur file di FTP Hostinger
@@ -55,26 +55,15 @@ return new class extends Migration
             $table->boolean('is_primary')->default(false);
         });
 
-        // Schema::create('pages', function (Blueprint $table) {
-        //     $table->id();
-        //     $table->string('title')->unique();
-        //     $table->string('slug')->unique();
-        //     $table->longText('content');
-        //     $table->enum('status', ['online', 'offline'])->default('offline');
-        //     $table->json('meta_title')->nullable();
-        //     $table->json('meta_description')->nullable();
-        //     $table->timestamp('published_at')->nullable();
-        //     $table->timestamps();
-        // });
         Schema::create('pages', function (Blueprint $table) {
             $table->id();
             $table->json('title');
             $table->json('slug')->unique();
             $table->json('content')->nullable();
-            $table->enum('status', ['online', 'offline'])->default('offline');
             $table->json('meta_title')->nullable();
             $table->json('meta_description')->nullable();
-            $table->timestamp('published_at')->nullable();
+            $table->enum('status', ['online', 'offline'])->default('offline');
+            // $table->timestamp('published_at')->nullable();
             $table->timestamps();
         });
 

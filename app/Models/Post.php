@@ -4,9 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 // HAPUS BARIS LAMA INI:
 // use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -15,15 +16,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-
+use Spatie\Translatable\Attributes\Translatable;
 
 #[Table('posts')]
+#[Fillable('user_id','category_id','title','slug','content','featured_image', 'meta_title','meta_description','status', 'created_at','updated_at','published_at',)]
+#[Translatable('title','slug','content', 'meta_title','meta_description')]
 class Post extends Model
 {
     use HasFactory, LogsActivity;
 
     // Field yang boleh diisi massal
-    protected $fillable = ['user_id','category_id','title','slug','content','featured_image','status', 'created_at','updated_at','published_at',];
+    // protected $fillable = ['user_id','category_id','title','slug','content','featured_image', 'meta_title','meta_description','status', 'created_at','updated_at','published_at',];
+    protected $translateable = ['user_id','category_id','title','slug','content','featured_image', 'meta_title','meta_description','status', 'created_at','updated_at','published_at',];
     // ['draft', 'review', 'published', 'scheduled', 'archived', 'rejected']
     // 1. BUKU ATURAN
     public function getActivitylogOptions(): LogOptions
@@ -60,8 +64,13 @@ class Post extends Model
     }
 
     // Mengubah string tanggal menjadi objek Carbon/Datetime secara otomatis
-    protected $casts = [
-        'published_at' => 'datetime',
+    protected $casts = [  
+        'title'            => 'array',
+        'slug'             => 'array',
+        'content'          => 'array',
+        'meta_title'       => 'array',
+        'meta_description' => 'array',
+        'published_at' => 'datetime', 
     ];
 
     public function getRouteKeyName()
@@ -130,7 +139,7 @@ class Post extends Model
                 return 'href="' . $url . '"';
             } catch (\Exception $e) {
                 // Jika route tidak ditemukan, kembalikan ke # agar tidak crash
-                return 'href="#"';
+                return 'href="#"'; 
             }
 
         }, $content);

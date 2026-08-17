@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use Illuminate\Database\Eloquent\Attributes\Table;
 
 #[Table('categories')]
 class Category extends Model
@@ -16,6 +17,10 @@ class Category extends Model
 
     // Field yang boleh diisi
     protected $fillable = ['name', 'slug'];
+    protected $casts = [
+        'name' => 'array',
+        'slug' => 'array',
+    ];
 
     /**
      * Relasi: Satu kategori memiliki banyak Post (hasMany).

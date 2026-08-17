@@ -25,7 +25,14 @@ class Page extends Model
     // Field yang boleh diisi massal
     // protected $fillable = ['title', 'slug', 'content', 'status', 'meta_title','meta_description', 'published_at', 'created_at', 'updated_at'];
     // public $translatable = ['title', 'content', 'meta_title', 'meta_description'];
-    protected $casts = [  'published_at' => 'datetime', ];
+    protected $casts = [  
+        'title'            => 'array',
+        'slug'             => 'array',
+        'content'          => 'array',
+        'meta_title'       => 'array',
+        'meta_description' => 'array',
+        'published_at' => 'datetime', 
+    ];
 
     public function getRouteKeyName()
     {

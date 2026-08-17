@@ -1,4 +1,5 @@
 import collapse from '@alpinejs/collapse';
+import sort from '@alpinejs/sort';
 // import './bootstrap';
 
 // 1. Import JavaScript dan CSS Tom Select
@@ -10,6 +11,8 @@ window.TomSelect = TomSelect;
 
 // Daftarkan plugin global Alpine di sini
 Alpine.plugin(collapse);
+Alpine.plugin(sort);
 
 // Import modul Tiptap Editor yang terpisah
 import './tiptap/tiptap-editor.js';
+import './mikro-tiptap.js';
