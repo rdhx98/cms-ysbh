@@ -1,6 +1,25 @@
 {{-- EDITOR COMPONENTS CONTAINER INIT OLD--}}
-@props(['editable' => true])
-<div class="transition-colors duration-300 ease-in-out w-full flex-1 flex flex-col min-h-0">
+{{-- @props(['editable' => true]) --}}
+@props([
+    'editable' => true,
+    'locale' => 'id',                // Bahasa default
+    'contentModel' => 'content',     // Default model konten
+    'titleModel' => 'title',         // Default model judul (untuk sinkronisasi H1)
+])
+<div class="transition-colors duration-300 ease-in-out w-full flex-1 flex flex-col min-h-0"
+    x-data="setupEditor(
+            '{{ $contentModel }}',
+            $wire,
+            {
+                step_number: '01',
+                step_heading: '{{ __('ui.editor.step_heading') }}',
+                step_description: '{{ __('ui.editor.step_description') }}',
+                heading: '{{ __('matata') }}',
+                default: 'Page content here...'
+            },
+            '{{ $titleModel }}'
+        )"
+    >
 
     <div class="w-full transition-opacity duration-200"
          :class="{ 'opacity-50 pointer-events-none select-none': !@js($editable) }">
@@ -73,7 +92,7 @@
         </div>
 
         <!-- 🌟 WORD COUNTER KEMBALI KE POSISI FLOATING DI DALAM AREA EDITOR 🌟 -->
-        <div class="absolute bottom-6 right-8 pointer-events-none z-40">
+        <div class="absolute bottom-6 right-8 pointer-events-none z-40 tracker">
             <div class="bg-sage-soft dark:bg-zinc-800/90 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700 text-foresty dark:text-zinc-400 text-[10px] md:text-xs px-2.5 py-1 rounded-md shadow-sm font-medium tracking-wide">
                 <span x-text="`${wordCount} {{ __('ui.word') }}`"></span>
             </div>

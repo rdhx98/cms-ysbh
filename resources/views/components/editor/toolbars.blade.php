@@ -122,7 +122,8 @@
                         <x-dynamic-component component="lucide-palette" class="h-4 w-4" stroke-width="2.5" />
 
                         <div class="w-6 h-6 rounded border border-zinc-300 shadow-inner transition-colors"
-                            :style="updatedAt && window.tiptapEditor?.getAttributes('textStyle').color ? { backgroundColor: window.tiptapEditor.getAttributes('textStyle').color } : { backgroundColor: '#18181b' }">
+                            {{-- :style="updatedAt && window.tiptapEditor?.getAttributes('textStyle').color ? { backgroundColor: window.tiptapEditor.getAttributes('textStyle').color } : { backgroundColor: '#18181b' }"> --}}
+                            :style="updatedAt && editor?.getAttributes('textStyle').color ? { backgroundColor: editor.getAttributes('textStyle').color } : { backgroundColor: '#18181b' }">
                         </div>
                     </button>
 

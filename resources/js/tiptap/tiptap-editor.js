@@ -123,6 +123,7 @@ document.addEventListener('alpine:init', () => {
 
     window.setupEditor = function (wireModelName, wireComponent, translations = {}) {
         return {
+            editor: null,
             translations: translations,
             updatedAt: Date.now(),
             uploadQueue: [],
@@ -249,7 +250,7 @@ document.addEventListener('alpine:init', () => {
                 const isEditable = editorElement.getAttribute('data-editable') === 'true';
 
                 // window.tiptapEditor = new Editor({
-                this.tiptapEditor = new Editor({
+                this.editor = new Editor({
                     element: this.$refs.editorElement,
                     editable: isEditable,
                     extensions: [
