@@ -22,6 +22,7 @@ window.addEventListener('insert-link-to-active-editor', (event) => {
     }
 });
 
+//MAIN mikro fx
 document.addEventListener('alpine:init', () => {
     Alpine.data('tiptap', (entangledContent) => {
         // 🌟 KUNCI UTAMA: Simpan instans editor sebagai variabel lokal murni.
@@ -153,6 +154,7 @@ document.addEventListener('alpine:init', () => {
     });
 });
 
+//pageEditor
 document.addEventListener('alpine:init', () => {
     Alpine.data('pageEditor', (initialLocales, initialSplit, localesCount, wireInstance) => ({
         layoutMode: 'single',
@@ -171,21 +173,19 @@ document.addEventListener('alpine:init', () => {
                 this.splitLanguages = this.splitLanguages.filter(l => l !== lang);
             }
         },
-        handleSort(itemIds) {
-            let ids = Array.isArray(itemIds) ? itemIds : Array.from(itemIds);
-            let cleanIds = ids.map(id => String(id).split("'").join("").split('"').join("").trim());
+        
+        // 🌟 PERBAIKAN TOTAL DI SINI: Kosongkan parameternya
+        handleSort() {
+            // Abaikan parameter bawaan Alpine. 
+            // Langsung scan ulang seluruh DOM persis setelah blok dijatuhkan (drop).
+            let currentDomIds = Array.from(document.querySelectorAll("[x-sort\\:item]")).map(el => {
+                return el.getAttribute("x-sort:item").split("'").join("").split('"').join("").trim();
+            });
             
-            // 🌟 KUNCI UTAMA: Perbarui urutan wireInstance.content secara lokal terlebih dahulu
-            // agar Livewire dan DOM tidak mengalami bentrok reaktivitas (mencegah snap-back).
-            let currentContent = wireInstance.content || [];
-            let map = new Map(currentContent.map(block => [String(block.id).trim(), block]));
-            let reordered = cleanIds.map(id => map.get(String(id).trim())).filter(Boolean);
-            
-            if (reordered.length > 0) {
-                wireInstance.content = reordered;
-                wireInstance.updateBlockOrder(cleanIds);
-            }
+            // Kirim urutan yang 100% akurat ke Livewire
+            wireInstance.updateBlockOrder(currentDomIds);
         },
+        
         addNewBlock(type) {
             let currentDomIds = Array.from(document.querySelectorAll("[x-sort\\:item]")).map(el => {
                 return el.getAttribute("x-sort:item").split("'").join("").split('"').join("").trim();

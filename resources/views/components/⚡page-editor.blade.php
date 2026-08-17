@@ -25,7 +25,10 @@ new class extends Component
     public array $meta_title = [];
     public array $meta_description = [];
 
+    // 🌟 Pendekatan Hibrida: Pisahkan data konten dan urutan
     public array $content = [];
+    public array $blockOrder = []; // Menyimpan urutan ID secara akurat
+    
     public $status;
 
     protected function rules()
@@ -64,7 +67,6 @@ new class extends Component
     public function mount($page = null)
     {
         $this->activeLocales = config('app.supported_locales', ['id', 'en']);
-        
         $this->splitLanguages = array_slice($this->activeLocales, 0, 2);
         
         if (!in_array($this->singleActiveLang, $this->activeLocales)) {
@@ -76,25 +78,30 @@ new class extends Component
             $this->status = $page->status ?? 'draft';
             $this->title = $page->title ?? array_fill_keys($this->activeLocales, '');
             $this->slug = $page->slug ?? array_fill_keys($this->activeLocales, '');
-            $this->content = $page->content ?? [];
+            
+            // Petakan konten database menjadi array asosiatif & urutan
+            $rawContent = $page->content ?? [];
+            foreach ($rawContent as $block) {
+                $id = $block['id'] ?? 'blk_' . Str::random(8);
+                $block['id'] = $id;
+                $this->content[$id] = $block;
+                $this->blockOrder[] = $id;
+            }
         } else {
             $this->page = new \App\Models\Page();
             $this->status = 'draft';
             $this->title = array_fill_keys($this->activeLocales, '');
             $this->slug = array_fill_keys($this->activeLocales, '');
-            $this->content = [];
         }
 
         if (empty($this->content)) {
-            $this->content = [
-                [
-                    'id' => 'blk_' . uniqid(),
-                    'type' => 'heading',
-                    'data' => [
-                        'text' => array_fill_keys($this->activeLocales, '')
-                    ]
-                ]
+            $id = 'blk_' . uniqid();
+            $this->content[$id] = [
+                'id' => $id,
+                'type' => 'heading',
+                'data' => ['text' => array_fill_keys($this->activeLocales, '')]
             ];
+            $this->blockOrder = [$id];
         }
     }
 
@@ -106,36 +113,40 @@ new class extends Component
         $this->addBlock($type);
     }
 
-    public function addBlock($type, $insertAtIndex = null)
+    public function addBlock($type)
     {
-        $newBlock = [
-            'id' => 'blk_' . Str::random(8),
+        $id = 'blk_' . Str::random(8);
+        $this->content[$id] = [
+            'id' => $id,
             'type' => $type,
             'data' => $this->getDefaultDataForType($type)
         ];
-
-        if ($insertAtIndex !== null) {
-            array_splice($this->content, $insertAtIndex, 0, [$newBlock]);
-        } else {
-            $this->content[] = $newBlock;
-        }
+        
+        $this->blockOrder[] = $id; // Letakkan di paling bawah
     }
 
     public function removeBlock($blockId)
     {
-        $this->content = collect($this->content)->reject(function ($block) use ($blockId) {
-            return $block['id'] === $blockId;
-        })->values()->toArray();
+        unset($this->content[$blockId]);
+        $this->blockOrder = array_values(array_filter($this->blockOrder, fn($id) => $id !== $blockId));
     }
 
     public function duplicateBlock($id)
     {
-        foreach ($this->content as $index => $block) {
-            if ($block['id'] === $id) {
-                $duplicatedBlock = $block;
-                $duplicatedBlock['id'] = 'blk_' . uniqid(); 
-                array_splice($this->content, $index + 1, 0, [$duplicatedBlock]);
-                break;
+        if (isset($this->content[$id])) {
+            $newId = 'blk_' . uniqid();
+            $duplicatedBlock = $this->content[$id];
+            $duplicatedBlock['id'] = $newId;
+            
+            // Simpan konten kloningannya
+            $this->content[$newId] = $duplicatedBlock;
+            
+            // Sisipkan ke urutan tepat di bawah blok aslinya
+            $index = array_search($id, $this->blockOrder);
+            if ($index !== false) {
+                array_splice($this->blockOrder, $index + 1, 0, [$newId]);
+            } else {
+                $this->blockOrder[] = $newId;
             }
         }
     }
@@ -146,29 +157,15 @@ new class extends Component
             $orderedIds = json_decode($orderedIds, true) ?? [];
         }
 
-        if (!is_array($orderedIds) || empty($orderedIds)) {
-            return;
+        if (is_array($orderedIds) && !empty($orderedIds)) {
+            // Ambil ID yang valid saja dari hasil drag-and-drop
+            $validIds = array_filter($orderedIds, fn($id) => isset($this->content[$id]));
+            
+            // Amankan sisa blok jika ada yang luput
+            $missingIds = array_diff(array_keys($this->content), $validIds);
+            
+            $this->blockOrder = array_values(array_merge($validIds, $missingIds));
         }
-
-        $indexedBlocks = [];
-        foreach ($this->content as $block) {
-            $indexedBlocks[(string) $block['id']] = $block;
-        }
-
-        $newContent = [];
-        foreach ($orderedIds as $id) {
-            $idStr = (string) $id;
-            if (isset($indexedBlocks[$idStr])) {
-                $newContent[] = $indexedBlocks[$idStr];
-                unset($indexedBlocks[$idStr]);
-            }
-        }
-
-        foreach ($indexedBlocks as $block) {
-            $newContent[] = $block;
-        }
-
-        $this->content = $newContent;
     }
 
     private function getDefaultDataForType($type)
@@ -195,9 +192,17 @@ new class extends Component
     {
         $this->validate();
 
+        // 🌟 Susun ulang menjadi Array utuh untuk disimpan ke database JSON
+        $finalContent = [];
+        foreach ($this->blockOrder as $id) {
+            if (isset($this->content[$id])) {
+                $finalContent[] = $this->content[$id];
+            }
+        }
+
         $this->page->title            = $this->title;
         $this->page->slug             = $this->slug;
-        $this->page->content          = $this->content; 
+        $this->page->content          = $finalContent; 
         $this->page->meta_title       = $this->meta_title;
         $this->page->meta_description = $this->meta_description;
         $this->page->status           = $this->status;
@@ -350,68 +355,73 @@ new class extends Component
             }"
             class="flex flex-col gap-6"
         >
-            @foreach($content as $index => $block)
-                <div 
-                    wire:key="block-{{ $block['id'] }}" 
-                    x-sort:item="'{{ $block['id'] }}'"
-                    class="group relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:border-blue-300 transition-colors"
-                >
-                    <!-- Drag Handle -->
-                    <div class="absolute top-1/2 -left-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <button type="button" class="drag-handle cursor-grab active:cursor-grabbing p-2 bg-white border border-gray-200 shadow-md rounded-md text-gray-400 hover:text-gray-700" title="Geser Blok">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8"></path></svg>
-                        </button>
-                    </div>
+            {{-- 🌟 1. LOOP MENGGUNAKAN $blockOrder AGAR URUTAN TETAP UTUH --}}
+            @foreach($blockOrder as $blockId)
+                @php $block = $content[$blockId] ?? null; @endphp
+                @if($block)
+                    <div 
+                        wire:key="block-{{ $blockId }}" 
+                        x-sort:item="'{{ $blockId }}'"
+                        class="group relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:border-blue-300 transition-colors"
+                    >
+                        <!-- Drag Handle -->
+                        <div class="absolute top-1/2 -left-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <button type="button" class="drag-handle cursor-grab active:cursor-grabbing p-2 bg-white border border-gray-200 shadow-md rounded-md text-gray-400 hover:text-gray-700" title="Geser Blok">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8"></path></svg>
+                            </button>
+                        </div>
 
-                    <!-- Tombol Aksi Hover: Gandakan & Hapus -->
-                    <div class="absolute -top-3 -right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <button wire:click="duplicateBlock('{{ $block['id'] }}')" type="button" class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
-                        </button>
-                        <button wire:click="removeBlock('{{ $block['id'] }}')" type="button" class="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-gray-200 shadow-sm" title="Hapus Blok">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                    </div>
+                        <!-- Tombol Aksi Hover: Gandakan & Hapus -->
+                        <div class="absolute -top-3 -right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <button wire:click="duplicateBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                            </button>
+                            <button wire:click="removeBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-gray-200 shadow-sm" title="Hapus Blok">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
 
-                    <!-- RENDER ISI BLOK -->
-                    <div class="w-full">
-                        <div :class="{
-                                'grid grid-cols-1': layoutMode === 'single',
-                                'grid grid-cols-1 md:grid-cols-2': layoutMode === 'split' && splitLanguages.length === 2,
-                                'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3': layoutMode === 'split' && splitLanguages.length === 3,
-                                'grid grid-cols-1': layoutMode === 'split' && splitLanguages.length === 1
-                             }" 
-                             class="gap-6">
-                            @foreach($activeLocales as $code)
-                                <div x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))" 
-                                     class="space-y-3">
-                                    
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-[10px] font-bold text-gray-400 uppercase" x-text="layoutMode === 'split' ? 'Bahasa: ' + '{{ strtoupper($code) }}' : ''"></span>
-                                        <span x-show="layoutMode === 'single'" class="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold uppercase rounded">Bahasa: {{ strtoupper($code) }}</span>
-                                    </div>
-
-                                    @if($block['type'] === 'heading')
-                                        <input type="text" wire:model="content.{{ $index }}.data.text.{{ $code }}" placeholder="Judul H2..." class="w-full text-lg font-bold border-0 border-b-2 border-transparent hover:border-gray-200 focus:border-blue-500 focus:ring-0 p-0 text-gray-800 bg-transparent">
-                                    @elseif($block['type'] === 'paragraph')
-                                        <x-tiptap wire:model="content.{{ $index }}.data.text.{{ $code }}" />
-                                    @elseif($block['type'] === 'columns')
-                                        <div class="space-y-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
-                                            <div>
-                                                <span class="text-[10px] text-gray-400 font-semibold mb-1 block">KOLOM KIRI</span>
-                                                <x-tiptap wire:model="content.{{ $index }}.data.col_left.{{ $code }}" />
-                                            </div>
-                                            <div>
-                                                <span class="text-[10px] text-gray-400 font-semibold mb-1 block">KOLOM KANAN</span>
-                                                <x-tiptap wire:model="content.{{ $index }}.data.col_right.{{ $code }}" />
-                                            </div>
+                        <!-- RENDER ISI BLOK -->
+                        <div class="w-full">
+                            <div :class="{
+                                    'grid grid-cols-1': layoutMode === 'single',
+                                    'grid grid-cols-1 md:grid-cols-2': layoutMode === 'split' && splitLanguages.length === 2,
+                                    'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3': layoutMode === 'split' && splitLanguages.length === 3,
+                                    'grid grid-cols-1': layoutMode === 'split' && splitLanguages.length === 1
+                                }" 
+                                class="gap-6">
+                                @foreach($activeLocales as $code)
+                                    <div x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))" 
+                                        class="space-y-3">
+                                        
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[10px] font-bold text-gray-400 uppercase" x-text="layoutMode === 'split' ? 'Bahasa: ' + '{{ strtoupper($code) }}' : ''"></span>
+                                            <span x-show="layoutMode === 'single'" class="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold uppercase rounded">Bahasa: {{ strtoupper($code) }}</span>
                                         </div>
-                                    @endif
-                                </div>
-                            @endforeach
+
+                                        {{-- 🌟 2. WIRE:MODEL DIKUNCI MENGGUNAKAN $blockId (MUSTAHIL TERTUKAR/ACAK) --}}
+                                        @if($block['type'] === 'heading')
+                                            <input type="text" wire:model="content.{{ $blockId }}.data.text.{{ $code }}" placeholder="Judul H2..." class="w-full text-lg font-bold border-0 border-b-2 border-transparent hover:border-gray-200 focus:border-blue-500 focus:ring-0 p-0 text-gray-800 bg-transparent">
+                                        @elseif($block['type'] === 'paragraph')
+                                            <x-tiptap wire:model="content.{{ $blockId }}.data.text.{{ $code }}" />
+                                        @elseif($block['type'] === 'columns')
+                                            <div class="space-y-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                                                <div>
+                                                    <span class="text-[10px] text-gray-400 font-semibold mb-1 block">KOLOM KIRI</span>
+                                                    <x-tiptap wire:model="content.{{ $blockId }}.data.col_left.{{ $code }}" />
+                                                </div>
+                                                <div>
+                                                    <span class="text-[10px] text-gray-400 font-semibold mb-1 block">KOLOM KANAN</span>
+                                                    <x-tiptap wire:model="content.{{ $blockId }}.data.col_right.{{ $code }}" />
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
-                </div>
+                @endif
             @endforeach
         </div>
 
