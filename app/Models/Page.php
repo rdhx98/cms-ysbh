@@ -31,7 +31,7 @@ class Page extends Model
         'content'          => 'array',
         'meta_title'       => 'array',
         'meta_description' => 'array',
-        'published_at' => 'datetime', 
+        'published_at'     => 'datetime', 
     ];
 
     public function getRouteKeyName()

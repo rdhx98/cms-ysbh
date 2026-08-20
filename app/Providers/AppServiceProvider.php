@@ -14,6 +14,9 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Spatie\Activitylog\Support\activity;
 
+use App\Models\Navigation;
+use Illuminate\Support\Facades\View;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -57,6 +60,15 @@ class AppServiceProvider extends ServiceProvider
                     'type' => 'manual_logout' // Penanda bahwa ini keluar sendiri
                 ])
                 ->log('Pengguna keluar dari sistem (Logout)');
+        });
+
+        View::composer('layouts.landing.header', function ($view) {
+            // Ambil menu dari database, urutkan berdasarkan kolom 'order'
+            $navLinks = Navigation::where('is_active', true)
+                            ->orderBy('order', 'asc')
+                            ->get();
+
+            $view->with('navLinks', $navLinks);
         });
     }
 

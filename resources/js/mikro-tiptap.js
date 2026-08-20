@@ -2,6 +2,114 @@ import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
+import { TextStyle } from '@tiptap/extension-text-style'
+import { Color } from '@tiptap/extension-color'
+import { FontFamily } from '@tiptap/extension-font-family'
+import { Underline } from '@tiptap/extension-underline'
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import CodeBlock from '@tiptap/extension-code-block';
+import Bold from '@tiptap/extension-bold';
+
+import { FontSize } from "./tiptap/node/FontSize.js";
+import { Eyebrow } from "./tiptap/node/EyeBrow.js";
+import { Pill } from "./tiptap/node/Pill.js";
+import { ParagraphIndent } from './tiptap/extensions/ParagraphIndent.js'
+
+const ALLOWED_FONTS = ['Arial', 'Fraunces', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
+
+const EYEBROW_ICONS = [
+    { key: 'crosshair', label: 'Crosshair', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>` },
+    { key: 'star', label: 'Star', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>` },
+    { key: 'zap', label: 'Zap', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>` },
+    { key: 'sparkles', label: 'Sparkles', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg>` },
+    { key: 'flag', label: 'Flag', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></svg>` },
+    { key: 'tag', label: 'Tag', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>` },
+];
+
+const PILL_COLOR_PRESETS = [
+    { key: 'green', label: 'Hijau (default)', backgroundColor: '#E9F1EB', borderColor: null },
+    { key: 'red', label: 'Merah', backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
+    { key: 'blue', label: 'Biru', backgroundColor: '#DBEAFE', borderColor: '#93C5FD' },
+    { key: 'yellow', label: 'Kuning', backgroundColor: '#FEF9C3', borderColor: '#FDE68A' },
+    { key: 'purple', label: 'Ungu', backgroundColor: '#F3E8FF', borderColor: '#D8B4FE' },
+    { key: 'gray', label: 'Abu-abu', backgroundColor: '#F3F4F6', borderColor: '#D1D5DB' },
+];
+
+const SharedExtensions = [
+    StarterKit.configure({ 
+        heading: false, 
+        // codeBlock: false,
+        link: false,
+        underline: false,
+        bold: false,
+    }),
+    Link.configure({
+        openOnClick: false,
+        HTMLAttributes: { 
+            class: 'text-blue-600 font-semibold underline cursor-pointer' 
+        }
+    }),
+    TaskList.configure({
+        HTMLAttributes: {
+            class: 'not-prose list-none pl-0 my-4 space-y-2',
+        },
+    }),
+    TaskItem.configure({
+    HTMLAttributes: {
+        class: [
+        // 1. Container utama (<li>) dibuat flex dan sejajar vertikal di tengah baris
+        'flex items-center my-1',
+
+        // 2. Styling wrapper checkbox (<label>)
+        // Kita beri h-5 (20px) agar punya ruang tinggi yang konsisten
+        '[&>label]:flex [&>label]:items-center [&>label]:h-5 [&>label]:mr-3 [&>label]:select-none [&>label]:cursor-pointer [&>label]:flex-shrink-0',
+
+        // 3. Styling input checkbox asli
+        '[&>label>input]:w-4 [&>label>input]:h-4 [&>label>input]:rounded [&>label>input]:border-gray-300 [&>label>input]:text-blue-600',
+
+        // 4. Styling konten teks (<div>)
+        // leading-5 (20px) disamakan dengan h-5 milik label agar garis tengahnya (horizontal) benar-benar sejajar
+        '[&>div]:m-0 [&>div]:leading-5 [&>div]:flex-1',
+
+        // 5. Efek coret saat dicentang
+        'data-[checked=true]:[&>div]:line-through data-[checked=true]:[&>div]:text-gray-400'
+        ].join(' '),
+    },
+        nested: true,
+    }),
+    TextAlign.configure({ types: ['paragraph', 'heading', 'codeBlock'] }),
+    TextStyle.extend({
+        priority: 1000,
+    }),
+    Underline,
+    Bold.configure({
+        HTMLAttributes: {
+            class: 'font-bold',
+        },
+    }),
+    Color,
+    FontFamily.extend({
+        parseHTML() {
+            return [
+                {
+                    style: 'font-family',
+                    getAttrs: value => {
+                        const cleanedFont = value.replace(/['"]/g, '').split(',')[0].trim();
+                        if (ALLOWED_FONTS.includes(cleanedFont)) {
+                            return { fontFamily: cleanedFont };
+                        }
+                        return false;
+                    },
+                },
+            ];
+        },
+    }),
+    FontSize,
+    Eyebrow,
+    Pill,
+    ParagraphIndent,
+];
 
 window.addEventListener('insert-link-to-active-editor', (event) => {
     if (window.activeTiptapEditor && event.detail && event.detail.url) {
@@ -35,29 +143,28 @@ document.addEventListener('alpine:init', () => {
             showLinkModal: false,
             linkInputUrl: '',
 
+            isEyebrowIconOpen: false,
+            eyebrowIcons: typeof EYEBROW_ICONS !== 'undefined' ? EYEBROW_ICONS : [], 
+            
+            // State Pill Color
+            isPillColorOpen: false,
+            customPillBg: '#f3f4f6',
+            pillBorderEnabled: false,
+            customPillBorder: '#d1d5db',
+            pillColorPresets: PILL_COLOR_PRESETS,
+
+            
             init() {
                 editor = new Editor({
                     element: this.$refs.editorElement,
-                    extensions: [
-                        StarterKit.configure({ 
-                            heading: false, 
-                            codeBlock: false,
-                            link: false,
-                        }),
-                        Link.configure({
-                            openOnClick: false,
-                            HTMLAttributes: { 
-                                class: 'text-blue-600 font-semibold underline cursor-pointer' 
-                            }
-                        }),
-                        TextAlign.configure({ types: ['paragraph'] }),
-                    ],
+                    extensions: SharedExtensions,
                     content: this.content || '',
                     editorProps: {
                         attributes: {
-                            class: 'prose max-w-none focus:outline-none min-h-[120px] p-4 text-gray-700',
+                            class: 'max-w-none focus:outline-none min-h-[900px] p-4 text-gray-700',
                         },
                     },
+                    // prose was in the class
                     onFocus: () => {
                         window.activeTiptapEditor = editor;
                     },
@@ -75,11 +182,103 @@ document.addEventListener('alpine:init', () => {
                     }
                 });
             },
+            getEditor() {
+                return editor;
+            },
 
             destroy() {
                 if (editor) {
                     editor.destroy();
                     editor = null;
+                }
+            },
+
+            runCommand(command, args = null) {
+                if (!editor) return;
+                
+                try {
+                    if (command === 'setColor') {
+                        editor.chain().focus().setMark('textStyle', { color: args }).run();
+                    } else if (command === 'unsetColor') {
+                        editor.chain().focus().removeEmptyTextStyle().run();
+                    } else if (command === 'setTextAlign') {
+                        // Pastikan parameter alignment diterima sebagai string (misal: 'left', 'center')
+                        const alignValue = typeof args === 'object' ? args.textAlign : args;
+                        editor.chain().focus().setTextAlign(alignValue).run();
+                    } else if (command === 'toggleTaskList') {
+                        editor.chain().focus().toggleTaskList().run();
+                    } else if (command === 'toggleCodeBlock') {
+                        editor.chain().focus().toggleCodeBlock().run();
+                    } else {
+                        if (args !== null) {
+                            editor.chain().focus()[command](args).run();
+                        } else {
+                            editor.chain().focus()[command]().run();
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`Gagal menjalankan perintah Tiptap: ${command}`, e);
+                }
+
+                this.updatedAt = Date.now();
+            },
+
+            // runCommand(command, args = null) {
+            //     if (!editor) return;
+                
+            //     // Peta penanganan khusus perintah Tiptap agar tidak error
+            //     try {
+            //         // if (command === 'setColor') {
+            //         //     editor.chain().focus().setColor(args).run();
+            //         // } else if (command === 'unsetColor') {
+            //         //     editor.chain().focus().unsetColor().run();
+            //         // } 
+            //         if (command === 'setColor') {
+            //             // 🌟 Gunakan setMark agar bisa menumpuk dengan bold/italic
+            //             editor.chain().focus().setMark('textStyle', { color: args }).run();
+            //         } else if (command === 'unsetColor') {
+            //             editor.chain().focus().removeEmptyTextStyle().run();
+            //         }
+            //         else if (command === 'setTextAlign') {
+            //             editor.chain().focus().setTextAlign(args).run();
+            //         } else if (command === 'toggleIndent') {
+            //             // Jika ekstensi indent Anda ada, sesuaikan di sini. 
+            //             // Jika memakai perintah umum, pastikan command-nya terdaftar.
+            //             if (typeof editor.chain().focus().toggleIndent === 'function') {
+            //                 editor.chain().focus().toggleIndent().run();
+            //             }
+            //         } else if (command === 'toggleTaskList') {
+            //             editor.chain().focus().toggleTaskList().run();
+            //         } else if (command === 'toggleCodeBlock') {
+            //             editor.chain().focus().toggleCodeBlock().run();
+            //         } else {
+            //             // Perintah standar lainnya
+            //             if (args !== null) {
+            //                 editor.chain().focus()[command](args).run();
+            //             } else {
+            //                 editor.chain().focus()[command]().run();
+            //             }
+            //         }
+            //     } catch (e) {
+            //         console.warn(`Gagal menjalankan perintah Tiptap: ${command}`, e);
+            //     }
+
+            //     this.updatedAt = Date.now();
+            // },
+
+            checkButtonActive(name, params = {}, type = 'default') {
+                const forceReactiveUpdate = this.updatedAt > 0; // Pemicu reaktivitas
+                if (!editor || !forceReactiveUpdate) return false;
+
+                switch (type) {
+                    case 'textAlign':
+                        const currentAlign = editor.getAttributes('paragraph').textAlign || editor.getAttributes('heading').textAlign;
+                        if (!currentAlign) return params.textAlign === 'left';
+                        return currentAlign === params.textAlign;
+                    case 'default':
+                    default:
+                        if (Object.keys(params).length === 0) return editor.isActive(name);
+                        return editor.isActive(name, params);
                 }
             },
 
@@ -149,7 +348,103 @@ document.addEventListener('alpine:init', () => {
                 window.dispatchEvent(new CustomEvent('buka-modal-link', {
                     detail: { text: selectedText }
                 }));
-            }
+            },
+            changeFontFamily(fontName) {
+                if (!editor) return; // 🌟 Ubah di sini
+
+                if (fontName === 'default') {
+                    editor.chain().focus().unsetFontFamily().run();
+                } else {
+                    editor.chain().focus().setFontFamily(fontName).run();
+                }
+                this.updatedAt = Date.now();
+            },
+
+            getCurrentFont() {
+                this.updatedAt; 
+                if (!editor) return 'default'; // 🌟 Ubah di sini
+
+                const attributes = editor.getAttributes('textStyle');
+                return attributes.fontFamily || 'default';
+            },
+
+            setFontSize(size) {
+                if (!editor) return; // 🌟 Ubah di sini
+
+                if (size === 'default') {
+                    editor.chain().focus().unsetFontSize().run();
+                } else {
+                    editor.chain().focus().setFontSize(size).run();
+                }
+                this.updatedAt = Date.now();
+            },
+
+            getCurrentFontSize() {
+                this.updatedAt;
+                if (!editor) return 'default'; // 🌟 Ubah di sini
+
+                const attributes = editor.getAttributes('textStyle');
+                return attributes.fontSize || 'default';
+            },
+            toggleEyebrowIconMenu() {
+                this.isEyebrowIconOpen = !this.isEyebrowIconOpen;
+            },
+            selectEyebrowIcon(icon) {
+                if (!editor) return;
+                if (editor.isActive('eyebrow')) {
+                    editor.chain().focus().setEyebrowIcon(icon).run();
+                } else {
+                    editor.chain().focus().setEyebrow(icon).run();
+                }
+                this.isEyebrowIconOpen = false;
+                this.updatedAt = Date.now();
+            },
+            getCurrentEyebrowIcon() {
+                this.updatedAt; 
+                if (!editor) return EYEBROW_ICONS[0].key;
+                return editor.getAttributes('eyebrow').icon || EYEBROW_ICONS[0].key;
+            },
+            getEyebrowIconSVG(key) {
+                const found = EYEBROW_ICONS.find((item) => item.key === key);
+                return found ? found.svg : EYEBROW_ICONS[0].svg;
+            },
+            togglePillColorMenu() {
+                this.isPillColorOpen = !this.isPillColorOpen;
+            },
+
+            getCurrentPillSwatch() {
+                this.updatedAt;
+                if (!editor) return '#f3f4f6';
+                return editor.getAttributes('pill').backgroundColor || '#f3f4f6';
+            },
+            
+            selectPillPreset(preset) {
+                if (!editor) return;
+                if (typeof editor.chain().focus().setPill === 'function') {
+                    editor.chain().focus().setPill({ backgroundColor: preset.backgroundColor, borderColor: preset.borderColor }).run();
+                }
+                this.isPillColorOpen = false;
+                this.updatedAt = Date.now();
+            },
+            
+            applyCustomPillColor() {
+                if (!editor) return;
+                if (typeof editor.chain().focus().setPill === 'function') {
+                    const attrs = { backgroundColor: this.customPillBg };
+                    if (this.pillBorderEnabled) attrs.borderColor = this.customPillBorder;
+                    editor.chain().focus().setPill(attrs).run();
+                }
+                this.updatedAt = Date.now();
+            },
+            
+            removePill() {
+                if (!editor) return;
+                if (typeof editor.chain().focus().unsetPill === 'function') {
+                    editor.chain().focus().unsetPill().run();
+                }
+                this.isPillColorOpen = false;
+                this.updatedAt = Date.now();
+            },
         };
     });
 });
@@ -157,7 +452,7 @@ document.addEventListener('alpine:init', () => {
 //pageEditor
 document.addEventListener('alpine:init', () => {
     Alpine.data('pageEditor', (initialLocales, initialSplit, localesCount, wireInstance) => ({
-        layoutMode: 'single',
+        layoutMode: 'split', //single split
         singleActiveLang: initialLocales[0] || 'id',
         splitLanguages: initialSplit,
         allLocalesCount: localesCount,
@@ -191,38 +486,7 @@ document.addEventListener('alpine:init', () => {
                 return el.getAttribute("x-sort:item").split("'").join("").split('"').join("").trim();
             });
             wireInstance.addBlockWithOrder(type, currentDomIds);
-        }
+        },
+        
     }));
 });
-
-// document.addEventListener('alpine:init', () => {
-//     Alpine.data('pageEditor', (initialLocales, initialSplit, localesCount) => ({
-//         layoutMode: 'single',
-//         singleActiveLang: initialLocales[0] || 'id',
-//         splitLanguages: initialSplit,
-//         allLocalesCount: localesCount,
-
-//         addSplitLang(lang) {
-//             let maxAllowed = (window.innerWidth > 1440 && this.allLocalesCount >= 3) ? 3 : 2;
-//             if (lang && !this.splitLanguages.includes(lang) && this.splitLanguages.length < maxAllowed) {
-//                 this.splitLanguages.push(lang);
-//             }
-//         },
-//         removeSplitLang(lang) {
-//             if (this.splitLanguages.length > 1) {
-//                 this.splitLanguages = this.splitLanguages.filter(l => l !== lang);
-//             }
-//         },
-//         handleSort(itemIds) {
-//             let ids = Array.isArray(itemIds) ? itemIds : Array.from(itemIds);
-//             let cleanIds = ids.map(id => String(id).split("'").join("").split('"').join("").trim());
-//             $wire.updateBlockOrder(cleanIds);
-//         },
-//         addNewBlock(type) {
-//             let currentDomIds = Array.from(document.querySelectorAll("[x-sort\\:item]")).map(el => {
-//                 return el.getAttribute("x-sort:item").split("'").join("").split('"').join("").trim();
-//             });
-//             $wire.addBlockWithOrder(type, currentDomIds);
-//         }
-//     }));
-// });

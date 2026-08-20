@@ -1,11 +1,11 @@
 @props(['title' => null, 'header' => null])
 
 <aside
-{{ $attributes->merge(['class' => 'flex flex-row items-center justify-between bg-white text-forest rounded-lg h-10 p-2 z-50']) }}
-:class="isExpanded ? '' : ''"
+{{ $attributes->merge(['class' => 'flex flex-row bg-white text-forest items-center border-foresty justify-between rounded-lg h-10 p-2 z-50 transition-all']) }}
+:class="isExpanded ? 'border' : '' "
 >
-    <div class="">
-        <button x-on:click="isExpanded = !isExpanded" class="p-2 flex md:hidden hover:bg-sage-soft text-forest rounded-lg focus:outline-none">
+    <div class="flex">
+        <button x-on:click="isExpanded = !isExpanded" class="p-2 flex md:hidden hover:bg-sage-soft  rounded-lg focus:outline-none">
             <div class="relative flex items-center justify-center w-5 h-5">
                 <span x-cloak
                     :class="isExpanded ? 'rotate-45 translate-y-0' : '-translate-y-1.5'"
@@ -22,7 +22,7 @@
             </div>
         </button>
 
-        <div class="text-sm font-bold text-forest tracking-wide p-2 flex items-center gap-4">
+        <div class="text-sm font-bold tracking-wide p-2 flex items-center gap-4">
             {{ $title }} {{ $header}}
         </div>
     </div>

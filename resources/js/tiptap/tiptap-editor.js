@@ -343,9 +343,9 @@ document.addEventListener('alpine:init', () => {
                         TableHeader,
 
                         TaskList.configure({
-                        HTMLAttributes: {
-                            class: 'not-prose list-none pl-0 my-4 space-y-2',
-                        },
+                            HTMLAttributes: {
+                                class: 'not-prose list-none pl-0 my-4 space-y-2',
+                            },
                         }),
                         TaskItem.configure({
                         HTMLAttributes: {

@@ -81,6 +81,10 @@ new class extends Component
                 <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
 
                     <!-- Kode Tombol Anda -->
+                    <a href="{{ route('page.menu-builder') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
+                        <x-dynamic-component :component="'lucide-panels-top-left'" class="h-5 w-5 origin-bottom-left group-hover:animate-stroke" stroke-width="2"  />
+                        {{ __('Menu Builder') }}
+                    </a>
                     <a href="{{ route('page.create') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
                         <x-dynamic-component :component="'lucide-panels-top-left'" class="h-5 w-5 origin-bottom-left group-hover:animate-stroke" stroke-width="2"  />
                         {{ __('Create') }}
@@ -209,8 +213,28 @@ new class extends Component
                                     {{-- BUTTONS  --}}
                                     <td class="px-4 py-3.5 text-sm">
                                         <div class="flex justify-center items-center gap-2">
+                                            @php
+                                                $rawSlug = $page->slug;
+                                                // Coba jadikan array jika memungkinkan
+                                                $slugData = is_string($rawSlug) ? json_decode($rawSlug, true) : $rawSlug;
+                                                
+                                                // Cadangan paling aman (gunakan ID)
+                                                $slugCantik = $page->id; 
 
-                                            <a wire:navigate href="{{ route('page.edit',['page'=>$page->slug]) }}" class="group p-1.5 rounded-md text-white bg-forest/90 dark:bg-forest/80 relative cursor-pointer hover:bg-forest/70 transition-colors flex items-center justify-center">
+                                                // Jika berhasil menjadi array JSON
+                                                if (is_array($slugData) && !empty($slugData)) {
+                                                    $slugCantik = $slugData[app()->getLocale()] ?? $slugData['id'] ?? $slugData['en'] ?? $page->id;
+                                                } 
+                                                // Jika slug di database ternyata cuma teks biasa (bukan JSON)
+                                                elseif (is_string($slugData) && !empty(trim($slugData))) {
+                                                    $slugCantik = $slugData;
+                                                } 
+                                                elseif (is_string($rawSlug) && !empty(trim($rawSlug))) {
+                                                    $slugCantik = $rawSlug;
+                                                }
+                                            @endphp
+
+                                            <a wire:navigate href="{{ route('page.edit', ['pageSlug' => $slugCantik]) }}" class="group p-1.5 rounded-md text-white bg-forest/90 dark:bg-forest/80 relative cursor-pointer hover:bg-forest/70 transition-colors flex items-center justify-center">
                                                 <flux:icon variant="solid" icon="pencil" class="size-3.5!" />
                                                 <span class="z-30 absolute bottom-full left-0 mb-2 w-max px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-lg dark:bg-gray-100 dark:text-gray-900">
                                                     Sunting
@@ -221,7 +245,7 @@ new class extends Component
                                                 </span>
                                             </a>
 
-                                            <a wire:navigate href="{{ route('page.preview',['page'=>$page->slug]) }}" class="group p-1.5 rounded-md bg-slate-600 text-white dark:bg-slate-800 relative cursor-pointer hover:bg-slate-700 transition-colors flex items-center justify-center">
+                                            <a wire:navigate href="{{ route('page.preview', ['pageSlug' => $slugCantik]) }}" class="group p-1.5 rounded-md bg-slate-600 text-white dark:bg-slate-800 relative cursor-pointer hover:bg-slate-700 transition-colors flex items-center justify-center">
                                                 <flux:icon variant="solid" icon="eye" class="size-3.5!" />
                                                 <span class="z-30 absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-lg dark:bg-gray-100 dark:text-gray-900">
                                                     Pratinjau

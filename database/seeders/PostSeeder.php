@@ -103,6 +103,7 @@ class PostSeeder extends Seeder
         // $post6->tags()->sync(4, 6, 5);
         // $post7->tags()->sync(5, 4, 6);
         $chapter6 = 'hoe........ what';
+        $block = '{"en":[{"id":"blk_6a83dfa0af681","type":"heading","data":{"text":{"id":"","en":""}}}]}';
 
         Page::firstOrCreate(
             // Parameter 1: Kriteria pencarian (cari halaman yang slug-nya 'landing')
@@ -122,10 +123,7 @@ class PostSeeder extends Seeder
                     'id' => 'Sinar Bhakti Husada',
                     'en' => 'Sinar Bhakti Husada'
                     ],
-                'content'           => [
-                    'id' => 'content nu eh di halaman landas',
-                    'en' => $chapter6,
-                    ],
+                'content' => json_decode($block, true),
                 'status'            => 'online',
                 'meta_title'        => [
                     'id' => 'Yayasan Sinar Bhakti Husada',
@@ -159,7 +157,7 @@ class PostSeeder extends Seeder
                     'id' => 'Profile Yayasan',
                     'en' => 'Foundation Profile'
                     ],
-                'content'           => ['id' => ''],
+                'content' => json_decode($block, true),
                 'status'            => 'offline',
                 'meta_title'        => [
                     'id' => 'Profile Yayasan Sinar Bhakti Husada',
@@ -192,7 +190,7 @@ class PostSeeder extends Seeder
                     'id' => 'Daftar Program YSBH',
                     'en' => 'YSBH Programs'
                     ],
-                'content'           => ['id' => ''],
+                'content' => json_decode($block, true),
                 'status'            => 'online',
                 'meta_title'        => [
                     'id' => 'Profile Yayasan Sinar Bhakti Husada',
@@ -225,7 +223,7 @@ class PostSeeder extends Seeder
                     'id' => 'Transparansi Yayasan',
                     'en' => 'Foundation Transparency'
                     ],
-                'content'           => ['id' => ''],
+                'content' => json_decode($block, true),
                 'status'            => 'offline',
                 'meta_title'        => [
                     'id' => 'Profile Yayasan Sinar Bhakti Husada',
@@ -244,7 +242,7 @@ class PostSeeder extends Seeder
             // Parameter 1: Kriteria pencarian (cari halaman yang slug-nya 'landing')
             // ['slug' => 'transparancy'],
             [
-                'slug->end' => "credibility"
+                'slug->en' => "credibility"
             ],
 
             // Parameter 2: Data yang diisi jika halamannya belum ada
@@ -258,7 +256,7 @@ class PostSeeder extends Seeder
                     'id' => 'Kredibilitasn Yayasan',
                     'en' => 'Foundation Credibility'
                     ],
-                'content'           => ['id' => ''],
+                'content' => json_decode($block, true),
                 'status'            => 'offline',
                 'meta_title'        => [
                     'id' => 'Profile Yayasan Sinar Bhakti Husada',
@@ -291,7 +289,7 @@ class PostSeeder extends Seeder
                     'id' => 'Dampak Yayasan',
                     'en' => 'Foundation Impact'
                     ],
-                'content'           => ['id' => ''],
+                'content' => json_decode($block, true),
                 'status'            => 'offline',
                 'meta_title'        => [
                     'id' => 'Profile Yayasan Sinar Bhakti Husada',

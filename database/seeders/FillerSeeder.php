@@ -8,6 +8,7 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Tag;
 use App\Models\Category;
+use App\Models\Navigation;
 use App\Models\Post;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
@@ -256,6 +257,97 @@ class FillerSeeder extends Seeder
                     'id' => 'Kabupaten Jayapura',
                     'en' => 'Jayapura Regency'
                     ],
+                'created_at'        => \Carbon\Carbon::parse('31 July 2026 00:00:00'),
+            ]
+        );
+        Navigation::firstOrCreate(
+            [   'route_name' => 'home', ],
+            [   'label' => [
+                    'id' => 'Beranda',
+                    'en' => 'Home'
+                    ],
+                'route_name' => 'home',
+                'url' => null,
+                'order' => 0,
+                'is_active' => true,
+                'created_at'        => \Carbon\Carbon::parse('31 July 2026 00:00:00'),
+            ]
+        );
+        Navigation::firstOrCreate(
+            [   'route_name' => 'programs', ],
+            [   'label' => [
+                    'id' => 'Program',
+                    'en' => 'Programs'
+                    ],
+                'route_name' => 'programs',
+                'url' => null,
+                'order' => 0,
+                'is_active' => true,
+                'created_at'        => \Carbon\Carbon::parse('31 July 2026 00:00:00'),
+            ]
+        );
+        Navigation::firstOrCreate(
+            [   'route_name' => 'transparancies', ],
+            [   'label' => [
+                    'id' => 'Transparansi',
+                    'en' => 'Transparancies'
+                    ],
+                'route_name' => 'transparancies',
+                'url' => null,
+                'order' => 0,
+                'is_active' => true,
+                'created_at'        => \Carbon\Carbon::parse('31 July 2026 00:00:00'),
+            ]
+        );
+        Navigation::firstOrCreate(
+            [   'route_name' => 'credibility', ],
+            [   'label' => [
+                    'id' => 'Kredibilitas',
+                    'en' => 'Credibility'
+                    ],
+                'route_name' => 'credibility',
+                'url' => null,
+                'order' => 0,
+                'is_active' => true,
+                'created_at'        => \Carbon\Carbon::parse('31 July 2026 00:00:00'),
+            ]
+        );
+        Navigation::firstOrCreate(
+            [   'route_name' => 'contact', ],
+            [   'label' => [
+                    'id' => 'Kredibilitas',
+                    'en' => 'Credibility'
+                    ],
+                'route_name' => 'contact',
+                'url' => null,
+                'order' => 0,
+                'is_active' => true,
+                'created_at'        => \Carbon\Carbon::parse('31 July 2026 00:00:00'),
+            ]
+        );
+        Navigation::firstOrCreate(
+            [   'route_name' => 'about', ],
+            [   'label' => [
+                    'id' => 'Tentang Kami',
+                    'en' => 'About Us'
+                    ],
+                'route_name' => 'about',
+                'url' => null,
+                'order' => 0,
+                'is_active' => true,
+                'created_at'        => \Carbon\Carbon::parse('31 July 2026 00:00:00'),
+            ]
+        );
+        Navigation::firstOrCreate(
+            [   'route_name' => 'impact', ],
+            [   'label' => [
+                    'id' => 'Dampak',
+                    'en' => 'Impact'
+                    ],
+                'route_name' => 'impact',
+                'url' => null,
+                'order' => 0,
+                'is_active' => true,
                 'created_at'        => \Carbon\Carbon::parse('31 July 2026 00:00:00'),
             ]
         );

@@ -78,10 +78,20 @@ return new class extends Migration
             $table->integer('order');
             $table->timestamps();
         });
-            Schema::create('settings', function (Blueprint $table) {
+        Schema::create('settings', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique();
             $table->text('value')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('navigations', function (Blueprint $table) {
+            $table->id();
+            $table->json('label'); // Mendukung bahasa 'id' dan 'en'
+            $table->string('route_name')->nullable(); // misal: 'home', 'programs'
+            $table->string('url')->nullable(); // Untuk link eksternal khusus
+            $table->integer('order')->default(0); // Untuk urutan drag & drop
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
@@ -100,5 +110,6 @@ return new class extends Migration
         Schema::dropIfExists('pages');
         Schema::dropIfExists('menus');
         Schema::dropIfExists('settings');
+        Schema::dropIfExists('navigations');
     }
 };

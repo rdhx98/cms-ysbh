@@ -2,25 +2,32 @@
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Livewire\Traits\WithNotifications;
+
 use App\Models\Page;
+
 use Illuminate\Support\Str;
+
 use Spatie\Activitylog\Models\Activity;
+
+use App\Livewire\Traits\WithNotifications;
+use App\Livewire\Traits\HasContentBlocks;
 
 new class extends Component
 {
     use WithFileUploads;
     use WithNotifications;
+    use HasContentBlocks;
 
     public ?Page $page = null;
 
     public array $activeLocales = [];
 
-    public $layoutMode = 'single';          
+    public $layoutMode = 'single';//single split          
     public $singleActiveLang = 'id';       
     public $splitLanguages = [];
 
-    public array $title = [];
+    // public array $title = [];
+    public array $page_title = [];
     public array $slug = [];
     public array $meta_title = [];
     public array $meta_description = [];
@@ -34,12 +41,13 @@ new class extends Component
     protected function rules()
     {
         $rules = [
-            'status'  => 'required|in:draft,published',
+            'status'  => 'required|in:offline,online',
             'content' => 'array',
         ];
 
         foreach ($this->activeLocales as $locale) {
-            $rules["title.{$locale}"] = 'required|string|max:255';
+            // UBAH VALIDASI MENJADI page_title
+            $rules["page_title.{$locale}"] = 'required|string|max:255';
             $rules["slug.{$locale}"]  = 'required|string|max:255';
         }
 
@@ -55,8 +63,9 @@ new class extends Component
 
         foreach ($this->activeLocales as $locale) {
             $lang = strtoupper($locale); 
-            $messages["title.{$locale}.required"] = "Judul ({$lang}) wajib diisi.";
-            $messages["title.{$locale}.max"]      = "Judul ({$lang}) maksimal 255 karakter.";
+            // UBAH PESAN GALAT MENJADI page_title
+            $messages["page_title.{$locale}.required"] = "Judul ({$lang}) wajib diisi.";
+            $messages["page_title.{$locale}.max"]      = "Judul ({$lang}) maksimal 255 karakter.";
             $messages["slug.{$locale}.required"]  = "Slug/URL ({$lang}) wajib diisi.";
             $messages["slug.{$locale}.max"]       = "Slug/URL ({$lang}) maksimal 255 karakter.";
         }
@@ -64,8 +73,9 @@ new class extends Component
         return $messages;
     }
 
-    public function mount($page = null)
+    public function mount($pageSlug = null)
     {
+        // 1. Konfigurasi Bahasa Dasar
         $this->activeLocales = config('app.supported_locales', ['id', 'en']);
         $this->splitLanguages = array_slice($this->activeLocales, 0, 2);
         
@@ -73,27 +83,93 @@ new class extends Component
             $this->singleActiveLang = $this->activeLocales[0] ?? 'id';
         }
 
-        if ($page && $page->exists) {
-            $this->page = $page;
-            $this->status = $page->status ?? 'draft';
-            $this->title = $page->title ?? array_fill_keys($this->activeLocales, '');
-            $this->slug = $page->slug ?? array_fill_keys($this->activeLocales, '');
-            
-            // Petakan konten database menjadi array asosiatif & urutan
-            $rawContent = $page->content ?? [];
-            foreach ($rawContent as $block) {
-                $id = $block['id'] ?? 'blk_' . Str::random(8);
-                $block['id'] = $id;
-                $this->content[$id] = $block;
-                $this->blockOrder[] = $id;
-            }
-        } else {
-            $this->page = new \App\Models\Page();
-            $this->status = 'draft';
-            $this->title = array_fill_keys($this->activeLocales, '');
-            $this->slug = array_fill_keys($this->activeLocales, '');
+        // 2. KUERI PENCARIAN SUPER KETAT & FLEKSIBEL
+        $pageModel = null;
+        if (!empty($pageSlug)) {
+            $pageModel = \App\Models\Page::where(function($query) use ($pageSlug) {
+                // Skenario A: Jika URL berupa ID angka
+                if (is_numeric($pageSlug)) {
+                    $query->where('id', $pageSlug);
+                }
+                
+                // Skenario B: Jika slug disimpan sebagai JSON utuh
+                $query->orWhere('slug->id', $pageSlug)
+                      ->orWhere('slug->en', $pageSlug);
+                      
+                // Skenario C: Jika slug disimpan sebagai teks murni (bukan JSON)
+                $query->orWhere('slug', $pageSlug);
+                
+                // Skenario D: Jurus pamungkas menggunakan LIKE
+                $query->orWhere('slug', 'LIKE', '%"'.$pageSlug.'"%');
+            })->first();
+        } elseif ($pageSlug instanceof \App\Models\Page) {
+            $pageModel = $pageSlug; // Berjaga-jaga jika dipanggil via object binding
         }
 
+        // 3. POPULASI DATA KE FORMULIR JIKA DITEMUKAN
+        if ($pageModel && $pageModel->exists) {
+            $this->page = $pageModel;
+            $this->status = $pageModel->status ?? 'draft';
+            
+            // 🌟 BYPASS MUTATOR: Ambil data mentah persis seperti hasil dd()
+            $modelData = $pageModel->toArray();
+
+            // Ekstrak data (Pasti berbentuk array jika di DB berupa JSON dan sudah di-cast)
+            $titleData = $modelData['title'] ?? [];
+            $slugData = $modelData['slug'] ?? [];
+            $metaTitleData = $modelData['meta_title'] ?? [];
+            $metaDescData = $modelData['meta_description'] ?? [];
+
+            // Pertahanan ekstra jika ternyata masih ada yang berbentuk string JSON
+            $titleData = is_string($titleData) ? json_decode($titleData, true) ?? [] : (is_array($titleData) ? $titleData : []);
+            $slugData = is_string($slugData) ? json_decode($slugData, true) ?? [] : (is_array($slugData) ? $slugData : []);
+            $metaTitleData = is_string($metaTitleData) ? json_decode($metaTitleData, true) ?? [] : (is_array($metaTitleData) ? $metaTitleData : []);
+            $metaDescData = is_string($metaDescData) ? json_decode($metaDescData, true) ?? [] : (is_array($metaDescData) ? $metaDescData : []);
+            
+            // Petakan per bahasa
+            foreach ($this->activeLocales as $loc) {
+                // ✅ Pastikan menggunakan page_title
+                $this->page_title[$loc] = $titleData[$loc] ?? ''; 
+                $this->slug[$loc] = $slugData[$loc] ?? '';
+                $this->meta_title[$loc] = $metaTitleData[$loc] ?? '';
+                $this->meta_description[$loc] = $metaDescData[$loc] ?? '';
+            }
+            
+            // 4. PENYELAMATAN STRUKTUR BLOK (Dari Seeder ke Livewire)
+            $rawContent = $modelData['content'] ?? [];
+            $rawContent = is_string($rawContent) ? json_decode($rawContent, true) ?? [] : (is_array($rawContent) ? $rawContent : []);
+            
+            // Jika konten terbungkus kunci bahasa dari Seeder
+            if (isset($rawContent['id']) && is_array($rawContent['id']) && isset($rawContent['id'][0]['type'])) {
+                $rawContent = $rawContent['id'];
+            } elseif (isset($rawContent['en']) && is_array($rawContent['en']) && isset($rawContent['en'][0]['type'])) {
+                $rawContent = $rawContent['en'];
+            }
+
+            // Petakan ke Editor Grid TipTap
+            $this->content = [];
+            $this->blockOrder = [];
+            foreach ($rawContent as $block) {
+                if (is_array($block) && isset($block['type'])) {
+                    $id = $block['id'] ?? 'blk_' . Str::random(8);
+                    $block['id'] = $id;
+                    $this->content[$id] = $block;
+                    $this->blockOrder[] = $id;
+                }
+            }
+            
+        } else {
+            // 5. HALAMAN BARU (Jika URL benar-benar tidak ditemukan)
+            $this->page = new \App\Models\Page();
+            $this->status = 'offline';
+            // ✅ Gunakan page_title
+            $this->page_title = array_fill_keys($this->activeLocales, ''); 
+            $this->slug = array_fill_keys($this->activeLocales, '');
+            $this->meta_title = array_fill_keys($this->activeLocales, '');
+            $this->meta_description = array_fill_keys($this->activeLocales, '');
+        }
+
+        // 6. BUAT BLOK DEFAULT JIKA EDITOR KOSONG TOTAL
         if (empty($this->content)) {
             $id = 'blk_' . uniqid();
             $this->content[$id] = [
@@ -104,95 +180,12 @@ new class extends Component
             $this->blockOrder = [$id];
         }
     }
+    
 
-    public function addBlockWithOrder($type, $orderedIds = [])
-    {
-        if (!empty($orderedIds)) {
-            $this->updateBlockOrder($orderedIds);
-        }
-        $this->addBlock($type);
-    }
-
-    public function addBlock($type)
-    {
-        $id = 'blk_' . Str::random(8);
-        $this->content[$id] = [
-            'id' => $id,
-            'type' => $type,
-            'data' => $this->getDefaultDataForType($type)
-        ];
-        
-        $this->blockOrder[] = $id; // Letakkan di paling bawah
-    }
-
-    public function removeBlock($blockId)
-    {
-        unset($this->content[$blockId]);
-        $this->blockOrder = array_values(array_filter($this->blockOrder, fn($id) => $id !== $blockId));
-    }
-
-    public function duplicateBlock($id)
-    {
-        if (isset($this->content[$id])) {
-            $newId = 'blk_' . uniqid();
-            $duplicatedBlock = $this->content[$id];
-            $duplicatedBlock['id'] = $newId;
-            
-            // Simpan konten kloningannya
-            $this->content[$newId] = $duplicatedBlock;
-            
-            // Sisipkan ke urutan tepat di bawah blok aslinya
-            $index = array_search($id, $this->blockOrder);
-            if ($index !== false) {
-                array_splice($this->blockOrder, $index + 1, 0, [$newId]);
-            } else {
-                $this->blockOrder[] = $newId;
-            }
-        }
-    }
-
-    public function updateBlockOrder($orderedIds = [])
-    {
-        if (is_string($orderedIds)) {
-            $orderedIds = json_decode($orderedIds, true) ?? [];
-        }
-
-        if (is_array($orderedIds) && !empty($orderedIds)) {
-            // Ambil ID yang valid saja dari hasil drag-and-drop
-            $validIds = array_filter($orderedIds, fn($id) => isset($this->content[$id]));
-            
-            // Amankan sisa blok jika ada yang luput
-            $missingIds = array_diff(array_keys($this->content), $validIds);
-            
-            $this->blockOrder = array_values(array_merge($validIds, $missingIds));
-        }
-    }
-
-    private function getDefaultDataForType($type)
-    {
-        $emptyLocales = [];
-        foreach ($this->activeLocales as $locale) {
-            $emptyLocales[$locale] = '';
-        }
-
-        return match($type) {
-            'heading'    => ['text' => $emptyLocales, 'level' => 'h2'],
-            'paragraph'  => ['text' => $emptyLocales],
-            'image'      => ['url' => ''],
-            'media_text' => ['image_url' => '', 'image_position' => 'left', 'text' => $emptyLocales],
-            'columns'    => [
-                'col_left'  => $emptyLocales,
-                'col_right' => $emptyLocales,
-            ],
-            default => []
-        };
-    }
-
-    public function save()
+    public function save($isPreview = false)
     {
         $this->validate();
 
-        // 🌟 Susun ulang menjadi Array utuh untuk disimpan ke database JSON
         $finalContent = [];
         foreach ($this->blockOrder as $id) {
             if (isset($this->content[$id])) {
@@ -200,7 +193,7 @@ new class extends Component
             }
         }
 
-        $this->page->title            = $this->title;
+        $this->page->title            = $this->page_title;
         $this->page->slug             = $this->slug;
         $this->page->content          = $finalContent; 
         $this->page->meta_title       = $this->meta_title;
@@ -211,29 +204,100 @@ new class extends Component
 
         $this->notifyFlash(__('ui.notification.page_saved'), 'success');
         
-        return redirect()->route('pages.edit', $this->page->id);
+        // 🌟 PENGAMBIL SLUG SUPER KETAT
+        $redirectSlug = null;
+        if (is_array($this->slug) && !empty($this->slug)) {
+            $locale = app()->getLocale();
+            // Ambil dari bahasa aktif, jika tidak ada, paksa ambil elemen pertama apapun bahasanya
+            $redirectSlug = $this->slug[$locale] ?? reset($this->slug);
+        }
+
+       // ... kode lainnya ...
+        if (empty($redirectSlug)) {
+            $redirectSlug = $this->page->id; 
+        }
+
+        // 🌟 Gunakan key 'pageSlug' di sini
+        if (!$isPreview) {
+            return redirect()->route('page.edit', ['pageSlug' => $redirectSlug]);
+        }
+    }
+    public function saveAndPreview()
+    {
+        // 1. Panggil save dengan parameter TRUE 
+        // (Ini akan menyimpan DB dan memunculkan notifikasi, TAPI halamannya tidak akan ter-refresh)
+        $this->save(true); 
+
+        // 2. Dapatkan Slug untuk URL
+        $slugCantik = $this->page->id;
+        if (is_array($this->slug) && !empty($this->slug['id'])) {
+            $slugCantik = $this->slug['id'];
+        } elseif (is_string($this->slug) && !empty($this->slug)) {
+            $slugCantik = $this->slug;
+        }
+
+        // 3. Bangun URL Pratinjau
+        $previewUrl = route('page.preview', ['pageSlug' => $slugCantik]);
+
+        // 4. Picu event ke Alpine.js
+        $this->dispatch('open-preview-panel', url: $previewUrl);
     }
 };
 ?>
 
 <x-slot:title>{{ __('ui.header.write_page') }}</x-slot:title>
 
-<div 
+<div class="h-[calc(100vh-4rem)] flex flex-col overflow-x-hidden bg-gray-50 p-6 box-border"
     x-data='pageEditor(
         @json($activeLocales), 
         @json(array_slice($activeLocales, 0, 2)), 
         {{ count($activeLocales) }},
         $wire
-    )'
-    class="h-[calc(100vh-4rem)] flex flex-col overflow-x-hidden bg-gray-50 p-6 box-border"
->
+    )' 
+    @block-added.window="
+        let newId = $event.detail.id;
+        // Tunggu render DOM selesai, lalu gulirkan halaman secara halus
+        $nextTick(() => {
+            let el = document.getElementById('block-wrapper-' + newId);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    "                   >
     
     <!-- HEADER & TOMBOL SIMPAN -->
     <div class="flex items-center justify-between pb-4 border-b border-gray-200 shrink-0 mb-4">
         <h1 class="text-2xl font-bold text-gray-800">Editor Halaman Multibahasa</h1>
-        <button wire:click="save" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition">
-            Simpan Perubahan
-        </button>
+
+        <!-- KELOMPOK TOMBOL AKSI DI HEADER -->
+        <div class="flex items-center gap-3">
+            
+            <!-- 🌟 Tombol Simpan & Pratinjau (Buka Tab Baru) -->
+            <button wire:click="saveAndPreview" 
+                    wire:loading.attr="disabled"
+                    type="button" 
+                    class="flex items-center gap-2 px-4 py-2 bg-white border border-foresty text-foresty hover:bg-foresty hover:text-white rounded-lg text-sm font-bold shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-foresty focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                
+                <!-- Ikon Loading (Muncul saat proses save berjalan) -->
+                <svg wire:loading wire:target="saveAndPreview" class="animate-spin -ml-1 mr-1 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                
+                <!-- Ikon Mata (Hilang saat loading) -->
+                <svg wire:loading.remove wire:target="saveAndPreview" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                
+                Pratinjau
+            </button>
+
+            {{-- <!-- Tombol Simpan Biasa (Yang sudah Anda miliki) -->
+            <button wire:click="save" 
+                    wire:loading.attr="disabled"
+                    type="button" 
+                    class="flex items-center gap-2 px-4 py-2 bg-foresty text-white hover:bg-[#043b2c] rounded-lg text-sm font-bold shadow-md transition-all duration-200">
+                Simpan
+            </button> --}}
+            <button wire:click="save" class="px-5 py-2.5 bg-foresty hover:bg-forest text-white font-semibold rounded-lg shadow-sm transition">
+                Simpan Perubahan
+            </button>
+        </div>
     </div>
 
     <!-- PESAN GALAT VALIDASI -->
@@ -255,19 +319,19 @@ new class extends Component
         <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
             <button 
                 type="button" 
-                @click="layoutMode = 'split'"
-                :class="layoutMode === 'split' ? 'bg-white text-blue-600 shadow-sm font-bold' : 'text-gray-600 hover:text-gray-900'"
-                class="px-3 py-1.5 text-xs rounded-md transition"
+                @click="layoutMode = 'single'"
+                :class="layoutMode === 'single' ? 'bg-sage-soft text-foersty shadow-sm font-bold' : 'text-gray-600 hover:text-gray-900'"
+                class="px-3 py-1.5 text-xs rounded-md transition cursor-pointer select-none"
             >
-                Split Screen
+                Single View
             </button>
             <button 
                 type="button" 
-                @click="layoutMode = 'single'"
-                :class="layoutMode === 'single' ? 'bg-white text-blue-600 shadow-sm font-bold' : 'text-gray-600 hover:text-gray-900'"
-                class="px-3 py-1.5 text-xs rounded-md transition"
+                @click="layoutMode = 'split'"
+                :class="layoutMode === 'split' ? 'bg-sage-soft text-foersty shadow-sm font-bold' : 'text-gray-600 hover:text-gray-900'"
+                class="px-3 py-1.5 text-xs rounded-md transition cursor-pointer select-none"
             >
-                Tab / Single View
+                Split View
             </button>
         </div>
 
@@ -288,7 +352,7 @@ new class extends Component
                 <span class="text-xs font-semibold text-gray-500">Kolom Split:</span>
                 <template x-for="activeLang in splitLanguages" :key="activeLang">
                     <div class="flex items-center gap-1 bg-blue-50 border border-blue-200 px-2 py-1 rounded-md">
-                        <span class="text-xs font-bold text-blue-700 uppercase" x-text="activeLang"></span>
+                        <span class="text-xs font-bold text-foresty uppercase" x-text="activeLang"></span>
                         <button type="button" @click="removeSplitLang(activeLang)" x-show="splitLanguages.length > 1" class="text-red-500 hover:text-red-700 text-xs font-bold px-1">×</button>
                     </div>
                 </template>
@@ -304,7 +368,7 @@ new class extends Component
     </div>
 
     <!-- AREA KONTEN UTAMA -->
-    <div class="flex-1 overflow-y-auto overflow-x-hidden py-2 pr-2 space-y-8">
+    <div class="flex-1 overflow-y-auto overflow-x-hidden py-2 pr-2 space-y-8 mb-8">
         
         <!-- BAGIAN METADATA -->
         <div :class="{
@@ -319,16 +383,33 @@ new class extends Component
                      class="p-5 bg-white border border-gray-200 rounded-xl shadow-sm space-y-4">
                     <div class="mb-4 flex items-center justify-between">
                         <h3 class="font-bold text-gray-700 text-sm">Metadata ({{ strtoupper($code) }})</h3>
-                        <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">{{ strtoupper($code) }}</span>
+                        <span class="px-2 py-0.5 bg-blue-100 text-foresty text-[10px] font-bold rounded">{{ strtoupper($code) }}</span>
                     </div>
                     <div class="space-y-3">
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Judul Halaman <span class="text-red-500">*</span></label>
-                            <input type="text" wire:model="title.{{ $code }}" class="w-full text-sm border-gray-300 rounded-md shadow-sm">
+                            <input type="text" wire:model="page_title.{{ $code }}" 
+                            placeholder="Contoh: Layanan Kesehatan Ibu dan Anak" 
+                            class="w-full text-md p-2 border-gray-300 rounded-md shadow-sm">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Slug URL</label>
-                            <input type="text" wire:model="slug.{{ $code }}" class="w-full text-xs bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
+                            <input type="text" wire:model="slug.{{ $code }}" 
+                            placeholder="Contoh: layanan-kesehatan-ibu-dan-anak" 
+                            class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Judul Meta</label>
+                            <input type="text" wire:model="meta_title.{{ $code }}" 
+                            placeholder="Contoh: Layanan Kesehatan Ibu & Anak Terpadu | YSBH" 
+                            class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Deskripsi Meta</label>
+                            <textarea row="6" wire:model="meta_description.{{ $code }}" 
+                            {{-- placeholder="Tulis ringkasan singkat (maks. 160 karakter) untuk hasil mesin pencari ..."  --}}
+                            placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
+                            class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500 min-h-36 resize-none"></textarea>
                         </div>
                     </div>
                 </div>
@@ -339,8 +420,8 @@ new class extends Component
         <div class="flex items-center justify-between pt-2">
             <h2 class="text-xl font-bold text-gray-800">Konten Halaman</h2>
             <select wire:model="status" class="border-gray-300 rounded-md shadow-sm text-sm font-medium">
-                <option value="draft">Status: Draft</option>
-                <option value="published">Status: Published</option>
+                <option value="offline">Offline</option>
+                <option value="online">Online</option>
             </select>
         </div>
 
@@ -400,12 +481,16 @@ new class extends Component
                                         </div>
 
                                         {{-- 🌟 2. WIRE:MODEL DIKUNCI MENGGUNAKAN $blockId (MUSTAHIL TERTUKAR/ACAK) --}}
+                                        {{-- @if($block['type'] === 'heading')
+                                            <input id="block-wrapper-{{ $blockId }}" type="text" wire:model="content.{{ $blockId }}.data.text.{{ $code }}" placeholder="Judul H2..." class="w-full text-lg font-bold border-0 border-b-2 border-transparent hover:border-gray-200 focus:border-blue-500 focus:ring-0 p-0 text-gray-800 bg-transparent"> --}}
                                         @if($block['type'] === 'heading')
-                                            <input type="text" wire:model="content.{{ $blockId }}.data.text.{{ $code }}" placeholder="Judul H2..." class="w-full text-lg font-bold border-0 border-b-2 border-transparent hover:border-gray-200 focus:border-blue-500 focus:ring-0 p-0 text-gray-800 bg-transparent">
+                                             <x-blocks.heading :block-id="$blockId" :code="$code" :block="$block" />
+                                        {{-- @elseif($block['type'] === 'paragraph')
+                                            <x-tiptap wire:model="content.{{ $blockId }}.data.text.{{ $code }}" /> --}}
                                         @elseif($block['type'] === 'paragraph')
-                                            <x-tiptap wire:model="content.{{ $blockId }}.data.text.{{ $code }}" />
+                                            <x-blocks.paragraph :block-id="$blockId" :code="$code" :block="$block" />
                                         @elseif($block['type'] === 'columns')
-                                            <div class="space-y-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                                            <div id="block-wrapper-{{ $blockId }}" class="space-y-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
                                                 <div>
                                                     <span class="text-[10px] text-gray-400 font-semibold mb-1 block">KOLOM KIRI</span>
                                                     <x-tiptap wire:model="content.{{ $blockId }}.data.col_left.{{ $code }}" />
@@ -415,6 +500,17 @@ new class extends Component
                                                     <x-tiptap wire:model="content.{{ $blockId }}.data.col_right.{{ $code }}" />
                                                 </div>
                                             </div>
+                                        
+                                        @elseif($block['type'] === 'stats_grid')
+                                            <x-blocks.stats-grid :block-id="$blockId" :code="$code" :block="$block" />
+                                        
+                                        @elseif($block['type'] === 'dynamic_testimonials')
+                                            <x-blocks.dynamic-testimonials :block-id="$blockId" :code="$code" />
+                                        
+                                        @elseif($block['type'] === 'hero_banner')
+                                            <x-blocks.hero-banner :block-id="$blockId" :code="$code" :block="$block" />
+
+                                        
                                         @endif
                                     </div>
                                 @endforeach
@@ -427,20 +523,22 @@ new class extends Component
 
     </div> <!-- Akhir Area Scroll Konten -->
 
-    <!-- TOMBOL TAMBAH BLOK PERMANEN DI BAWAH (Sticky Footer) -->
-    <div class="shrink-0 pt-4 border-t border-gray-200 bg-white -mx-6 -mb-6 p-4 px-6 shadow-lg flex flex-wrap justify-center gap-3 z-20">
-        <button @click="addNewBlock('heading')" type="button" class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium shadow-sm transition">
-            + Tambah Judul
-        </button>
-        <button @click="addNewBlock('paragraph')" type="button" class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium shadow-sm transition">
-            + Tambah Paragraf
-        </button>
-        <button @click="addNewBlock('columns')" type="button" class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium shadow-sm transition">
-            + Tambah 2 Kolom
-        </button>
-        <button @click="addNewBlock('image')" type="button" class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium shadow-sm">
-            + Gambar Tengah
-        </button>
+    <div class="shrink-0 pt-4 border-t border-gray-200 bg-white -mx-6 -mb-6 p-4 px-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] flex flex-wrap justify-center gap-3 z-20">
+        
+        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('heading')" icon="heading-1" label="Judul" />
+        
+        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('paragraph')" icon="align-left" label="Paragraf" />
+        
+        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('columns')" icon="columns" label="2 Kolom" />
+        
+        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('image')" icon="image" label="Gambar" />
+        
+        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('stats_grid')" icon="layout-grid" label="Grid Info" />
+
+        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('dynamic_testimonials')" icon="message-square-quote" label="Testimoni" />
+        
+        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('hero_banner')" icon="image" label="Hero Banner" />
+
     </div>
 
     <!-- MODAL PENCARIAN LINK INTERNAL -->
@@ -466,6 +564,80 @@ new class extends Component
                 <button type="button" @click="open = false" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
                     Tutup
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🌟 PANEL PRATINJAU SLIDE-OVER (Meluncur dari Kanan) -->
+    <div x-data="{
+            previewOpen: false,
+            previewUrl: '',
+            deviceMode: 'desktop', // Pilihan: 'desktop' atau 'mobile'
+        }"
+         @open-preview-panel.window="previewUrl = $event.detail.url; previewOpen = true;"
+         x-cloak
+         class="relative z-[100]"
+         aria-labelledby="slide-over-title" 
+         role="dialog" 
+         aria-modal="true">
+        
+        <div x-show="previewOpen" class="fixed inset-0 overflow-hidden" style="display: none;">
+            <!-- Latar Belakang Gelap (Klik untuk menutup) -->
+            <div x-show="previewOpen" 
+                 x-transition.opacity.duration.300ms
+                 @click="previewOpen = false; previewUrl = ''"
+                 class="absolute inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity"></div>
+
+            <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
+                <!-- Panel Utama -->
+                <div x-show="previewOpen"
+                     x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700"
+                     x-transition:enter-start="translate-x-full"
+                     x-transition:enter-end="translate-x-0"
+                     x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700"
+                     x-transition:leave-start="translate-x-0"
+                     x-transition:leave-end="translate-x-full"
+                     class="pointer-events-auto w-screen max-w-5xl flex flex-col bg-gray-100 shadow-2xl">
+                    
+                    <!-- HEADER PANEL -->
+                    <div class="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+                        <div class="flex items-center gap-6">
+                            <h2 class="text-lg font-extrabold text-foresty" id="slide-over-title">Live Preview</h2>
+                            
+                            <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
+                            <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner hidden md:flex">
+                                <button @click="deviceMode = 'desktop'" :class="deviceMode === 'desktop' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'" class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                    Desktop
+                                </button>
+                                <button @click="deviceMode = 'mobile'" :class="deviceMode === 'mobile' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'" class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                    Mobile
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tombol Tutup -->
+                        <button @click="previewOpen = false; previewUrl = ''" class="rounded-full p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 focus:outline-none transition-colors">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+
+                    <!-- AREA KONTEN (IFRAME) -->
+                    <div class="flex-1 overflow-y-auto bg-gray-200 flex justify-center items-start pt-6 pb-12 transition-all duration-500">
+                        <!-- Wrapper Iframe (Lebarnya menyesuaikan pilihan device) -->
+                        <div class="transition-all duration-500 ease-in-out shadow-2xl overflow-hidden bg-white"
+                             :class="deviceMode === 'desktop' ? 'w-full h-full mx-6 rounded-xl border border-gray-300' : 'w-[375px] h-[812px] rounded-[2.5rem] border-[12px] border-gray-800'">
+                            
+                            <!-- Iframe Halaman Publik -->
+                            <template x-if="previewUrl !== ''">
+                                <iframe :src="previewUrl" class="w-full h-full border-0 bg-white"></iframe>
+                            </template>
+
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>

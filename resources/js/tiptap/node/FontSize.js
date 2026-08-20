@@ -8,28 +8,7 @@ export const FontSize = Extension.create({
             types: ['textStyle'],
         };
     },
-
-    // addGlobalAttributes() {
-    //     return [
-    //         {
-    //             types: this.options.types,
-    //             attributes: {
-    //                 fontSize: {
-    //                     default: null,
-    //                     parseHTML: element => element.style.fontSize?.replace(/['"]+/g, '') || null,
-    //                     renderHTML: attributes => {
-    //                         if (!attributes.fontSize) {
-    //                             return {};
-    //                         }
-    //                         return {
-    //                             style: `font-size: ${attributes.fontSize}`,
-    //                         };
-    //                     },
-    //                 },
-    //             },
-    //         },
-    //     ];
-    // },
+    
     addGlobalAttributes() {
         return [
             {
