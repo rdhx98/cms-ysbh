@@ -81,9 +81,9 @@ new class extends Component
                 <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
 
                     <!-- Kode Tombol Anda -->
-                    <a href="{{ route('page.menu-builder') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
-                        <x-dynamic-component :component="'lucide-panels-top-left'" class="h-5 w-5 origin-bottom-left group-hover:animate-stroke" stroke-width="2"  />
-                        {{ __('Menu Builder') }}
+                    <a href="{{ route('page.menu-builder') }}" wire:navigate class="group inline-flex items-center gap-3 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
+                        <x-dynamic-component :component="'lucide-menu'" class="h-5 w-5 origin-bottom-left group-hover:animate-stroke" stroke-width="2"  />
+                        {{ __('Sort Navigation') }}
                     </a>
                     <a href="{{ route('page.create') }}" wire:navigate class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm cursor-pointer overflow-hidden">
                         <x-dynamic-component :component="'lucide-panels-top-left'" class="h-5 w-5 origin-bottom-left group-hover:animate-stroke" stroke-width="2"  />
@@ -217,18 +217,18 @@ new class extends Component
                                                 $rawSlug = $page->slug;
                                                 // Coba jadikan array jika memungkinkan
                                                 $slugData = is_string($rawSlug) ? json_decode($rawSlug, true) : $rawSlug;
-                                                
+
                                                 // Cadangan paling aman (gunakan ID)
-                                                $slugCantik = $page->id; 
+                                                $slugCantik = $page->id;
 
                                                 // Jika berhasil menjadi array JSON
                                                 if (is_array($slugData) && !empty($slugData)) {
                                                     $slugCantik = $slugData[app()->getLocale()] ?? $slugData['id'] ?? $slugData['en'] ?? $page->id;
-                                                } 
+                                                }
                                                 // Jika slug di database ternyata cuma teks biasa (bukan JSON)
                                                 elseif (is_string($slugData) && !empty(trim($slugData))) {
                                                     $slugCantik = $slugData;
-                                                } 
+                                                }
                                                 elseif (is_string($rawSlug) && !empty(trim($rawSlug))) {
                                                     $slugCantik = $rawSlug;
                                                 }

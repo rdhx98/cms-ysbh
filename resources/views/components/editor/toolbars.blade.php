@@ -1,25 +1,25 @@
 {{-- BENJAMIN BUTTONS V2 DENGAN SISTEM TAB TERPISAH (VERSI MIKRO) --}}
 <div x-data="{ expanded: false, activeTab: 'format' }" class="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 w-full flex flex-col rounded-t-lg">
-    
+
     {{-- ================= BARIS 1: MENU TAB NAVIGASI ================= --}}
     <div class="flex items-center gap-1 overflow-x-auto scrollbar-none border-b border-zinc-200 dark:border-zinc-700 px-2 pt-1.5 shrink-0 bg-white dark:bg-zinc-900/40">
-        
-        <button type="button" @click="activeTab = 'format'" 
+
+        <button type="button" @click="activeTab = 'format'"
             :class="activeTab === 'format' ? 'bg-zinc-200 dark:bg-zinc-800 text-foresty shadow-xs font-semibold' : 'text-zinc-600 hover:bg-zinc-200/60'"
             class="px-3 py-2 text-xs rounded-t-md transition-colors whitespace-nowrap cursor-pointer">
-            Format & Teks
+            Teks
         </button>
-        
-        <button type="button" @click="activeTab = 'layout'" 
+
+        <button type="button" @click="activeTab = 'layout'"
             :class="activeTab === 'layout' ? 'bg-zinc-200 dark:bg-zinc-800 text-foresty shadow-xs font-semibold' : 'text-zinc-600 hover:bg-zinc-200/60'"
             class="px-3 py-2 text-xs rounded-t-md transition-colors whitespace-nowrap cursor-pointer">
-            Media & Tautan
+            Format
         </button>
     </div>
 
     {{-- ================= BARIS 2: KONTEN TOOLS & AKSI KANAN ================= --}}
     <div class="flex items-center justify-between w-full px-2 md:px-6 min-h-14">
-        
+
         {{-- Area Tombol Tools --}}
         <div x-data="{ isMobile: window.matchMedia('(pointer: coarse)').matches }"
             @resize.window.debounce.100ms="isMobile = window.matchMedia('(pointer: coarse)').matches"
@@ -30,7 +30,7 @@
 
             {{-- TAB 1: FORMAT & TEKS --}}
             <div x-show="activeTab === 'format'" class="flex items-center gap-1.5 flex-wrap">
-                
+
                 {{-- BOLD | ITALIC | STRIKE | UNDERLINE --}}
                 <div class="flex items-center gap-1 shrink-0">
                     <x-buttons.toolbar command="toggleBold" activeName="bold" title="Tebal (Ctrl+B)" icon="bold" />
@@ -112,8 +112,11 @@
                     </div>
                 </div>
 
-                {{-- INDENTATION & ALIGNMENT --}}
-                <div class="flex items-center gap-1 md:border-l md:border-zinc-300 md:dark:border-zinc-700 md:pl-2 shrink-0">
+            </div>
+
+            {{-- TAB 2: MEDIA & TAUTAN --}}
+            <div x-show="activeTab === 'layout'" class="flex items-center gap-1.5 flex-wrap" style="display: none;">
+                <div class="flex items-center gap-1 md:border-zinc-300 md:dark:border-zinc-700 md:pl-2 shrink-0">
                     <x-buttons.toolbar command="setTextAlign" activeName="left" activeParams="{ textAlign: 'left' }" activeType="textAlign" title="Rata Kiri" icon="align-left" />
                     <x-buttons.toolbar command="setTextAlign" activeName="center" activeParams="{ textAlign: 'center' }" activeType="textAlign" title="Rata Tengah" icon="align-center" />
                     <x-buttons.toolbar command="setTextAlign" activeName="right" activeParams="{ textAlign: 'right' }" activeType="textAlign" title="Rata Kanan" icon="align-right" />
@@ -158,7 +161,7 @@
                     </div>
 
                     {{-- PILL --}}
-                    <div class="relative inline-block">
+                    {{-- <div class="relative inline-block">
                         <button type="button" @click="togglePillColorMenu()"
                             :class="checkButtonActive('pill') ? 'bg-sage-soft text-forest' : 'text-gray-600 hover:bg-gray-100'"
                             class="flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors"
@@ -198,7 +201,7 @@
                                 Hapus Pill
                             </button>
                         </div>
-                    </div>
+                    </div> --}}
                 </div>
 
                 <!-- DIVIDER -->
@@ -209,10 +212,6 @@
                     <x-buttons.toolbar command="toggleBlockquote" activeName="blockquote" title="Kutipan" icon="quote" />
                     <x-buttons.toolbar command="toggleCodeBlock" activeName="codeBlock" title="Blok Kode" icon="code-xml" />
                 </div>
-            </div>
-
-            {{-- TAB 2: MEDIA & TAUTAN --}}
-            <div x-show="activeTab === 'layout'" class="flex items-center gap-1.5 flex-wrap" style="display: none;">
                 <div class="flex items-center gap-1 shrink-0">
                     <button type="button" @click="openInternalLinkModal();"
                         :class="checkButtonActive('link', {}, 'default') ? 'bg-sage-soft text-forest font-semibold shadow-sm' : 'text-gray-600'"

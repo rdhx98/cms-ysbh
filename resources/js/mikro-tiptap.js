@@ -16,6 +16,8 @@ import { Eyebrow } from "./tiptap/node/EyeBrow.js";
 import { Pill } from "./tiptap/node/Pill.js";
 import { ParagraphIndent } from './tiptap/extensions/ParagraphIndent.js'
 
+import Placeholder from '@tiptap/extension-placeholder';
+
 const ALLOWED_FONTS = ['Arial', 'Fraunces', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
 
 const EYEBROW_ICONS = [
@@ -37,8 +39,8 @@ const PILL_COLOR_PRESETS = [
 ];
 
 const SharedExtensions = [
-    StarterKit.configure({ 
-        heading: false, 
+    StarterKit.configure({
+        heading: false,
         // codeBlock: false,
         link: false,
         underline: false,
@@ -46,8 +48,8 @@ const SharedExtensions = [
     }),
     Link.configure({
         openOnClick: false,
-        HTMLAttributes: { 
-            class: 'text-blue-600 font-semibold underline cursor-pointer' 
+        HTMLAttributes: {
+            class: 'text-blue-600 font-semibold underline cursor-pointer'
         }
     }),
     TaskList.configure({
@@ -109,13 +111,20 @@ const SharedExtensions = [
     Eyebrow,
     Pill,
     ParagraphIndent,
+    Placeholder.configure({
+        emptyEditorClass: 'is-editor-empty',
+        placeholder: ({ editor }) => {
+            // Ambil teks dari atribut data-placeholder milik elemen HTML editor ini
+            return editor.options.element.getAttribute('data-placeholder') || 'Ketik di sini...';
+        },
+    }),
 ];
 
 window.addEventListener('insert-link-to-active-editor', (event) => {
     if (window.activeTiptapEditor && event.detail && event.detail.url) {
         const { url, text } = event.detail;
         const editorInstance = window.activeTiptapEditor;
-        
+
         if (text && !editorInstance.state.selection.empty) {
             editorInstance.chain().focus().setLink({ href: url }).run();
         } else if (text) {
@@ -132,7 +141,7 @@ window.addEventListener('insert-link-to-active-editor', (event) => {
 
 //MAIN mikro fx
 document.addEventListener('alpine:init', () => {
-    Alpine.data('tiptap', (entangledContent) => {
+    Alpine.data('tiptap', (entangledContent, placeholderText = 'Ketik di sini...') => {
         // 🌟 KUNCI UTAMA: Simpan instans editor sebagai variabel lokal murni.
         // Dengan ini, Alpine TIDAK AKAN mem-proxy TipTap, sehingga error transaksi musnah.
         let editor = null;
@@ -144,8 +153,8 @@ document.addEventListener('alpine:init', () => {
             linkInputUrl: '',
 
             isEyebrowIconOpen: false,
-            eyebrowIcons: typeof EYEBROW_ICONS !== 'undefined' ? EYEBROW_ICONS : [], 
-            
+            eyebrowIcons: typeof EYEBROW_ICONS !== 'undefined' ? EYEBROW_ICONS : [],
+
             // State Pill Color
             isPillColorOpen: false,
             customPillBg: '#f3f4f6',
@@ -153,7 +162,7 @@ document.addEventListener('alpine:init', () => {
             customPillBorder: '#d1d5db',
             pillColorPresets: PILL_COLOR_PRESETS,
 
-            
+
             init() {
                 editor = new Editor({
                     element: this.$refs.editorElement,
@@ -161,7 +170,7 @@ document.addEventListener('alpine:init', () => {
                     content: this.content || '',
                     editorProps: {
                         attributes: {
-                            class: 'max-w-none focus:outline-none min-h-[900px] p-4 text-gray-700',
+                            class: '',
                         },
                     },
                     // prose was in the class
@@ -182,6 +191,14 @@ document.addEventListener('alpine:init', () => {
                     }
                 });
             },
+
+            focusEditor() {
+                // Pastikan editor sudah jalan, lalu paksa fokus
+                if (editor) {
+                    editor.chain().focus().run();
+                }
+            },
+
             getEditor() {
                 return editor;
             },
@@ -195,7 +212,7 @@ document.addEventListener('alpine:init', () => {
 
             runCommand(command, args = null) {
                 if (!editor) return;
-                
+
                 try {
                     if (command === 'setColor') {
                         editor.chain().focus().setMark('textStyle', { color: args }).run();
@@ -225,14 +242,14 @@ document.addEventListener('alpine:init', () => {
 
             // runCommand(command, args = null) {
             //     if (!editor) return;
-                
+
             //     // Peta penanganan khusus perintah Tiptap agar tidak error
             //     try {
             //         // if (command === 'setColor') {
             //         //     editor.chain().focus().setColor(args).run();
             //         // } else if (command === 'unsetColor') {
             //         //     editor.chain().focus().unsetColor().run();
-            //         // } 
+            //         // }
             //         if (command === 'setColor') {
             //             // 🌟 Gunakan setMark agar bisa menumpuk dengan bold/italic
             //             editor.chain().focus().setMark('textStyle', { color: args }).run();
@@ -242,7 +259,7 @@ document.addEventListener('alpine:init', () => {
             //         else if (command === 'setTextAlign') {
             //             editor.chain().focus().setTextAlign(args).run();
             //         } else if (command === 'toggleIndent') {
-            //             // Jika ekstensi indent Anda ada, sesuaikan di sini. 
+            //             // Jika ekstensi indent Anda ada, sesuaikan di sini.
             //             // Jika memakai perintah umum, pastikan command-nya terdaftar.
             //             if (typeof editor.chain().focus().toggleIndent === 'function') {
             //                 editor.chain().focus().toggleIndent().run();
@@ -311,7 +328,7 @@ document.addEventListener('alpine:init', () => {
                 if (!editor) return;
                 editor.chain().focus().setTextAlign(align).run();
             },
-            
+
             setLink() {
                 if (!editor) return;
                 window.activeTiptapEditor = editor;
@@ -361,7 +378,7 @@ document.addEventListener('alpine:init', () => {
             },
 
             getCurrentFont() {
-                this.updatedAt; 
+                this.updatedAt;
                 if (!editor) return 'default'; // 🌟 Ubah di sini
 
                 const attributes = editor.getAttributes('textStyle');
@@ -400,7 +417,7 @@ document.addEventListener('alpine:init', () => {
                 this.updatedAt = Date.now();
             },
             getCurrentEyebrowIcon() {
-                this.updatedAt; 
+                this.updatedAt;
                 if (!editor) return EYEBROW_ICONS[0].key;
                 return editor.getAttributes('eyebrow').icon || EYEBROW_ICONS[0].key;
             },
@@ -417,7 +434,7 @@ document.addEventListener('alpine:init', () => {
                 if (!editor) return '#f3f4f6';
                 return editor.getAttributes('pill').backgroundColor || '#f3f4f6';
             },
-            
+
             selectPillPreset(preset) {
                 if (!editor) return;
                 if (typeof editor.chain().focus().setPill === 'function') {
@@ -426,7 +443,7 @@ document.addEventListener('alpine:init', () => {
                 this.isPillColorOpen = false;
                 this.updatedAt = Date.now();
             },
-            
+
             applyCustomPillColor() {
                 if (!editor) return;
                 if (typeof editor.chain().focus().setPill === 'function') {
@@ -436,7 +453,7 @@ document.addEventListener('alpine:init', () => {
                 }
                 this.updatedAt = Date.now();
             },
-            
+
             removePill() {
                 if (!editor) return;
                 if (typeof editor.chain().focus().unsetPill === 'function') {
@@ -468,25 +485,25 @@ document.addEventListener('alpine:init', () => {
                 this.splitLanguages = this.splitLanguages.filter(l => l !== lang);
             }
         },
-        
+
         // 🌟 PERBAIKAN TOTAL DI SINI: Kosongkan parameternya
         handleSort() {
-            // Abaikan parameter bawaan Alpine. 
+            // Abaikan parameter bawaan Alpine.
             // Langsung scan ulang seluruh DOM persis setelah blok dijatuhkan (drop).
             let currentDomIds = Array.from(document.querySelectorAll("[x-sort\\:item]")).map(el => {
                 return el.getAttribute("x-sort:item").split("'").join("").split('"').join("").trim();
             });
-            
+
             // Kirim urutan yang 100% akurat ke Livewire
             wireInstance.updateBlockOrder(currentDomIds);
         },
-        
+
         addNewBlock(type) {
             let currentDomIds = Array.from(document.querySelectorAll("[x-sort\\:item]")).map(el => {
                 return el.getAttribute("x-sort:item").split("'").join("").split('"').join("").trim();
             });
             wireInstance.addBlockWithOrder(type, currentDomIds);
         },
-        
+
     }));
 });
