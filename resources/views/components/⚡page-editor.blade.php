@@ -38,6 +38,8 @@ new class extends Component
 
     public $status;
 
+    public $isEditMode = false;
+
     protected function rules()
     {
         $rules = [
@@ -108,6 +110,7 @@ new class extends Component
 
         // 3. POPULASI DATA KE FORMULIR JIKA DITEMUKAN
         if ($pageModel && $pageModel->exists) {
+            $this->isEditMode = true;
             $this->page = $pageModel;
             $this->status = $pageModel->status ?? 'draft';
 
@@ -160,6 +163,7 @@ new class extends Component
 
         } else {
             // 5. HALAMAN BARU (Jika URL benar-benar tidak ditemukan)
+            $this->isEditMode = false;
             $this->page = new \App\Models\Page();
             $this->status = 'offline';
             // ✅ Gunakan page_title
@@ -184,6 +188,7 @@ new class extends Component
 
     public function save($isPreview = false)
     {
+
         $this->validate();
 
         $finalContent = [];
@@ -202,25 +207,35 @@ new class extends Component
 
         $this->page->save();
 
-        $this->notifyFlash(__('ui.notification.page_saved'), 'success');
+        if ($this->isEditMode && !$isPreview) {
+            
+            // 🌟 PENGAMBIL SLUG SUPER KETAT
+            $redirectSlug = null;
+            if (is_array($this->slug) && !empty($this->slug)) {
+                $locale = app()->getLocale();
+                // Ambil dari bahasa aktif, jika tidak ada, paksa ambil elemen pertama apapun bahasanya
+                $redirectSlug = $this->slug[$locale] ?? reset($this->slug);
+            }
+            // Dapatkan URL edit yang baru berdasarkan slug/id yang baru disimpan
+            $editUrl = route('page.edit', ['pageSlug' => $redirectSlug]);
 
-        // 🌟 PENGAMBIL SLUG SUPER KETAT
-        $redirectSlug = null;
-        if (is_array($this->slug) && !empty($this->slug)) {
-            $locale = app()->getLocale();
-            // Ambil dari bahasa aktif, jika tidak ada, paksa ambil elemen pertama apapun bahasanya
-            $redirectSlug = $this->slug[$locale] ?? reset($this->slug);
+            // 🌟 UBAH URL BROWSER TANPA REDIRECT (ZERO BLINK)
+            // Ini akan mengganti /pages/create menjadi /pages/slug-baru/edit di address bar
+            $this->js("window.history.replaceState(null, '', '{$editUrl}');");
+            
+            $this->isEditMode = true;
         }
-
+        // $this->notifyFlash(__('ui.notification.page_saved'), 'success');
+        $this->notify(__('ui.notification.page_saved'), 'success');
        // ... kode lainnya ...
-        if (empty($redirectSlug)) {
-            $redirectSlug = $this->page->id;
-        }
+        // if (empty($redirectSlug)) {
+        //     $redirectSlug = $this->page->id;
+        // }
 
-        // 🌟 Gunakan key 'pageSlug' di sini
-        if (!$isPreview) {
-            return redirect()->route('page.edit', ['pageSlug' => $redirectSlug]);
-        }
+        // // 🌟 Gunakan key 'pageSlug' di sini
+        // if (!$isPreview) {
+        //     return redirect()->route('page.edit', ['pageSlug' => $redirectSlug]);
+        // }
     }
     public function saveAndPreview()
     {
@@ -443,7 +458,7 @@ new class extends Component
                     <div
                         wire:key="block-{{ $blockId }}"
                         x-sort:item="'{{ $blockId }}'"
-                        class="group relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:border-blue-300 transition-colors"
+                        class="group relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:border-forest transition-colors"
                     >
                         <!-- Drag Handle -->
                         <div class="absolute top-1/2 -left-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
