@@ -1,10 +1,15 @@
-@props(['blockId', 'code', 'block'])
+@props([
+    'blockId',
+    'code',
+    'block',
+    'allContent' => [] // Tambahkan fallback array kosong agar tidak error jika dipanggil di root
+])
 
 <div id="block-wrapper-{{ $blockId }}" class="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                                
+
     <div class="flex flex-wrap items-center justify-between border-b border-gray-200 pb-3 gap-4">
         <span class="text-xs font-bold text-gray-500 uppercase">Grid Info / Statistik</span>
-        
+
         <div class="flex flex-wrap items-center gap-4">
             <div class="flex items-center gap-3 bg-white px-3 py-1 rounded-md border border-gray-200 shadow-sm">
                 <div class="flex items-center gap-1.5" title="Warna Angka Utama">
@@ -37,7 +42,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         @foreach($block['data']['items'] as $itemIndex => $item)
             <div class="p-4 bg-white border border-dashed border-gray-300 rounded-lg relative group">
-                
+
                 <button wire:click="removeStatItem('{{ $blockId }}', {{ $itemIndex }})" type="button" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Hapus Kotak">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>

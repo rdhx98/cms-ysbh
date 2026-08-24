@@ -191,24 +191,30 @@ new class extends Component
 
         $this->validate();
 
-        $finalContent = [];
-        foreach ($this->blockOrder as $id) {
-            if (isset($this->content[$id])) {
-                $finalContent[] = $this->content[$id];
-            }
-        }
+        // $finalContent = [];
+        // foreach ($this->blockOrder as $id) {
+        //     if (isset($this->content[$id])) {
+        //         $finalContent[] = $this->content[$id];
+        //     }
+        // }
 
         $this->page->title            = $this->page_title;
         $this->page->slug             = $this->slug;
-        $this->page->content          = $finalContent;
+
+        $this->page->content          = [
+            'blocks' => $this->content,       // Berisi SELURUH blok (induk & anak) dengan key ID (blk_...)
+            'order'  => $this->blockOrder     // Berisi HANYA urutan ID blok level terluar (root)
+        ];
+
+        // $this->page->content          = $finalContent;
         $this->page->meta_title       = $this->meta_title;
         $this->page->meta_description = $this->meta_description;
         $this->page->status           = $this->status;
 
         $this->page->save();
 
-        if ($this->isEditMode && !$isPreview) {
-            
+        if (!$this->isEditMode && !$isPreview) {
+
             // 🌟 PENGAMBIL SLUG SUPER KETAT
             $redirectSlug = null;
             if (is_array($this->slug) && !empty($this->slug)) {
@@ -216,13 +222,17 @@ new class extends Component
                 // Ambil dari bahasa aktif, jika tidak ada, paksa ambil elemen pertama apapun bahasanya
                 $redirectSlug = $this->slug[$locale] ?? reset($this->slug);
             }
+
+            if (empty($redirectSlug)) {
+                $redirectSlug = $this->page->id;
+            }
             // Dapatkan URL edit yang baru berdasarkan slug/id yang baru disimpan
             $editUrl = route('page.edit', ['pageSlug' => $redirectSlug]);
 
             // 🌟 UBAH URL BROWSER TANPA REDIRECT (ZERO BLINK)
             // Ini akan mengganti /pages/create menjadi /pages/slug-baru/edit di address bar
             $this->js("window.history.replaceState(null, '', '{$editUrl}');");
-            
+
             $this->isEditMode = true;
         }
         // $this->notifyFlash(__('ui.notification.page_saved'), 'success');
@@ -449,8 +459,7 @@ new class extends Component
                 ghostClass: 'opacity-50',
                 dragClass: 'shadow-2xl'
             }"
-            class="flex flex-col gap-6"
-        >
+            class="flex flex-col gap-6"  >
             {{-- 🌟 1. LOOP MENGGUNAKAN $blockOrder AGAR URUTAN TETAP UTUH --}}
             @foreach($blockOrder as $blockId)
                 @php $block = $content[$blockId] ?? null; @endphp
@@ -490,43 +499,41 @@ new class extends Component
                                     <div x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))"
                                         class="space-y-3">
 
-                                        <div class="flex items-center justify-between">
+                                        {{-- <div class="flex items-center justify-between">
                                             <span class="text-[10px] font-bold text-gray-400 uppercase" x-text="layoutMode === 'split' ? 'Bahasa: ' + '{{ strtoupper($code) }}' : ''"></span>
                                             <span x-show="layoutMode === 'single'" class="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold uppercase rounded">Bahasa: {{ strtoupper($code) }}</span>
-                                        </div>
+                                        </div> --}}
 
                                         {{-- 🌟 2. WIRE:MODEL DIKUNCI MENGGUNAKAN $blockId (MUSTAHIL TERTUKAR/ACAK) --}}
                                         {{-- @if($block['type'] === 'heading')
                                             <input id="block-wrapper-{{ $blockId }}" type="text" wire:model="content.{{ $blockId }}.data.text.{{ $code }}" placeholder="Judul H2..." class="w-full text-lg font-bold border-0 border-b-2 border-transparent hover:border-gray-200 focus:border-blue-500 focus:ring-0 p-0 text-gray-800 bg-transparent"> --}}
-                                        @if($block['type'] === 'heading')
-                                             <x-blocks.heading :block-id="$blockId" :code="$code" :block="$block" />
-                                        {{-- @elseif($block['type'] === 'paragraph')
-                                            <x-tiptap wire:model="content.{{ $blockId }}.data.text.{{ $code }}" /> --}}
+                                        <x-dynamic-component
+                                            :component="'blocks.editor.' . str_replace('_', '-', $block['type'])"
+                                            :block-id="$blockId"
+                                            :code="$code"
+                                            :block="$block"
+                                            :all-content="$content" {{-- 🌟 TAMBAHKAN INI --}}
+                                        />
+
+                                        {{-- @if($block['type'] === 'heading')
+                                             <x-blocks.editor.heading :block-id="$blockId" :code="$code" :block="$block" />
+
                                         @elseif($block['type'] === 'paragraph')
-                                            <x-blocks.paragraph :block-id="$blockId" :code="$code" :block="$block" />
+                                            <x-blocks.editor.paragraph :block-id="$blockId" :code="$code" :block="$block" />
+
                                         @elseif($block['type'] === 'columns')
-                                            <div id="block-wrapper-{{ $blockId }}" class="space-y-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
-                                                <div>
-                                                    <span class="text-[10px] text-gray-400 font-semibold mb-1 block">KOLOM KIRI</span>
-                                                    <x-tiptap wire:model="content.{{ $blockId }}.data.col_left.{{ $code }}" />
-                                                </div>
-                                                <div>
-                                                    <span class="text-[10px] text-gray-400 font-semibold mb-1 block">KOLOM KANAN</span>
-                                                    <x-tiptap wire:model="content.{{ $blockId }}.data.col_right.{{ $code }}" />
-                                                </div>
-                                            </div>
+                                            <x-blocks.editor.columns :block-id="$blockId" :code="$code" :block="$block" />
 
                                         @elseif($block['type'] === 'stats_grid')
-                                            <x-blocks.stats-grid :block-id="$blockId" :code="$code" :block="$block" />
+                                            <x-blocks.editor.stats-grid :block-id="$blockId" :code="$code" :block="$block" />
 
                                         @elseif($block['type'] === 'dynamic_testimonials')
-                                            <x-blocks.dynamic-testimonials :block-id="$blockId" :code="$code" />
+                                            <x-blocks.editor.dynamic-testimonials :block-id="$blockId" :code="$code" />
 
                                         @elseif($block['type'] === 'hero_banner')
-                                            <x-blocks.hero-banner :block-id="$blockId" :code="$code" :block="$block" />
+                                            <x-blocks.editor.hero-banner :block-id="$blockId" :code="$code" :block="$block" />
 
-
-                                        @endif
+                                        @endif --}}
                                     </div>
                                 @endforeach
                             </div>
@@ -538,7 +545,7 @@ new class extends Component
 
     </div> <!-- Akhir Area Scroll Konten -->
 
-    <div class="shrink-0 pt-4 border-t border-gray-200 bg-white -mx-6 -mb-6 p-4 px-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] flex flex-wrap justify-center gap-3 z-20">
+    {{-- <div class="shrink-0 pt-4 border-t border-gray-200 bg-white -mx-6 -mb-6 p-4 px-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] flex flex-wrap justify-center gap-3 z-20">
 
         <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('heading')" icon="heading-1" label="Judul" />
 
@@ -553,6 +560,37 @@ new class extends Component
         <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('dynamic_testimonials')" icon="message-square-quote" label="Testimoni" />
 
         <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('hero_banner')" icon="image" label="Hero Banner" />
+
+    </div> --}}
+
+    <!-- AREA TOMBOL TAMBAH BLOK BERDASARKAN KATEGORI -->
+    <div class="shrink-0 pt-4 border-t border-gray-200 bg-white -mx-6 -mb-6 p-4 px-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] flex flex-wrap items-center justify-center gap-6 z-20">
+
+        <!-- KELOMPOK MIKRO (KONTEN UTAMA) -->
+        <div class="flex items-center gap-2 border-r pr-6 border-gray-200">
+            <span class="text-[10px] font-bold text-gray-400 uppercase">Konten:</span>
+            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('heading')" icon="heading-1" label="Judul" />
+            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('paragraph')" icon="align-left" label="Paragraf" />
+            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('image')" icon="image" label="Gambar" />
+        </div>
+
+        <!-- KELOMPOK MAKRO (TATA LETAK & SEKSI) -->
+        <div class="flex items-center gap-2 border-r pr-6 border-gray-200">
+            <span class="text-[10px] font-bold text-gray-400 uppercase">Seksi Layout:</span>
+            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('columns')" icon="columns" label="2 Kolom" />
+            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('stats_grid')" icon="layout-grid" label="Grid Info" />
+            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('dynamic_testimonials')" icon="message-square-quote" label="Testimoni" />
+            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('hero_banner')" icon="image" label="Hero Banner" />
+        </div>
+
+        <!-- KELOMPOK TEMPLATE (JIKA ADA) -->
+        <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold text-gray-400 uppercase">Template:</span>
+            {{-- Contoh tombol yang memuat sekumpulan blok sekaligus --}}
+            <button type="button" wire:click="loadTemplate('landing_page_standard')" class="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition">
+                ✨ Muat Template Standar
+            </button>
+        </div>
 
     </div>
 
@@ -656,4 +694,5 @@ new class extends Component
             </div>
         </div>
     </div>
+
 </div>

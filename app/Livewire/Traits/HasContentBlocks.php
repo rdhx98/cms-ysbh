@@ -5,43 +5,39 @@ use Illuminate\Support\Str;
 
 trait HasContentBlocks
 {
-    public function addBlockWithOrder($type, $orderedIds = [])
-    {
+    public function addBlockWithOrder($type, $orderedIds = []) {
         if (!empty($orderedIds)) {
             $this->updateBlockOrder($orderedIds);
         }
         $this->addBlock($type);
     }
 
-    public function addBlock(String $type)
-    {
+    public function addBlock(String $type) {
         $id = 'blk_' . Str::random(8);
         $this->content[$id] = [
             'id' => $id,
             'type' => $type,
             'data' => $this->getDefaultDataForType($type)
         ];
-        
+
         $this->blockOrder[] = $id; // Letakkan di paling bawah
         $this->dispatch('block-added', id: $id);
     }
 
-    public function removeBlock(String $blockId)
-    {
+    public function removeBlock(String $blockId) {
         unset($this->content[$blockId]);
         $this->blockOrder = array_values(array_filter($this->blockOrder, fn($id) => $id !== $blockId));
     }
 
-    public function duplicateBlock(String $id)
-    {
+    public function duplicateBlock(String $id){
         if (isset($this->content[$id])) {
             $newId = 'blk_' . uniqid();
             $duplicatedBlock = $this->content[$id];
             $duplicatedBlock['id'] = $newId;
-            
+
             // Simpan konten kloningannya
             $this->content[$newId] = $duplicatedBlock;
-            
+
             // Sisipkan ke urutan tepat di bawah blok aslinya
             $index = array_search($id, $this->blockOrder);
             if ($index !== false) {
@@ -52,8 +48,7 @@ trait HasContentBlocks
         }
     }
 
-    public function updateBlockOrder(Array $orderedIds = [])
-    {
+    public function updateBlockOrder(Array $orderedIds = []) {
         if (is_string($orderedIds)) {
             $orderedIds = json_decode($orderedIds, true) ?? [];
         }
@@ -61,16 +56,15 @@ trait HasContentBlocks
         if (is_array($orderedIds) && !empty($orderedIds)) {
             // Ambil ID yang valid saja dari hasil drag-and-drop
             $validIds = array_filter($orderedIds, fn($id) => isset($this->content[$id]));
-            
+
             // Amankan sisa blok jika ada yang luput
             $missingIds = array_diff(array_keys($this->content), $validIds);
-            
+
             $this->blockOrder = array_values(array_merge($validIds, $missingIds));
         }
     }
 
-    private function getDefaultDataForType(String $type)
-    {
+    private function getDefaultDataForType(String $type) {
         $emptyLocales = [];
         foreach ($this->activeLocales as $locale) {
             $emptyLocales[$locale] = '';
@@ -78,7 +72,7 @@ trait HasContentBlocks
 
         return match($type) {
             'heading'    => [
-                'text' => $emptyLocales, 
+                'text' => $emptyLocales,
                 'level' => 'h2'],
             'paragraph'  => [
                 'text' => $emptyLocales
@@ -117,7 +111,7 @@ trait HasContentBlocks
     public function addStatItem(String $blockId)
     {
         $emptyLocales = array_fill_keys($this->activeLocales, '');
-        
+
         // Batasi maksimal 6 kotak
         if (isset($this->content[$blockId]['data']['items']) && count($this->content[$blockId]['data']['items']) < 6) {
             $this->content[$blockId]['data']['items'][] = [
@@ -165,6 +159,36 @@ trait HasContentBlocks
             // Re-index array agar tidak loncat
             $this->content[$blockId]['data'][$arrayKey] = array_values($this->content[$blockId]['data'][$arrayKey]);
         }
+    }
+    /**
+     * Menambahkan blok anak ke dalam zona milik induk (Kontainer)
+     */
+    public function addChildBlock($parentId, $zone, $type = 'paragraph')
+    {
+        // 1. Buat ID unik untuk anak baru
+        $newChildId = 'blk_' . uniqid();
+
+        // 2. Siapkan data default sejajar di root $this->content
+        $this->content[$newChildId] = [
+            'type' => $type,
+            'data' => [
+                'text' => ['id' => '', 'en' => '']
+            ]
+        ];
+
+        // 3. Pastikan array zona tersedia di induk, lalu masukkan ID anak
+        if (!isset($this->content[$parentId]['data'][$zone])) {
+            $this->content[$parentId]['data'][$zone] = [];
+        }
+        $this->content[$parentId]['data'][$zone][] = $newChildId;
+    }
+
+    /**
+     * Menyimpan urutan baru blok anak setelah di drag-and-drop
+     */
+    public function reorderChildBlocks($parentId, $zone, $newOrderIds)
+    {
+        $this->content[$parentId]['data'][$zone] = $newOrderIds;
     }
 
     // Fungsi-fungsi manipulasi blok lainnya ditaruh di sini...

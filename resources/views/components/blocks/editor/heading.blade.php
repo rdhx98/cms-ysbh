@@ -1,4 +1,9 @@
-@props(['blockId', 'code', 'block'])
+@props([
+    'blockId',
+    'code',
+    'block',
+    'allContent' => [] // Tambahkan fallback array kosong agar tidak error jika dipanggil di root
+])
 
 <div id="block-wrapper-{{ $blockId }}" class="space-y-2">
     <div class="flex items-center justify-between">
