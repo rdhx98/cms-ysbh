@@ -7,8 +7,8 @@
     x-data="tiptap(@entangle($attributes->wire('model')), @js($placeholder))"
     wire:ignore
 
-    class="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm focus-within:border-sage-soft focus-within:ring-1 focus-within:ring-sage-soft transition-all"
->
+    class="border border-gray-200 rounded-lg bg-white  shadow-sm focus-within:border-sage-soft focus-within:ring-1 focus-within:ring-sage-soft transition-all">
+    {{-- overflow-hidden --}}
     <x-editor.toolbars />
     {{-- <!-- TOOLBAR MIKRO -->
     <div class="flex flex-wrap items-center gap-1 bg-gray-50 border-b border-gray-200 p-2 text-gray-600">
@@ -48,7 +48,6 @@
     <div x-show="showLinkModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
         <div @click.outside="cancelLink()" class="bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-md p-6 space-y-4">
             <h3 class="text-lg font-bold text-gray-800">Sisipkan Tautan Eksternal</h3>
-
             <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">URL / Tautan (Contoh: https://google.com)</label>
                 <input

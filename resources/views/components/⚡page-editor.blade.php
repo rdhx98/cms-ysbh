@@ -139,25 +139,54 @@ new class extends Component
             }
 
             // 4. PENYELAMATAN STRUKTUR BLOK (Dari Seeder ke Livewire)
+            // $rawContent = $modelData['content'] ?? [];
+            // $rawContent = is_string($rawContent) ? json_decode($rawContent, true) ?? [] : (is_array($rawContent) ? $rawContent : []);
+
+            // // Jika konten terbungkus kunci bahasa dari Seeder
+            // if (isset($rawContent['id']) && is_array($rawContent['id']) && isset($rawContent['id'][0]['type'])) {
+            //     $rawContent = $rawContent['id'];
+            // } elseif (isset($rawContent['en']) && is_array($rawContent['en']) && isset($rawContent['en'][0]['type'])) {
+            //     $rawContent = $rawContent['en'];
+            // }
+
+            // // Petakan ke Editor Grid TipTap
+            // $this->content = [];
+            // $this->blockOrder = [];
+            // foreach ($rawContent as $block) {
+            //     if (is_array($block) && isset($block['type'])) {
+            //         $id = $block['id'] ?? 'blk_' . Str::random(8);
+            //         $block['id'] = $id;
+            //         $this->content[$id] = $block;
+            //         $this->blockOrder[] = $id;
+            //     }
+            // }
+            // 4. PENYELAMATAN STRUKTUR BLOK (Dari Seeder & Database ke Livewire)
             $rawContent = $modelData['content'] ?? [];
             $rawContent = is_string($rawContent) ? json_decode($rawContent, true) ?? [] : (is_array($rawContent) ? $rawContent : []);
 
-            // Jika konten terbungkus kunci bahasa dari Seeder
-            if (isset($rawContent['id']) && is_array($rawContent['id']) && isset($rawContent['id'][0]['type'])) {
-                $rawContent = $rawContent['id'];
-            } elseif (isset($rawContent['en']) && is_array($rawContent['en']) && isset($rawContent['en'][0]['type'])) {
-                $rawContent = $rawContent['en'];
-            }
-
-            // Petakan ke Editor Grid TipTap
             $this->content = [];
             $this->blockOrder = [];
-            foreach ($rawContent as $block) {
-                if (is_array($block) && isset($block['type'])) {
-                    $id = $block['id'] ?? 'blk_' . Str::random(8);
-                    $block['id'] = $id;
-                    $this->content[$id] = $block;
-                    $this->blockOrder[] = $id;
+
+            // 🌟 1. DETEKSI FORMAT BARU (Flat Data Structure)
+            if (isset($rawContent['blocks']) && isset($rawContent['order'])) {
+                $this->content = $rawContent['blocks'];
+                $this->blockOrder = $rawContent['order'];
+            } 
+            // 🌟 2. FALLBACK KE FORMAT LAMA (Untuk kompabilitas dengan Seeder lawas)
+            else {
+                if (isset($rawContent['id']) && is_array($rawContent['id']) && isset($rawContent['id'][0]['type'])) {
+                    $rawContent = $rawContent['id'];
+                } elseif (isset($rawContent['en']) && is_array($rawContent['en']) && isset($rawContent['en'][0]['type'])) {
+                    $rawContent = $rawContent['en'];
+                }
+
+                foreach ($rawContent as $block) {
+                    if (is_array($block) && isset($block['type'])) {
+                        $id = $block['id'] ?? 'blk_' . Str::random(8);
+                        $block['id'] = $id;
+                        $this->content[$id] = $block;
+                        $this->blockOrder[] = $id;
+                    }
                 }
             }
 
@@ -515,25 +544,7 @@ new class extends Component
                                             :all-content="$content" {{-- 🌟 TAMBAHKAN INI --}}
                                         />
 
-                                        {{-- @if($block['type'] === 'heading')
-                                             <x-blocks.editor.heading :block-id="$blockId" :code="$code" :block="$block" />
 
-                                        @elseif($block['type'] === 'paragraph')
-                                            <x-blocks.editor.paragraph :block-id="$blockId" :code="$code" :block="$block" />
-
-                                        @elseif($block['type'] === 'columns')
-                                            <x-blocks.editor.columns :block-id="$blockId" :code="$code" :block="$block" />
-
-                                        @elseif($block['type'] === 'stats_grid')
-                                            <x-blocks.editor.stats-grid :block-id="$blockId" :code="$code" :block="$block" />
-
-                                        @elseif($block['type'] === 'dynamic_testimonials')
-                                            <x-blocks.editor.dynamic-testimonials :block-id="$blockId" :code="$code" />
-
-                                        @elseif($block['type'] === 'hero_banner')
-                                            <x-blocks.editor.hero-banner :block-id="$blockId" :code="$code" :block="$block" />
-
-                                        @endif --}}
                                     </div>
                                 @endforeach
                             </div>
@@ -545,23 +556,6 @@ new class extends Component
 
     </div> <!-- Akhir Area Scroll Konten -->
 
-    {{-- <div class="shrink-0 pt-4 border-t border-gray-200 bg-white -mx-6 -mb-6 p-4 px-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] flex flex-wrap justify-center gap-3 z-20">
-
-        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('heading')" icon="heading-1" label="Judul" />
-
-        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('paragraph')" icon="align-left" label="Paragraf" />
-
-        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('columns')" icon="columns" label="2 Kolom" />
-
-        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('image')" icon="image" label="Gambar" />
-
-        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('stats_grid')" icon="layout-grid" label="Grid Info" />
-
-        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('dynamic_testimonials')" icon="message-square-quote" label="Testimoni" />
-
-        <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('hero_banner')" icon="image" label="Hero Banner" />
-
-    </div> --}}
 
     <!-- AREA TOMBOL TAMBAH BLOK BERDASARKAN KATEGORI -->
     <div class="shrink-0 pt-4 border-t border-gray-200 bg-white -mx-6 -mb-6 p-4 px-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] flex flex-wrap items-center justify-center gap-6 z-20">
@@ -581,6 +575,7 @@ new class extends Component
             <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('stats_grid')" icon="layout-grid" label="Grid Info" />
             <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('dynamic_testimonials')" icon="message-square-quote" label="Testimoni" />
             <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('hero_banner')" icon="image" label="Hero Banner" />
+            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('image')" icon="image-plus" label="Image" />
         </div>
 
         <!-- KELOMPOK TEMPLATE (JIKA ADA) -->
@@ -650,7 +645,8 @@ new class extends Component
                      x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700"
                      x-transition:leave-start="translate-x-0"
                      x-transition:leave-end="translate-x-full"
-                     class="pointer-events-auto w-screen max-w-5xl flex flex-col bg-gray-100 shadow-2xl">
+                     class="pointer-events-auto w-screen max-w-screen flex flex-col bg-gray-100 shadow-2xl">
+                    <!-- max-w-7xl -->
 
                     <!-- HEADER PANEL -->
                     <div class="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">

@@ -48,6 +48,22 @@ trait HasContentBlocks
         }
     }
 
+    // public function updateBlockOrder(Array $orderedIds = []) {
+    //     if (is_string($orderedIds)) {
+    //         $orderedIds = json_decode($orderedIds, true) ?? [];
+    //     }
+
+    //     if (is_array($orderedIds) && !empty($orderedIds)) {
+    //         // Ambil ID yang valid saja dari hasil drag-and-drop
+    //         $validIds = array_filter($orderedIds, fn($id) => isset($this->content[$id]));
+
+    //         // Amankan sisa blok jika ada yang luput
+    //         $missingIds = array_diff(array_keys($this->content), $validIds);
+
+    //         $this->blockOrder = array_values(array_merge($validIds, $missingIds));
+    //     }
+    // }
+
     public function updateBlockOrder(Array $orderedIds = []) {
         if (is_string($orderedIds)) {
             $orderedIds = json_decode($orderedIds, true) ?? [];
@@ -57,8 +73,10 @@ trait HasContentBlocks
             // Ambil ID yang valid saja dari hasil drag-and-drop
             $validIds = array_filter($orderedIds, fn($id) => isset($this->content[$id]));
 
-            // Amankan sisa blok jika ada yang luput
-            $missingIds = array_diff(array_keys($this->content), $validIds);
+            // 🌟 PERBAIKAN KRUSIAL:
+            // Amankan sisa blok DARI URUTAN ROOT SEBELUMNYA, BUKAN DARI SELURUH KONTEN.
+            // Ini mencegah blok anak yang ada di dalam kolom ikut terseret ke luar.
+            $missingIds = array_diff($this->blockOrder, $validIds);
 
             $this->blockOrder = array_values(array_merge($validIds, $missingIds));
         }
@@ -79,11 +97,16 @@ trait HasContentBlocks
                 ],
             'image'      => ['url' => ''],
             'media_text' => ['image_url' => '', 'image_position' => 'left', 'text' => $emptyLocales],
-            'columns'    => [
-                'col_left'  => $emptyLocales,
-                'col_right' => $emptyLocales,
-            ],
+            // 'columns'    => [
+            //     'col_left'  => $emptyLocales,
+            //     'col_right' => $emptyLocales,
+            // ],
             // 🌟 BLOK STATS GRID DENGAN PROPERTI WARNA
+            'columns'    => [
+                'left_zone'  => [],
+                'right_zone' => [],
+                'bg_color'   => 'transparent',
+            ],
             'stats_grid' => [
                 'columns'      => 4,
                 'color_title'  => '#eab308', // Default: Kuning (seperti gambar)

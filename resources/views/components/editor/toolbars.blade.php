@@ -86,7 +86,8 @@
                     </button>
 
                     <div x-show="openColorMenu" @click.away="openColorMenu = false" style="display: none;"
-                        class="absolute top-full left-0 mt-1 bg-white border border-zinc-200 shadow-lg rounded-xl p-3 z-50 flex flex-col gap-3 w-48">
+                        class="absolute top-full left-0 mt-1 bg-white border border-zinc-200 shadow-lg rounded-xl p-3 z-[99] flex flex-col gap-3 w-48">
+                        {{-- DEFAULT COLOR --}}
                         <div>
                             <span class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Warna Brand</span>
                             <div class="flex gap-2">

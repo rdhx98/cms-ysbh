@@ -13,7 +13,7 @@ window.TomSelect = TomSelect;
 Alpine.plugin(collapse);
 Alpine.plugin(sort);
 
-window.Sortable = Sortable;
+// window.Sortable = Sortable;
 
 // Import modul Tiptap Editor yang terpisah
 import './tiptap/tiptap-editor.js';

@@ -50,6 +50,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/page/edit/{pageSlug}', 'page-editor')->name('page.edit');
     // Route::livewire('/page/edit/{page:slug}', 'page-editor')->name('page.edit');
     Route::livewire('/page/preview/{pageSlug}', 'page-preview')->name('page.preview');
+
+    Route::livewire('/page/edit/preview/{pageSlug}', 'page-edit-preview')->name('page.edit-preview');
     // Route::livewire('/page/preview/{page:slug}', 'page-preview')->name('page.preview');
 
     Route::livewire('/page/menu-builder', 'menu-builder')->name('page.menu-builder');

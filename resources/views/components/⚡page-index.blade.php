@@ -184,13 +184,13 @@ new class extends Component
                             @foreach (range(1, 1) as $i)
                                 <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
                                     <!-- TITLE -->
-                                    <td class="w-[30%] px-4 py-3.5 text-sm">
-                                        <div class="font-medium text-zinc-900 dark:text-white">{{ $page->getTranslation('title', 'id') }}</div>
+                                    <td class="max-w-[30%] px-4 py-3.5 text-sm">
+                                        <div class="font-medium truncate text-zinc-900 dark:text-white">{{ $page->getTranslation('title', 'id') }}</div>
                                         {{-- <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $article->author->name }}</div> --}}
                                     </td>
 
                                     <!-- PATH -->
-                                    <td class="w-[30%] px-4 py-0 text-sm h-full align-middle">
+                                    <td class="max-w-[30%] px-4 py-0 text-sm h-full align-middle">
                                         <div class="flex gap-2 items-center justify-start h-full min-h-14">
                                             /{{ $page->slug }}
                                             {{-- <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{ $article->created_at->format('D, d/m/y') }} </div> --}}

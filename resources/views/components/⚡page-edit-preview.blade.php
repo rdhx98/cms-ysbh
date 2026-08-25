@@ -5,7 +5,9 @@ use App\Models\Page;
 use Livewire\Attributes\Layout; // 1. Jangan lupa import ini
 
 
-new class extends Component
+new
+#[Layout('layouts.landing.index')]
+class extends Component
 {
     public ?Page $page = null;
     public string $lang = 'id'; // Default bahasa
@@ -14,13 +16,9 @@ new class extends Component
     public array $allContent = [];
     public array $rootOrder = [];
 
-    public string $viewMode = 'full';
-
+    
     public function mount($pageSlug = null)
     {
-        // 🌟 2. Tangkap parameter '?mode=' dari URL (default: 'full')
-        $this->viewMode = request()->query('mode', 'full');
-
         // 1. Ambil bahasa yang sedang aktif di sistem
         $this->activeLocales = config('app.supported_locales', ['id', 'en']);
         $this->lang = app()->getLocale();
@@ -56,14 +54,6 @@ new class extends Component
         // 🌟 OPSI DEBUG: Buka komentar di bawah ini jika halaman MASIH kosong 
         // untuk melihat isi data yang sebenarnya terdeteksi oleh sistem
         // dd('All Content:', $this->allContent, 'Root Order:', $this->rootOrder);
-    }
-    // 🌟 3. Gunakan render() untuk menentukan layout secara dinamis
-    public function render()
-    {
-        // Jika mode=raw, gunakan layout kosong. Jika tidak, gunakan layout landing/CMS.
-        $layoutName = $this->viewMode === 'raw' ? 'layouts.raw' : 'layouts.landing.index';
-        
-        return view('livewire.page-preview')->layout($layoutName);
     }
 };
 ?>
