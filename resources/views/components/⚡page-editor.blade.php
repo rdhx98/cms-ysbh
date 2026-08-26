@@ -171,7 +171,7 @@ new class extends Component
             if (isset($rawContent['blocks']) && isset($rawContent['order'])) {
                 $this->content = $rawContent['blocks'];
                 $this->blockOrder = $rawContent['order'];
-            } 
+            }
             // 🌟 2. FALLBACK KE FORMAT LAMA (Untuk kompabilitas dengan Seeder lawas)
             else {
                 if (isset($rawContent['id']) && is_array($rawContent['id']) && isset($rawContent['id'][0]['type'])) {
@@ -276,13 +276,30 @@ new class extends Component
         //     return redirect()->route('page.edit', ['pageSlug' => $redirectSlug]);
         // }
     }
+    // public function saveAndPreview()
+    // {
+    //     // 1. Panggil save dengan parameter TRUE
+    //     // (Ini akan menyimpan DB dan memunculkan notifikasi, TAPI halamannya tidak akan ter-refresh)
+    //     $this->save(true);
+
+    //     // 2. Dapatkan Slug untuk URL
+    //     $slugCantik = $this->page->id;
+    //     if (is_array($this->slug) && !empty($this->slug['id'])) {
+    //         $slugCantik = $this->slug['id'];
+    //     } elseif (is_string($this->slug) && !empty($this->slug)) {
+    //         $slugCantik = $this->slug;
+    //     }
+
+    //     // 3. Bangun URL Pratinjau
+    //     $previewUrl = route('page.preview', ['pageSlug' => $slugCantik]);
+
+    //     // 4. Picu event ke Alpine.js
+    //     $this->dispatch('open-preview-panel', url: $previewUrl);
+    // }
     public function saveAndPreview()
     {
-        // 1. Panggil save dengan parameter TRUE
-        // (Ini akan menyimpan DB dan memunculkan notifikasi, TAPI halamannya tidak akan ter-refresh)
         $this->save(true);
 
-        // 2. Dapatkan Slug untuk URL
         $slugCantik = $this->page->id;
         if (is_array($this->slug) && !empty($this->slug['id'])) {
             $slugCantik = $this->slug['id'];
@@ -290,10 +307,12 @@ new class extends Component
             $slugCantik = $this->slug;
         }
 
-        // 3. Bangun URL Pratinjau
-        $previewUrl = route('page.preview', ['pageSlug' => $slugCantik]);
+        // 🌟 PERBAIKAN: Tambahkan parameter mode => 'raw'
+        $previewUrl = route('page.preview', [
+            'pageSlug' => $slugCantik,
+            'mode' => 'raw'
+        ]);
 
-        // 4. Picu event ke Alpine.js
         $this->dispatch('open-preview-panel', url: $previewUrl);
     }
 };
@@ -301,7 +320,7 @@ new class extends Component
 
 <x-slot:title>{{ __('ui.header.write_page') }}</x-slot:title>
 
-<div class="h-[calc(100vh-4rem)] flex flex-col overflow-x-hidden bg-gray-50 p-6 box-border"
+<div class="h-[calc(100vh-4rem)] flex flex-col overflow-x-hidden bg-gray-50 p-2 box-border"
     x-data='pageEditor(
         @json($activeLocales),
         @json(array_slice($activeLocales, 0, 2)),
@@ -320,38 +339,31 @@ new class extends Component
     "                   >
 
     <!-- HEADER & TOMBOL SIMPAN -->
-    <div class="flex items-center justify-between pb-4 border-b border-gray-200 shrink-0 mb-4">
-        <h1 class="text-2xl font-bold text-gray-800">Editor Halaman Multibahasa</h1>
+    <div class="flex items-center justify-between border-gray-200 shrink-0">
+        {{-- <h1 class="text-2xl font-bold text-gray-800">Editor Halaman Multibahasa</h1> --}}
+        <template x-teleport="#editor-toolbar-portal">
+            <!-- KELOMPOK TOMBOL AKSI DI HEADER -->
+            <div class="flex items-center gap-3">
 
-        <!-- KELOMPOK TOMBOL AKSI DI HEADER -->
-        <div class="flex items-center gap-3">
+                <!-- 🌟 Tombol Simpan & Pratinjau (Buka Tab Baru) -->
+                <button wire:click="saveAndPreview"
+                        wire:loading.attr="disabled"
+                        type="button"
+                        class="flex items-center gap-2 px-4 py-1.5 bg-white border border-foresty text-foresty hover:bg-foresty hover:text-white rounded-lg text-xs font-bold shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-foresty focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed">
 
-            <!-- 🌟 Tombol Simpan & Pratinjau (Buka Tab Baru) -->
-            <button wire:click="saveAndPreview"
-                    wire:loading.attr="disabled"
-                    type="button"
-                    class="flex items-center gap-2 px-4 py-2 bg-white border border-foresty text-foresty hover:bg-foresty hover:text-white rounded-lg text-sm font-bold shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-foresty focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <!-- Ikon Loading (Muncul saat proses save berjalan) -->
+                    <svg wire:loading wire:target="saveAndPreview" class="animate-spin -ml-1 mr-1 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
 
-                <!-- Ikon Loading (Muncul saat proses save berjalan) -->
-                <svg wire:loading wire:target="saveAndPreview" class="animate-spin -ml-1 mr-1 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <!-- Ikon Mata (Hilang saat loading) -->
+                    <svg wire:loading.remove wire:target="saveAndPreview" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
 
-                <!-- Ikon Mata (Hilang saat loading) -->
-                <svg wire:loading.remove wire:target="saveAndPreview" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-
-                Pratinjau
-            </button>
-
-            {{-- <!-- Tombol Simpan Biasa (Yang sudah Anda miliki) -->
-            <button wire:click="save"
-                    wire:loading.attr="disabled"
-                    type="button"
-                    class="flex items-center gap-2 px-4 py-2 bg-foresty text-white hover:bg-[#043b2c] rounded-lg text-sm font-bold shadow-md transition-all duration-200">
-                Simpan
-            </button> --}}
-            <button wire:click="save" class="px-5 py-2.5 bg-foresty hover:bg-forest text-white font-semibold rounded-lg shadow-sm transition">
-                Simpan Perubahan
-            </button>
-        </div>
+                    Pratinjau
+                </button>
+                <button wire:click="save" class="px-4 py-1.5 bg-foresty hover:bg-forest text-white text-xs  font-semibold rounded-lg shadow-sm transition">
+                    Simpan Perubahan
+                </button>
+            </div>
+        </template>
     </div>
 
     <!-- PESAN GALAT VALIDASI -->
@@ -367,7 +379,7 @@ new class extends Component
     @endif
 
     <!-- TOOLBAR KONTROL TATA LETAK & BAHASA -->
-    <div class="flex flex-wrap items-center justify-between bg-white p-3 rounded-xl border border-gray-200 shadow-sm shrink-0 mb-6 gap-4">
+    <div class="flex flex-wrap items-center justify-between bg-white py-2 px-3 rounded-xl border border-gray-200 shadow-sm shrink-0  gap-4">
 
         <!-- Pilihan Mode Layout -->
         <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
@@ -422,7 +434,8 @@ new class extends Component
     </div>
 
     <!-- AREA KONTEN UTAMA -->
-    <div class="flex-1 overflow-y-auto overflow-x-hidden py-2 pr-2 space-y-8 mb-8">
+    <!-- <div class="flex-1 overflow-y-auto overflow-x-hidden py-2 pr-2 space-y-8 mb-8"> -->
+    <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-8 pb-24 px-4 space-y-8 ">
 
         <!-- BAGIAN METADATA -->
         <div :class="{
@@ -499,7 +512,7 @@ new class extends Component
                         class="group relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:border-forest transition-colors"
                     >
                         <!-- Drag Handle -->
-                        <div class="absolute top-1/2 -left-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <div class="absolute top-1/2 -left-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-[99]">
                             <button type="button" class="drag-handle cursor-grab active:cursor-grabbing p-2 bg-white border border-gray-200 shadow-md rounded-md text-gray-400 hover:text-gray-700" title="Geser Blok">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8"></path></svg>
                             </button>
@@ -558,7 +571,7 @@ new class extends Component
 
 
     <!-- AREA TOMBOL TAMBAH BLOK BERDASARKAN KATEGORI -->
-    <div class="shrink-0 pt-4 border-t border-gray-200 bg-white -mx-6 -mb-6 p-4 px-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] flex flex-wrap items-center justify-center gap-6 z-20">
+    <div class="shrink-0 border-t border-gray-200 bg-white -mx-2 -mb-2 p-2  shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] flex flex-wrap items-center justify-center gap-6 z-20">
 
         <!-- KELOMPOK MIKRO (KONTEN UTAMA) -->
         <div class="flex items-center gap-2 border-r pr-6 border-gray-200">

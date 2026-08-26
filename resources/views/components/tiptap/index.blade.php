@@ -12,9 +12,9 @@
     <x-editor.toolbars />
     {{-- <!-- TOOLBAR MIKRO -->
     <div class="flex flex-wrap items-center gap-1 bg-gray-50 border-b border-gray-200 p-2 text-gray-600">
-       
 
-        
+
+
 
         <!-- Tombol Link Eksternal -->
         <button type="button" @click="setLink()" :class="{'bg-gray-200 text-gray-900': isActive('link'), 'hover:bg-gray-200': !isActive('link')}" class="p-1.5 rounded text-xs font-medium px-2" title="Link URL">Link</button>
@@ -39,9 +39,9 @@
         @click="focusEditor()"
         :class="{
          'min-h-16': '{{ $blockType }}' === 'heading',
-         'min-h-48': '{{ $blockType }}' !== 'heading'
+         'min-h-24': '{{ $blockType }}' !== 'heading'
         }"
-        class=" max-h-[calc(100vh-60vh)] overflow-y-auto bg-white overscroll-contain">
+        class=" max-h-[calc(100vh-70vh)] overflow-y-auto bg-white overscroll-contain">
     </div>
 
     <!-- MODAL KUSTOM URL EKSTERNAL -->

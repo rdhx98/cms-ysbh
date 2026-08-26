@@ -24,9 +24,28 @@ trait HasContentBlocks
         $this->dispatch('block-added', id: $id);
     }
 
+    // public function removeBlock(String $blockId) {
+    //     unset($this->content[$blockId]);
+    //     $this->blockOrder = array_values(array_filter($this->blockOrder, fn($id) => $id !== $blockId));
+    // }
     public function removeBlock(String $blockId) {
+        // 1. Hapus dari gudang data utama
         unset($this->content[$blockId]);
+
+        // 2. Bersihkan dari urutan terluar (Root)
         $this->blockOrder = array_values(array_filter($this->blockOrder, fn($id) => $id !== $blockId));
+
+        // 3. 🌟 PEMBERSIHAN MENDALAM: Hapus ID hantu dari dalam SEMUA kolom/zona
+        foreach ($this->content as $parentId => $blockData) {
+            // Bersihkan zona kiri jika ada
+            if (isset($blockData['data']['left_zone'])) {
+                $this->content[$parentId]['data']['left_zone'] = array_values(array_filter($blockData['data']['left_zone'], fn($id) => $id !== $blockId));
+            }
+            // Bersihkan zona kanan jika ada
+            if (isset($blockData['data']['right_zone'])) {
+                $this->content[$parentId]['data']['right_zone'] = array_values(array_filter($blockData['data']['right_zone'], fn($id) => $id !== $blockId));
+            }
+        }
     }
 
     public function duplicateBlock(String $id){
@@ -48,6 +67,7 @@ trait HasContentBlocks
         }
     }
 
+
     // public function updateBlockOrder(Array $orderedIds = []) {
     //     if (is_string($orderedIds)) {
     //         $orderedIds = json_decode($orderedIds, true) ?? [];
@@ -57,8 +77,10 @@ trait HasContentBlocks
     //         // Ambil ID yang valid saja dari hasil drag-and-drop
     //         $validIds = array_filter($orderedIds, fn($id) => isset($this->content[$id]));
 
-    //         // Amankan sisa blok jika ada yang luput
-    //         $missingIds = array_diff(array_keys($this->content), $validIds);
+    //         // 🌟 PERBAIKAN KRUSIAL:
+    //         // Amankan sisa blok DARI URUTAN ROOT SEBELUMNYA, BUKAN DARI SELURUH KONTEN.
+    //         // Ini mencegah blok anak yang ada di dalam kolom ikut terseret ke luar.
+    //         $missingIds = array_diff($this->blockOrder, $validIds);
 
     //         $this->blockOrder = array_values(array_merge($validIds, $missingIds));
     //     }
@@ -70,14 +92,18 @@ trait HasContentBlocks
         }
 
         if (is_array($orderedIds) && !empty($orderedIds)) {
-            // Ambil ID yang valid saja dari hasil drag-and-drop
-            $validIds = array_filter($orderedIds, fn($id) => isset($this->content[$id]));
 
-            // 🌟 PERBAIKAN KRUSIAL:
-            // Amankan sisa blok DARI URUTAN ROOT SEBELUMNYA, BUKAN DARI SELURUH KONTEN.
-            // Ini mencegah blok anak yang ada di dalam kolom ikut terseret ke luar.
+            // 🌟 PERBAIKAN BUG: FILTER SUPER KETAT
+            // Alih-alih mengecek isset($this->content[$id]), kita HANYA menerima
+            // ID yang memang sebelumnya sudah terdaftar di $this->blockOrder (root).
+            $validIds = array_filter($orderedIds, function($id) {
+                return in_array($id, $this->blockOrder);
+            });
+
+            // Amankan sisa blok root jika ada yang terlewat oleh frontend
             $missingIds = array_diff($this->blockOrder, $validIds);
 
+            // Gabungkan urutan baru yang valid dengan blok yang tersisa
             $this->blockOrder = array_values(array_merge($validIds, $missingIds));
         }
     }

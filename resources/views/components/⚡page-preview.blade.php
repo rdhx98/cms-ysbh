@@ -5,7 +5,9 @@ use App\Models\Page;
 use Livewire\Attributes\Layout; // 1. Jangan lupa import ini
 
 
-new class extends Component
+new
+#[Layout('layouts.landing.dynamic-preview')]
+class extends Component
 {
     public ?Page $page = null;
     public string $lang = 'id'; // Default bahasa
@@ -41,7 +43,7 @@ new class extends Component
         // 3. 🌟 EKSTRAKSI DATA ANTI-GAGAL (BYPASS ELOQUENT CASTING)
         $modelData = $this->page->toArray();
         $rawContent = $modelData['content'] ?? [];
-        
+
         // Atasi kemungkinan "Double-Encoded JSON"
         if (is_string($rawContent)) {
             $decoded = json_decode($rawContent, true) ?? [];
@@ -53,25 +55,19 @@ new class extends Component
         $this->allContent = $rawContent['blocks'] ?? [];
         $this->rootOrder = $rawContent['order'] ?? [];
 
-        // 🌟 OPSI DEBUG: Buka komentar di bawah ini jika halaman MASIH kosong 
+        // 🌟 OPSI DEBUG: Buka komentar di bawah ini jika halaman MASIH kosong
         // untuk melihat isi data yang sebenarnya terdeteksi oleh sistem
         // dd('All Content:', $this->allContent, 'Root Order:', $this->rootOrder);
     }
     // 🌟 3. Gunakan render() untuk menentukan layout secara dinamis
-    public function render()
-    {
-        // Jika mode=raw, gunakan layout kosong. Jika tidak, gunakan layout landing/CMS.
-        $layoutName = $this->viewMode === 'raw' ? 'layouts.raw' : 'layouts.landing.index';
-        
-        return view('livewire.page-preview')->layout($layoutName);
-    }
+
 };
 ?>
 
-<div class="h-[calc(100vh-4rem)] flex flex-col overflow-x-hidden bg-gray-50 p-6 box-border">
+<div class="h-full flex flex-col overflow-x-hidden  box-border ">
 
     <!-- Header Halaman -->
-    <div class="mb-10 pb-6 border-b border-gray-200 flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div class="mb-10 pb-6 border-b bg-white  border-gray-200 flex flex-col md:flex-row md:items-end justify-between gap-6 p-6">
         <div>
             @php
                 // Ambil judul halaman
@@ -101,17 +97,17 @@ new class extends Component
     </div>
 
     <!-- MESIN RENDER BLOK KONTEN DINAMIS -->
-    <div class="w-full bg-white"> 
+    <div class="w-full">
         {{-- Looping HANYA blok level terluar (Root) dari $rootOrder --}}
         @foreach($rootOrder as $blockId)
             @if(isset($allContent[$blockId]))
                 @php
                     $block = $allContent[$blockId];
                     $componentName = 'blocks.render.' . str_replace('_', '-', $block['type']);
-                    
+
                     // 🌟 1. DAFTARKAN BLOK MAKRO (Blok yang mengatur pembungkusnya sendiri)
                     $macroBlocks = ['columns', 'hero_banner', 'stats_grid', 'dynamic_testimonials'];
-                    
+
                     // Cek apakah blok saat ini adalah blok makro
                     $isMacro = in_array($block['type'], $macroBlocks);
                 @endphp

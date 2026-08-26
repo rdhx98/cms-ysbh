@@ -1,10 +1,10 @@
 @props(['title' => null, 'header' => null])
 
 <aside
-{{ $attributes->merge(['class' => 'flex flex-row bg-white text-forest items-center border-foresty justify-between rounded-lg h-10 p-2 z-50 transition-all']) }}
+{{ $attributes->merge(['class' => 'flex flex-row bg-white text-forest items-center border-foresty justify-between rounded-lg h-10 p-2 gap-4 z-50 transition-all']) }}
 :class="isExpanded ? 'border' : '' "
 >
-    <div class="flex">
+    <div class="flex justify-between items-center w-full">
         <button x-on:click="isExpanded = !isExpanded" class="p-2 flex md:hidden hover:bg-sage-soft  rounded-lg focus:outline-none">
             <div class="relative flex items-center justify-center w-5 h-5">
                 <span x-cloak
@@ -25,9 +25,10 @@
         <div class="text-sm font-bold tracking-wide p-2 flex items-center gap-4">
             {{ $title }} {{ $header}}
         </div>
+        <div id="editor-toolbar-portal"></div>
     </div>
 
-    <div class="hidden md:block">v.22/Aug/26 11:41</div>
+    {{-- <div class="hidden md:block">v.22/Aug/26 11:41</div> --}}
 
     <button
         @click="userMenuExpand = !userMenuExpand"

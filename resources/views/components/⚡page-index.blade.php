@@ -65,6 +65,58 @@ new class extends Component
         // Eksekusi query
         return $query->get();
     }
+    public function deletePage(int $identifier){
+
+        $page = \App\Models\Page::find($identifier);
+        $user = auth()->user();
+        $isAdminOrEditor = $user->hasRole(['admin', 'editor']); // array dibolehkan di Spatie
+        $isOwner = $page->user_id === $user->id;
+
+        if (!$isAdminOrEditor && !$isOwner) {
+            $this->notify('Anda tidak memiliki otorisasi untuk menghapus artikel ini.', 'error');
+            return;
+        }
+
+        // 1. hapus cover
+        // if ($page->featured_image && $article->featured_image !== 'default.webp') {
+        //     $coverPath = 'articles/' . $article->featured_image;
+        //     if (Storage::disk('public')->exists($coverPath)) {
+        //         Storage::disk('public')->delete($coverPath);
+        //     }
+        // }
+        // 2. Hapus Semua Gambar di Dalam Konten Editor
+        // if ($page->content) {
+        //     // Ekstrak semua URL gambar dari HTML
+        //     preg_match_all('/<img[^>]+src="([^">]+)"/', $article->content, $matches);
+        //     $contentImages = $matches[1] ?? [];
+
+        //     foreach ($contentImages as $imageUrl) {
+        //         // Pastikan kita hanya menghapus gambar lokal (bukan URL dari web luar)
+        //         if (str_contains($imageUrl, 'storage/articles/')) {
+        //             $filename = basename($imageUrl);
+        //             $storagePath = 'articles/' . $filename;
+
+        //             if (Storage::disk('public')->exists($storagePath)) {
+        //                 Storage::disk('public')->delete($storagePath);
+        //             }
+        //         }
+        //     }
+        // }
+
+        activity('page_updates')
+            ->performedOn($page)
+            ->causedBy($user)
+            ->withProperties([
+                'title' => $page->title,
+                // 'status_saat_dihapus' => $article->status,
+            ])
+            ->log('Halaman dihapus permanen');
+
+        // Hapus artikel dari database
+        $page->delete();
+
+        $this->notify('Halaman berhasil dihapus.', 'success');
+    }
 };
 ?>
 
@@ -255,8 +307,8 @@ new class extends Component
                                                 </span>
                                             </a>
 
-                                            {{-- <button
-                                                @click="deleteType = 'article'; deleteId = {{ $article->id }}; showDeleteModal = true"
+                                            <button
+                                                @click="deleteType = 'page'; deleteId = {{ $page->id }}; showDeleteModal = true"
                                                 type="button" class="group p-1.5 rounded-md bg-red-600 text-white dark:bg-red-800 relative cursor-pointer hover:bg-red-700 transition-colors flex items-center justify-center">
                                                 <flux:icon variant="solid" icon="trash" class="size-3.5!" />
 
@@ -267,7 +319,7 @@ new class extends Component
                                                         <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
                                                     </svg>
                                                 </span>
-                                            </button> --}}
+                                            </button>
 
                                         </div>
                                     </td>
@@ -452,7 +504,7 @@ new class extends Component
                             </div>
                             <div class="mt-3 text-center sm:mt-5">
                                 <h3 class="text-base font-bold leading-6 text-zinc-900 dark:text-white" id="modal-title">
-                                    Hapus Artikel
+                                    Hapus Halaman
                                 </h3>
                                 <div class="mt-2">
                                     <p class="text-sm text-zinc-500 dark:text-zinc-400">
@@ -469,7 +521,8 @@ new class extends Component
                                     ({
                                         'article': () => $wire.deleteArticle(deleteId),
                                         'category': () => $wire.deleteCategory(deleteId),
-                                        'tag': () => $wire.deleteTag(deleteId)
+                                        'tag': () => $wire.deleteTag(deleteId),
+                                        'page': () => $wire.deletePage(deleteId),
                                     })[deleteType]();
 
                                     showDeleteModal = false;
