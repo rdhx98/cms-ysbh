@@ -339,8 +339,8 @@ new class extends Component
     "                   >
 
     <!-- HEADER & TOMBOL SIMPAN -->
-    <div class="flex items-center justify-between border-gray-200 shrink-0">
-        {{-- <h1 class="text-2xl font-bold text-gray-800">Editor Halaman Multibahasa</h1> --}}
+    {{-- <div class="flex items-center justify-between border-gray-200 shrink-0">
+        <!-- <h1 class="text-2xl font-bold text-gray-800">Editor Halaman Multibahasa</h1> -->
         <template x-teleport="#editor-toolbar-portal">
             <!-- KELOMPOK TOMBOL AKSI DI HEADER -->
             <div class="flex items-center gap-3">
@@ -364,7 +364,92 @@ new class extends Component
                 </button>
             </div>
         </template>
-    </div>
+    </div> --}}
+
+    <!-- 🌟 HEADER UTAMA (DITELEPORTASI KE NAVBAR) -->
+    <template x-teleport="#editor-toolbar-portal">
+        <div class="flex items-center gap-5">
+
+            <!-- ==========================================
+                 BAGIAN 1: KONTROL TAMPILAN & BAHASA
+                 ========================================== -->
+            <div class="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner">
+
+                <!-- Tombol Single / Split -->
+                <div class="flex items-center">
+                    <button type="button" @click="layoutMode = 'single'" :class="layoutMode === 'single' ? 'bg-sage-soft text-foresty shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'" class="px-2.5 py-1 text-xs rounded-md transition cursor-pointer select-none">
+                        Single
+                    </button>
+                    <button type="button" @click="layoutMode = 'split'" :class="layoutMode === 'split' ? 'bg-sage-soft text-foresty shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'" class="px-2.5 py-1 text-xs rounded-md transition cursor-pointer select-none">
+                        Split
+                    </button>
+                </div>
+
+                <div class="w-px h-4 bg-gray-300 mx-2"></div> <!-- Garis Pemisah -->
+
+                <!-- Kontrol Pilihan Bahasa -->
+                <div class="flex items-center px-1 min-w-[140px]">
+
+                    <!-- Muncul jika mode Single -->
+                    <div x-show="layoutMode === 'single'" class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Bahasa:</span>
+                        <select x-model="singleActiveLang" class="border-gray-300 rounded text-xs font-bold py-0.5 pl-2 pr-6 h-6 bg-white shadow-sm focus:ring-foresty focus:border-foresty text-foresty">
+                            @foreach($activeLocales as $code)
+                                <option value="{{ $code }}">{{ strtoupper($code) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Muncul jika mode Split -->
+                    <div x-show="layoutMode === 'split'" class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Kolom:</span>
+                        <div class="flex items-center gap-1">
+                            <template x-for="activeLang in splitLanguages" :key="activeLang">
+                                <div class="flex items-center gap-1 bg-white border border-gray-200 px-1.5 py-0.5 rounded shadow-sm">
+                                    <span class="text-[10px] font-bold text-foresty uppercase" x-text="activeLang"></span>
+                                    <button type="button" @click="removeSplitLang(activeLang)" x-show="splitLanguages.length > 1" class="text-red-400 hover:text-red-600 text-xs font-bold leading-none">×</button>
+                                </div>
+                            </template>
+
+                            <select @change="addSplitLang($event.target.value); $event.target.value = '';" x-show="splitLanguages.length < ((window.innerWidth > 1440 && allLocalesCount >= 3) ? 3 : 2)" class="border-dashed border-gray-300 rounded text-[10px] font-medium text-gray-500 py-0.5 pl-1 pr-5 h-6 bg-gray-50 hover:bg-gray-100 cursor-pointer">
+                                <option value="">+ Tambah</option>
+                                @foreach($activeLocales as $code)
+                                    <option value="{{ $code }}">{{ strtoupper($code) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 BAGIAN 2: TABS (META & KONTEN)
+                 ========================================== -->
+            <div class="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner">
+                <button type="button" @click="editorTab = 'content'" :class="editorTab === 'content' ? 'bg-white text-foresty shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'" class="px-3 py-1 text-xs rounded-md transition cursor-pointer select-none">
+                    Konten Utama
+                </button>
+                <button type="button" @click="editorTab = 'meta'" :class="editorTab === 'meta' ? 'bg-white text-foresty shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'" class="px-3 py-1 text-xs rounded-md transition cursor-pointer select-none">
+                    Metadata
+                </button>
+            </div>
+
+            <!-- ==========================================
+                 BAGIAN 3: AKSI SIMPAN & PRATINJAU
+                 ========================================== -->
+            <div class="flex items-center gap-2">
+                <button wire:click="saveAndPreview" wire:loading.attr="disabled" type="button" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-foresty text-foresty hover:bg-foresty hover:text-white rounded-lg text-xs font-bold shadow-sm transition-all focus:outline-none disabled:opacity-50">
+                    <svg wire:loading wire:target="saveAndPreview" class="animate-spin h-3.5 w-3.5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <svg wire:loading.remove wire:target="saveAndPreview" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    Pratinjau
+                </button>
+                <button wire:click="save" class="px-4 py-1.5 bg-foresty hover:bg-forest text-white text-xs font-semibold rounded-lg shadow-sm transition">
+                    Simpan Perubahan
+                </button>
+            </div>
+
+        </div>
+    </template>
 
     <!-- PESAN GALAT VALIDASI -->
     @if ($errors->any())
@@ -379,10 +464,10 @@ new class extends Component
     @endif
 
     <!-- TOOLBAR KONTROL TATA LETAK & BAHASA -->
-    <div class="flex flex-wrap items-center justify-between bg-white py-2 px-3 rounded-xl border border-gray-200 shadow-sm shrink-0  gap-4">
+    {{-- <div class="flex flex-wrap items-center justify-between bg-white py-2 px-3 rounded-xl border border-gray-200 shadow-sm shrink-0  gap-4">
 
         <!-- Pilihan Mode Layout -->
-        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+         <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
             <button
                 type="button"
                 @click="layoutMode = 'single'"
@@ -431,11 +516,11 @@ new class extends Component
                 </select>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- AREA KONTEN UTAMA -->
     <!-- <div class="flex-1 overflow-y-auto overflow-x-hidden py-2 pr-2 space-y-8 mb-8"> -->
-    <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-8 pb-24 px-4 space-y-8 ">
+    {{-- <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-8 pb-24 px-4 space-y-8 ">
 
         <!-- BAGIAN METADATA -->
         <div :class="{
@@ -474,7 +559,6 @@ new class extends Component
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Deskripsi Meta</label>
                             <textarea row="6" wire:model="meta_description.{{ $code }}"
-                            {{-- placeholder="Tulis ringkasan singkat (maks. 160 karakter) untuk hasil mesin pencari ..."  --}}
                             placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
                             class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500 min-h-36 resize-none"></textarea>
                         </div>
@@ -502,7 +586,7 @@ new class extends Component
                 dragClass: 'shadow-2xl'
             }"
             class="flex flex-col gap-6"  >
-            {{-- 🌟 1. LOOP MENGGUNAKAN $blockOrder AGAR URUTAN TETAP UTUH --}}
+            <!-- 🌟 1. LOOP MENGGUNAKAN $blockOrder AGAR URUTAN TETAP UTUH -->
             @foreach($blockOrder as $blockId)
                 @php $block = $content[$blockId] ?? null; @endphp
                 @if($block)
@@ -541,20 +625,14 @@ new class extends Component
                                     <div x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))"
                                         class="space-y-3">
 
-                                        {{-- <div class="flex items-center justify-between">
-                                            <span class="text-[10px] font-bold text-gray-400 uppercase" x-text="layoutMode === 'split' ? 'Bahasa: ' + '{{ strtoupper($code) }}' : ''"></span>
-                                            <span x-show="layoutMode === 'single'" class="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold uppercase rounded">Bahasa: {{ strtoupper($code) }}</span>
-                                        </div> --}}
 
-                                        {{-- 🌟 2. WIRE:MODEL DIKUNCI MENGGUNAKAN $blockId (MUSTAHIL TERTUKAR/ACAK) --}}
-                                        {{-- @if($block['type'] === 'heading')
-                                            <input id="block-wrapper-{{ $blockId }}" type="text" wire:model="content.{{ $blockId }}.data.text.{{ $code }}" placeholder="Judul H2..." class="w-full text-lg font-bold border-0 border-b-2 border-transparent hover:border-gray-200 focus:border-blue-500 focus:ring-0 p-0 text-gray-800 bg-transparent"> --}}
+                                        <!-- 🌟 2. WIRE:MODEL DIKUNCI MENGGUNAKAN $blockId (MUSTAHIL TERTUKAR/ACAK) -->
                                         <x-dynamic-component
                                             :component="'blocks.editor.' . str_replace('_', '-', $block['type'])"
                                             :block-id="$blockId"
                                             :code="$code"
                                             :block="$block"
-                                            :all-content="$content" {{-- 🌟 TAMBAHKAN INI --}}
+                                            :all-content="$content"
                                         />
 
 
@@ -565,6 +643,142 @@ new class extends Component
                     </div>
                 @endif
             @endforeach
+        </div>
+
+    </div>--}} <!-- Akhir Area Scroll Konten -->
+
+    <!-- AREA KONTEN UTAMA -->
+    <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-6 pb-24 px-4 space-y-8">
+
+        <!-- ==========================================
+             RUANGAN 1: METADATA (Hanya Tampil di Tab Meta)
+             ========================================== -->
+        <div x-show="editorTab === 'meta'" x-cloak>
+            <div :class="{
+                    'grid grid-cols-1': layoutMode === 'single',
+                    'grid grid-cols-1 md:grid-cols-2': layoutMode === 'split' && splitLanguages.length === 2,
+                    'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3': layoutMode === 'split' && splitLanguages.length === 3,
+                    'grid grid-cols-1': layoutMode === 'split' && splitLanguages.length === 1
+                 }"
+                 class="gap-6">
+                @foreach($activeLocales as $code)
+                    <div x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))"
+                         class="p-5 bg-white border border-gray-200 rounded-xl shadow-sm space-y-4">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h3 class="font-bold text-gray-700 text-sm">Metadata ({{ strtoupper($code) }})</h3>
+                            <span class="px-2 py-0.5 bg-blue-100 text-foresty text-[10px] font-bold rounded">{{ strtoupper($code) }}</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Judul Halaman <span class="text-red-500">*</span></label>
+                                <input type="text" wire:model="page_title.{{ $code }}"
+                                placeholder="Contoh: Layanan Kesehatan Ibu dan Anak"
+                                class="w-full text-md p-2 border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Slug URL</label>
+                                <input type="text" wire:model="slug.{{ $code }}"
+                                placeholder="Contoh: layanan-kesehatan-ibu-dan-anak"
+                                class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Judul Meta</label>
+                                <input type="text" wire:model="meta_title.{{ $code }}"
+                                placeholder="Contoh: Layanan Kesehatan Ibu & Anak Terpadu | YSBH"
+                                class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Deskripsi Meta</label>
+                                <textarea row="6" wire:model="meta_description.{{ $code }}"
+                                placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
+                                class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500 min-h-36 resize-none"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+
+        <!-- ==========================================
+             RUANGAN 2: EDITOR KONTEN (Hanya Tampil di Tab Konten)
+             ========================================== -->
+        <div x-show="editorTab === 'content'" x-cloak class="space-y-8">
+
+            <!-- KONTROL STATUS KONTEN -->
+            <div class="flex items-center justify-between pt-2">
+                <h2 class="text-xl font-bold text-gray-800">Konten Halaman</h2>
+                <select wire:model="status" class="border-gray-300 rounded-md shadow-sm text-sm font-medium">
+                    <option value="offline">Offline</option>
+                    <option value="online">Online</option>
+                </select>
+            </div>
+
+            <!-- ALPINE SORTABLE CONTAINER -->
+            <div
+                x-sort="handleSort"
+                x-sort:config="{
+                    animation: 200,
+                    handle: '.drag-handle',
+                    ghostClass: 'opacity-50',
+                    dragClass: 'shadow-2xl'
+                }"
+                class="flex flex-col gap-6">
+
+                @foreach($blockOrder as $blockId)
+                    @php $block = $content[$blockId] ?? null; @endphp
+                    @if($block)
+                        <div
+                            wire:key="block-{{ $blockId }}"
+                            x-sort:item="'{{ $blockId }}'"
+                            class="group relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:border-forest transition-colors"
+                        >
+                            <!-- Drag Handle -->
+                            <div class="absolute top-1/2 left-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-[99]">
+                                <button type="button" class="drag-handle cursor-grab active:cursor-grabbing p-2 bg-white border border-gray-200 shadow-md rounded-md text-gray-400 hover:text-gray-700" title="Geser Blok">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8"></path></svg>
+                                </button>
+                            </div>
+
+                            <!-- Tombol Aksi Hover: Gandakan & Hapus -->
+                            <div class="absolute -top-3 -right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                <button wire:click="duplicateBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                                </button>
+                                <button wire:click="removeBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-gray-200 shadow-sm" title="Hapus Blok">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+
+                            <!-- RENDER ISI BLOK -->
+                            <div class="w-full">
+                                <div :class="{
+                                        'grid grid-cols-1': layoutMode === 'single',
+                                        'grid grid-cols-1 md:grid-cols-2': layoutMode === 'split' && splitLanguages.length === 2,
+                                        'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3': layoutMode === 'split' && splitLanguages.length === 3,
+                                        'grid grid-cols-1': layoutMode === 'split' && splitLanguages.length === 1
+                                    }"
+                                    class="gap-6">
+                                    @foreach($activeLocales as $code)
+                                        <div x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))"
+                                            class="space-y-3">
+
+                                            <x-dynamic-component
+                                                :component="'blocks.editor.' . str_replace('_', '-', $block['type'])"
+                                                :block-id="$blockId"
+                                                :code="$code"
+                                                :block="$block"
+                                                :all-content="$content"
+                                            />
+
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                @endforeach
+            </div>
         </div>
 
     </div> <!-- Akhir Area Scroll Konten -->

@@ -132,6 +132,7 @@ trait HasContentBlocks
                 'left_zone'  => [],
                 'right_zone' => [],
                 'bg_color'   => 'transparent',
+                'mobile_reverse' => 'false'
             ],
             'stats_grid' => [
                 'columns'      => 4,

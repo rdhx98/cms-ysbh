@@ -31,6 +31,58 @@
                 Seksi: 2 Kolom
             </span>
 
+            <!-- CONTROL COLUMN ORDER -->
+            <div class="flex items-center gap-2 border-l border-gray-200 pl-3 ml-2">
+
+                {{-- Label & Ikon Tanda Tanya --}}
+                <div class="flex items-center gap-1">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Urutan HP:</span>
+
+                    {{-- 🌟 1. BERI NAMA GRUP INI: group/tooltip --}}
+                    <div class="relative group/tooltip flex items-center justify-center">
+
+                        {{-- Ikon Tanda Tanya --}}
+                        <svg class="w-3.5 h-3.5 text-gray-400 cursor-help hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+
+                        {{-- 🌟 2. GUNAKAN NAMA GRUP UNTUK HOVER: group-hover/tooltip --}}
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-[100] pointer-events-none">
+                            <div class="bg-gray-800 text-white text-[10px] leading-relaxed p-2.5 rounded-lg shadow-xl text-center relative">
+                                Mengatur susunan kolom saat dibaca melalui layar HP (Mobile).
+                                <div class="mt-1.5 pt-1.5 border-t border-gray-600 text-left space-y-1">
+                                    <p><strong class="text-blue-300">Kiri di Atas:</strong> Kolom kiri tampil lebih dulu.</p>
+                                    <p><strong class="text-blue-300">Kanan di Atas:</strong> Kolom kanan naik ke atas.</p>
+                                </div>
+
+                                <!-- Segitiga Panah Menunjuk ke Bawah -->
+                                <svg class="absolute text-gray-800 h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
+                                    <polygon class="fill-current" points="0,0 127.5,127.5 255,0"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                {{-- Tombol Toggle Reaktif Livewire --}}
+                <button type="button"
+                    wire:click="$toggle('content.{{ $blockId }}.data.mobile_reverse')"
+                    class="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-gray-200 rounded-md text-[10px] font-bold transition-colors shadow-sm hover:bg-gray-50 focus:outline-none">
+
+                    @if($block['data']['mobile_reverse'] ?? false)
+                        {{-- State Terbalik (Kanan di atas) --}}
+                        <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>
+                        <span class="text-blue-600">Kanan di Atas</span>
+                    @else
+                        {{-- State Normal (Kiri di atas) --}}
+                        <svg class="w-3.5 h-3.5 text-foresty" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                        <span class="text-gray-600">Kiri di Atas</span>
+                    @endif
+
+                </button>
+            </div>
+
             {{-- 🌟 PEMILIH WARNA LATAR (CUSTOM DROPDOWN) --}}
             <div class="flex items-center gap-2"
                 x-data="{
