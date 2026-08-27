@@ -310,7 +310,7 @@ new class extends Component
         // 🌟 PERBAIKAN: Tambahkan parameter mode => 'raw'
         $previewUrl = route('page.preview', [
             'pageSlug' => $slugCantik,
-            'mode' => 'raw'
+            'mode' => 'raw' // 'full' 'raw'
         ]);
 
         $this->dispatch('open-preview-panel', url: $previewUrl);
@@ -377,19 +377,18 @@ new class extends Component
 
                 <!-- Tombol Single / Split -->
                 <div class="flex items-center">
-                    <button type="button" @click="layoutMode = 'single'" :class="layoutMode === 'single' ? 'bg-sage-soft text-foresty shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'" class="px-2.5 py-1 text-xs rounded-md transition cursor-pointer select-none">
+                    <button type="button" @click="layoutMode = 'single'" :class="layoutMode === 'single' ? 'bg-white text-foresty shadow-sm font-bold' : 'text-foresty hover:text-forest'" class="px-2.5 py-1 text-xs rounded-md transition cursor-pointer select-none">
                         Single
                     </button>
-                    <button type="button" @click="layoutMode = 'split'" :class="layoutMode === 'split' ? 'bg-sage-soft text-foresty shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'" class="px-2.5 py-1 text-xs rounded-md transition cursor-pointer select-none">
+                    <button type="button" @click="layoutMode = 'split'" :class="layoutMode === 'split' ? 'bg-white text-foresty shadow-sm font-bold' : 'text-foresty hover:text-forest'" class="px-2.5 py-1 text-xs rounded-md transition cursor-pointer select-none">
                         Split
                     </button>
                 </div>
 
-                <div class="w-px h-4 bg-gray-300 mx-2"></div> <!-- Garis Pemisah -->
+                <div class="w-px h-4 bg-gray-400 mx-2"></div> <!-- Garis Pemisah -->
 
                 <!-- Kontrol Pilihan Bahasa -->
                 <div class="flex items-center px-1 min-w-[140px]">
-
                     <!-- Muncul jika mode Single -->
                     <div x-show="layoutMode === 'single'" class="flex items-center gap-2">
                         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Bahasa:</span>
@@ -399,7 +398,6 @@ new class extends Component
                             @endforeach
                         </select>
                     </div>
-
                     <!-- Muncul jika mode Split -->
                     <div x-show="layoutMode === 'split'" class="flex items-center gap-2">
                         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Kolom:</span>
@@ -426,11 +424,11 @@ new class extends Component
                  BAGIAN 2: TABS (META & KONTEN)
                  ========================================== -->
             <div class="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner">
-                <button type="button" @click="editorTab = 'content'" :class="editorTab === 'content' ? 'bg-white text-foresty shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'" class="px-3 py-1 text-xs rounded-md transition cursor-pointer select-none">
-                    Konten Utama
-                </button>
                 <button type="button" @click="editorTab = 'meta'" :class="editorTab === 'meta' ? 'bg-white text-foresty shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'" class="px-3 py-1 text-xs rounded-md transition cursor-pointer select-none">
                     Metadata
+                </button>
+                <button type="button" @click="editorTab = 'content'" :class="editorTab === 'content' ? 'bg-white text-foresty shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'" class="px-3 py-1 text-xs rounded-md transition cursor-pointer select-none">
+                    Konten Utama
                 </button>
             </div>
 
@@ -438,12 +436,11 @@ new class extends Component
                  BAGIAN 3: AKSI SIMPAN & PRATINJAU
                  ========================================== -->
             <div class="flex items-center gap-2">
-                <button wire:click="saveAndPreview" wire:loading.attr="disabled" type="button" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-foresty text-foresty hover:bg-foresty hover:text-white rounded-lg text-xs font-bold shadow-sm transition-all focus:outline-none disabled:opacity-50">
-                    <svg wire:loading wire:target="saveAndPreview" class="animate-spin h-3.5 w-3.5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <svg wire:loading.remove wire:target="saveAndPreview" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                <button wire:click="saveAndPreview" wire:loading.attr="disabled" type="button" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-foresty text-foresty hover:bg-foresty hover:text-white rounded-lg text-xs font-bold shadow-sm transition-all focus:outline-none disabled:opacity-50 select-none cursor-pointer">
+                    <x-dynamic-component :component="'lucide-eye'" class="h-4 w-4" stroke-width="2.5" />
                     Pratinjau
                 </button>
-                <button wire:click="save" class="px-4 py-1.5 bg-foresty hover:bg-forest text-white text-xs font-semibold rounded-lg shadow-sm transition">
+                <button wire:click="save" class="px-4 py-1.5 bg-foresty hover:bg-forest text-white text-xs font-semibold rounded-lg shadow-sm transition select-none cursor-pointer">
                     Simpan Perubahan
                 </button>
             </div>
@@ -790,19 +787,19 @@ new class extends Component
         <!-- KELOMPOK MIKRO (KONTEN UTAMA) -->
         <div class="flex items-center gap-2 border-r pr-6 border-gray-200">
             <span class="text-[10px] font-bold text-gray-400 uppercase">Konten:</span>
-            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('heading')" icon="heading-1" label="Judul" />
-            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('paragraph')" icon="align-left" label="Paragraf" />
-            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('image')" icon="image" label="Gambar" />
+            <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('heading')" icon="heading-1" label="Judul" />
+            <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('paragraph')" icon="align-left" label="Paragraf" />
+            <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('image')" icon="image" label="Gambar" />
         </div>
 
         <!-- KELOMPOK MAKRO (TATA LETAK & SEKSI) -->
         <div class="flex items-center gap-2 border-r pr-6 border-gray-200">
             <span class="text-[10px] font-bold text-gray-400 uppercase">Seksi Layout:</span>
-            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('columns')" icon="columns" label="2 Kolom" />
-            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('stats_grid')" icon="layout-grid" label="Grid Info" />
-            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('dynamic_testimonials')" icon="message-square-quote" label="Testimoni" />
-            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('hero_banner')" icon="image" label="Hero Banner" />
-            <x-buttons.add-blocks mode="icon-hover" command="addNewBlock('image')" icon="image-plus" label="Image" />
+            <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('columns')" icon="columns" label="2 Kolom" />
+            <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('stats_grid')" icon="layout-grid" label="Grid Info" />
+            <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('dynamic_testimonials')" icon="message-square-quote" label="Testimoni" />
+            <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('hero_banner')" icon="image" label="Hero Banner" />
+            <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('image')" icon="image-plus" label="Image" />
         </div>
 
         <!-- KELOMPOK TEMPLATE (JIKA ADA) -->
@@ -877,11 +874,11 @@ new class extends Component
 
                     <!-- HEADER PANEL -->
                     <div class="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
-                        <div class="flex items-center gap-6">
+                        <div class="flex items-center gap-4">
                             <h2 class="text-lg font-extrabold text-foresty" id="slide-over-title">Live Preview</h2>
 
                             <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
-                            <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner hidden md:flex">
+                            <div class=" bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner hidden md:flex">
                                 <button @click="deviceMode = 'desktop'" :class="deviceMode === 'desktop' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'" class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                     Desktop
@@ -891,7 +888,29 @@ new class extends Component
                                     Mobile
                                 </button>
                             </div>
+                            <div class="flex items-center justify-between p-4">
+                                {{-- <h3 class="font-bold text-gray-700">Pratinjau Halaman</h3> --}}
+    
+                                <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
+                                <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner  md:flex" x-data="{ activeLang: 'id' }">
+                                    <button 
+                                    type="button" 
+                                    @click="activeLang = 'id'; document.getElementById('preview-iframe').contentWindow.postMessage({ type: 'change-lang', lang: 'id' }, '*')"
+                                    :class="activeLang === 'id' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'" 
+                                    class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
+                                        ID
+                                    </button>
+                                    <button
+                                    type="button" 
+                                    @click="activeLang = 'en'; document.getElementById('preview-iframe').contentWindow.postMessage({ type: 'change-lang', lang: 'en' }, '*')" 
+                                    :class="activeLang === 'en' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'" 
+                                    class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
+                                        EN
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+
 
                         <!-- Tombol Tutup -->
                         <button @click="previewOpen = false; previewUrl = ''" class="rounded-full p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 focus:outline-none transition-colors">
@@ -907,7 +926,8 @@ new class extends Component
 
                             <!-- Iframe Halaman Publik -->
                             <template x-if="previewUrl !== ''">
-                                <iframe :src="previewUrl" class="w-full h-full border-0 bg-white"></iframe>
+                                {{-- <iframe :src="previewUrl" class="w-full h-full border-0 bg-white"></iframe> --}}
+                                <iframe id="preview-iframe" :src="previewUrl" class="w-full h-full border-0 bg-white"></iframe>
                             </template>
 
                         </div>

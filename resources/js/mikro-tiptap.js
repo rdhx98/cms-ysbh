@@ -470,7 +470,7 @@ document.addEventListener('alpine:init', () => {
 document.addEventListener('alpine:init', () => {
     Alpine.data('pageEditor', (initialLocales, initialSplit, localesCount, wireInstance) => ({
         layoutMode: 'split', //single split
-        editorTab: 'content', //content | meta
+        editorTab: 'meta', //content | meta
         singleActiveLang: initialLocales[0] || 'id',
         splitLanguages: initialSplit,
         allLocalesCount: localesCount,

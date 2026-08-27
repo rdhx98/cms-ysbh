@@ -59,45 +59,57 @@ class extends Component
         // untuk melihat isi data yang sebenarnya terdeteksi oleh sistem
         // dd('All Content:', $this->allContent, 'Root Order:', $this->rootOrder);
     }
-    // 🌟 3. Gunakan render() untuk menentukan layout secara dinamis
 
+    #[On('change-preview-lang')] // Gunakan attribute listener Livewire v3
+    public function updatePreviewLanguage($newLang)
+    {
+        // Pastikan bahasa yang diminta valid
+        if (in_array($newLang, $this->activeLocales)) {
+            $this->lang = $newLang;
+        }
+    }
 };
 ?>
 
-<div class="h-full flex flex-col overflow-x-hidden  box-border ">
+<div class="h-full flex flex-col overflow-x-hidden  box-border " @message.window="if ($event.data && $event.data.type === 'change-lang') $wire.set('lang', $event.data.lang)">
 
-    <!-- Header Halaman -->
-    <div class="mb-10 pb-6 border-b bg-white  border-gray-200 flex flex-col md:flex-row md:items-end justify-between gap-6 p-6">
-        <div>
-            @php
-                // Ambil judul halaman
-                $titleData = $page->getTranslations('title');
-                $pageTitle = $titleData[$lang] ?? $titleData['id'] ?? 'Tanpa Judul';
-            @endphp
-            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">{{ $pageTitle }}</h1>
-            <p class="text-sm text-gray-500 mt-2">Pratinjau Halaman</p>
-        </div>
+    @if($viewMode === 'full')
+        <template x-teleport="#editor-toolbar-portal">
+            <!-- Header Halaman -->
+            <div class=" border-gray-200 flex flex-row justify-between gap-6 w-full">
+                <div class="flex items-center justify-center gap-2">
+                    @php
+                        // Ambil judul halaman
+                        $titleData = $page->getTranslations('title');
+                        $pageTitle = $titleData[$lang] ?? $titleData['id'] ?? 'Tanpa Judul';
+                    @endphp
+                    <span class="block text-[10px] font-bold text-gray-400 uppercase md:text-right">Pratinjau Halaman</span>
+                    {{-- <h6 class="text-sm text-gray-500 tracking-tight">Pratinjau Halaman</h6> --}}
+                    <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">{{ $pageTitle }}</h1>
+                </div>
 
-        <!-- TOMBOL PENGALIH BAHASA -->
-        <div class="shrink-0">
-            <span class="block text-[10px] font-bold text-gray-400 uppercase mb-1 md:text-right">Lihat Sebagai:</span>
-            <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner">
-                @foreach($activeLocales as $code)
-                    <button
-                        type="button"
-                        wire:click="$set('lang', '{{ $code }}')"
-                        class="px-4 py-1.5 text-xs font-bold rounded-md transition-all duration-200
-                        {{ $lang === $code ? 'bg-white text-blue-600 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-200/50' }}"
-                    >
-                        {{ strtoupper($code) }}
-                    </button>
-                @endforeach
+                <!-- TOMBOL PENGALIH BAHASA -->
+                <div class="flex items-center gap-6 shrink-0">
+                    <span class="block text-[10px] font-bold text-gray-400 uppercase md:text-right">Lihat Sebagai:</span>
+                    <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner">
+                        @foreach($activeLocales as $code)
+                            <button
+                                type="button"
+                                wire:click="$set('lang', '{{ $code }}')"
+                                class="px-4 py-1 text-xs font-bold rounded-md transition-all duration-200 select-none cursor-pointer
+                                {{ $lang === $code ? 'bg-white text-foresty shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-200/50' }}"
+                            >
+                                {{ strtoupper($code) }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
+        </template>
+    @endif
 
     <!-- MESIN RENDER BLOK KONTEN DINAMIS -->
-    <div class="w-full">
+    <div class="w-full bg-paper rounded-lg">
         {{-- Looping HANYA blok level terluar (Root) dari $rootOrder --}}
         @foreach($rootOrder as $blockId)
             @if(isset($allContent[$blockId]))
@@ -137,30 +149,5 @@ class extends Component
             @endif
         @endforeach
     </div>
-
-    <!-- MESIN RENDER BLOK KONTEN DINAMIS -->
-    {{-- <div class="space-y-6">
-        <!-- Looping HANYA blok level terluar (Root) dari $rootOrder -->
-        @foreach($rootOrder as $blockId)
-            @if(isset($allContent[$blockId]))
-                @php
-                    $block = $allContent[$blockId];
-
-                    // Format nama komponen (contoh: 'hero_banner' menjadi 'blocks.frontend.hero-banner')
-                    $componentName = 'blocks.render.' . str_replace('_', '-', $block['type']);
-                @endphp
-
-                <div class="block-wrapper mb-8">
-                    <!-- PANGGIL KOMPONEN FRONTEND SECARA DINAMIS -->
-                    <x-dynamic-component
-                        :component="$componentName"
-                        :data="$block['data']"
-                        :lang="$lang"
-                        :all-content="$allContent"
-                    />
-                </div>
-            @endif
-        @endforeach
-    </div> --}}
-
+    
 </div>
