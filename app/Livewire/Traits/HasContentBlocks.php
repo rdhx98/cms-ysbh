@@ -47,6 +47,21 @@ trait HasContentBlocks
             }
         }
     }
+    public function removeNestedBlock(string $parentId, string $zone, string $childId)
+    {
+        // 1. Hapus ID anak dari zona induknya
+        if (isset($this->content[$parentId]['data'][$zone])) {
+            $this->content[$parentId]['data'][$zone] = array_values(array_diff(
+                $this->content[$parentId]['data'][$zone], 
+                [$childId]
+            ));
+        }
+        
+        // 2. Hapus isi data blok anak itu sendiri dari memori global
+        if (isset($this->content[$childId])) {
+            unset($this->content[$childId]);
+        }
+    }
 
     public function duplicateBlock(String $id){
         if (isset($this->content[$id])) {

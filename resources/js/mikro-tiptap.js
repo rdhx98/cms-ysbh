@@ -474,6 +474,8 @@ document.addEventListener('alpine:init', () => {
         singleActiveLang: initialLocales[0] || 'id',
         splitLanguages: initialSplit,
         allLocalesCount: localesCount,
+        allCollapsed: false,
+
 
         addSplitLang(lang) {
             let maxAllowed = (window.innerWidth > 1440 && this.allLocalesCount >= 3) ? 3 : 2;
