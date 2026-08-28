@@ -39,6 +39,7 @@
         <span class="text-[10px] font-bold text-blue-500 uppercase ml-2 bg-blue-50 px-1.5 py-0.5 rounded shadow-sm">{{ $code }}</span>
     </div>
 
+    {{-- Collapsed wrapper --}}
     <div x-show="!isCollapsed" x-collapse x-cloak class="p-4 space-y-4">
 
         <div class="flex items-center justify-between">
