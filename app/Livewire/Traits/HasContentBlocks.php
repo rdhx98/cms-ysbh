@@ -24,6 +24,30 @@ trait HasContentBlocks
         $this->dispatch('block-added', id: $id);
     }
 
+    /**
+     * Menambahkan blok anak ke dalam zona milik induk (Kontainer)
+     */
+    public function addChildBlock($parentId, $zone, $type = 'paragraph')
+    {
+        // 1. Buat ID unik untuk anak baru
+        $newChildId = 'blk_' . uniqid();
+
+        // 2. Siapkan data default sejajar di root $this->content
+        $this->content[$newChildId] = [
+            'type' => $type,
+            'data' => [
+                'text' => ['id' => '', 'en' => '']
+            ]
+        ];
+
+        // 3. Pastikan array zona tersedia di induk, lalu masukkan ID anak
+        if (!isset($this->content[$parentId]['data'][$zone])) {
+            $this->content[$parentId]['data'][$zone] = [];
+        }
+        $this->content[$parentId]['data'][$zone][] = $newChildId;
+        $this->dispatch('block-added', id: $newChildId);
+    }
+
     // public function removeBlock(String $blockId) {
     //     unset($this->content[$blockId]);
     //     $this->blockOrder = array_values(array_filter($this->blockOrder, fn($id) => $id !== $blockId));
@@ -146,8 +170,25 @@ trait HasContentBlocks
             'columns'    => [
                 'left_zone'  => [],
                 'right_zone' => [],
-                'bg_color'   => 'transparent',
                 'mobile_reverse' => 'false'
+                // 'bg_color'   => 'transparent',
+            ],
+            'multi_columns' => [
+              'col_count'      => 2, // Default saat pertama kali ditambahkan
+              'mobile_reverse' => false,
+              
+              // Siapkan 6 zona sekaligus (walau yang dirender nanti hanya sesuai col_count)
+              'col_1_zone' => [],
+              'col_2_zone' => [],
+              'col_3_zone' => [],
+              'col_4_zone' => [],
+              'col_5_zone' => [],
+              'col_6_zone' => [],
+            ],
+            'section_divider' => [
+                'background' => 'bg-white',
+                'text_color' => 'text-gray-900',
+                'padding'    => 'py-16 sm:py-24',
             ],
             'stats_grid' => [
                 'columns'      => 4,
@@ -225,28 +266,7 @@ trait HasContentBlocks
             $this->content[$blockId]['data'][$arrayKey] = array_values($this->content[$blockId]['data'][$arrayKey]);
         }
     }
-    /**
-     * Menambahkan blok anak ke dalam zona milik induk (Kontainer)
-     */
-    public function addChildBlock($parentId, $zone, $type = 'paragraph')
-    {
-        // 1. Buat ID unik untuk anak baru
-        $newChildId = 'blk_' . uniqid();
-
-        // 2. Siapkan data default sejajar di root $this->content
-        $this->content[$newChildId] = [
-            'type' => $type,
-            'data' => [
-                'text' => ['id' => '', 'en' => '']
-            ]
-        ];
-
-        // 3. Pastikan array zona tersedia di induk, lalu masukkan ID anak
-        if (!isset($this->content[$parentId]['data'][$zone])) {
-            $this->content[$parentId]['data'][$zone] = [];
-        }
-        $this->content[$parentId]['data'][$zone][] = $newChildId;
-    }
+    
 
     /**
      * Menyimpan urutan baru blok anak setelah di drag-and-drop

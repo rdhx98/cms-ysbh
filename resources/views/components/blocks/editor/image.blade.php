@@ -9,11 +9,27 @@
     $imageUrl = $block['data']['url'] ?? '';
 @endphp
 
-<div class="p-4 bg-white border border-gray-200 rounded-xl space-y-4 shadow-sm relative group"
-     x-data="{
+<div 
+    {{-- id="block-wrapper-{{ $blockId }}"   --}}
+    {{-- class="p-4 bg-white border border-gray-200 rounded-xl space-y-4 shadow-sm relative group" --}}
+    class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 relative group space-y-2"
+    x-data="{
          isDragging: false,
          isUploading: false,
          errorMessage: '',
+         isCollapsed: false,
+         init() {
+            // 1. Saat dirender ulang, periksa apakah blok ini punya ingatan status
+            window.blockCollapseState = window.blockCollapseState || {};
+            if (window.blockCollapseState['{{ $blockId }}'] !== undefined) {
+                this.isCollapsed = window.blockCollapseState['{{ $blockId }}'];
+            }
+
+            // 2. Setiap kali status berubah, titipkan ingatannya ke memori peramban
+            this.$watch('isCollapsed', (value) => {
+                window.blockCollapseState['{{ $blockId }}'] = value;
+            });
+        },
          
          // FUNGSI CERDAS: Menangkap Gambar ATAU Teks dari Paste
          handlePaste(event) {
@@ -90,40 +106,70 @@
                  if(this.$refs.fileInput) this.$refs.fileInput.value = ''; 
              });
          }
-     }">
+     }"
+    @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail"
+    @toggle-collapse-all.window="isCollapsed = $event.detail"
+    @force-collapse-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = true; window.blockCollapseState['{{ $blockId }}'] = true; }">
     
     {{-- Header Blok & Kontrol Padding --}}
-    <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            Blok Gambar
-        </span>
+    <div 
+        class="flex items-center justify-between px-4 py-3 bg-gray-50/80 cursor-pointer select-none transition-colors hover:bg-gray-100"
+        :class="isCollapsed ? 'rounded-xl' : 'rounded-t-xl border-b border-gray-200'"
+        @click="isCollapsed = !isCollapsed; $dispatch('sync-collapse-{{ strtolower($blockId) }}', isCollapsed)">
+        
+        <div class="flex items-center gap-2">
+            {{-- Ikon Panah (Berputar saat diklik) --}}
+            <svg class="w-4 h-4 text-gray-400 group-hover/heading:text-blue-500 transition-transform duration-200"
+                 :class="isCollapsed ? '-rotate-90' : 'rotate-0'"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
 
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2">
-                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Jarak Atas:</label>
-                <select wire:model.live="content.{{ $blockId }}.data.padding_top" class="text-xs font-medium text-gray-600 border-gray-300 rounded py-1 pl-2 pr-6 shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">Default</option>
-                    <option value="pt-0">0 (Nihil)</option>
-                    <option value="pt-4">Kecil</option>
-                    <option value="pt-8">Sedang</option>
-                    <option value="pt-16">Besar</option>
-                </select>
-            </div>
-            <div class="flex items-center gap-2">
-                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Jarak Bawah:</label>
-                <select wire:model.live="content.{{ $blockId }}.data.padding_bottom" class="text-xs font-medium text-gray-600 border-gray-300 rounded py-1 pl-2 pr-6 shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">Default</option>
-                    <option value="pb-0">0 (Nihil)</option>
-                    <option value="pb-4">Kecil</option>
-                    <option value="pb-8">Sedang</option>
-                    <option value="pb-16">Besar</option>
-                </select>
-            </div>
+            {{-- Label Identitas --}}
+            <x-dynamic-component :component="'lucide-image'" class="h-4 w-4 text-gray-400" stroke-width="2.5" />
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                {{-- <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> --}}
+                Blok Gambar
+            </span>
+
         </div>
+        
+        
+        <div class="flex items-center gap-2" >
+            {{-- Jika input caption HANYA teks biasa (bukan TipTap) --}}
+            <div x-show="isCollapsed" x-cloak class="flex-1 px-4 truncate text-xs text-gray-400 text-right font-medium">
+                <span x-text="$wire.get('content.{{ $blockId }}.data.caption.{{ $code }}') || 'Tanpa Keterangan...'"></span>
+            </div>
+            {{-- PADDING CONTROL --}}
+            <div x-show="!isCollapsed" class="flex items-center gap-4 px-4 py-0" @click.stop>
+                <div class="flex items-center gap-2">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Jarak Atas:</label>
+                    <select wire:model.live="content.{{ $blockId }}.data.padding_top" class="text-xs font-medium text-gray-600 border-gray-300 rounded py-1 pl-2 pr-6 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Default</option>
+                        <option value="pt-0">0 (Nihil)</option>
+                        <option value="pt-4">Kecil</option>
+                        <option value="pt-8">Sedang</option>
+                        <option value="pt-16">Besar</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Jarak Bawah:</label>
+                    <select wire:model.live="content.{{ $blockId }}.data.padding_bottom" class="text-xs font-medium text-gray-600 border-gray-300 rounded py-1 pl-2 pr-6 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Default</option>
+                        <option value="pb-0">0 (Nihil)</option>
+                        <option value="pb-4">Kecil</option>
+                        <option value="pb-8">Sedang</option>
+                        <option value="pb-16">Besar</option>
+                    </select>
+                </div>
+            </div>
+            <span class="text-[10px] font-bold text-foresty uppercase ml-2 bg-sage-soft px-1.5 py-0.5 rounded shadow-sm">{{ $code }}</span>
+        </div>
+
     </div>
 
-    <div class="space-y-4">
+    <!-- BODY AREA -->
+    <div x-show="!isCollapsed" x-collapse x-cloak class="space-y-4 p-2">
         
         <div x-show="errorMessage" x-cloak class="px-3 py-2 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg">
             <span x-text="errorMessage"></span>
@@ -194,4 +240,5 @@
         </div>
         
     </div>
+
 </div>

@@ -5,7 +5,9 @@
     'allContent' => [] // Tambahkan fallback array kosong agar tidak error jika dipanggil di root
 ])
 
-<div id="block-wrapper-{{ $blockId }}" class="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+<div 
+    {{-- id="block-wrapper-{{ $blockId }}"  --}}
+    class="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
 
     <div class="flex flex-wrap items-center justify-between border-b border-gray-200 pb-3 gap-4">
         <span class="text-xs font-bold text-gray-500 uppercase">Grid Info / Statistik</span>

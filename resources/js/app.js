@@ -18,3 +18,4 @@ Alpine.plugin(sort);
 // Import modul Tiptap Editor yang terpisah
 import './tiptap/tiptap-editor.js';
 import './mikro-tiptap.js';
+import './visual-fx.js';

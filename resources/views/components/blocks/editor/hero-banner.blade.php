@@ -5,7 +5,9 @@
     'allContent' => [] // Tambahkan fallback array kosong agar tidak error jika dipanggil di root
 ])
 
-<div id="block-wrapper-{{ $blockId }}" class="space-y-6 bg-gray-50 p-5 rounded-xl border border-gray-200">
+<div 
+    {{-- id="block-wrapper-{{ $blockId }}"  --}}
+    class="space-y-6 bg-gray-50 p-5 rounded-xl border border-gray-200">
     <div class="border-b border-gray-200 pb-2 flex justify-between items-center">
         <span class="text-xs font-bold text-gray-500 uppercase">Pengaturan Hero Banner</span>
 

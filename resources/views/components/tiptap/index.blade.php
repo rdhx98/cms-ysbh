@@ -3,8 +3,47 @@
     'placeholder' => 'Mulai mengetik...'
 ])
 
+@php
+    // 🌟 1. Tentukan kelas CSS bawaan berdasarkan tipe blok
+    $defaultClasses = '';
+    $defaultFontName = 'default'; // 🌟 Variabel baru untuk Toolbar
+    $defaultFontSize = 'default';
+    $fontSizeLabel = 'Paragraf - Normal';
+    $defaultFontColor = '#000000';
+    
+    if ($blockType === 'heading') {
+        // Gaya untuk Judul (Heading): Font Fraunces, besar, tebal, warna hijau
+        $defaultClasses = "font-['Fraunces',serif] text-[clamp(1.8rem,_3vw,_2.5rem)] font-semibold text-[#064f3b]";
+        $defaultFontName = 'Fraunces';
+        // $defaultFontSize = '38px';
+        $fontSizeLabel = 'H2 - Judul';
+        $defaultFontColor = '#064f3b'; // Warna hijau (Forest)
+    } elseif ($blockType === 'paragraph') {
+        // Gaya untuk Paragraf: Font Sans, ukuran 16px, warna abu-abu gelap
+        $defaultClasses = "font-sans text-[16px] text-[#4B5D53] leading-relaxed";
+        $defaultFontName = 'Plus Jakarta Sans';
+        $fontSizeLabel = 'Paragraf - Normal';
+        $defaultFontColor = '#4b5d53'; // Warna hijau (Forest)
+    } 
+    else {
+        // Gaya fallback (bawaan dasar)
+        $defaultClasses = "font-sans text-sm text-gray-800";
+        $defaultFontName = 'default';
+        $defaultFontSize = '16px';
+        $defaultFontColor = '#000000';
+    }
+@endphp
+
 <div
-    x-data="tiptap(@entangle($attributes->wire('model')), @js($placeholder))"
+    x-data="tiptap(
+        @entangle($attributes->wire('model')), 
+        @js($placeholder), 
+        @js($defaultClasses), 
+        @js($defaultFontName),
+        @js($defaultFontSize),
+        @js($defaultFontColor),
+        @js($fontSizeLabel),
+    )"
     wire:ignore
 
     class="border border-gray-200 rounded-lg bg-white  shadow-sm focus-within:border-sage-soft focus-within:ring-1 focus-within:ring-sage-soft transition-all">
@@ -39,9 +78,9 @@
         @click="focusEditor()"
         :class="{
          'min-h-16': '{{ $blockType }}' === 'heading',
-         'min-h-24': '{{ $blockType }}' !== 'heading'
+         'min-h-48': '{{ $blockType }}' === 'paragraph'
         }"
-        class=" max-h-[calc(100vh-70vh)] overflow-y-auto bg-white overscroll-contain">
+        class=" max-h-[calc(100vh-70vh)] overflow-y-auto bg-white overscroll-contain px-4 py-3">
     </div>
 
     <!-- MODAL KUSTOM URL EKSTERNAL -->

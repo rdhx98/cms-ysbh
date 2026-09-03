@@ -7,7 +7,9 @@
 ])
 
 
-<div id="block-wrapper-{{ $blockId }}" class="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+<div 
+    {{-- id="block-wrapper-{{ $blockId }}"  --}}
+    class="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
     <div class="border-b border-gray-200 pb-2 mb-3">
         <span class="text-xs font-bold text-gray-500 uppercase">Pengaturan Widget Testimoni Dinamis</span>
     </div>

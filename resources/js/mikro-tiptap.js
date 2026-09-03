@@ -1,4 +1,4 @@
-import { Editor } from '@tiptap/core';
+import { Editor, Extension } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
@@ -29,6 +29,54 @@ const EYEBROW_ICONS = [
     { key: 'tag', label: 'Tag', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>` },
 ];
 
+const FontWeight = Extension.create({
+    name: 'fontWeight',
+
+    addOptions() {
+        return {
+            types: ['textStyle'],
+        };
+    },
+
+    addGlobalAttributes() {
+        return [
+            {
+                types: this.options.types,
+                attributes: {
+                    fontWeight: {
+                        default: null,
+                        parseHTML: element => element.style.fontWeight || null,
+                        renderHTML: attributes => {
+                            if (!attributes.fontWeight) {
+                                return {};
+                            }
+                            return {
+                                style: `font-weight: ${attributes.fontWeight}`,
+                            };
+                        },
+                    },
+                },
+            },
+        ];
+    },
+
+    addCommands() {
+        return {
+            setFontWeight: fontWeight => ({ chain }) => {
+                return chain()
+                    .setMark('textStyle', { fontWeight })
+                    .run();
+            },
+            unsetFontWeight: () => ({ chain }) => {
+                return chain()
+                    .setMark('textStyle', { fontWeight: null })
+                    .removeEmptyTextStyle()
+                    .run();
+            },
+        };
+    },
+});
+
 const PILL_COLOR_PRESETS = [
     { key: 'green', label: 'Hijau (default)', backgroundColor: '#E9F1EB', borderColor: null },
     { key: 'red', label: 'Merah', backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
@@ -52,6 +100,7 @@ const SharedExtensions = [
             class: 'text-blue-600 font-semibold underline cursor-pointer'
         }
     }),
+    FontWeight,
     TaskList.configure({
         HTMLAttributes: {
             class: 'not-prose list-none pl-0 my-4 space-y-2',
@@ -139,15 +188,71 @@ window.addEventListener('insert-link-to-active-editor', (event) => {
     }
 });
 
-//MAIN mikro fx
+
+
+//pageEditor
 document.addEventListener('alpine:init', () => {
-    Alpine.data('tiptap', (entangledContent, placeholderText = 'Ketik di sini...') => {
+    // EDITOR
+    Alpine.data('pageEditor', (initialLocales, initialSplit, localesCount, wireInstance) => ({
+        layoutMode: 'split', //single split
+        editorTab: 'content', //content | meta
+        singleActiveLang: initialLocales[0] || 'id',
+        splitLanguages: initialSplit,
+        allLocalesCount: localesCount,
+        allCollapsed: false,
+
+
+        addSplitLang(lang) {
+            let maxAllowed = (window.innerWidth > 1440 && this.allLocalesCount >= 3) ? 3 : 2;
+            if (lang && !this.splitLanguages.includes(lang) && this.splitLanguages.length < maxAllowed) {
+                this.splitLanguages.push(lang);
+            }
+        },
+        removeSplitLang(lang) {
+            if (this.splitLanguages.length > 1) {
+                this.splitLanguages = this.splitLanguages.filter(l => l !== lang);
+            }
+        },
+
+        // 🌟 PERBAIKAN TOTAL DI SINI: Kosongkan parameternya
+        handleSort() {
+            // Abaikan parameter bawaan Alpine.
+            // Langsung scan ulang seluruh DOM persis setelah blok dijatuhkan (drop).
+            let currentDomIds = Array.from(document.querySelectorAll("[x-sort\\:item]")).map(el => {
+                return el.getAttribute("x-sort:item").split("'").join("").split('"').join("").trim();
+            });
+
+            // Kirim urutan yang 100% akurat ke Livewire
+            wireInstance.updateBlockOrder(currentDomIds);
+        },
+
+        addNewBlock(type) {
+            let currentDomIds = Array.from(document.querySelectorAll("[x-sort\\:item]")).map(el => {
+                return el.getAttribute("x-sort:item").split("'").join("").split('"').join("").trim();
+            });
+            wireInstance.addBlockWithOrder(type, currentDomIds);
+        },
+
+    }));
+
+    // TIPTAP
+    Alpine.data('tiptap', (entangledContent, placeholderText = 'Ketik di sini...', editorClasses , defaultFontName, defaultFontSize, defaultFontColor, labelFontSize) => {
         // 🌟 KUNCI UTAMA: Simpan instans editor sebagai variabel lokal murni.
         // Dengan ini, Alpine TIDAK AKAN mem-proxy TipTap, sehingga error transaksi musnah.
         let editor = null;
+        let baseFont = defaultFontName || 'default';
+        let baseSize = defaultFontSize || 'default';
+        let baseColor = defaultFontColor || '#ffffff';
+        let customLabel = labelFontSize || 'Bawaan Blok';
 
         return {
             content: entangledContent,
+            editorClasses: editorClasses,
+            baseFontFamily: baseFont,
+            baseFontSize: baseSize,  
+            baseFontColor: baseColor,
+            labelUkuran: customLabel,
+
             updatedAt: Date.now(),
             showLinkModal: false,
             linkInputUrl: '',
@@ -170,7 +275,8 @@ document.addEventListener('alpine:init', () => {
                     content: this.content || '',
                     editorProps: {
                         attributes: {
-                            class: '',
+                            class: `focus:outline-none min-h-[40px] ${this.editorClasses}`,
+                            style: `color: ${this.baseFontColor};`
                         },
                     },
                     // prose was in the class
@@ -215,9 +321,11 @@ document.addEventListener('alpine:init', () => {
 
                 try {
                     if (command === 'setColor') {
-                        editor.chain().focus().setMark('textStyle', { color: args }).run();
+                        // editor.chain().focus().setMark('textStyle', { color: args }).run();
+                        editor.chain().focus().setColor(args).run();
                     } else if (command === 'unsetColor') {
-                        editor.chain().focus().removeEmptyTextStyle().run();
+                        // editor.chain().focus().removeEmptyTextStyle().run();
+                        editor.chain().focus().unsetColor().run();
                     } else if (command === 'setTextAlign') {
                         // Pastikan parameter alignment diterima sebagai string (misal: 'left', 'center')
                         const alignValue = typeof args === 'object' ? args.textAlign : args;
@@ -379,29 +487,65 @@ document.addEventListener('alpine:init', () => {
 
             getCurrentFont() {
                 this.updatedAt;
-                if (!editor) return 'default'; // 🌟 Ubah di sini
+                // if (!editor) return 'default'; // 🌟 Ubah di sini
+                if (!editor) return this.baseFontFamily;
 
                 const attributes = editor.getAttributes('textStyle');
-                return attributes.fontFamily || 'default';
+                // return attributes.fontFamily || 'default';
+                return attributes.fontFamily || this.baseFontFamily;
             },
 
-            setFontSize(size) {
-                if (!editor) return; // 🌟 Ubah di sini
+            // setFontSize(size) {
+            //     if (!editor) return; // 🌟 Ubah di sini
 
+            //     if (size === 'default') {
+            //         editor.chain().focus().unsetFontSize().run();
+            //     } else {
+            //         editor.chain().focus().setFontSize(size).run();
+            //     }
+            //     this.updatedAt = Date.now();
+            // },
+
+            // getCurrentFontSize() {
+            //     this.updatedAt;
+            //     if (!editor) return 'default'; // 🌟 Ubah di sini
+
+            //     const attributes = editor.getAttributes('textStyle');
+            //     return attributes.fontSize || 'default';
+            // },
+
+            setFontSize(size) {
+                if (!editor) return;
                 if (size === 'default') {
                     editor.chain().focus().unsetFontSize().run();
                 } else {
-                    editor.chain().focus().setFontSize(size).run();
+                    editor.chain().focus().setFontSize(size).run(); // Tiptap otomatis memproses string seperti '16px'
                 }
                 this.updatedAt = Date.now();
             },
 
             getCurrentFontSize() {
                 this.updatedAt;
-                if (!editor) return 'default'; // 🌟 Ubah di sini
+                // if (!editor) return this.baseFontSize;
+                if (!editor) return 'default';
 
                 const attributes = editor.getAttributes('textStyle');
-                return attributes.fontSize || 'default';
+                // 🌟 Mengembalikan ukuran spesifik, atau ukuran bawaan (contoh: '32px' untuk Heading)
+                if (attributes.fontSize) {
+                    return attributes.fontSize; // Contoh: "clamp(1.5rem, 2.5vw, 2rem)"
+                }
+                return 'default';
+                // return attributes.fontSize || this.baseFontSize;
+            },
+
+            // --- FONT COLOR ---
+            getCurrentColor() {
+                this.updatedAt;
+                if (!editor) return this.baseFontColor;
+
+                const attributes = editor.getAttributes('textStyle');
+                // 🌟 Mengembalikan warna spesifik, atau warna bawaan (contoh: '#064F3B' untuk Heading)
+                return attributes.color || this.baseFontColor;
             },
             toggleEyebrowIconMenu() {
                 this.isEyebrowIconOpen = !this.isEyebrowIconOpen;
@@ -462,51 +606,24 @@ document.addEventListener('alpine:init', () => {
                 this.isPillColorOpen = false;
                 this.updatedAt = Date.now();
             },
+            // --- FONT WEIGHT (Ketebalan Teks) ---
+            setFontWeight(weight) {
+                if (!editor) return;
+                if (weight === 'default') {
+                    // Menghapus inline style font-weight agar kembali ke bawaan blok/Tailwind
+                    editor.chain().focus().unsetFontWeight().run(); 
+                } else {
+                    editor.chain().focus().setFontWeight(weight).run();
+                }
+                this.updatedAt = Date.now();
+            },
+
+            getCurrentFontWeight() {
+                this.updatedAt;
+                if (!editor) return 'default';
+                const attributes = editor.getAttributes('textStyle');
+                return attributes.fontWeight || 'default';
+            },
         };
     });
-});
-
-//pageEditor
-document.addEventListener('alpine:init', () => {
-    Alpine.data('pageEditor', (initialLocales, initialSplit, localesCount, wireInstance) => ({
-        layoutMode: 'split', //single split
-        editorTab: 'meta', //content | meta
-        singleActiveLang: initialLocales[0] || 'id',
-        splitLanguages: initialSplit,
-        allLocalesCount: localesCount,
-        allCollapsed: false,
-
-
-        addSplitLang(lang) {
-            let maxAllowed = (window.innerWidth > 1440 && this.allLocalesCount >= 3) ? 3 : 2;
-            if (lang && !this.splitLanguages.includes(lang) && this.splitLanguages.length < maxAllowed) {
-                this.splitLanguages.push(lang);
-            }
-        },
-        removeSplitLang(lang) {
-            if (this.splitLanguages.length > 1) {
-                this.splitLanguages = this.splitLanguages.filter(l => l !== lang);
-            }
-        },
-
-        // 🌟 PERBAIKAN TOTAL DI SINI: Kosongkan parameternya
-        handleSort() {
-            // Abaikan parameter bawaan Alpine.
-            // Langsung scan ulang seluruh DOM persis setelah blok dijatuhkan (drop).
-            let currentDomIds = Array.from(document.querySelectorAll("[x-sort\\:item]")).map(el => {
-                return el.getAttribute("x-sort:item").split("'").join("").split('"').join("").trim();
-            });
-
-            // Kirim urutan yang 100% akurat ke Livewire
-            wireInstance.updateBlockOrder(currentDomIds);
-        },
-
-        addNewBlock(type) {
-            let currentDomIds = Array.from(document.querySelectorAll("[x-sort\\:item]")).map(el => {
-                return el.getAttribute("x-sort:item").split("'").join("").split('"').join("").trim();
-            });
-            wireInstance.addBlockWithOrder(type, currentDomIds);
-        },
-
-    }));
 });

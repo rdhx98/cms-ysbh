@@ -12,191 +12,241 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* FRAUNCES */
-@font-face {
-    font-family: 'Fraunces';
-    src: url('../../public/fonts/fraunces/Fraunces_72pt-Regular.ttf') format('truetype');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Fraunces';
-    src: url('../../public/fonts/fraunces/Fraunces_72pt-Italic.ttf') format('truetype');
-    font-weight: 400;
-    font-style: italic;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Fraunces';
-    src: url('../../public/fonts/fraunces/Fraunces_72pt-SemiBold.ttf') format('truetype');
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Fraunces';
-    src: url('../../public/fonts/fraunces/Fraunces_72pt-Bold.ttf') format('truetype');
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Fraunces';
-    src: url('../../public/fonts/fraunces/Fraunces_72pt-BoldItalic.ttf') format('truetype');
-    font-weight: 700;
-    font-style: italic;
-    font-display: swap;
+
+
+/* =========================================
+   1. Fraunces (.woff2)
+   ========================================= */
+@layer base {
+
+    /* =========================================
+       1. LIGHT (300)
+       ========================================= */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Light.ttf') format('truetype');
+        font-weight: 300;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-LightItalic.ttf') format('truetype');
+        font-weight: 300;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    /* =========================================
+       2. REGULAR (400)
+       ========================================= */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Regular.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Italic.ttf') format('truetype');
+        font-weight: 400;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    /* =========================================
+       3. MEDIUM (500)
+       ========================================= */
+    /* Catatan: Di gambar file Anda sebelumnya, sepertinya tidak ada file "Medium". 
+       Jika file ini benar-benar tidak ada di folder Anda, Anda bisa menghapus blok 500 ini, 
+       atau arahkan src URL-nya ke file Regular agar tidak terjadi error 404. */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Medium.ttf') format('truetype');
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('/fonts/Fraunces_72pt-MediumItalic.ttf') format('truetype');
+        font-weight: 500;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    /* =========================================
+       4. SEMI-BOLD (600)
+       ========================================= */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-SemiBold.ttf') format('truetype');
+        font-weight: 600;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-SemiBoldItalic.ttf') format('truetype');
+        font-weight: 600;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    /* =========================================
+       5. BOLD (700)
+       ========================================= */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Bold.ttf') format('truetype');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-BoldItalic.ttf') format('truetype');
+        font-weight: 700;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    /* =========================================
+       6. BLACK (900)
+       ========================================= */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Black.ttf') format('truetype');
+        font-weight: 900;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-BlackItalic.ttf') format('truetype');
+        font-weight: 900;
+        font-style: italic;
+        font-display: swap;
+    }
 }
 
-/* JETBRAINS MONO */
-@font-face {
-    font-family: 'JetBrains Mono';
-    src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Regular.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'JetBrains Mono';
-    src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Italic.woff2') format('woff2');
-    font-weight: 400;
-    font-style: italic;
-    font-display: swap;
+/* =========================================
+   2. JETBRAINS MONO (.woff2)
+   ========================================= */
+@layer base {
+    /* 300 - Light */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-LightItalic.woff2') format('woff2'); font-weight: 300; font-style: italic; font-display: swap; }
+
+    /* 400 - Regular */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+
+    /* 500 - Medium */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-MediumItalic.woff2') format('woff2'); font-weight: 500; font-style: italic; font-display: swap; }
+
+    /* 600 - SemiBold */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-SemiBoldItalic.woff2') format('woff2'); font-weight: 600; font-style: italic; font-display: swap; }
+
+    /* 700 - Bold */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-BoldItalic.woff2') format('woff2'); font-weight: 700; font-style: italic; font-display: swap; }
+
+    /* 900 - Black (Menggunakan ExtraBold) */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-ExtraBold.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-ExtraBoldItalic.woff2') format('woff2'); font-weight: 900; font-style: italic; font-display: swap; }
 }
 
-@font-face {
-    font-family: 'JetBrains Mono';
-    src: url('../../public//fonts/jetbrains-mono/JetBrainsMono-Medium.woff2') format('woff2');
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
+/* =========================================
+   3. PLUS JAKARTA SANS (.ttf)
+   ========================================= */
+@layer base {
+    /* 300 - Light */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-LightItalic.ttf') format('truetype'); font-weight: 300; font-style: italic; font-display: swap; }
+
+    /* 400 - Regular */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+
+    /* 500 - Medium */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; font-display: swap; }
+
+    /* 600 - SemiBold */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-SemiBoldItalic.ttf') format('truetype'); font-weight: 600; font-style: italic; font-display: swap; }
+
+    /* 700 - Bold */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: swap; }
+
+    /* 900 - Black (Menggunakan ExtraBold) */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-ExtraBold.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-ExtraBoldItalic.ttf') format('truetype'); font-weight: 900; font-style: italic; font-display: swap; }
 }
 
-@font-face {
-    font-family: 'JetBrains Mono';
-    src: url('../../public//fonts/jetbrains-mono/JetBrainsMono-Bold.woff2') format('woff2');
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'JetBrains Mono';
-    src: url('../../public//fonts/jetbrains-mono/JetBrainsMono-BoldItalic.woff2') format('woff2');
-    font-weight: 700;
-    font-style: italic;
-    font-display: swap;
+/* =========================================
+   4. OPEN SANS (.ttf)
+   (Hanya mengambil versi standar, mengabaikan Condensed)
+   ========================================= */
+@layer base {
+    /* 300 - Light */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-LightItalic.ttf') format('truetype'); font-weight: 300; font-style: italic; font-display: swap; }
+
+    /* 400 - Regular */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+
+    /* 500 - Medium */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; font-display: swap; }
+
+    /* 600 - SemiBold */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-SemiBoldItalic.ttf') format('truetype'); font-weight: 600; font-style: italic; font-display: swap; }
+
+    /* 700 - Bold */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: swap; }
+
+    /* 900 - Black (Menggunakan ExtraBold) */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-ExtraBold.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-ExtraBoldItalic.ttf') format('truetype'); font-weight: 900; font-style: italic; font-display: swap; }
 }
 
-/* PLUS JAKARTA SANS */
-@font-face {
-    font-family: 'Plus Jakarta Sans';
-    src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Regular.ttf') format('truetype');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Plus Jakarta Sans';
-    src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Italic.ttf') format('truetype');
-    font-weight: 400;
-    font-style: italic;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Plus Jakarta Sans';
-    src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Medium.ttf') format('truetype');
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Plus Jakarta Sans';
-    src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf') format('truetype');
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Plus Jakarta Sans';
-    src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-BoldItalic.ttf') format('truetype');
-    font-weight: 700;
-    font-style: italic;
-    font-display: swap;
-}
+/* =========================================
+   5. ROBOTO (.ttf)
+   (Hanya mengambil versi standar, mengabaikan Condensed)
+   ========================================= */
+@layer base {
+    /* 300 - Light */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-LightItalic.ttf') format('truetype'); font-weight: 300; font-style: italic; font-display: swap; }
 
-/* OPEN SANS */
-@font-face {
-    font-family: 'Open Sans';
-    src: url('../../public/fonts/open-sans/OpenSans-Regular.ttf') format('truetype');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Open Sans';
-    src: url('../../public/fonts/open-sans/OpenSans-Medium.ttf') format('truetype');
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Open Sans';
-    src: url('../../public/fonts/open-sans/OpenSans-Bold.ttf') format('truetype');
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Open Sans';
-    src: url('../../public/fonts/open-sans/OpenSans-Italic.ttf') format('truetype');
-    font-weight: 400;
-    font-style: italic;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Open Sans';
-    src: url('../../public/fonts/open-sans/OpenSans-BoldItalic.ttf') format('truetype');
-    font-weight: 700;
-    font-style: italic;
-    font-display: swap;
-}
+    /* 400 - Regular */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
 
-/* ROBOTO */
-/* Varian: REGULAR (Ketik Biasa) */
-@font-face {
-  font-family: 'Roboto';
-  src: url('../../public/fonts/roboto/Roboto-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+    /* 500 - Medium */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; font-display: swap; }
 
-/* Varian: ITALIC (Miring Asli) */
-@font-face {
-  font-family: 'Roboto';
-  src: url('../../public/fonts/roboto/Roboto-Italic.ttf') format('truetype');
-  font-weight: 400;
-  font-style: italic; /* <--- Kunci pembeda */
-  font-display: swap;
-}
+    /* 600 - SemiBold */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-SemiBoldItalic.ttf') format('truetype'); font-weight: 600; font-style: italic; font-display: swap; }
 
-/* Varian: BOLD (Tebal Asli) */
-@font-face {
-  font-family: 'Roboto';
-  src: url('../../public/fonts/roboto/Roboto-Bold.ttf') format('truetype');
-  font-weight: 700; /* <--- Kunci pembeda */
-  font-style: normal;
-  font-display: swap;
-}
+    /* 700 - Bold */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: swap; }
 
-/* Varian: BOLD ITALIC (Tebal Miring Asli) */
-@font-face {
-  font-family: 'Roboto';
-  src: url('../../public/fonts/roboto/Roboto-BoldItalic.ttf') format('truetype');
-  font-weight: 700; /* <--- Kunci pembeda */
-  font-style: italic; /* <--- Kunci pembeda */
-  font-display: swap;
+    /* 900 - Black (Tersedia Berkas Black Asli) */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Black.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-BlackItalic.ttf') format('truetype'); font-weight: 900; font-style: italic; font-display: swap; }
 }
 
 @theme {
@@ -1374,4 +1424,22 @@ figure[data-type="image-block"]:focus-within {
 .group:hover .group-hover\:animate-tick {
     animation: tick-fade 1s ease-in-out forwards;
     /* animation: tick-fade 2s ease-in-out infinite; */
+}
+
+@layer utilities {
+    /* Kelas dasar untuk elemen yang akan dianimasikan */
+    .reveal {
+        @apply opacity-0 transition-all duration-700 ease-out motion-reduce:transition-none;
+    }
+    
+    /* Pilihan Gaya (Bisa ditambah nanti) */
+    .reveal-up { @apply translate-y-8; }
+    .reveal-left { @apply -translate-x-8; }
+    .reveal-right { @apply translate-x-8; }
+    .reveal-scale { @apply scale-95; }
+
+    /* Kelas yang ditambahkan JS saat elemen masuk layar */
+    .is-revealed {
+        @apply !opacity-100 !translate-y-0 !translate-x-0 !scale-100;
+    }
 }

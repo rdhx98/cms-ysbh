@@ -214,18 +214,11 @@ new class extends Component
         }
     }
 
-
     public function save($isPreview = false)
     {
 
         $this->validate();
 
-        // $finalContent = [];
-        // foreach ($this->blockOrder as $id) {
-        //     if (isset($this->content[$id])) {
-        //         $finalContent[] = $this->content[$id];
-        //     }
-        // }
 
         $this->page->title            = $this->page_title;
         $this->page->slug             = $this->slug;
@@ -266,36 +259,8 @@ new class extends Component
         }
         // $this->notifyFlash(__('ui.notification.page_saved'), 'success');
         $this->notify(__('ui.notification.page_saved'), 'success');
-       // ... kode lainnya ...
-        // if (empty($redirectSlug)) {
-        //     $redirectSlug = $this->page->id;
-        // }
-
-        // // 🌟 Gunakan key 'pageSlug' di sini
-        // if (!$isPreview) {
-        //     return redirect()->route('page.edit', ['pageSlug' => $redirectSlug]);
-        // }
     }
-    // public function saveAndPreview()
-    // {
-    //     // 1. Panggil save dengan parameter TRUE
-    //     // (Ini akan menyimpan DB dan memunculkan notifikasi, TAPI halamannya tidak akan ter-refresh)
-    //     $this->save(true);
 
-    //     // 2. Dapatkan Slug untuk URL
-    //     $slugCantik = $this->page->id;
-    //     if (is_array($this->slug) && !empty($this->slug['id'])) {
-    //         $slugCantik = $this->slug['id'];
-    //     } elseif (is_string($this->slug) && !empty($this->slug)) {
-    //         $slugCantik = $this->slug;
-    //     }
-
-    //     // 3. Bangun URL Pratinjau
-    //     $previewUrl = route('page.preview', ['pageSlug' => $slugCantik]);
-
-    //     // 4. Picu event ke Alpine.js
-    //     $this->dispatch('open-preview-panel', url: $previewUrl);
-    // }
     public function saveAndPreview()
     {
         $this->save(true);
@@ -310,7 +275,8 @@ new class extends Component
         // 🌟 PERBAIKAN: Tambahkan parameter mode => 'raw'
         $previewUrl = route('page.preview', [
             'pageSlug' => $slugCantik,
-            'mode' => 'raw' // 'full' 'raw'
+            'mode' => 'raw', // 'full' 'raw'
+            'lang' => app()->getLocale(),
         ]);
 
         $this->dispatch('open-preview-panel', url: $previewUrl);
@@ -329,14 +295,16 @@ new class extends Component
     )'
     @block-added.window="
         let newId = $event.detail.id;
-        // Tunggu render DOM selesai, lalu gulirkan halaman secara halus
-        $nextTick(() => {
+        
+        // Beri jeda 100ms agar Livewire & pengunci scroll selesai merapikan DOM
+        setTimeout(() => {
             let el = document.getElementById('block-wrapper-' + newId);
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-        });
-    ">
+        }, 100);
+    "
+    >
 
 
     <!-- 🌟 HEADER UTAMA (DITELEPORTASI KE NAVBAR) -->
@@ -395,12 +363,6 @@ new class extends Component
 
             </div>
             
-            <button x-show="editorTab === 'content'" @click="allCollapsed = !allCollapsed; $dispatch('toggle-collapse-all', allCollapsed)" class="flex text-foresty p-1 text-xs">
-                <!-- Ikon berubah sesuai state -->
-                <x-dynamic-component x-show="allCollapsed" :component="'lucide-list-chevrons-down-up'" class="h-4 w-4" stroke-width="2.5" />
-                <x-dynamic-component x-show="!allCollapsed" :component="'lucide-list-chevrons-up-down'" class="h-4 w-4" stroke-width="2.5" />
-                <span x-text="allCollapsed ? 'Buka Semua Blok' : 'Tutup Semua Blok'"></span>
-            </button>
             <!-- ==========================================
                  BAGIAN 2: TABS (META & KONTEN)
                  ========================================== -->
@@ -412,6 +374,18 @@ new class extends Component
                     Konten Utama
                 </button>
             </div>
+
+            <button 
+                x-on:click="editorTab = 'content'; allCollapsed = !allCollapsed; $dispatch('toggle-collapse-all', allCollapsed)"
+                :class="allCollapsed ? 'bg-white text-foresty shadow-sm font-bold' : 'text-gray-500 hover:text-gray-700'"
+                class="flex items-center justify-center gap-1.5 w-40 px-3 py-1.5 bg-white border border-foresty text-foresty hover:bg-foresty hover:text-white rounded-lg text-xs font-bold shadow-sm transition-all focus:outline-none disabled:opacity-50 select-none cursor-pointer">
+                
+                <!-- Ikon berubah sesuai state -->
+                <x-dynamic-component x-show="allCollapsed" :component="'lucide-list-chevrons-down-up'" class="h-4 w-4 shrink-0" stroke-width="2.5" />
+                <x-dynamic-component x-show="!allCollapsed" :component="'lucide-list-chevrons-up-down'" class="h-4 w-4 shrink-0" stroke-width="2.5" />
+                
+                <span class="truncate" x-text="allCollapsed ? 'Buka Semua Blok' : 'Tutup Semua Blok'"></span>
+            </button>
 
             <!-- ==========================================
                  BAGIAN 3: AKSI SIMPAN & PRATINJAU
@@ -441,216 +415,42 @@ new class extends Component
         </div>
     @endif
 
-    <!-- TOOLBAR KONTROL TATA LETAK & BAHASA -->
-    {{-- <div class="flex flex-wrap items-center justify-between bg-white py-2 px-3 rounded-xl border border-gray-200 shadow-sm shrink-0  gap-4">
 
-        <!-- Pilihan Mode Layout -->
-         <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
-            <button
-                type="button"
-                @click="layoutMode = 'single'"
-                :class="layoutMode === 'single' ? 'bg-sage-soft text-foersty shadow-sm font-bold' : 'text-gray-600 hover:text-gray-900'"
-                class="px-3 py-1.5 text-xs rounded-md transition cursor-pointer select-none"
-            >
-                Single View
-            </button>
-            <button
-                type="button"
-                @click="layoutMode = 'split'"
-                :class="layoutMode === 'split' ? 'bg-sage-soft text-foersty shadow-sm font-bold' : 'text-gray-600 hover:text-gray-900'"
-                class="px-3 py-1.5 text-xs rounded-md transition cursor-pointer select-none"
-            >
-                Split View
-            </button>
-        </div>
-
-        <!-- KONTROL TAMBAHAN BERDASARKAN MODE -->
-        <div class="flex items-center gap-3">
-            <!-- Mode Single -->
-            <div x-show="layoutMode === 'single'" class="flex items-center gap-2">
-                <span class="text-xs font-semibold text-gray-500">Tampilkan Bahasa:</span>
-                <select x-model="singleActiveLang" class="border-gray-300 rounded-lg text-xs font-medium py-1">
-                    @foreach($activeLocales as $code)
-                        <option value="{{ $code }}">{{ strtoupper($code) }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <!-- Mode Split -->
-            <div x-show="layoutMode === 'split'" class="flex items-center gap-2 flex-wrap">
-                <span class="text-xs font-semibold text-gray-500">Kolom Split:</span>
-                <template x-for="activeLang in splitLanguages" :key="activeLang">
-                    <div class="flex items-center gap-1 bg-blue-50 border border-blue-200 px-2 py-1 rounded-md">
-                        <span class="text-xs font-bold text-foresty uppercase" x-text="activeLang"></span>
-                        <button type="button" @click="removeSplitLang(activeLang)" x-show="splitLanguages.length > 1" class="text-red-500 hover:text-red-700 text-xs font-bold px-1">×</button>
-                    </div>
-                </template>
-
-                <select @change="addSplitLang($event.target.value); $event.target.value = '';" x-show="splitLanguages.length < ((window.innerWidth > 1440 && allLocalesCount >= 3) ? 3 : 2)" class="border-dashed border-gray-300 rounded-lg text-xs text-gray-500 py-1 bg-gray-50">
-                    <option value="">+ Tambah Kolom</option>
-                    @foreach($activeLocales as $code)
-                        <option value="{{ $code }}">{{ strtoupper($code) }}</option>
-                    @endforeach
-                </select>
-            </div>
-        </div>
-    </div> --}}
-
-    <!-- AREA KONTEN UTAMA -->
-    <!-- <div class="flex-1 overflow-y-auto overflow-x-hidden py-2 pr-2 space-y-8 mb-8"> -->
-    {{-- <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-8 pb-24 px-4 space-y-8 ">
-
-        <!-- BAGIAN METADATA -->
-        <div :class="{
-                'grid grid-cols-1': layoutMode === 'single',
-                'grid grid-cols-1 md:grid-cols-2': layoutMode === 'split' && splitLanguages.length === 2,
-                'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3': layoutMode === 'split' && splitLanguages.length === 3,
-                'grid grid-cols-1': layoutMode === 'split' && splitLanguages.length === 1
-             }"
-             class="gap-6">
-            @foreach($activeLocales as $code)
-                <div x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))"
-                     class="p-5 bg-white border border-gray-200 rounded-xl shadow-sm space-y-4">
-                    <div class="mb-4 flex items-center justify-between">
-                        <h3 class="font-bold text-gray-700 text-sm">Metadata ({{ strtoupper($code) }})</h3>
-                        <span class="px-2 py-0.5 bg-blue-100 text-foresty text-[10px] font-bold rounded">{{ strtoupper($code) }}</span>
-                    </div>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Judul Halaman <span class="text-red-500">*</span></label>
-                            <input type="text" wire:model="page_title.{{ $code }}"
-                            placeholder="Contoh: Layanan Kesehatan Ibu dan Anak"
-                            class="w-full text-md p-2 border-gray-300 rounded-md shadow-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Slug URL</label>
-                            <input type="text" wire:model="slug.{{ $code }}"
-                            placeholder="Contoh: layanan-kesehatan-ibu-dan-anak"
-                            class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Judul Meta</label>
-                            <input type="text" wire:model="meta_title.{{ $code }}"
-                            placeholder="Contoh: Layanan Kesehatan Ibu & Anak Terpadu | YSBH"
-                            class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Deskripsi Meta</label>
-                            <textarea row="6" wire:model="meta_description.{{ $code }}"
-                            placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
-                            class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500 min-h-36 resize-none"></textarea>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-
-        <!-- KONTROL STATUS KONTEN -->
-        <div class="flex items-center justify-between pt-2">
-            <h2 class="text-xl font-bold text-gray-800">Konten Halaman</h2>
-            <select wire:model="status" class="border-gray-300 rounded-md shadow-sm text-sm font-medium">
-                <option value="offline">Offline</option>
-                <option value="online">Online</option>
-            </select>
-        </div>
-
-        <!-- ALPINE SORTABLE CONTAINER -->
-        <div
-            x-sort="handleSort"
-            x-sort:config="{
-                animation: 200,
-                handle: '.drag-handle',
-                ghostClass: 'opacity-50',
-                dragClass: 'shadow-2xl'
-            }"
-            class="flex flex-col gap-6"  >
-            <!-- 🌟 1. LOOP MENGGUNAKAN $blockOrder AGAR URUTAN TETAP UTUH -->
-            @foreach($blockOrder as $blockId)
-                @php $block = $content[$blockId] ?? null; @endphp
-                @if($block)
-                    <div
-                        wire:key="block-{{ $blockId }}"
-                        x-sort:item="'{{ $blockId }}'"
-                        class="group relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:border-forest transition-colors"
-                    >
-                        <!-- Drag Handle -->
-                        <div class="absolute top-1/2 -left-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-[99]">
-                            <button type="button" class="drag-handle cursor-grab active:cursor-grabbing p-2 bg-white border border-gray-200 shadow-md rounded-md text-gray-400 hover:text-gray-700" title="Geser Blok">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8"></path></svg>
-                            </button>
-                        </div>
-
-                        <!-- Tombol Aksi Hover: Gandakan & Hapus -->
-                        <div class="absolute -top-3 -right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                            <button wire:click="duplicateBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
-                            </button>
-                            <button wire:click="removeBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-gray-200 shadow-sm" title="Hapus Blok">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
-
-                        <!-- RENDER ISI BLOK -->
-                        <div class="w-full">
-                            <div :class="{
-                                    'grid grid-cols-1': layoutMode === 'single',
-                                    'grid grid-cols-1 md:grid-cols-2': layoutMode === 'split' && splitLanguages.length === 2,
-                                    'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3': layoutMode === 'split' && splitLanguages.length === 3,
-                                    'grid grid-cols-1': layoutMode === 'split' && splitLanguages.length === 1
-                                }"
-                                class="gap-6">
-                                @foreach($activeLocales as $code)
-                                    <div x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))"
-                                        class="space-y-3">
-
-
-                                        <!-- 🌟 2. WIRE:MODEL DIKUNCI MENGGUNAKAN $blockId (MUSTAHIL TERTUKAR/ACAK) -->
-                                        <x-dynamic-component
-                                            :component="'blocks.editor.' . str_replace('_', '-', $block['type'])"
-                                            :block-id="$blockId"
-                                            :code="$code"
-                                            :block="$block"
-                                            :all-content="$content"
-                                        />
-
-
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                @endif
-            @endforeach
-        </div>
-
-    </div>--}} <!-- Akhir Area Scroll Konten -->
 
     <!-- AREA KONTEN UTAMA -->
     <div 
-    id="main-editor-scroll-area"
-    x-data="{
-             scrollPos: 0,
-             init() {
-                 // Kaitkan ke siklus Livewire v3
-                 Livewire.hook('commit', ({ succeed }) => {
-                     // 1. Simpan posisi scroll sebelum halaman di-render ulang
-                     this.scrollPos = this.$el.scrollTop;
-                     
-                     succeed(() => {
-                         // 2. Kembalikan posisi scroll secara instan setelah render selesai
-                         requestAnimationFrame(() => {
-                             this.$el.scrollTop = this.scrollPos;
-                         });
-                     });
-                 });
-             }
-         }" 
-    class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-6 pb-24 px-4 space-y-8">
+        id="main-editor-scroll-area"
+        x-data="{
+            scrollPos: 0,
+            init() {
+                Livewire.hook('commit', ({ succeed }) => {
+                    // 1. Catat posisi sebelum update
+                    this.scrollPos = this.$el.scrollTop;
+                    
+                    succeed(() => {
+                        // 2. Selalu paksa kembali ke posisi semula (mencegah lemparan ke atas)
+                        requestAnimationFrame(() => {
+                            this.$el.scrollTop = this.scrollPos;
+                        });
+                    });
+                });
+            }
+        }"
+        {{-- class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-6 pb-[50vh] px-4 space-y-8" --}}
+        class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-6 pb-24 px-4 space-y-8 scrollbar-gutter-stable"
+        >
 
         <!-- ==========================================
              RUANGAN 1: METADATA (Hanya Tampil di Tab Meta)
              ========================================== -->
-        <div x-show="editorTab === 'meta'" x-cloak>
+        <div x-show="editorTab === 'meta'" x-cloak class="space-y-8">
+            <div class="flex items-center justify-between pt-2">
+                <h2 class="text-xl font-bold text-gray-800">Metadata Halaman</h2>
+                <select wire:model="status" class="border-gray-300 rounded-md shadow-sm text-sm font-medium">
+                    <option value="offline">Offline</option>
+                    <option value="online">Online</option>
+                </select>
+            </div>
             <div :class="{
                     'grid grid-cols-1': layoutMode === 'single',
                     'grid grid-cols-1 md:grid-cols-2': layoutMode === 'split' && splitLanguages.length === 2,
@@ -658,6 +458,7 @@ new class extends Component
                     'grid grid-cols-1': layoutMode === 'split' && splitLanguages.length === 1
                  }"
                  class="gap-6">
+                 
                 @foreach($activeLocales as $code)
                     <div x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))"
                          class="p-5 bg-white border border-gray-200 rounded-xl shadow-sm space-y-4">
@@ -693,6 +494,7 @@ new class extends Component
                         </div>
                     </div>
                 @endforeach
+                
             </div>
         </div>
 
@@ -705,10 +507,6 @@ new class extends Component
             <!-- KONTROL STATUS KONTEN -->
             <div class="flex items-center justify-between pt-2">
                 <h2 class="text-xl font-bold text-gray-800">Konten Halaman</h2>
-                <select wire:model="status" class="border-gray-300 rounded-md shadow-sm text-sm font-medium">
-                    <option value="offline">Offline</option>
-                    <option value="online">Online</option>
-                </select>
             </div>
 
             <!-- ALPINE SORTABLE CONTAINER -->
@@ -726,14 +524,21 @@ new class extends Component
                     @php $block = $content[$blockId] ?? null; @endphp
                     @if($block)
                         <div
+                            id="block-wrapper-{{ $blockId }}"
                             wire:key="block-{{ $blockId }}"
                             x-sort:item="'{{ $blockId }}'"
-                            class="group relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:border-forest transition-colors"
+                            class="group relative bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:border-foresty/80 transition-colors"
+                            {{-- class="group relative bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:border-forest transition-colors" --}}
                         >
                             <!-- Drag Handle -->
-                            <div class="absolute top-1/2 left-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-[99]">
+                            {{-- <div class="absolute top-1/2 left-2 -translate-y-6 opacity-0 group-hover:opacity-100 transition-opacity z-[99]">
                                 <button type="button" class="drag-handle cursor-grab active:cursor-grabbing p-2 bg-white border border-gray-200 shadow-md rounded-md text-gray-400 hover:text-gray-700" title="Geser Blok">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8"></path></svg>
+                                </button>
+                            </div> --}}
+                            <div class="absolute top-4 -left-6 opacity-0 group-hover:opacity-100 transition-opacity z-20 hidden md:block">
+                                <button type="button" class="drag-handle cursor-grab active:cursor-grabbing p-1.5 bg-white border border-gray-200 shadow-md rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-50" title="Geser Blok">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8"></path></svg>
                                 </button>
                             </div>
 
@@ -789,12 +594,14 @@ new class extends Component
             <span class="text-[10px] font-bold text-gray-400 uppercase">Konten:</span>
             <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('heading')" icon="heading-1" label="Judul" />
             <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('paragraph')" icon="align-left" label="Paragraf" />
+            <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('eyebrow')" icon="crosshair" label="Eyebrow" />
             <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('image')" icon="image" label="Gambar" />
         </div>
 
         <!-- KELOMPOK MAKRO (TATA LETAK & SEKSI) -->
         <div class="flex items-center gap-2 border-r pr-6 border-gray-200">
             <span class="text-[10px] font-bold text-gray-400 uppercase">Seksi Layout:</span>
+            <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('multi-columns')" icon="columns-4" label="Kolom" />
             <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('columns')" icon="columns" label="2 Kolom" />
             <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('stats_grid')" icon="layout-grid" label="Grid Info" />
             <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('dynamic_testimonials')" icon="message-square-quote" label="Testimoni" />
@@ -892,7 +699,7 @@ new class extends Component
                                 {{-- <h3 class="font-bold text-gray-700">Pratinjau Halaman</h3> --}}
     
                                 <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
-                                <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner  md:flex" x-data="{ activeLang: 'id' }">
+                                <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner  md:flex" x-data="{ activeLang: '{{ app()->getLocale() }}' }">
                                     <button 
                                     type="button" 
                                     @click="activeLang = 'id'; document.getElementById('preview-iframe').contentWindow.postMessage({ type: 'change-lang', lang: 'id' }, '*')"

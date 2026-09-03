@@ -8,20 +8,33 @@
 @php
     $leftZone = $block['data']['left_zone'] ?? [];
     $rightZone = $block['data']['right_zone'] ?? [];
+    // 🌟 Kumpulkan semua ID anak blok untuk dijadikan target perintah
+    $allChildren = array_values(array_merge($leftZone, $rightZone));
 @endphp
 
 {{-- 🌟 STATE ALPINE DENGAN PENDENGAR SINKRONISASI ANTI-GAGAL --}}
-<div x-data="{
+<div 
+    x-data="{
         activeTab: 'left',
         isCollapsed : false,
+        layoutMode: 'split',
+        init() {
+            window.blockCollapseState = window.blockCollapseState || {};
+            if (window.blockCollapseState['{{ $blockId }}'] !== undefined) {
+                this.isCollapsed = window.blockCollapseState['{{ $blockId }}'];
+            }
+            this.$watch('isCollapsed', (value) => {
+                window.blockCollapseState['{{ $blockId }}'] = value;
+            });
+        },
         updateZoneOrder(evt, zone) {
             let order = Array.from(evt.to.children).map(el => el.getAttribute('data-id')).filter(Boolean);
             $wire.reorderChildBlocks('{{ $blockId }}', zone, order);
         }
     }"
-    {{-- Nama sinyal dicetak huruf kecil murni oleh server (PHP) --}}
     @toggle-collapse-all.window="isCollapsed = $event.detail"
     @sync-columns-tab-{{ strtolower($blockId) }}.window="activeTab = $event.detail"
+    @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail"
     class="is-nested-container bg-white border border-gray-300 rounded-xl shadow-sm relative">
 
     {{-- HEADER & PENGATURAN BLOK --}}
@@ -30,27 +43,36 @@
         <div class="px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 
-                {{-- 🌟 3. Tombol Buka/Tutup Lokal --}}
-                <button type="button" @click="isCollapsed = !isCollapsed" 
+                {{-- Tombol Buka/Tutup Lokal Biasa --}}
+                <button type="button" @click="isCollapsed = !isCollapsed; $dispatch('sync-collapse-{{ strtolower($blockId) }}', isCollapsed)" 
                         class="p-1 hover:bg-gray-200 rounded text-gray-500 transition-colors focus:outline-none"
                         title="Tutup/Buka Blok Ini">
                     <svg class="w-4 h-4 transition-transform duration-200" :class="isCollapsed ? '-rotate-90' : 'rotate-0'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
 
-                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 cursor-pointer select-none" @click="isCollapsed = !isCollapsed">
+                <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 cursor-pointer select-none" 
+                      @click="isCollapsed = !isCollapsed; $dispatch('sync-collapse-{{ strtolower($blockId) }}', isCollapsed)">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
                     Seksi: 2 Kolom
                 </span>
-            </div>
 
-            <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
-                Seksi: 2 Kolom
-            </span>
+                {{-- 🌟 TOMBOL BARU: BUKA KOLOM & RUNTUHKAN ANAK --}}
+                <button type="button"
+                        @click.stop="
+                            isCollapsed = false; 
+                            $dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
+                            $dispatch('force-collapse-children', {{ json_encode($allChildren) }});
+                        "
+                        class="ml-2 flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-[9px] font-bold shadow-sm hover:bg-blue-100 transition-colors"
+                        title="Buka kolom ini dan ciutkan semua isinya agar mudah digeser">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                    Atur Susunan
+                </button>
+            </div>
 
             <div class="flex items-center gap-1">
                 {{-- PEMILIH WARNA LATAR --}}
-                <div class="flex items-center gap-2" x-data="{ openColorMenu: false, bgColor: @entangle('content.'.$blockId.'.data.bg_color') }">
+                {{-- <div class="flex items-center gap-2" x-data="{ openColorMenu: false, bgColor: @entangle('content.'.$blockId.'.data.bg_color') }">
                     <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Warna Latar:</label>
                     <div class="relative flex items-center border-l border-zinc-200 pl-2 ml-1">
                         <button type="button" @click="openColorMenu = !openColorMenu" class="flex items-center gap-2 p-1.5 h-9 transition rounded cursor-pointer hover:bg-zinc-200 text-gray-700 bg-zinc-50 shadow-sm border border-transparent">
@@ -81,7 +103,7 @@
                             </button>
                         </div>
                     </div>
-                </div>
+                </div> --}}
 
                 {{-- KONTROL URUTAN HP --}}
                 <div class="flex items-center gap-2 border-l border-gray-200 pl-3 ml-2">
@@ -92,10 +114,6 @@
                             <div class="absolute bottom-full right-0 md:left-1/2 md:-translate-x-1/2 mb-2 w-48 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-[100] pointer-events-none">
                                 <div class="bg-gray-800 text-white text-[10px] leading-relaxed p-2.5 rounded-lg shadow-xl text-center relative">
                                     Mengatur susunan saat dibaca di HP.
-                                    <div class="mt-1.5 pt-1.5 border-t border-gray-600 text-left space-y-1">
-                                        <p><strong class="text-blue-300">Kiri di Atas:</strong> Kolom kiri tampil lebih dulu.</p>
-                                        <p><strong class="text-blue-300">Kanan di Atas:</strong> Kolom kanan naik ke atas.</p>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -115,7 +133,6 @@
 
         {{-- 🌟 NAVIGASI TAB --}}
         <div x-show="layoutMode === 'split'" x-cloak class="flex px-4 space-x-2 relative top-[1px]">
-            
             <button @click="activeTab = 'left'; $dispatch('sync-columns-tab-{{ strtolower($blockId) }}', 'left')"
                     type="button"
                     :class="activeTab === 'left' ? 'bg-white text-blue-600 border-gray-200 shadow-sm' : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-200/50 border-transparent'"
@@ -123,7 +140,6 @@
                 Kolom Kiri
                 <span class="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[9px]">{{ count($leftZone) }}</span>
             </button>
-
             <button @click="activeTab = 'right'; $dispatch('sync-columns-tab-{{ strtolower($blockId) }}', 'right')"
                     type="button"
                     :class="activeTab === 'right' ? 'bg-white text-blue-600 border-gray-200 shadow-sm' : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-200/50 border-transparent'"
@@ -131,9 +147,7 @@
                 Kolom Kanan
                 <span class="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[9px]">{{ count($rightZone) }}</span>
             </button>
-            
         </div>
-
     </div>
 
     {{-- AREA KONTEN --}}
@@ -141,61 +155,38 @@
 
         {{-- ================= KONTEN KIRI ================= --}}
         <div x-show="layoutMode === 'single' || activeTab === 'left'" class="flex flex-col h-full">
-            
             <div x-show="layoutMode === 'single'" x-cloak class="px-4 py-2 bg-gray-100/50 border-b border-gray-200">
                 <span class="text-[10px] font-bold text-gray-400 uppercase">Kolom Kiri</span>
             </div>
-
             <div x-sort
-                 x-sort:config="{
-                     group: 'left_zone_{{ $blockId }}',
-                     animation: 150,
-                     handle: '.child-drag-handle',
-                     onEnd: (evt) => updateZoneOrder(evt, 'left_zone')
-                 }"
-                 class="flex-1 p-4 space-y-4 min-h-[150px] bg-gray-50/20"
-            >
+                 x-sort:config="{ group: 'left_zone_{{ $blockId }}', animation: 150, handle: '.child-drag-handle', onEnd: (evt) => updateZoneOrder(evt, 'left_zone') }"
+                 class="flex-1 p-4 space-y-4 min-h-[150px] bg-gray-50/20">
                 @foreach($leftZone as $childId)
                     @if(isset($allContent[$childId]))
                         @php $childBlock = $allContent[$childId]; @endphp
-                        <div data-id="{{ $childId }}" x-sort:item="'{{ $childId }}'" wire:key="child-{{ $childId }}" class="relative group rounded-lg hover:ring-2 hover:ring-blue-100 transition-all bg-white shadow-sm border border-gray-200">
-                            
+                        <div 
+                            id="block-wrapper-{{ $childId }}"
+                            data-id="{{ $childId }}" 
+                            x-sort:item="'{{ $childId }}'" 
+                            wire:key="child-{{ $childId }}" 
+                            class="relative group rounded-lg hover:ring-2 hover:ring-blue-100 transition-all bg-white shadow-sm border border-gray-200">
                             <!-- Drag Handle -->
                             <div class="child-drag-handle absolute -left-2 top-3 opacity-0 group-hover:opacity-100 cursor-move text-gray-300 hover:text-blue-500 z-10 bg-white rounded-full p-0.5 shadow-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8"></path></svg>
                             </div>
-
-                            <!-- 🌟 TOMBOL HAPUS BLOK ANAK (MUNCUL SAAT HOVER) -->
+                            <!-- Tombol Hapus -->
                             <div class="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                <button type="button" 
-                                        wire:click="removeNestedBlock('{{ $blockId }}', 'left_zone', '{{ $childId }}')" 
-                                        class="p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-red-200 shadow-sm" title="Hapus Blok Ini">
+                                <button type="button" wire:click="removeNestedBlock('{{ $blockId }}', 'left_zone', '{{ $childId }}')" class="p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-red-200 shadow-sm" title="Hapus Blok Ini">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             </div>
-
                             <div class="p-0">
                                 <x-dynamic-component :component="'blocks.editor.' . str_replace('_', '-', $childBlock['type'])" :block-id="$childId" :code="$code" :block="$childBlock" :all-content="$allContent" />
                             </div>
                         </div>
                     @endif
                 @endforeach
-                {{-- Below is BAK code --}}
-                {{-- @foreach($leftZone as $childId)
-                    @if(isset($allContent[$childId]))
-                        @php $childBlock = $allContent[$childId]; @endphp
-                        <div data-id="{{ $childId }}" x-sort:item="'{{ $childId }}'" wire:key="child-{{ $childId }}" class="relative group rounded-lg hover:ring-2 hover:ring-blue-100 transition-all bg-white shadow-sm border border-gray-200">
-                            <div class="child-drag-handle absolute -left-2 top-3 opacity-0 group-hover:opacity-100 cursor-move text-gray-300 hover:text-blue-500 z-10 bg-white rounded-full p-0.5 shadow-sm">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8"></path></svg>
-                            </div>
-                            <div class="p-0">
-                                <x-dynamic-component :component="'blocks.editor.' . str_replace('_', '-', $childBlock['type'])" :block-id="$childId" :code="$code" :block="$childBlock" :all-content="$allContent" />
-                            </div>
-                        </div>
-                    @endif
-                @endforeach --}}
             </div>
-
             <div class="p-4 pt-0 mt-auto">
                 <div x-data="{ openDropdown: false }" class="relative">
                     <button @click="openDropdown = !openDropdown" @click.outside="openDropdown = false" type="button" class="w-full py-2 flex items-center justify-center gap-2 border border-dashed border-gray-300 text-xs font-bold text-gray-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 rounded-lg transition-colors">
@@ -205,6 +196,7 @@
                         <div class="p-1 flex flex-col gap-0.5">
                             <button type="button" wire:click="addChildBlock('{{ $blockId }}', 'left_zone', 'heading'); openDropdown = false" class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Judul (Heading)</button>
                             <button type="button" wire:click="addChildBlock('{{ $blockId }}', 'left_zone', 'paragraph'); openDropdown = false" class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Paragraf</button>
+                            <button type="button" wire:click="addChildBlock('{{ $blockId }}', 'left_zone', 'eyebrow'); openDropdown = false" class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Eyebrow</button>
                             <button type="button" wire:click="addChildBlock('{{ $blockId }}', 'left_zone', 'image'); openDropdown = false" class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Gambar</button>
                         </div>
                     </div>
@@ -214,62 +206,33 @@
 
         {{-- ================= KONTEN KANAN ================= --}}
         <div x-show="layoutMode === 'single' || activeTab === 'right'" class="flex flex-col h-full" style="display: none;">
-            
             <div x-show="layoutMode === 'single'" x-cloak class="px-4 py-2 bg-gray-100/50 border-b border-gray-200">
                 <span class="text-[10px] font-bold text-gray-400 uppercase">Kolom Kanan</span>
             </div>
-
             <div x-sort
-                 x-sort:config="{
-                     group: 'right_zone_{{ $blockId }}',
-                     animation: 150,
-                     handle: '.child-drag-handle',
-                     onEnd: (evt) => updateZoneOrder(evt, 'right_zone')
-                 }"
-                 class="flex-1 p-4 space-y-4 min-h-[150px] bg-gray-50/20"
-            >
-
+                 x-sort:config="{ group: 'right_zone_{{ $blockId }}', animation: 150, handle: '.child-drag-handle', onEnd: (evt) => updateZoneOrder(evt, 'right_zone') }"
+                 class="flex-1 p-4 space-y-4 min-h-[150px] bg-gray-50/20">
                 @foreach($rightZone as $childId)
                     @if(isset($allContent[$childId]))
                         @php $childBlock = $allContent[$childId]; @endphp
-                        <div data-id="{{ $childId }}" x-sort:item="'{{ $childId }}'" wire:key="child-{{ $childId }}" class="relative group rounded-lg hover:ring-2 hover:ring-blue-100 transition-all bg-white shadow-sm border border-gray-200">
-                            
+                        <div id="block-wrapper-{{ $childId }}" data-id="{{ $childId }}" x-sort:item="'{{ $childId }}'" wire:key="child-{{ $childId }}" class="relative group rounded-lg hover:ring-2 hover:ring-blue-100 transition-all bg-white shadow-sm border border-gray-200">
                             <!-- Drag Handle -->
                             <div class="child-drag-handle absolute -left-2 top-3 opacity-0 group-hover:opacity-100 cursor-move text-gray-300 hover:text-blue-500 z-10 bg-white rounded-full p-0.5 shadow-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8"></path></svg>
                             </div>
-
-                            <!-- 🌟 TOMBOL HAPUS BLOK ANAK (MUNCUL SAAT HOVER) -->
+                            <!-- Tombol Hapus -->
                             <div class="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                <button type="button" 
-                                        wire:click="removeNestedBlock('{{ $blockId }}', 'left_zone', '{{ $childId }}')" 
-                                        class="p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-red-200 shadow-sm" title="Hapus Blok Ini">
+                                <button type="button" wire:click="removeNestedBlock('{{ $blockId }}', 'right_zone', '{{ $childId }}')" class="p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-red-200 shadow-sm" title="Hapus Blok Ini">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             </div>
-
                             <div class="p-0">
                                 <x-dynamic-component :component="'blocks.editor.' . str_replace('_', '-', $childBlock['type'])" :block-id="$childId" :code="$code" :block="$childBlock" :all-content="$allContent" />
                             </div>
                         </div>
                     @endif
                 @endforeach
-                {{-- Below is BAK code --}}
-                {{-- @foreach($rightZone as $childId)
-                    @if(isset($allContent[$childId]))
-                        @php $childBlock = $allContent[$childId]; @endphp
-                        <div data-id="{{ $childId }}" x-sort:item="'{{ $childId }}'" wire:key="child-{{ $childId }}" class="relative group rounded-lg hover:ring-2 hover:ring-blue-100 transition-all bg-white shadow-sm border border-gray-200">
-                            <div class="child-drag-handle absolute -left-2 top-3 opacity-0 group-hover:opacity-100 cursor-move text-gray-300 hover:text-blue-500 z-10 bg-white rounded-full p-0.5 shadow-sm">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9h8M8 15h8"></path></svg>
-                            </div>
-                            <div class="p-0">
-                                <x-dynamic-component :component="'blocks.editor.' . str_replace('_', '-', $childBlock['type'])" :block-id="$childId" :code="$code" :block="$childBlock" :all-content="$allContent" />
-                            </div>
-                        </div>
-                    @endif
-                @endforeach --}}
             </div>
-
             <div class="p-4 pt-0 mt-auto">
                 <div x-data="{ openDropdown: false }" class="relative">
                     <button @click="openDropdown = !openDropdown" @click.outside="openDropdown = false" type="button" class="w-full py-2 flex items-center justify-center gap-2 border border-dashed border-gray-300 text-xs font-bold text-gray-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 rounded-lg transition-colors">
@@ -279,12 +242,12 @@
                         <div class="p-1 flex flex-col gap-0.5">
                             <button type="button" wire:click="addChildBlock('{{ $blockId }}', 'right_zone', 'heading'); openDropdown = false" class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Judul (Heading)</button>
                             <button type="button" wire:click="addChildBlock('{{ $blockId }}', 'right_zone', 'paragraph'); openDropdown = false" class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Paragraf</button>
+                            <button type="button" wire:click="addChildBlock('{{ $blockId }}', 'right_zone', 'eyebrow'); openDropdown = false" class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Eyebrow</button>
                             <button type="button" wire:click="addChildBlock('{{ $blockId }}', 'right_zone', 'image'); openDropdown = false" class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Gambar</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 </div>

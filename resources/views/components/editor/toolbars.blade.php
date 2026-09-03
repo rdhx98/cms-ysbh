@@ -55,14 +55,30 @@
 
                 {{-- FONT SIZES --}}
                 <div class="relative flex items-center">
-                    <select @change="setFontSize($event.target.value)" :value="getCurrentFontSize()"
+                    <select @change="setFontSize($event.target.value)" 
+                        :value="getCurrentFontSize()"
+                        class="text-xs md:text-sm border-zinc-200 dark:border-zinc-700 bg-sage-soft dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 rounded-md py-1 pl-2 pr-6 focus:ring-0 focus:border-forest transition-colors cursor-pointer shadow-sm">
+                        
+                        {{-- 🌟 Opsi Bawaan Blok (Mengikuti kelas Tailwind dari PHP) --}}
+                        <option value="default" x-text="labelUkuran"></option>
+                        
+                        {{-- 🌟 Skala Tipografi Dinamis --}}
+                        <option value="clamp(0.875rem, 1vw, 1rem)">     Kecil</option>
+                        <option value="clamp(1rem, 1.5vw, 1.125rem)">   Paragraf - Normal</option>
+                        <option value="clamp(1.125rem, 2vw, 1.375rem)"> Lead - Teks Besar</option>
+                        <option value="clamp(1.5rem, 2.5vw, 2rem)">     H3 - Sub-Judul</option>
+                        <option value="clamp(1.8rem, 3vw, 2.5rem)">     H2 - Judul</option>
+                        <option value="clamp(2.5rem, 5vw, 4rem)">       H1 - Judul Utama Raksasa</option>
+                        
+                    </select>
+                    {{-- <select @change="setFontSize($event.target.value)" :value="getCurrentFontSize()"
                         class="text-xs md:text-sm border-zinc-200 dark:border-zinc-700 bg-sage-soft dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 rounded-md py-1 pl-2 pr-6 focus:ring-0 focus:border-forest transition-colors cursor-pointer shadow-sm">
                         <option value="8px">8</option>
                         <option value="10px">10</option>
                         <option value="12px">12</option>
                         <option value="13px">13</option>
                         <option value="14px">14</option>
-                        <option value="default">16 (Normal)</option>
+                        <option value="16px">16</option>
                         <option value="18px">18</option>
                         <option value="20px">20</option>
                         <option value="24px">24</option>
@@ -71,8 +87,51 @@
                         <option value="36px">36</option>
                         <option value="38px">38</option>
                         <option value="42px">42</option>
-                    </select>
+                    </select> --}}
                 </div>
+                <div x-data="{ openWeightMenu: false }" class="relative flex items-center">
+                  <!-- Tombol Pemicu Dropdown Ketebalan -->
+                  <button type="button" @click="openWeightMenu = !openWeightMenu"
+                      class="flex items-center gap-1 p-1.5 h-9 transition rounded cursor-pointer hover:bg-zinc-200 text-gray-700 bg-zinc-50 shadow-sm border border-transparent text-xs font-medium"
+                      title="Ketebalan Teks (Font Weight)">
+                      <span class="font-bold">B</span>
+                      <span class="text-[10px] text-zinc-400">▼</span>
+                  </button>
+
+                  <!-- Menu Dropdown Pilihan Ketebalan -->
+                  <div x-show="openWeightMenu" @click.away="openWeightMenu = false" style="display: none;"
+                      class="absolute top-full left-0 mt-1 bg-white border border-zinc-200 shadow-lg rounded-xl p-2 z-[99] flex flex-col gap-1 w-36">
+                      
+                      <button type="button" @click="setFontWeight('default'); openWeightMenu = false" 
+                          class="px-3 py-1.5 text-xs text-left rounded hover:bg-zinc-100 text-zinc-700 font-normal">
+                          Bawaan Blok
+                      </button>
+                      <button type="button" @click="setFontWeight('300'); openWeightMenu = false" 
+                          class="px-3 py-1.5 text-xs text-left rounded hover:bg-zinc-100 text-zinc-300 font-light">
+                          Light (300)
+                      </button>
+                      <button type="button" @click="setFontWeight('400'); openWeightMenu = false" 
+                          class="px-3 py-1.5 text-xs text-left rounded hover:bg-zinc-100 text-zinc-700 font-normal">
+                          Regular (400)
+                      </button>
+                      <button type="button" @click="setFontWeight('500'); openWeightMenu = false" 
+                          class="px-3 py-1.5 text-xs text-left rounded hover:bg-zinc-100 text-zinc-700 font-medium">
+                          Medium (500)
+                      </button>
+                      <button type="button" @click="setFontWeight('600'); openWeightMenu = false" 
+                          class="px-3 py-1.5 text-xs text-left rounded hover:bg-zinc-100 text-zinc-800 font-semibold">
+                          Semi-Bold (600)
+                      </button>
+                      <button type="button" @click="setFontWeight('700'); openWeightMenu = false" 
+                          class="px-3 py-1.5 text-xs text-left rounded hover:bg-zinc-100 text-zinc-900 font-bold">
+                          Bold (700)
+                      </button>
+                      <button type="button" @click="setFontWeight('900'); openWeightMenu = false" 
+                          class="px-3 py-1.5 text-xs text-left rounded hover:bg-zinc-100 text-black font-black">
+                          Black (900)
+                      </button>
+                  </div>
+              </div>
 
                 {{-- COLOR PICKER --}}
                 <div x-data="{ openColorMenu: false }" class="relative flex items-center border-l border-zinc-200 pl-2 ml-1">
@@ -81,7 +140,9 @@
                         title="Warna Teks">
                         <x-dynamic-component component="lucide-palette" class="h-4 w-4" stroke-width="2.5" />
                         <div class="w-6 h-6 rounded border border-zinc-300 shadow-inner transition-colors"
-                            :style="updatedAt && getEditor()?.getAttributes('textStyle').color ? { backgroundColor: getEditor()?.getAttributes('textStyle').color } : { backgroundColor: '#18181b' }">
+                            {{-- :style="updatedAt && getEditor()?.getAttributes('textStyle').color ? { backgroundColor: getEditor()?.getAttributes('textStyle').color } : { backgroundColor: '#18181b' }" --}}
+                            :style="{ backgroundColor: getCurrentColor() }"
+                            >
                         </div>
                     </button>
 
@@ -101,7 +162,11 @@
                         <hr class="border-zinc-100">
                         <div>
                             <span class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Warna Bebas</span>
-                            <input type="color" @input="runCommand('setColor', $event.target.value)" class="w-full h-8 p-0 border-0 rounded cursor-pointer bg-transparent">
+                            <input 
+                                type="color" 
+                                :value="getCurrentColor()"
+                                @input="runCommand('setColor', $event.target.value)" 
+                                class="w-full h-8 p-0 border-0 rounded cursor-pointer bg-transparent">
                         </div>
                         <hr class="border-zinc-100">
                         <button type="button" @click="runCommand('unsetColor'); openColorMenu = false"
