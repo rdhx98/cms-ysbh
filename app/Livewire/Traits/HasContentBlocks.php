@@ -48,10 +48,6 @@ trait HasContentBlocks
         $this->dispatch('block-added', id: $newChildId);
     }
 
-    // public function removeBlock(String $blockId) {
-    //     unset($this->content[$blockId]);
-    //     $this->blockOrder = array_values(array_filter($this->blockOrder, fn($id) => $id !== $blockId));
-    // }
     public function removeBlock(String $blockId) {
         // 1. Hapus dari gudang data utama
         unset($this->content[$blockId]);
@@ -76,11 +72,11 @@ trait HasContentBlocks
         // 1. Hapus ID anak dari zona induknya
         if (isset($this->content[$parentId]['data'][$zone])) {
             $this->content[$parentId]['data'][$zone] = array_values(array_diff(
-                $this->content[$parentId]['data'][$zone], 
+                $this->content[$parentId]['data'][$zone],
                 [$childId]
             ));
         }
-        
+
         // 2. Hapus isi data blok anak itu sendiri dari memori global
         if (isset($this->content[$childId])) {
             unset($this->content[$childId]);
@@ -176,7 +172,7 @@ trait HasContentBlocks
             'multi_columns' => [
               'col_count'      => 2, // Default saat pertama kali ditambahkan
               'mobile_reverse' => false,
-              
+
               // Siapkan 6 zona sekaligus (walau yang dirender nanti hanya sesuai col_count)
               'col_1_zone' => [],
               'col_2_zone' => [],
@@ -266,7 +262,7 @@ trait HasContentBlocks
             $this->content[$blockId]['data'][$arrayKey] = array_values($this->content[$blockId]['data'][$arrayKey]);
         }
     }
-    
+
 
     /**
      * Menyimpan urutan baru blok anak setelah di drag-and-drop

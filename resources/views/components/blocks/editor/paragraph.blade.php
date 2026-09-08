@@ -5,10 +5,8 @@
     'allContent' => [] // Tambahkan fallback array kosong agar tidak error jika dipanggil di root
 ])
 
-<div 
-    {{-- id="block-wrapper-{{ $blockId }}"  --}}
-    class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 group/heading space-y-2"
-    x-data="{ 
+<div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 group/heading space-y-2"
+    x-data="{
         isCollapsed: false,
         init() {
             // 1. Saat dirender ulang, periksa apakah blok ini punya ingatan status
@@ -22,16 +20,18 @@
                 window.blockCollapseState['{{ $blockId }}'] = value;
             });
         }
-    }" 
+    }"
     @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail"
     @toggle-collapse-all.window="isCollapsed = $event.detail"
     @force-collapse-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = true; window.blockCollapseState['{{ $blockId }}'] = true; }">
-    
+
     <!-- Header -->
     <div @click="isCollapsed = !isCollapsed; $dispatch('sync-collapse-{{ strtolower($blockId) }}', isCollapsed)"
-        class="flex items-center justify-between px-4 py-3 bg-gray-50/80 cursor-pointer select-none transition-colors hover:bg-gray-100"
+        class="flex items-center justify-between px-4 py-3 bg-gray-100 cursor-pointer select-none transition-all duration-200"
         :class="isCollapsed ? 'rounded-xl' : 'rounded-t-xl border-b border-gray-200'">
-        <x-dynamic-component :component="'lucide-text-align-start'" class="h-4 w-4 text-gray-400" stroke-width="2.5" />
+        <div class="p-2 bg-sage-soft rounded-lg">
+          <x-dynamic-component :component="'lucide-text-align-start'" class="h-4 w-4 text-foresty" stroke-width="2.5" />
+        </div>
         <label class="block text-[10px] font-semibold text-gray-500 uppercase">Paragraf ({{ strtoupper($code) }})</label>
 
         {{-- Kontrol Margin & Padding --}}

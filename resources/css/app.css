@@ -58,8 +58,8 @@
     /* =========================================
        3. MEDIUM (500)
        ========================================= */
-    /* Catatan: Di gambar file Anda sebelumnya, sepertinya tidak ada file "Medium". 
-       Jika file ini benar-benar tidak ada di folder Anda, Anda bisa menghapus blok 500 ini, 
+    /* Catatan: Di gambar file Anda sebelumnya, sepertinya tidak ada file "Medium".
+       Jika file ini benar-benar tidak ada di folder Anda, Anda bisa menghapus blok 500 ini,
        atau arahkan src URL-nya ke file Regular agar tidak terjadi error 404. */
     @font-face {
         font-family: 'Fraunces';
@@ -418,10 +418,6 @@ body, html {
     padding-left: 0 !important;
     padding-right: 0 !important;
 }
-
-/* ==========================================================================
-   GLOBAL DRAG HANDLE (Fixed Mutlak Anti-Hilang)
-   ========================================================================== */
 .drag-handle {
     display: flex;
     align-items: center;
@@ -429,24 +425,66 @@ body, html {
     width: 24px;
     height: 24px;
     background-color: transparent;
+
+    /* 1. KEMBALIKAN BORDER DI SINI */
+    border: 1px solid #e5e7eb; /* Warna abu-abu terang mirip gray-200 */
     border-radius: 4px;
     cursor: grab;
-    color: #064F3B;
-    /* color: #9ca3af; */
 
-    /* 🌟 KUNCI: Fixed mutlak agar tidak terpotong kontainer scroll */
+    /* Posisi Mutlak untuk Sortable */
     position: fixed !important;
     z-index: 9999 !important;
     opacity: 1;
-    transition: opacity 0.2s ease, background-color 0.2s ease;
 
-    /* background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='%239ca3af'%3E%3Cpath d='M8 5.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 13.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 21.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z'/%3E%3C/svg%3E"); */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='%23064F3B'%3E%3Cpath d='M8 5.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 13.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 21.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
+    /* Transisi mulus untuk wadah tombol */
+    transition: all 0.2s ease;
 }
-.drag-handle.hide { opacity: 100; pointer-events: none; }
-.drag-handle:hover { background-color: var(--color-goldy); color: var(--color-coral); }
+
+/* 2. SVG DIPINDAH KE SINI SEBAGAI TOPENG (MASK) */
+.drag-handle::before {
+    content: '';
+    display: block;
+    width: 16px;
+    height: 16px;
+
+    /* Warna Titik Bawaan (Foresty) */
+    background-color: #064F3B;
+
+    /* SVG hitam sebagai cetakan (mask) */
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='black'%3E%3Cpath d='M8 5.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 13.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 21.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='black'%3E%3Cpath d='M8 5.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 13.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 21.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z'/%3E%3C/svg%3E");
+
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+
+    /* Transisi warna titik */
+    transition: background-color 0.2s ease;
+}
+
+/* 3. EFEK HOVER PADA WADAH TOMBOL */
+.drag-handle:hover {
+    background-color: var(--color-foresty);
+    border-color: var(--color-foresty); /* Border ikut berubah warna */
+}
+
+/* 4. EFEK HOVER PADA TITIK-TITIK (Berubah jadi Goldy!) */
+.drag-handle:hover::before {
+    background-color: var(--color-goldy);
+}
+
+/* Status sedang diseret (active) */
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* 5. PERBAIKAN BUG OPACITY (opacity maksimal adalah 1, bukan 100) */
+.drag-handle.hide {
+    opacity: 0;
+    pointer-events: none;
+}
+
 .drag-handle svg { display: none !important; }
 
 /* Trik Full-Bleed Background menggunakan Variabel CSS */
@@ -1226,18 +1264,18 @@ figure[data-type="image-block"]:focus-within {
 } */
  @keyframes elegant-stroke {
         0% {
-            /* Ujung pena tetap menempel di kertas (poros). 
+            /* Ujung pena tetap menempel di kertas (poros).
                Badan pena dimiringkan ke belakang (kiri) bersiap untuk mengayun. */
             transform: rotate(-45deg);
         }
         100% {
-            /* Ayunan mulus ke posisi tegak (tengah). 
+            /* Ayunan mulus ke posisi tegak (tengah).
                Ujung pena tidak bergeser sama sekali dari posisinya. */
             transform: rotate(0deg);
         }
     }
-    
-/* cubic-bezier memberikan efek ayunan tangan manusia yang nyata: 
+
+/* cubic-bezier memberikan efek ayunan tangan manusia yang nyata:
     Cepat saat mulai menarik garis, lalu melambat dengan sangat halus di ujung. */
 .group:hover .group-hover\:animate-stroke {
     animation: elegant-yank 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
@@ -1306,7 +1344,7 @@ figure[data-type="image-block"]:focus-within {
             transform: translateY(0) rotate(0) scale(1);
         }
     }
-    
+
     /* Durasi 0.5s membuat efek ketukan (snap) terasa cepat, responsif, dan memuaskan */
     /* .group:hover .group-hover\:animate-blocks .animate-blocks { */
     .animate-blocks {
@@ -1431,7 +1469,7 @@ figure[data-type="image-block"]:focus-within {
     .reveal {
         @apply opacity-0 transition-all duration-700 ease-out motion-reduce:transition-none;
     }
-    
+
     /* Pilihan Gaya (Bisa ditambah nanti) */
     .reveal-up { @apply translate-y-8; }
     .reveal-left { @apply -translate-x-8; }
