@@ -201,7 +201,27 @@ document.addEventListener('alpine:init', () => {
         allLocalesCount: localesCount,
         allCollapsed: false,
 
+				// 🌟 1. Gunakan windowWidth sebagai pemicu reaktivitas
+				windowWidth: window.innerWidth,
 
+				// 🌟 2. Getter dengan ambang batas 1366px (Mencakup Tablet Portret & HP)
+				get effectiveLayout() {
+						return this.windowWidth < 1366 ? 'single' : this.layoutMode;
+				},
+
+				init() {
+						const handleResize = () => {
+								this.windowWidth = window.innerWidth;
+						};
+
+						window.addEventListener('resize', handleResize);
+
+						if (this.$cleanup) {
+								this.$cleanup(() => window.removeEventListener('resize', handleResize));
+						}
+				},
+
+				
         addSplitLang(lang) {
             let maxAllowed = (window.innerWidth > 1440 && this.allLocalesCount >= 3) ? 3 : 2;
             if (lang && !this.splitLanguages.includes(lang) && this.splitLanguages.length < maxAllowed) {
@@ -232,6 +252,7 @@ document.addEventListener('alpine:init', () => {
             });
             wireInstance.addBlockWithOrder(type, currentDomIds);
         },
+
 
     }));
 

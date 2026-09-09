@@ -304,7 +304,36 @@
 body, html {
     overflow-x: hidden;
 }
+@layer base {
+    button {
+        cursor: pointer;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+}
 
+@layer utilities {
+    /* Nama kelas terserah Anda, misal: text-xxs */
+    .text-xxs {
+        font-size: 9px; /* Ukuran default untuk layar HP */
+        line-height: 14px;
+    }
+
+		.text-fluid-xxs {
+        /* Rumus: clamp(Ukuran Terkecil, Ukuran Dinamis, Ukuran Terbesar) */
+        /* Teks tidak akan lebih kecil dari 9px, dan tidak lebih besar dari 12px */
+        font-size: clamp(9px, 1.5vw + 4px, 10px);
+        line-height: 1.5;
+    }
+
+    /* Saat layar mencapai ukuran md (Tablet/Desktop) */
+    @screen md {
+        .text-xxs {
+            font-size: 10px; /* Membesar jadi 10px */
+            line-height: 16px;
+        }
+    }
+}
 /* 2. Trik Full-Bleed */
 .tiptap-full-bleed {
     position: relative;
@@ -432,8 +461,8 @@ body, html {
     cursor: grab;
 
     /* Posisi Mutlak untuk Sortable */
-    position: fixed !important;
-    z-index: 9999 !important;
+    /* position: fixed !important; */
+    /* z-index: 9999 !important; */
     opacity: 1;
 
     /* Transisi mulus untuk wadah tombol */
@@ -471,6 +500,22 @@ body, html {
 
 /* 4. EFEK HOVER PADA TITIK-TITIK (Berubah jadi Goldy!) */
 .drag-handle:hover::before {
+    background-color: var(--color-goldy);
+}
+
+
+/* 3. EFEK HOVER, SAAT DITEKAN, & SAAT DI-DRAG PADA WADAH TOMBOL */
+.drag-handle:hover,
+.drag-handle:active,
+.shadow-2xl .drag-handle {
+    background-color: var(--color-foresty);
+    border-color: var(--color-foresty); /* Border ikut berubah warna */
+}
+
+/* 4. EFEK HOVER, SAAT DITEKAN, & SAAT DI-DRAG PADA TITIK-TITIK */
+.drag-handle:hover::before,
+.drag-handle:active::before,
+.shadow-2xl .drag-handle::before {
     background-color: var(--color-goldy);
 }
 
