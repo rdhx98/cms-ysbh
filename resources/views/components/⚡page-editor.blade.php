@@ -305,7 +305,7 @@ new class extends Component {
 
   <template x-if="windowWidth < 1366">
     {{-- <div class="mb-2 p-2 bg-white border border-gray-200 rounded-xl shadow-sm overflow-x-auto"> --}}
-    <div class="mb-2 p-3 sm:p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
+    <div class="p-3 sm:p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
       <!-- Passing variabel yang sama ke sini juga -->
       <x-editor.display-control :active-locales="$activeLocales" />
     </div>
@@ -324,23 +324,22 @@ new class extends Component {
   @endif
 
   <!-- AREA KONTEN UTAMA -->
-  <div id="main-editor-scroll-area" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-6 pb-24 px-4 space-y-8 scrollbar-gutter-stable"
-    x-data="{
-        scrollPos: 0,
-        init() {
-            Livewire.hook('commit', ({ succeed }) => {
-                // 1. Catat posisi sebelum update
-                this.scrollPos = this.$el.scrollTop;
-
-                succeed(() => {
-                    // 2. Selalu paksa kembali ke posisi semula (mencegah lemparan ke atas)
-                    requestAnimationFrame(() => {
-                        this.$el.scrollTop = this.scrollPos;
-                    });
-                });
-            });
-        }
-    }">
+  <div id="main-editor-scroll-area" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-6 pb-24 px-4 space-y-8 scrollbar-gutter-stable" x-data="{
+      scrollPos: 0,
+      init() {
+          Livewire.hook('commit', ({ succeed }) => {
+              // 1. Catat posisi sebelum update
+              this.scrollPos = this.$el.scrollTop;
+  
+              succeed(() => {
+                  // 2. Selalu paksa kembali ke posisi semula (mencegah lemparan ke atas)
+                  requestAnimationFrame(() => {
+                      this.$el.scrollTop = this.scrollPos;
+                  });
+              });
+          });
+      }
+  }">
 
     {{-- <div class="p-4 bg-red-100 text-red-700 font-bold mb-4">
       Mode Saat Ini: <span x-text="effectiveLayout"></span> <br>\
@@ -369,8 +368,7 @@ new class extends Component {
         class="gap-6">
 
         @foreach ($activeLocales as $code)
-          <div {{-- x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))" --}}
-            x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
+          <div {{-- x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))" --}} x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
             class="p-5 bg-white border border-gray-200 rounded-xl shadow-sm space-y-4">
             <div class="mb-4 flex items-center justify-between">
               <h3 class="font-bold text-gray-700 text-sm">Metadata ({{ strtoupper($code) }})</h3>
@@ -379,13 +377,11 @@ new class extends Component {
             <div class="space-y-3">
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Judul Halaman <span class="text-red-500">*</span></label>
-                <input type="text" wire:model="page_title.{{ $code }}" placeholder="Contoh: Layanan Kesehatan Ibu dan Anak"
-                  class="w-full text-md p-2 border-gray-300 rounded-md shadow-sm">
+                <input type="text" wire:model="page_title.{{ $code }}" placeholder="Contoh: Layanan Kesehatan Ibu dan Anak" class="w-full text-md p-2 border-gray-300 rounded-md shadow-sm">
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Slug URL</label>
-                <input type="text" wire:model="slug.{{ $code }}" placeholder="Contoh: layanan-kesehatan-ibu-dan-anak"
-                  class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
+                <input type="text" wire:model="slug.{{ $code }}" placeholder="Contoh: layanan-kesehatan-ibu-dan-anak" class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Judul Meta</label>
@@ -429,17 +425,14 @@ new class extends Component {
             <!-- Hapus bg-white, border, dan rounded dari sini. Sisakan hanya 'group' dan 'relative' -->
             <div id="block-wrapper-{{ $blockId }}" wire:key="block-{{ $blockId }}" x-sort:item="'{{ $blockId }}'" class="group relative w-full">
               <!-- 1. DRAG HANDLE (Selalu Tampil di Atas-Kiri saat < 1366px, Hover di Luar-Kiri saat PC) -->
-              <div class="absolute transition-opacity z-20"
-                :class="windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-5 -left-4 opacity-0 group-hover:opacity-100'">
+              <div class="absolute transition-opacity z-20" :class="windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-4 -left-4 opacity-0 group-hover:opacity-100'">
                 <button type="button" class="drag-handle bg-white shadow-sm" title="Geser Blok"></button>
               </div>
 
               <!-- 2. TOMBOL AKSI: Gandakan & Hapus (Selalu Tampil di Atas-Kanan saat < 1366px, Hover di PC) -->
-              <div class="absolute -top-5 flex gap-2 transition-opacity z-10"
-                :class="windowWidth < 1366 ? 'right-2 opacity-100' : '-right-3 opacity-0 group-hover:opacity-100'">
+              <div class="absolute -top-5 flex gap-2 transition-opacity z-10" :class="windowWidth < 1366 ? 'right-2 opacity-100' : '-right-3 opacity-0 group-hover:opacity-100'">
 
-                <button wire:click="duplicateBlock('{{ $blockId }}')" type="button"
-                  class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
+                <button wire:click="duplicateBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2">
@@ -447,8 +440,7 @@ new class extends Component {
                   </svg>
                 </button>
 
-                <button wire:click="removeBlock('{{ $blockId }}')" type="button"
-                  class="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-gray-200 shadow-sm" title="Hapus Blok">
+                <button wire:click="removeBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-gray-200 shadow-sm" title="Hapus Blok">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
                     </path>
@@ -472,8 +464,7 @@ new class extends Component {
                   @foreach ($activeLocales as $code)
                     <!-- PERBAIKAN 2: Bungkusan Bahasa (Child) -->
                     <!-- Pindahkan kelas desain ke sini. Gunakan border-transparent agar layout tidak bergeser saat di-hover -->
-                    <div
-                      x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
+                    <div x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
                       class="space-y-3 bg-gray-100 group-hover:bg-white rounded-xl border-2 border-transparent group-hover:border-foresty/80 transition-colors">
 
                       <x-dynamic-component :component="'blocks.editor.' . str_replace('_', '-', $block['type'])" :block-id="$blockId" :code="$code" :block="$block" :all-content="$content" />
@@ -490,8 +481,7 @@ new class extends Component {
 
 
   <!-- AREA TOMBOL TAMBAH BLOK BERDASARKAN KATEGORI -->
-  <div
-    class="shrink-0 border-t border-gray-200 bg-white -mx-2 -mb-2 p-2  shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] flex flex-wrap items-center justify-center gap-6 z-20">
+  <div class="shrink-0 border-t border-gray-200 bg-white -mx-2 -mb-2 p-2  shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] flex flex-wrap items-center justify-center gap-6 z-20">
 
     <!-- KELOMPOK MIKRO (KONTEN UTAMA) -->
     <div class="flex items-center gap-2 border-r pr-6 border-gray-200">
@@ -514,8 +504,7 @@ new class extends Component {
     <div class="flex items-center gap-2">
       <span class="text-[10px] font-bold text-gray-400 uppercase">Template:</span>
       {{-- Contoh tombol yang memuat sekumpulan blok sekaligus --}}
-      <button type="button" wire:click="loadTemplate('landing_page_standard')"
-        class="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition">
+      <button type="button" wire:click="loadTemplate('landing_page_standard')" class="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition">
         ✨ Muat Template Standar
       </button>
     </div>
@@ -523,13 +512,12 @@ new class extends Component {
   </div>
 
   <!-- MODAL PENCARIAN LINK INTERNAL -->
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4" x-data="{ open: false, searchQuery: '', selectedText: '' }"
-    @buka-modal-link.window="open = true; selectedText = $event.detail.text" x-show="open" x-cloak>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4" x-data="{ open: false, searchQuery: '', selectedText: '' }" @buka-modal-link.window="open = true; selectedText = $event.detail.text" x-show="open"
+    x-cloak>
     <div @click.outside="open = false" class="bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-lg p-6 space-y-4">
       <h3 class="text-lg font-bold text-gray-800">Cari Halaman Internal</h3>
       <div>
-        <input type="text" x-model="searchQuery" placeholder="Ketik judul halaman yang dicari..."
-          class="w-full border-gray-300 rounded-lg text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        <input type="text" x-model="searchQuery" placeholder="Ketik judul halaman yang dicari..." class="w-full border-gray-300 rounded-lg text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500">
       </div>
       <div class="min-h-[150px] max-h-60 overflow-y-auto border border-gray-100 rounded-lg p-2 text-sm text-gray-500">
         <p class="text-center py-6">Ketik untuk mulai mencari halaman...[cite: 1]</p>
@@ -543,25 +531,22 @@ new class extends Component {
   </div>
 
   <!-- 🌟 PANEL PRATINJAU SLIDE-OVER (Meluncur dari Kanan) -->
-  <div x-cloak class="relative z-[100]" @open-preview-panel.window="previewUrl = $event.detail.url; previewOpen = true;" aria-labelledby="slide-over-title"
-    role="dialog" aria-modal="true" x-data="{
-        previewOpen: false,
-        previewUrl: '',
-        deviceMode: 'desktop', // Pilihan: 'desktop' atau 'mobile'
-    }">
+  <div x-cloak class="relative z-[100]" @open-preview-panel.window="previewUrl = $event.detail.url; previewOpen = true;" aria-labelledby="slide-over-title" role="dialog" aria-modal="true" x-data="{
+      previewOpen: false,
+      previewUrl: '',
+      deviceMode: 'desktop', // Pilihan: 'desktop' atau 'mobile'
+  }">
 
     <div x-show="previewOpen" class="fixed inset-0 overflow-hidden" style="display: none;">
       <!-- Latar Belakang Gelap (Klik untuk menutup) -->
-      <div x-show="previewOpen" x-transition.opacity.duration.300ms @click="previewOpen = false; previewUrl = ''"
-        class="absolute inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity">
+      <div x-show="previewOpen" x-transition.opacity.duration.300ms @click="previewOpen = false; previewUrl = ''" class="absolute inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity">
       </div>
 
       <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
         <!-- Panel Utama -->
-        <div x-show="previewOpen" x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700"
-          x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
-          x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700" x-transition:leave-start="translate-x-0"
-          x-transition:leave-end="translate-x-full" class="pointer-events-auto w-screen max-w-screen flex flex-col bg-gray-100 shadow-2xl">
+        <div x-show="previewOpen" x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+          x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+          class="pointer-events-auto w-screen max-w-screen flex flex-col bg-gray-100 shadow-2xl">
           <!-- max-w-7xl -->
 
           <!-- HEADER PANEL -->
@@ -571,24 +556,20 @@ new class extends Component {
 
               <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
               <div class=" bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner hidden md:flex">
-                <button @click="deviceMode = 'desktop'"
-                  :class="deviceMode === 'desktop' ? 'bg-white shadow text-foresty' :
-                      'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
+                <button @click="deviceMode = 'desktop'" :class="deviceMode === 'desktop' ? 'bg-white shadow text-foresty' :
+                    'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
                   class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
                     </path>
                   </svg>
                   Desktop
                 </button>
-                <button @click="deviceMode = 'mobile'"
-                  :class="deviceMode === 'mobile' ? 'bg-white shadow text-foresty' :
-                      'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
+                <button @click="deviceMode = 'mobile'" :class="deviceMode === 'mobile' ? 'bg-white shadow text-foresty' :
+                    'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
                   class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                   </svg>
                   Mobile
                 </button>
@@ -598,15 +579,13 @@ new class extends Component {
 
                 <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
                 <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner  md:flex" x-data="{ activeLang: '{{ app()->getLocale() }}' }">
-                  <button type="button"
-                    @click="activeLang = 'id'; document.getElementById('preview-iframe').contentWindow.postMessage({ type: 'change-lang', lang: 'id' }, '*')"
+                  <button type="button" @click="activeLang = 'id'; document.getElementById('preview-iframe').contentWindow.postMessage({ type: 'change-lang', lang: 'id' }, '*')"
                     :class="activeLang === 'id' ? 'bg-white shadow text-foresty' :
                         'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
                     class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
                     ID
                   </button>
-                  <button type="button"
-                    @click="activeLang = 'en'; document.getElementById('preview-iframe').contentWindow.postMessage({ type: 'change-lang', lang: 'en' }, '*')"
+                  <button type="button" @click="activeLang = 'en'; document.getElementById('preview-iframe').contentWindow.postMessage({ type: 'change-lang', lang: 'en' }, '*')"
                     :class="activeLang === 'en' ? 'bg-white shadow text-foresty' :
                         'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
                     class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
@@ -617,8 +596,7 @@ new class extends Component {
             </div>
 
             <!-- Tombol Tutup -->
-            <button @click="previewOpen = false; previewUrl = ''"
-              class="rounded-full p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 focus:outline-none transition-colors">
+            <button @click="previewOpen = false; previewUrl = ''" class="rounded-full p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 focus:outline-none transition-colors">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>

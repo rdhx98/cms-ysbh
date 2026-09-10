@@ -1,19 +1,17 @@
 @props(['activeLocales' => []])
 
 <!-- Gunakan flex-nowrap agar tidak turun baris, dan overflow-x-auto sebagai pengaman di HP kecil -->
-<div class="flex items-center gap-2 w-full overflow-x-auto pb-1 scrollbar-hide" style="-ms-overflow-style: none; scrollbar-width: none;">
+<div class="flex items-center gap-2 w-full overflow-x-auto scrollbar-hide" style="-ms-overflow-style: none; scrollbar-width: none;">
 
   <!-- ==========================================
       BAGIAN 1: KONTROL TAMPILAN (Hanya Muncul di PC >= 1366px)
       ========================================== -->
   <div x-show="windowWidth >= 1366" class="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner shrink-0">
-    <button type="button" x-on:click="layoutMode = 'single'"
-      :class="effectiveLayout === 'single' ? 'bg-white text-foresty shadow-sm font-bold' : 'text-foresty hover:text-forest'"
+    <button type="button" x-on:click="layoutMode = 'single'" :class="effectiveLayout === 'single' ? 'bg-white text-foresty shadow-sm font-bold' : 'text-foresty hover:text-forest'"
       class="px-4 py-1 text-xs rounded-md transition cursor-pointer select-none">
       Tunggal
     </button>
-    <button type="button" x-on:click="layoutMode = 'split'"
-      :class="effectiveLayout === 'split' ? 'bg-white text-foresty shadow-sm font-bold' : 'text-foresty hover:text-forest'"
+    <button type="button" x-on:click="layoutMode = 'split'" :class="effectiveLayout === 'split' ? 'bg-white text-foresty shadow-sm font-bold' : 'text-foresty hover:text-forest'"
       class="px-4 py-1 text-xs rounded-md transition cursor-pointer select-none">
       Ganda
     </button>
@@ -27,8 +25,7 @@
     <div x-show="effectiveLayout === 'single'" class="flex items-center gap-1.5 px-1 sm:px-2">
       <!-- Label BAHASA disembunyikan di HP agar muat 1 baris -->
       <span x-show="windowWidth >= 768" class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Bahasa:</span>
-      <select x-model="singleActiveLang"
-        class="border-gray-300 rounded text-xs font-bold py-0.5 pl-2 pr-6 h-6 bg-white shadow-sm focus:ring-foresty focus:border-foresty text-foresty">
+      <select x-model="singleActiveLang" class="border-gray-300 rounded text-xs font-bold py-0.5 pl-2 pr-6 h-6 bg-white shadow-sm focus:ring-foresty focus:border-foresty text-foresty">
         @foreach ($activeLocales as $code)
           <option value="{{ $code }}">{{ strtoupper($code) }}</option>
         @endforeach
@@ -41,12 +38,10 @@
         <template x-for="activeLang in splitLanguages" :key="activeLang">
           <div class="flex items-center gap-1 bg-white border border-gray-200 px-1.5 py-0.5 rounded shadow-sm">
             <span class="text-[10px] font-bold text-foresty uppercase" x-text="activeLang"></span>
-            <button type="button" @click="removeSplitLang(activeLang)" x-show="splitLanguages.length > 1"
-              class="text-red-400 hover:text-red-600 text-xs font-bold leading-none">×</button>
+            <button type="button" @click="removeSplitLang(activeLang)" x-show="splitLanguages.length > 1" class="text-red-400 hover:text-red-600 text-xs font-bold leading-none">×</button>
           </div>
         </template>
-        <select @change="addSplitLang($event.target.value); $event.target.value = '';"
-          x-show="splitLanguages.length < ((window.innerWidth > 1440 && allLocalesCount >= 3) ? 3 : 2)"
+        <select @change="addSplitLang($event.target.value); $event.target.value = '';" x-show="splitLanguages.length < ((window.innerWidth > 1440 && allLocalesCount >= 3) ? 3 : 2)"
           class="border-dashed border-gray-300 rounded text-[10px] font-medium text-gray-500 py-0.5 pl-1 pr-5 h-6 bg-gray-50 hover:bg-gray-100 cursor-pointer">
           <option value="">+ Tambah</option>
           @foreach ($activeLocales as $code)
