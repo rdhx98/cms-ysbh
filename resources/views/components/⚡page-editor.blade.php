@@ -331,7 +331,7 @@ new class extends Component {
             Livewire.hook('commit', ({ succeed }) => {
                 // 1. Catat posisi sebelum update
                 this.scrollPos = this.$el.scrollTop;
-    
+
                 succeed(() => {
                     // 2. Selalu paksa kembali ke posisi semula (mencegah lemparan ke atas)
                     requestAnimationFrame(() => {
@@ -427,12 +427,10 @@ new class extends Component {
           @if ($block)
             <!-- PERBAIKAN 1: Bungkusan Utama -->
             <!-- Hapus bg-white, border, dan rounded dari sini. Sisakan hanya 'group' dan 'relative' -->
-            <div id="block-wrapper-{{ $blockId }}" wire:key="block-{{ $blockId }}" x-sort:item="'{{ $blockId }}'"
-              class="group relative w-full">
-
+            <div id="block-wrapper-{{ $blockId }}" wire:key="block-{{ $blockId }}" x-sort:item="'{{ $blockId }}'" class="group relative w-full">
               <!-- 1. DRAG HANDLE (Selalu Tampil di Atas-Kiri saat < 1366px, Hover di Luar-Kiri saat PC) -->
               <div class="absolute transition-opacity z-20"
-                :class="windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-4 -left-6 opacity-0 group-hover:opacity-100'">
+                :class="windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-5 -left-4 opacity-0 group-hover:opacity-100'">
                 <button type="button" class="drag-handle bg-white shadow-sm" title="Geser Blok"></button>
               </div>
 
@@ -509,11 +507,7 @@ new class extends Component {
       <span class="text-[10px] font-bold text-gray-400 uppercase">Seksi Layout:</span>
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('multi-columns')" icon="columns-4" label="Kolom" />
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('columns')" icon="columns" label="2 Kolom" />
-      {{-- <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('stats_grid')" icon="layout-grid" label="Grid Info" /> --}}
-      {{-- <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('dynamic_testimonials')" icon="message-square-quote" label="Testimoni" /> --}}
-      {{-- <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('hero_banner')" icon="image" label="Hero Banner" /> --}}
-      <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('section-divider')" icon="between-horizontal-start"
-        label="Section Divider" />
+      <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('section-divider')" icon="between-horizontal-start" label="Section Divider" />
     </div>
 
     <!-- KELOMPOK TEMPLATE (JIKA ADA) -->

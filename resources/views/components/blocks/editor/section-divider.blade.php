@@ -13,9 +13,9 @@
     <div class="flex items-center gap-1">
       <x-dynamic-component :component="'lucide-rows'" class="h-4 w-4 text-gray-400" stroke-width="2.5" />
       <div class="flex flex-col ">
-        <span
-          class="text-fluid-xxs font-extrabold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 cursor-pointer select-none">Pengaturan
-          Seksi</span>
+        <span class="text-fluid-xxs font-extrabold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 cursor-pointer select-none">Pengaturan
+          Seksi
+        </span>
         <p class="text-fluid-xxs text-slate-400">Blok di bawah batas ini akan dibungkus dengan gaya berikut:</p>
       </div>
     </div>
