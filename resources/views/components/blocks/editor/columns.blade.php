@@ -28,6 +28,42 @@
       }
   }">
 
+
+  <!-- Header -->
+  <div class="flex items-center justify-between p-2 bg-gray-100 cursor-pointer select-none transition-all duration-200 group-hover:bg-white" :class="isCollapsed ? 'rounded-xl' : 'rounded-t-xl border-b border-gray-200'">
+    {{-- HEADER KIRI --}}
+    <div class="flex items-center gap-2">
+      {{-- Tombol Collapse --}}
+      <button type="button" x-on:click="isCollapsed = !isCollapsed; $dispatch('sync-collapse-{{ strtolower($blockId) }}', isCollapsed)"
+        class="p-1 hover:bg-sage-soft text-foresty rounded-full transition-all duration-200 focus:outline-none cursor-pointer">
+        <x-dynamic-component component="lucide-circle-chevron-down" class="w-5 h-5 text-foresty transition-transform duration-200" x-bind:class="isCollapsed ? '-rotate-90' : 'rotate-0'" />
+      </button>
+
+      {{-- Label Identitas --}}
+      <div class="p-1 bg-sage-soft rounded-md">
+        <x-dynamic-component :component="'lucide-text-align-start'" class="h-4 w-4 text-forest" stroke-width="2.5" />
+      </div>
+      <span class="text-xs font-extrabold text-gray-500 uppercase tracking-widest flex items-center">
+        Paragraf
+      </span>
+    </div>
+    {{-- RIGHT HEADER --}}
+    {{-- Tambahkan flex-1 dan min-w-0 di sini agar ia berani mengambil sisa ruang tapi juga mau menyusut --}}
+    <div class="flex items-center justify-end gap-2 flex-1 min-w-0">
+
+      {{-- 🌟 FITUR UX: Cuplikan Teks saat Runtuh (Terbatas & Memiliki Tooltip) --}}
+      <div x-show="isCollapsed" x-cloak class="flex-1 min-w-0 px-2 sm:px-4 text-xs text-gray-400 font-medium" {{-- 💡 Tooltip Dinamis Alpine.js (Tidak akan mengubah layout/tinggi sama sekali) --}} {{-- :title="($wire.get('content.{{ $blockId }}.data.text.{{ $code }}') || '').replace(/<\/?[^>]+(>|$)/g, '').replace(/&nbsp;/g, ' ').trim() || 'Kosong...'" --}}>
+        {{-- Jadikan span sebagai block dan berikan truncate untuk memotongnya menjadi 1 baris ketat --}}
+        <span class="block truncate w-full text-right" x-text="($wire.get('content.{{ $blockId }}.data.text.{{ $code }}') || '').replace(/<\/?[^>]+(>|$)/g, '').replace(/&nbsp;/g, ' ').trim() || 'Kosong...'">
+        </span>
+      </div>
+
+      {{-- Indikator Bahasa --}}
+      <span class="text-xs font-bold text-foresty uppercase bg-sage-soft px-1.5 py-0.5 rounded shadow-sm shrink-0">
+        {{ $code }}
+      </span>
+    </div>
+  </div>
   {{-- HEADER & PENGATURAN BLOK --}}
   <div class="bg-gray-50 border-b border-gray-200" :class="isCollapsed ? 'rounded-b-xl' : ''">
 
