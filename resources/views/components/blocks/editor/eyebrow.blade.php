@@ -95,7 +95,8 @@
     }
 }" @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail"
   @toggle-collapse-all.window="isCollapsed = $event.detail"
-  @force-collapse-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = true; window.blockCollapseState['{{ $blockId }}'] = true; }">
+  @force-collapse-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = true; window.blockCollapseState['{{ $blockId }}'] = true; }"
+  @force-expand-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = false; window.blockCollapseState['{{ $blockId }}'] = false; }">
 
   <!-- HEADER -->
   <div class="flex items-center justify-between p-2 bg-gray-100 cursor-pointer select-none transition-all duration-200 group-hover:bg-white" :class="isCollapsed ? 'rounded-xl' : 'rounded-t-xl border-b border-gray-200'">
@@ -141,14 +142,14 @@
   <div x-show="!isCollapsed" x-collapse x-cloak class="p-4 space-y-4 bg-gray-50/50 rounded-b-xl" x-data="{
       localIcon: '{{ $block['data']['icon'] ?? 'newspaper' }}',
       localColor: '{{ $block['data']['color'] ?? '#e05a47' }}',
-  
+
       setIcon(val) {
           this.localIcon = val;
           $wire.set('content.{{ $blockId }}.data.icon', val);
           // 🌟 PERBAIKAN: Gunakan strtolower() saat dispatch
           $dispatch('sync-global-icon-{{ strtolower($blockId) }}', val);
       },
-  
+
       setColor(val) {
           this.localColor = val;
           $wire.set('content.{{ $blockId }}.data.color', val);

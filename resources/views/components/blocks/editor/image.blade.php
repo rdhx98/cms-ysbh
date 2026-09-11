@@ -40,7 +40,7 @@
                 return; // Hentikan proses
             }
         }
-        // Jika proses sampai di sini (bukan gambar), biarkan peramban 
+        // Jika proses sampai di sini (bukan gambar), biarkan peramban
         // menempelkan teks tautan secara normal ke dalam kolom input.
     },
 
@@ -99,7 +99,8 @@
     }
 }" @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail"
   @toggle-collapse-all.window="isCollapsed = $event.detail"
-  @force-collapse-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = true; window.blockCollapseState['{{ $blockId }}'] = true; }">
+  @force-collapse-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = true; window.blockCollapseState['{{ $blockId }}'] = true; }"
+  @force-expand-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = false; window.blockCollapseState['{{ $blockId }}'] = false; }">
 
 
   <!-- HEADER -->

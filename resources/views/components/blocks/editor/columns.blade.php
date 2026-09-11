@@ -41,10 +41,10 @@
 
       {{-- Label Identitas --}}
       <div class="p-1 bg-sage-soft rounded-md">
-        <x-dynamic-component :component="'lucide-text-align-start'" class="h-4 w-4 text-forest" stroke-width="2.5" />
+        <x-dynamic-component :component="'lucide-columns-2'" class="h-4 w-4 text-forest" stroke-width="2.5" />
       </div>
       <span class="text-xs font-extrabold text-gray-500 uppercase tracking-widest flex items-center">
-        Paragraf
+        Dua kolom
       </span>
     </div>
     {{-- RIGHT HEADER --}}
@@ -54,9 +54,23 @@
       {{-- 🌟 FITUR UX: Cuplikan Teks saat Runtuh (Terbatas & Memiliki Tooltip) --}}
       <div x-show="isCollapsed" x-cloak class="flex-1 min-w-0 px-2 sm:px-4 text-xs text-gray-400 font-medium" {{-- 💡 Tooltip Dinamis Alpine.js (Tidak akan mengubah layout/tinggi sama sekali) --}} {{-- :title="($wire.get('content.{{ $blockId }}.data.text.{{ $code }}') || '').replace(/<\/?[^>]+(>|$)/g, '').replace(/&nbsp;/g, ' ').trim() || 'Kosong...'" --}}>
         {{-- Jadikan span sebagai block dan berikan truncate untuk memotongnya menjadi 1 baris ketat --}}
-        <span class="block truncate w-full text-right" x-text="($wire.get('content.{{ $blockId }}.data.text.{{ $code }}') || '').replace(/<\/?[^>]+(>|$)/g, '').replace(/&nbsp;/g, ' ').trim() || 'Kosong...'">
+        {{-- <span class="block truncate w-full text-right" x-text="($wire.get('content.{{ $blockId }}.data.text.{{ $code }}') || '').replace(/<\/?[^>]+(>|$)/g, '').replace(/&nbsp;/g, ' ').trim() || 'Kosong...'"> --}}
         </span>
       </div>
+      {{-- 🌟 TOMBOL BARU: BUKA KOLOM & RUNTUHKAN ANAK --}}
+        <button type="button"
+          @click.stop="
+            isCollapsed = false;
+            $dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
+            $dispatch('force-collapse-children', {{ json_encode($allChildren) }});
+          "
+          class="ml-2 flex items-center gap-1 px-2 py-0.5 bg-sage-soft/50 text-forest border border-sage-soft/50 rounded text-[9px] font-bold shadow-sm hover:bg-sage-soft transition-colors"
+          title="Buka kolom ini dan ciutkan semua isinya agar mudah digeser">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+          </svg>
+          Atur Blok
+        </button>
 
       {{-- Indikator Bahasa --}}
       <span class="text-xs font-bold text-foresty uppercase bg-sage-soft px-1.5 py-0.5 rounded shadow-sm shrink-0">
@@ -64,13 +78,14 @@
       </span>
     </div>
   </div>
+
   {{-- HEADER & PENGATURAN BLOK --}}
-  <div class="bg-gray-50 border-b border-gray-200" :class="isCollapsed ? 'rounded-b-xl' : ''">
+  {{-- <div class="bg-gray-50 border-b border-gray-200" :class="isCollapsed ? 'rounded-b-xl' : ''">
 
     <div class="px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-2">
 
-        {{-- Tombol Buka/Tutup Lokal Biasa --}}
+        {{-- Tombol Buka/Tutup Lokal Biasa --}
         <button type="button" @click="isCollapsed = !isCollapsed; $dispatch('sync-collapse-{{ strtolower($blockId) }}', isCollapsed)"
           class="p-1 hover:bg-gray-200 rounded text-gray-500 transition-colors focus:outline-none" title="Tutup/Buka Blok Ini">
           <svg class="w-4 h-4 transition-transform duration-200" :class="isCollapsed ? '-rotate-90' : 'rotate-0'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,20 +103,7 @@
           Seksi: 2 Kolom
         </span>
 
-        {{-- 🌟 TOMBOL BARU: BUKA KOLOM & RUNTUHKAN ANAK --}}
-        <button type="button"
-          @click.stop="
-                            isCollapsed = false;
-                            $dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
-                            $dispatch('force-collapse-children', {{ json_encode($allChildren) }});
-                        "
-          class="ml-2 flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-[9px] font-bold shadow-sm hover:bg-blue-100 transition-colors"
-          title="Buka kolom ini dan ciutkan semua isinya agar mudah digeser">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
-          </svg>
-          Atur Susunan
-        </button>
+
       </div>
 
       <div class="flex items-center gap-1">
@@ -139,38 +141,49 @@
       </div>
    </div> --}}
 
-        {{-- KONTROL URUTAN HP --}}
-        <div class="flex items-center gap-2 border-l border-gray-200 pl-3 ml-2">
-          <div class="flex items-center gap-1">
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Urutan HP:</span>
-            <div class="relative group/tooltip flex items-center justify-center">
-              <svg class="w-3.5 h-3.5 text-gray-400 cursor-help hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <div
-                class="absolute bottom-full right-0 md:left-1/2 md:-translate-x-1/2 mb-2 w-48 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-[100] pointer-events-none">
-                <div class="bg-gray-800 text-white text-[10px] leading-relaxed p-2.5 rounded-lg shadow-xl text-center relative">
-                  Mengatur susunan saat dibaca di HP.
-                </div>
+        {{-- KONTROL URUTAN HP --}
+
+      </div>
+    </div>
+
+
+  </div> --}}
+
+  {{-- AREA KONTEN --}}
+  <div x-show="!isCollapsed" x-collapse x-cloak :class="layoutMode === 'single' ? 'grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200' : 'block'" class="bg-white">
+
+    <div class="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
+      <label class="block text-xs font-semibold text-gray-500 uppercase">Pengaturan Urutan</label>
+      <div class="flex items-center gap-2 border-l border-gray-200 pl-3 ml-2">
+        <div class="flex items-center gap-1">
+          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Urutan HP:</span>
+          <div class="relative group/tooltip flex items-center justify-center">
+            <svg class="w-3.5 h-3.5 text-gray-400 cursor-help hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div
+              class="absolute bottom-full right-0 md:left-1/2 md:-translate-x-1/2 mb-2 w-48 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-[100] pointer-events-none">
+              <div class="bg-gray-800 text-white text-[10px] leading-relaxed p-2.5 rounded-lg shadow-xl text-center relative">
+                Mengatur susunan saat dibaca di HP.
               </div>
             </div>
           </div>
-          <button type="button" wire:click="$toggle('content.{{ $blockId }}.data.mobile_reverse')"
-            class="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-gray-200 rounded-md text-[10px] font-bold shadow-sm hover:bg-gray-50 focus:outline-none">
-            @if ($block['data']['mobile_reverse'] ?? false)
-              <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-              </svg>
-              <span class="text-blue-600">Kanan di Atas</span>
-            @else
-              <svg class="w-3.5 h-3.5 text-foresty" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-              </svg>
-              <span class="text-gray-600">Kiri di Atas</span>
-            @endif
-          </button>
         </div>
+        <button type="button" wire:click="$toggle('content.{{ $blockId }}.data.mobile_reverse')"
+          class="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-gray-200 rounded-md text-[10px] font-bold shadow-sm hover:bg-gray-50 focus:outline-none">
+          @if ($block['data']['mobile_reverse'] ?? false)
+            <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+            </svg>
+            <span class="text-blue-600">Kanan di Atas</span>
+          @else
+            <svg class="w-3.5 h-3.5 text-foresty" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+            </svg>
+            <span class="text-gray-600">Kiri di Atas</span>
+          @endif
+        </button>
       </div>
     </div>
 
@@ -189,10 +202,6 @@
         <span class="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[9px]">{{ count($rightZone) }}</span>
       </button>
     </div>
-  </div>
-
-  {{-- AREA KONTEN --}}
-  <div x-show="!isCollapsed" x-collapse x-cloak :class="layoutMode === 'single' ? 'grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200' : 'block'" class="bg-white">
 
     {{-- ================= KONTEN KIRI ================= --}}
     <div x-show="layoutMode === 'single' || activeTab === 'left'" class="flex flex-col h-full">

@@ -23,6 +23,7 @@
 {{-- 🌟 STATE ALPINE LENGKAP (Termasuk layoutMode & Sinkronisasi) --}}
 <div class="is-nested-container bg-white border border-gray-300 rounded-xl shadow-sm relative" x-data="{
     isCollapsed: false,
+    childrenCollapsed: false,
     activeTab: 'col_1_zone',
     layoutMode: 'split', // Memastikan tampilan tab (split) berfungsi default
     init() {
@@ -74,6 +75,7 @@
     {{-- Tambahkan flex-1 dan min-w-0 di sini agar ia berani mengambil sisa ruang tapi juga mau menyusut --}}
     <div class="flex items-center justify-end gap-2 flex-1 min-w-0">
 
+
       {{-- 🌟 FITUR UX: Cuplikan Teks saat Runtuh (Terbatas & Memiliki Tooltip) --}}
       <div x-show="isCollapsed" x-cloak class="flex-1 min-w-0 px-2 sm:px-4 text-xs text-gray-400 font-medium" {{-- 💡 Tooltip Dinamis Alpine.js (Tidak akan mengubah layout/tinggi sama sekali) --}} {{-- :title="($wire.get('content.{{ $blockId }}.data.text.{{ $code }}') || '').replace(/<\/?[^>]+(>|$)/g, '').replace(/&nbsp;/g, ' ').trim() || 'Kosong...'" --}}>
 
@@ -81,7 +83,26 @@
         <span class="block truncate w-full text-right" {{-- x-text="($wire.get('content.{{ $blockId }}.data.text.{{ $code }}') || '').replace(/<\/?[^>]+(>|$)/g, '').replace(/&nbsp;/g, ' ').trim() || 'Kosong...'" --}}>
         </span>
       </div>
+      <button type="button"
+        @click.stop="
+          isCollapsed = false;
+          $dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
+          childrenCollapsed = !childrenCollapsed;
+          if (childrenCollapsed) {
+              $dispatch('force-collapse-children', {{ json_encode($allChildren) }});
+          } else {
+              $dispatch('force-expand-children', {{ json_encode($allChildren) }});
+          }
+        "
+        class="flex items-center gap-1 px-2 py-0.5 bg-sage-soft/50 text-forest border border-sage-soft/50 rounded text-[9px] font-bold shadow-sm hover:bg-sage-soft transition-colors shrink-0"
+        title="Buka atau ciutkan semua isi kolom ini">
 
+        {{-- Ikon & Teks dinamis mengikuti state --}}
+        <x-dynamic-component x-show="!childrenCollapsed" :component="'lucide-list-chevrons-down-up'" class="w-3 h-3" stroke-width="2.5" />
+        <x-dynamic-component x-show="childrenCollapsed" :component="'lucide-list-chevrons-up-down'" class="w-3 h-3" x-cloak stroke-width="2.5" />
+
+        <span x-text="childrenCollapsed ? 'Buka Isi' : 'Ciutkan Isi'"></span>
+      </button>
       {{-- Indikator Bahasa --}}
       {{-- Tambahkan shrink-0 agar kotak bahasa ini TIDAK IKUT tergencet saat teks di sebelahnya sangat panjang --}}
       <span class="text-xs font-bold text-foresty uppercase bg-sage-soft px-1.5 py-0.5 rounded shadow-sm shrink-0">
@@ -94,7 +115,7 @@
   {{-- 🌟 AREA KONTEN DROPZONE (Mendukung layoutMode Single/Split) --}}
   <div x-show="!isCollapsed" x-collapse x-cloak :class="layoutMode === 'single' ?
       'grid grid-cols-1 {{ $editorGridClass }} divide-y md:divide-y-0 md:divide-x divide-gray-200' : 'block'"
-    class="bg-white rounded-b-xl">
+    class="bg-gray-100 rounded-b-xl">
     <div class="justify-between flex items-center p-4">
       <label class="block text-xs font-semibold text-gray-500 uppercase">Kontrol</label>
       <!-- 🌟 BAGIAN KANAN: Kontrol Jumlah Kolom & Urutan HP (Hanya untuk 2 Kolom) -->
@@ -151,7 +172,7 @@
     </div>
 
     <!-- 🌟 NAVIGASI TAB DINAMIS DENGAN SINKRONISASI -->
-    <div x-show="layoutMode === 'split'" x-cloak class="flex px-4 space-x-1 relative overflow-x-auto scrollbar-hide bg-gray-100 border-b border-gray-200">
+    <div x-show="layoutMode === 'split'" x-cloak class="flex px-4 space-x-1 relative overflow-x-auto scrollbar-hide bg-gray-100 ">
       @for ($i = 1; $i <= $colCount; $i++)
         @php $zoneKey = "col_{$i}_zone"; @endphp
         <button type="button" x-on:click="activeTab = '{{ $zoneKey }}'; $dispatch('sync-columns-tab-{{ strtolower($blockId) }}', '{{ $zoneKey }}')"
@@ -159,7 +180,7 @@
               'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-200/50 border-transparent'"
           class="px-5 py-2 text-xs font-bold transition-all border-t border-l border-r rounded-t-lg flex items-center gap-2 shrink-0">
           Kolom {{ $i }}
-          <span class="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[9px]">
+          <span class="bg-sage-soft text-foresty px-1.5 py-0.5 rounded text-[9px]">
             {{ count($block['data'][$zoneKey] ?? []) }}
           </span>
         </button>
@@ -176,12 +197,12 @@
 
         {{-- Penanda kolom saat mode 'single' (semua dijajarkan) --}}
         <div x-show="layoutMode === 'single'" x-cloak class="px-4 py-2 bg-gray-100/50 border-b border-gray-200">
-          <span class="text-[10px] font-bold text-gray-400 uppercase">Kolom {{ $i }}</span>
+          <span class="text-xs font-bold text-gray-400 uppercase">Kolom {{ $i }}</span>
         </div>
 
         {{-- Alpine Sortable Dropzone --}}
         <div x-sort x-sort:config="{ group: '{{ $zoneKey }}_{{ $blockId }}', animation: 150, handle: '.child-drag-handle', onEnd: (evt) => updateZoneOrder(evt, '{{ $zoneKey }}') }"
-          class="flex-1 p-4 space-y-4 min-h-[150px] bg-gray-50/20">
+          class="flex-1 p-4 space-y-4 min-h-40 bg-white border-t-2 border border-gray-200 rounded-t-xl transition-colors ">
 
           @foreach ($zoneBlocks as $childId)
             @if (isset($allContent[$childId]))
@@ -189,7 +210,7 @@
 
               {{-- Wrapper Mikro Blok --}}
               <div id="block-wrapper-{{ $childId }}" data-id="{{ $childId }}" x-sort:item="'{{ $childId }}'" wire:key="child-{{ $childId }}"
-                class="relative group rounded-lg hover:ring-2 hover:ring-blue-100 transition-all bg-white shadow-sm border border-gray-200">
+                class="relative group rounded-xl hover:ring-2 hover:ring-sage-soft transition-all bg-white shadow-sm border border-gray-200">
                 <!-- Drag Handle -->
                 <div class="child-drag-handle absolute -left-2 top-3 opacity-0 group-hover:opacity-100 cursor-move text-gray-300 hover:text-blue-500 z-10 bg-white rounded-full p-0.5 shadow-sm">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
