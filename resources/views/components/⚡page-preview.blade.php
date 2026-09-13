@@ -68,7 +68,8 @@ new #[Layout('layouts.landing.dynamic-preview')] class extends Component {
 };
 ?>
 
-<div class="h-full flex flex-col overflow-x-hidden  box-border " @message.window="if ($event.data && $event.data.type === 'change-lang') $wire.set('lang', $event.data.lang)" x-data="{ previewLang: @entangle('lang').live }">
+<div class="h-full flex flex-col overflow-x-hidden box-border" @message.window="if ($event.data && $event.data.type === 'change-lang') $wire.set('lang', $event.data.lang)" x-data="{ previewLang: @entangle('lang').live }" x-init="setTimeout(() => window.initScrollReveal?.(), 150);
+$watch('previewLang', () => setTimeout(() => window.initScrollReveal?.(), 50));">
 
   @if ($viewMode === 'full')
     <template x-teleport="#editor-toolbar-portal">
@@ -155,13 +156,31 @@ new #[Layout('layouts.landing.dynamic-preview')] class extends Component {
         <div class="max-w-7xl mx-auto px-5 sm:px-8">
 
           {{-- Di sini kita hanya melakukan perulangan biasa --}}
-          @foreach ($section['blocks'] as $blockId)
+          {{-- @foreach ($section['blocks'] as $blockId)
             @php
               $block = $allContent[$blockId];
               $componentName = 'blocks.render.' . str_replace('_', '-', $block['type']);
             @endphp
 
             <x-dynamic-component :component="$componentName" :data="$block['data']" :lang="$lang" :all-content="$allContent" />
+          @endforeach --}}
+
+          @foreach ($section['blocks'] as $index => $blockId)
+            @php
+              $block = $allContent[$blockId];
+              $componentName = 'blocks.render.' . str_replace('_', '-', $block['type']);
+
+              // Hitung jeda (delay) berdasarkan urutan blok: 0ms, 150ms, 300ms, dst.
+              // Jika urutan sudah lebih dari 5, kita batasi maksimal 750ms agar tidak terlalu lama
+              $delay = min($index * 150, 750);
+            @endphp
+
+            {{-- 🌟 PEMBUNGKUS ANIMASI GLOBAL ALPINE.JS --}}
+            <div x-data="{ shown: false }" x-init="setTimeout(() => shown = true, 100)" :class="shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'" class="transition-all duration-700 ease-out delay-[{{ $delay }}ms]">
+
+              <x-dynamic-component :component="$componentName" :data="$block['data']" :lang="$lang" :all-content="$allContent" />
+
+            </div>
           @endforeach
 
         </div>

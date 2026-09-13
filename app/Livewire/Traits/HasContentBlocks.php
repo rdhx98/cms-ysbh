@@ -102,25 +102,6 @@ trait HasContentBlocks
         }
     }
 
-
-    // public function updateBlockOrder(Array $orderedIds = []) {
-    //     if (is_string($orderedIds)) {
-    //         $orderedIds = json_decode($orderedIds, true) ?? [];
-    //     }
-
-    //     if (is_array($orderedIds) && !empty($orderedIds)) {
-    //         // Ambil ID yang valid saja dari hasil drag-and-drop
-    //         $validIds = array_filter($orderedIds, fn($id) => isset($this->content[$id]));
-
-    //         // 🌟 PERBAIKAN KRUSIAL:
-    //         // Amankan sisa blok DARI URUTAN ROOT SEBELUMNYA, BUKAN DARI SELURUH KONTEN.
-    //         // Ini mencegah blok anak yang ada di dalam kolom ikut terseret ke luar.
-    //         $missingIds = array_diff($this->blockOrder, $validIds);
-
-    //         $this->blockOrder = array_values(array_merge($validIds, $missingIds));
-    //     }
-    // }
-
     public function updateBlockOrder(Array $orderedIds = []) {
         if (is_string($orderedIds)) {
             $orderedIds = json_decode($orderedIds, true) ?? [];
@@ -186,6 +167,24 @@ trait HasContentBlocks
                 'text_color' => 'text-gray-900',
                 'padding'    => 'py-16 sm:py-24',
             ],
+						'buttons' => [
+							[
+								'label' => ['id' => 'Donasi Sekarang', 'en' => 'Donate Now'],
+								'url' => '#donasi',
+								'style' => 'primary' // opsi: primary / outline
+							],
+								// ... bisa tambah tombol lagi
+						],
+						'badges' => [
+								[
+									'label' => ['id' => 'Ibu & Anak', 'en' => 'Mother & Child'],
+									'url' => '#program',
+									'icon' => 'heart-pulse', // Sesuaikan dengan nama ikon Lucide
+									'icon_bg' => 'bg-goldy-soft', 
+									'icon_color' => '#064F3B'
+								],
+									// ... bisa tambah badge lagi
+							],
             'stats_grid' => [
                 'columns'      => 4,
                 'color_title'  => '#eab308', // Default: Kuning (seperti gambar)

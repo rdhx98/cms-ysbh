@@ -70,7 +70,7 @@
     }
     @font-face {
         font-family: 'Fraunces';
-        src: url('/fonts/Fraunces_72pt-MediumItalic.ttf') format('truetype');
+        src: url('../../public/fonts/Fraunces_72pt-MediumItalic.ttf') format('truetype');
         font-weight: 500;
         font-style: italic;
         font-display: swap;
@@ -165,6 +165,7 @@
    ========================================= */
 @layer base {
     /* 300 - Light */
+		/* ../../public/ */
     @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
     @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-LightItalic.ttf') format('truetype'); font-weight: 300; font-style: italic; font-display: swap; }
 
@@ -174,7 +175,7 @@
 
     /* 500 - Medium */
     @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
-    @font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/PlusJakartaSans-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/PlusJakartaSans-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; font-display: swap; }
 
     /* 600 - SemiBold */
     @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
@@ -310,6 +311,12 @@ body, html {
         -webkit-user-select: none;
         user-select: none;
     }
+}
+
+@layer components {
+  .animate-scroll-reveal {
+    @apply opacity-0 translate-y-6 transition-all duration-700 ease-out motion-reduce:transition-none [&.is-revealed]:opacity-100 [&.is-revealed]:translate-y-0;
+  }
 }
 
 @layer utilities {

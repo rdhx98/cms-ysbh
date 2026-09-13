@@ -142,14 +142,14 @@
   <div x-show="!isCollapsed" x-collapse x-cloak class="p-4 space-y-4 bg-gray-50/50 rounded-b-xl" x-data="{
       localIcon: '{{ $block['data']['icon'] ?? 'newspaper' }}',
       localColor: '{{ $block['data']['color'] ?? '#e05a47' }}',
-
+  
       setIcon(val) {
           this.localIcon = val;
           $wire.set('content.{{ $blockId }}.data.icon', val);
           // 🌟 PERBAIKAN: Gunakan strtolower() saat dispatch
           $dispatch('sync-global-icon-{{ strtolower($blockId) }}', val);
       },
-
+  
       setColor(val) {
           this.localColor = val;
           $wire.set('content.{{ $blockId }}.data.color', val);
@@ -191,7 +191,7 @@
             <div class="grid grid-cols-5 gap-1.5 max-h-48 overflow-y-auto p-1 scrollbar-thin">
               @foreach ($iconsList as $icon)
                 <button type="button" x-show="'{{ $icon }}'.includes(searchQuery.toLowerCase())" @click="setIcon('{{ $icon }}'); openPicker = false; searchQuery = ''"
-                  class="p-2 rounded-lg flex items-center justify-center hover:bg-sage-soft text-zinc-600 transition-colors" :class="localIcon === '{{ $icon }}' ? 'bg-forest text-white' : 'bg-zinc-50'"
+                  class="p-2 rounded-lg flex items-center justify-center hover:bg-sage-soft transition-colors" :class="localIcon === '{{ $icon }}' ? 'bg-forest text-goldy' : 'bg-zinc-50 text-forest'"
                   title="{{ $icon }}">
                   <span class="w-4 h-4 flex items-center justify-center">
                     <x-dynamic-component :component="'lucide-' . $icon" class="w-4 h-4 shrink-0" />

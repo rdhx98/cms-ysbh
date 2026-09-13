@@ -1,31 +1,27 @@
-@props([
-    'data',
-    'lang',
-    'allContent' => []
-])
+@props(['data', 'lang', 'allContent' => []])
 
 @php
-    $imageUrl = $data['url'] ?? '';
-    $caption = $data['caption'][$lang] ?? '';
-    
-    // Ambil kelas padding yang dipilih, atau kosongkan jika menggunakan default
-    $paddingTop = $data['padding_top'] ?? '';
-    $paddingBottom = $data['padding_bottom'] ?? '';
+  $imageUrl = $data['url'] ?? '';
+  $caption = $data['caption'][$lang] ?? '';
+
+  // Ambil kelas padding yang dipilih, atau kosongkan jika menggunakan default
+  $paddingTop = $data['padding_top'] ?? '';
+  $paddingBottom = $data['padding_bottom'] ?? '';
 @endphp
 
-@if(!empty($imageUrl))
-    <figure class="w-full {{ $paddingTop }} {{ $paddingBottom }}">
-        <img src="{{ $imageUrl }}" alt="{{ $caption ?: 'Gambar' }}" class="w-full h-auto rounded-lg shadow-sm">
-        
-        @if(!empty($caption))
-            <figcaption class="mt-3 text-center text-sm text-gray-500 italic">
-                {{ $caption }}
-            </figcaption>
-        @endif
-    </figure>
+@if (!empty($imageUrl))
+  <figure id="{{ $block['anchor'] ?? '' }}" class="w-full {{ $paddingTop }} {{ $paddingBottom }} reveal animate-scroll-reveal">
+    <img src="{{ $imageUrl }}" alt="{{ $caption ?: 'Gambar' }}" class="w-full h-auto rounded-lg shadow-sm">
+
+    @if (!empty($caption))
+      <figcaption class="mt-3 text-center text-sm text-gray-500 italic">
+        {{ $caption }}
+      </figcaption>
+    @endif
+  </figure>
 @endif
 
-{{-- @if(!empty($data['url']))
+{{-- @if (!empty($data['url']))
     <div class="w-full my-6 flex flex-col justify-center">
         <img src="{{ $data['url'] }}" 
              alt="Visual konten" 

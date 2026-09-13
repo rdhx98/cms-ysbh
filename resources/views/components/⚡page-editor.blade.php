@@ -429,8 +429,8 @@ new class extends Component {
                 <button type="button" class="drag-handle bg-white shadow-sm" title="Geser Blok"></button>
               </div>
 
-              <!-- 2. TOMBOL AKSI: Gandakan & Hapus (Selalu Tampil di Atas-Kanan saat < 1366px, Hover di PC) -->
-              <div class="absolute -top-5 flex gap-2 transition-opacity z-10" :class="windowWidth < 1366 ? 'right-2 opacity-100' : '-right-3 opacity-0 group-hover:opacity-100'">
+              <!-- OLD 2. TOMBOL AKSI: Gandakan & Hapus (Selalu Tampil di Atas-Kanan saat < 1366px, Hover di PC) -->
+              {{-- <div class="absolute -top-5 flex gap-2 transition-opacity z-10" :class="windowWidth < 1366 ? 'right-2 opacity-100' : '-right-3 opacity-0 group-hover:opacity-100'">
 
                 <button wire:click="duplicateBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -447,8 +447,47 @@ new class extends Component {
                   </svg>
                 </button>
 
-              </div>
+              </div> --}}
+              <!-- 2. TOMBOL AKSI: Pengaturan, Gandakan & Hapus -->
+              <div class="absolute -top-5 flex gap-2 transition-opacity z-10" :class="windowWidth < 1366 ? 'right-2 opacity-100' : '-right-3 opacity-0 group-hover:opacity-100'">
 
+                {{-- 🌟 TOMBOL PENGATURAN BLOK (ANCHOR) --}}
+                {{-- Pindahkan @click.outside ke pembungkus paling luar (div) ini --}}
+                <div x-data="{ openSettings: false }" @click.outside="openSettings = false" class="relative">
+
+                  <button @click="openSettings = !openSettings" type="button" class="p-1.5 bg-white text-gray-600 rounded-full hover:bg-gray-50 border border-gray-200 shadow-sm transition-colors"
+                    title="Pengaturan Blok">
+                    <x-dynamic-component component="lucide-settings-2" class="w-4 h-4" />
+                  </button>
+
+                  {{-- Popover Pengaturan --}}
+                  <div x-show="openSettings" x-cloak style="display: none;" class="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-50">
+                    <label class="block text-xs font-bold text-foresty uppercase mb-1">ID Tautan (Anchor)</label>
+                    <p class="text-[10px] text-gray-500 mb-2 leading-tight">Melompat ke blok ini (Contoh: <span class="font-mono text-coral">tentang-kami</span>).</p>
+
+                    {{-- 
+                      🌟 FITUR BARU: @input Alpine.js
+                      1. toLowerCase(): Memaksa huruf kecil.
+                      2. replace(/\s+/g, '-'): Mengubah semua spasi menjadi setrip.
+                      3. replace(/[^a-z0-9-]/g, ''): Menghapus simbol apa pun selain huruf, angka, dan setrip.
+                    --}}
+                    <input type="text" wire:model.live.debounce.500ms="content.{{ $blockId }}.anchor"
+                      @input="$event.target.value = $event.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')" placeholder="nama-anchor"
+                      class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-foresty focus:border-foresty">
+                  </div>
+                </div>
+
+                {{-- Tombol Duplikat --}}
+                <button wire:click="duplicateBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
+                  <x-dynamic-component component="lucide-copy" class="w-4 h-4" />
+                </button>
+
+                {{-- Tombol Hapus --}}
+                <button wire:click="removeBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-gray-200 shadow-sm" title="Hapus Blok">
+                  <x-dynamic-component component="lucide-trash-2" class="w-4 h-4" />
+                </button>
+
+              </div>
 
               <!-- RENDER ISI BLOK -->
               <div class="w-full">
@@ -490,29 +529,31 @@ new class extends Component {
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('paragraph')" icon="align-left" label="Paragraf" />
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('eyebrow')" icon="crosshair" label="Eyebrow" />
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('image')" icon="image-plus" label="Gambar" />
+      <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('button-group')" icon="plus-square" label="Grup Tombol" />
+      <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('badge-group')" icon="badge-plus" label="Grup Lencana" />
     </div>
 
     <!-- KELOMPOK MAKRO (TATA LETAK & SEKSI) -->
     <div class="flex items-center gap-2 border-r pr-6 border-gray-200">
       <span class="text-[10px] font-bold text-gray-400 uppercase">Seksi Layout:</span>
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('multi-columns')" icon="columns-4" label="Kolom" />
-      <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('columns')" icon="columns" label="2 Kolom" />
+      {{-- <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('columns')" icon="columns" label="2 Kolom" /> --}}
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('section-divider')" icon="between-horizontal-start" label="Section Divider" />
     </div>
 
     <!-- KELOMPOK TEMPLATE (JIKA ADA) -->
-    <div class="flex items-center gap-2">
+    {{-- <div class="flex items-center gap-2">
       <span class="text-[10px] font-bold text-gray-400 uppercase">Template:</span>
-      {{-- Contoh tombol yang memuat sekumpulan blok sekaligus --}}
+      {{-- Contoh tombol yang memuat sekumpulan blok sekaligus --}
       <button type="button" wire:click="loadTemplate('landing_page_standard')" class="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition">
         ✨ Muat Template Standar
       </button>
-    </div>
+    </div> --}}
 
   </div>
 
-  <!-- MODAL PENCARIAN LINK INTERNAL -->
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4" x-data="{ open: false, searchQuery: '', selectedText: '' }" @buka-modal-link.window="open = true; selectedText = $event.detail.text" x-show="open"
+  <!-- MODAL PENCARIAN LINK INTERNAL OLD AF -->
+  {{-- <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4" x-data="{ open: false, searchQuery: '', selectedText: '' }" @buka-modal-link.window="open = true; selectedText = $event.detail.text" x-show="open"
     x-cloak>
     <div @click.outside="open = false" class="bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-lg p-6 space-y-4">
       <h3 class="text-lg font-bold text-gray-800">Cari Halaman Internal</h3>
@@ -525,6 +566,112 @@ new class extends Component {
       <div class="flex justify-end gap-2 pt-2">
         <button type="button" @click="open = false" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
           Tutup
+        </button>
+      </div>
+    </div>
+  </div> --}}
+
+  <!-- 🌟 MODAL PENCARIAN TAUTAN SUPER (Anchor & Halaman Internal) -->
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4" x-cloak x-data="{
+      open: false,
+      searchQuery: '',
+      selectedText: '',
+      targetWireModel: null, // Menyimpan alamat input Livewire jika dipanggil dari Lencana/Tombol
+  
+      // Fungsi untuk mengindeks semua Anchor yang ada di halaman ini secara real-time
+      get inPageAnchors() {
+          let anchors = [];
+          let contentData = $wire.get('content') || {};
+          for (let key in contentData) {
+              if (contentData[key].anchor && contentData[key].anchor.trim() !== '') {
+                  anchors.push({ id: contentData[key].anchor, type: contentData[key].type });
+              }
+          }
+          return anchors;
+      },
+  
+      // Fungsi pamungkas untuk mengirim URL ke pemanggilnya
+      applyUrl(url) {
+          if (this.targetWireModel) {
+              // Jika dipanggil dari komponen Livewire (seperti Badge/Button)
+              $wire.set(this.targetWireModel, url);
+          } else {
+              // Jika dipanggil dari Tiptap
+              window.dispatchEvent(new CustomEvent('insert-link-to-active-editor', {
+                  detail: { url: url, text: this.selectedText }
+              }));
+          }
+          this.open = false;
+          this.searchQuery = '';
+          this.targetWireModel = null;
+      }
+  }" {{-- Listener untuk menangkap perintah buka modal --}}
+    @buka-modal-link.window="
+        open = true; 
+        selectedText = $event.detail.text || ''; 
+        targetWireModel = $event.detail.target || null; 
+        searchQuery = '';
+    " x-show="open">
+
+    <div @click.outside="open = false" class="bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-lg p-0 flex flex-col max-h-[85vh] overflow-hidden">
+
+      {{-- Header & Input Pencarian --}}
+      <div class="p-5 border-b border-gray-100 bg-gray-50/50 shrink-0">
+        <h3 class="text-lg font-bold text-gray-800 mb-3">Sisipkan Tautan</h3>
+        <div class="relative">
+          <x-dynamic-component component="lucide-search" class="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+          <input type="text" x-model="searchQuery" placeholder="Cari halaman atau rekatkan URL eksternal (https://)..."
+            class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-foresty focus:border-foresty">
+        </div>
+      </div>
+
+      {{-- Area Daftar (Bisa di-scroll) --}}
+      <div class="flex-1 overflow-y-auto p-5 space-y-6">
+
+        {{-- 🌟 SEGMEN 1: ANCHOR DI HALAMAN INI --}}
+        <div x-show="inPageAnchors.length > 0 && searchQuery === ''">
+          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">Melompat ke Titik di Halaman Ini</span>
+          <div class="grid grid-cols-2 gap-2">
+            <template x-for="anchor in inPageAnchors" :key="anchor.id">
+              <button type="button" @click="applyUrl('#' + anchor.id)" class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:border-foresty hover:bg-sage-soft transition-colors text-left group">
+                <div class="p-1.5 bg-gray-100 text-gray-500 rounded-md group-hover:bg-white group-hover:text-foresty transition-colors">
+                  <x-dynamic-component component="lucide-hash" class="w-3.5 h-3.5" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-bold text-gray-700 truncate" x-text="anchor.id"></p>
+                  <p class="text-[10px] text-gray-400 capitalize truncate" x-text="'Blok: ' + anchor.type"></p>
+                </div>
+              </button>
+            </template>
+          </div>
+        </div>
+
+        {{-- 🌟 SEGMEN 2: PENCARIAN HALAMAN INTERNAL CMS --}}
+        <div>
+          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">Halaman Website</span>
+          <div class="min-h-[100px] border border-gray-100 rounded-lg p-3 text-sm text-gray-500 bg-gray-50">
+            <p class="text-center py-4">Ketik di kolom pencarian untuk melacak halaman...</p>
+            {{-- Nanti logika pencarian halaman Livewire Anda masukkan di sini --}}
+          </div>
+        </div>
+
+        {{-- 🌟 SEGMEN 3: URL EKSTERNAL KUSTOM --}}
+        <div x-show="searchQuery !== '' && (searchQuery.startsWith('http') || searchQuery.startsWith('mailto:') || searchQuery.startsWith('tel:'))">
+          <button type="button" @click="applyUrl(searchQuery)" class="w-full flex items-center justify-between p-3 rounded-lg border border-foresty bg-sage-soft text-left hover:bg-[#c2ded3] transition-colors">
+            <div>
+              <p class="text-xs font-bold text-foresty">Gunakan Tautan Eksternal Ini</p>
+              <p class="text-sm text-foresty truncate" x-text="searchQuery"></p>
+            </div>
+            <x-dynamic-component component="lucide-external-link" class="w-4 h-4 text-foresty" />
+          </button>
+        </div>
+
+      </div>
+
+      {{-- Footer Tutup --}}
+      <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end shrink-0">
+        <button type="button" @click="open = false" class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-lg transition-colors">
+          Batal
         </button>
       </div>
     </div>

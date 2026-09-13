@@ -18,7 +18,7 @@ import { ParagraphIndent } from './tiptap/extensions/ParagraphIndent.js'
 
 import Placeholder from '@tiptap/extension-placeholder';
 
-const ALLOWED_FONTS = ['Arial', 'Fraunces', 'Times New Roman', 'Roboto', 'Jetbrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
+const ALLOWED_FONTS = ['Arial', 'Fraunces', 'Times New Roman', 'Roboto', 'JetBrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
 
 const EYEBROW_ICONS = [
     { key: 'crosshair', label: 'Crosshair', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>` },
@@ -495,26 +495,58 @@ document.addEventListener('alpine:init', () => {
                     detail: { text: selectedText }
                 }));
             },
-            changeFontFamily(fontName) {
-                if (!editor) return; // 🌟 Ubah di sini
+            // changeFontFamily(fontName) {
+            //     if (!editor) return; // 🌟 Ubah di sini
 
-                if (fontName === 'default') {
-                    editor.chain().focus().unsetFontFamily().run();
-                } else {
-                    editor.chain().focus().setFontFamily(fontName).run();
-                }
-                this.updatedAt = Date.now();
-            },
+            //     if (fontName === 'default') {
+            //         editor.chain().focus().unsetFontFamily().run();
+            //     } else {
+            //         editor.chain().focus().setFontFamily(fontName).run();
+            //     }
+            //     this.updatedAt = Date.now();
+            // },
+						changeFontFamily(fontName) {
+							if (!editor) return;
 
-            getCurrentFont() {
+							if (fontName === 'default') {
+								editor.chain().focus().unsetFontFamily().run();
+							} else {
+								// Bungkus font yang memiliki spasi agar CSS inline valid
+								const formattedFont = fontName.includes(' ') && !fontName.startsWith('"') && !fontName.startsWith("'")
+										? `"${fontName}"`
+										: fontName;
+										
+								editor.chain().focus().setFontFamily(formattedFont).run();
+							}
+							this.updatedAt = Date.now();
+						},
+
+						getCurrentFont() {
                 this.updatedAt;
-                // if (!editor) return 'default'; // 🌟 Ubah di sini
-                if (!editor) return this.baseFontFamily;
+                
+                // Gunakan default baseFontFamily jika editor belum siap
+                if (!editor) return 'default'; 
 
                 const attributes = editor.getAttributes('textStyle');
-                // return attributes.fontFamily || 'default';
-                return attributes.fontFamily || this.baseFontFamily;
+                let font = attributes.fontFamily;
+
+                if (font) {
+                    // 🌟 KUNCI PERBAIKAN: Hapus semua tanda kutip (' atau ") dari string
+                    return font.replace(/['"]/g, '').trim();
+                }
+
+                // Jika teks tidak memiliki inline font, kembali ke default
+                return 'default';
             },
+            // getCurrentFont() {
+            //     this.updatedAt;
+            //     // if (!editor) return 'default'; // 🌟 Ubah di sini
+            //     if (!editor) return this.baseFontFamily;
+
+            //     const attributes = editor.getAttributes('textStyle');
+            //     // return attributes.fontFamily || 'default';
+            //     return attributes.fontFamily || this.baseFontFamily;
+            // },
 
             // setFontSize(size) {
             //     if (!editor) return; // 🌟 Ubah di sini

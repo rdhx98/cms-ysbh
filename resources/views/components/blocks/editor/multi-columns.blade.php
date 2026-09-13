@@ -19,7 +19,16 @@
       default => 'md:grid-cols-2',
   };
 @endphp
-
+{{-- 
+				
+				// Jaring pengaman: Jika jumlah kolom dikurangi, pastikan tab aktif kembali ke 1
+        this.$watch('$wire.content.{{ $blockId }}.data.col_count', (value) => {
+            let maxTab = parseInt(value);
+            let currentTabNum = parseInt(this.activeTab.replace('col_', '').replace('_zone', ''));
+            if (currentTabNum > maxTab) {
+                this.activeTab = 'col_1_zone';
+            }
+        }); --}}
 {{-- 🌟 STATE ALPINE LENGKAP (Termasuk layoutMode & Sinkronisasi) --}}
 <div class="is-nested-container bg-white border border-gray-300 rounded-xl shadow-sm relative" x-data="{
     isCollapsed: false,
@@ -31,18 +40,27 @@
         if (window.blockCollapseState['{{ $blockId }}'] !== undefined) {
             this.isCollapsed = window.blockCollapseState['{{ $blockId }}'];
         }
+
         this.$watch('isCollapsed', (value) => {
             window.blockCollapseState['{{ $blockId }}'] = value;
         });
 
-        // Jaring pengaman: Jika jumlah kolom dikurangi, pastikan tab aktif kembali ke 1
-        this.$watch('$wire.content.{{ $blockId }}.data.col_count', (value) => {
-            let maxTab = parseInt(value);
-            let currentTabNum = parseInt(this.activeTab.replace('col_', '').replace('_zone', ''));
-            if (currentTabNum > maxTab) {
-                this.activeTab = 'col_1_zone';
+
+        this.$watch(
+            () => $wire.content?.['{{ $blockId }}']?.data?.col_count,
+            (value) => {
+                // Hentikan eksekusi jika value kosong/undefined (misal saat blok lain dihapus)
+                if (value === undefined || value === null) return;
+
+                let maxTab = parseInt(value);
+                let currentTabNum = parseInt(this.activeTab.replace('col_', '').replace('_zone', ''));
+                if (currentTabNum > maxTab) {
+                    this.activeTab = 'col_1_zone';
+                }
             }
-        });
+        );
+
+
     },
     updateZoneOrder(evt, zone) {
         let order = Array.from(evt.to.children).map(el => el.getAttribute('data-id')).filter(Boolean);
@@ -73,38 +91,41 @@
     </div>
     {{-- RIGHT HEADER --}}
     {{-- Tambahkan flex-1 dan min-w-0 di sini agar ia berani mengambil sisa ruang tapi juga mau menyusut --}}
-    <div class="flex items-center justify-end gap-2 flex-1 min-w-0">
+    <div class="flex items-center justify-end gap-2 flex-1 min-w-0 transition-all duration-200">
+      {{-- 🌟 FITUR UX: Informasi Jumlah Kolom & Anak saat Runtuh --}}
+      <div x-show="isCollapsed" x-cloak class="flex-1 min-w-0 px-2 sm:px-4 text-xs text-gray-400 font-medium" title="{{ $colCount }} Kolom berisi total {{ count($allChildren) }} konten">
 
-
-      {{-- 🌟 FITUR UX: Cuplikan Teks saat Runtuh (Terbatas & Memiliki Tooltip) --}}
-      <div x-show="isCollapsed" x-cloak class="flex-1 min-w-0 px-2 sm:px-4 text-xs text-gray-400 font-medium" {{-- 💡 Tooltip Dinamis Alpine.js (Tidak akan mengubah layout/tinggi sama sekali) --}} {{-- :title="($wire.get('content.{{ $blockId }}.data.text.{{ $code }}') || '').replace(/<\/?[^>]+(>|$)/g, '').replace(/&nbsp;/g, ' ').trim() || 'Kosong...'" --}}>
-
-        {{-- Jadikan span sebagai block dan berikan truncate untuk memotongnya menjadi 1 baris ketat --}}
-        <span class="block truncate w-full text-right" {{-- x-text="($wire.get('content.{{ $blockId }}.data.text.{{ $code }}') || '').replace(/<\/?[^>]+(>|$)/g, '').replace(/&nbsp;/g, ' ').trim() || 'Kosong...'" --}}>
+        {{-- Menampilkan rekapitulasi data dengan format rapi --}}
+        <span class="block truncate w-full text-right">
+          <span class="font-bold text-gray-500">{{ $colCount }}</span> Kolom &bull;
+          <span class="font-bold text-gray-500">{{ count($allChildren) }}</span> Blok
         </span>
       </div>
-      <button type="button"
+      <button type="button" x-data="{ childrenCollapsed: false }" x-cloak
         @click.stop="
-          isCollapsed = false;
-          $dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
-          childrenCollapsed = !childrenCollapsed;
-          if (childrenCollapsed) {
+          if (isCollapsed) {
+              // Skenario 1: Makro sedang runtuh. Buka makro, dan siapkan anak dalam mode ringkas (runtuh)
+              isCollapsed = false;
+              $dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
+              childrenCollapsed = true;
               $dispatch('force-collapse-children', {{ json_encode($allChildren) }});
           } else {
-              $dispatch('force-expand-children', {{ json_encode($allChildren) }});
+              // Skenario 2: Makro sudah terbuka. Berfungsi sebagai toggle normal
+              childrenCollapsed = !childrenCollapsed;
+              $dispatch(childrenCollapsed ? 'force-collapse-children' : 'force-expand-children', {{ json_encode($allChildren) }});
           }
         "
         class="flex items-center gap-1 px-2 py-0.5 bg-sage-soft/50 text-forest border border-sage-soft/50 rounded text-[9px] font-bold shadow-sm hover:bg-sage-soft transition-colors shrink-0"
-        title="Buka atau ciutkan semua isi kolom ini">
+        :title="isCollapsed ? 'Buka kolom dan atur susunan blok di dalamnya' : (childrenCollapsed ? 'Buka kembali semua isi kolom' : 'Ciutkan semua isi kolom untuk menyusun urutan')">
 
-        {{-- Ikon & Teks dinamis mengikuti state --}}
-        <x-dynamic-component x-show="!childrenCollapsed" :component="'lucide-list-chevrons-down-up'" class="w-3 h-3" stroke-width="2.5" />
-        <x-dynamic-component x-show="childrenCollapsed" :component="'lucide-list-chevrons-up-down'" class="w-3 h-3" x-cloak stroke-width="2.5" />
+        {{-- Ikon berubah dinamis dalam 3 state --}}
+        <x-dynamic-component x-show="isCollapsed" component="lucide-list-tree" class="w-3 h-3" stroke-width="3" />
+        <x-dynamic-component x-show="!isCollapsed && !childrenCollapsed" component="lucide-chevrons-down-up" class="w-3 h-3" stroke-width="3" />
+        <x-dynamic-component x-show="!isCollapsed && childrenCollapsed" component="lucide-chevrons-up-down" class="w-3 h-3" stroke-width="3" />
 
-        <span x-text="childrenCollapsed ? 'Buka Isi' : 'Ciutkan Isi'"></span>
+        {{-- Teks berubah dinamis dalam 3 state --}}
+        <span x-text="isCollapsed ? 'Atur Blok' : (childrenCollapsed ? 'Buka Isi' : 'Ciutkan Isi')"></span>
       </button>
-      {{-- Indikator Bahasa --}}
-      {{-- Tambahkan shrink-0 agar kotak bahasa ini TIDAK IKUT tergencet saat teks di sebelahnya sangat panjang --}}
       <span class="text-xs font-bold text-foresty uppercase bg-sage-soft px-1.5 py-0.5 rounded shadow-sm shrink-0">
         {{ $code }}
       </span>
@@ -254,6 +275,10 @@
                   class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Eyebrow</button>
                 <button type="button" wire:click="addChildBlock('{{ $blockId }}', '{{ $zoneKey }}', 'image'); openDropdown = false"
                   class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Gambar</button>
+                <button type="button" wire:click="addChildBlock('{{ $blockId }}', '{{ $zoneKey }}', 'button-group'); openDropdown = false"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Grup Tombol</button>
+                <button type="button" wire:click="addChildBlock('{{ $blockId }}', '{{ $zoneKey }}', 'badge-group'); openDropdown = false"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Grup Lencana</button>
               </div>
             </div>
           </div>
