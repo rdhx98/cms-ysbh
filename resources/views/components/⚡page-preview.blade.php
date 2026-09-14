@@ -105,9 +105,86 @@ $watch('previewLang', () => setTimeout(() => window.initScrollReveal?.(), 50));"
     </template>
   @endif
 
-
   <!-- MESIN RENDER BLOK KONTEN DINAMIS -->
   <div class="w-full bg-paper">
+    @php
+      $groupedSections = [];
+
+      // 🌟 1. PERBAIKAN: Tambahkan kunci 'anchor' pada memori bawaan
+      $currentSection = [
+          'bgClass' => 'bg-paper',
+          'textClass' => 'text-gray-900',
+          'padding' => 'py-16 sm:py-24',
+          'anchor'  => '', // <-- Tambahan baru
+          'blocks'  => [],
+      ];
+
+      // PENGELOMPOKAN
+      foreach ($rootOrder as $blockId) {
+          if (!isset($allContent[$blockId])) {
+              continue;
+          }
+          $block = $allContent[$blockId];
+          $normalizedType = str_replace('-', '_', $block['type']); // Pastikan selalu pakai underscore
+
+          if ($normalizedType === 'section_divider') {
+              if (count($currentSection['blocks']) > 0) {
+                  $groupedSections[] = $currentSection;
+              }
+
+              // 🌟 2. PERBAIKAN: Tangkap 'anchor' dari pengaturan blok Section Divider
+              $currentSection = [
+                  'bgClass'   => $block['data']['background'] ?? 'bg-paper',
+                  'textClass' => $block['data']['text_color'] ?? 'text-gray-900',
+                  'padding'   => $block['data']['padding'] ?? 'py-16 sm:py-24',
+                  'anchor'    => $block['anchor'] ?? '', // <-- Ambil dari pengaturan blok
+                  'blocks'    => [],
+              ];
+              continue;
+          }
+
+          $currentSection['blocks'][] = $blockId;
+      }
+
+      if (count($currentSection['blocks']) > 0) {
+          $groupedSections[] = $currentSection;
+      }
+    @endphp
+
+    {{-- EKSEKUSI RENDER HTML --}}
+    @foreach ($groupedSections as $section)
+      {{-- 🌟 3. PERBAIKAN: Cetak ID pada tag <section> utama --}}
+      <section id="{{ $section['anchor'] }}" class="w-full relative {{ $section['bgClass'] }} {{ $section['textClass'] }} {{ $section['padding'] }}">
+        <div class="max-w-7xl mx-auto px-5 sm:px-8">
+
+          @foreach ($section['blocks'] as $index => $blockId)
+            @php
+              $block = $allContent[$blockId];
+              $componentName = 'blocks.render.' . str_replace('_', '-', $block['type']);
+              $delay = min($index * 150, 750);
+            @endphp
+
+            <div x-data="{ shown: false }" x-init="setTimeout(() => shown = true, 100)" :class="shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'" class="transition-all duration-700 ease-out delay-[{{ $delay }}ms]">
+
+              {{-- 🌟 4. KUNCI UTAMA: Tambahkan :block="$block" agar ID Anchor sampai ke komponen! --}}
+              <x-dynamic-component
+                :component="$componentName"
+                :block="$block"
+                :data="$block['data']"
+                :lang="$lang"
+                :all-content="$allContent"
+              />
+
+            </div>
+          @endforeach
+
+        </div>
+      </section>
+    @endforeach
+  </div>
+
+  <!-- OLD AF MESIN RENDER BLOK KONTEN DINAMIS -->
+  {{-- <div class="w-full bg-paper">
     @php
       $groupedSections = [];
 
@@ -150,7 +227,7 @@ $watch('previewLang', () => setTimeout(() => window.initScrollReveal?.(), 50));"
       }
     @endphp
 
-    {{-- EKSEKUSI RENDER HTML --}}
+    {{-- EKSEKUSI RENDER HTML --}
     @foreach ($groupedSections as $section)
       <section class="w-full relative {{ $section['bgClass'] }} {{ $section['textClass'] }} {{ $section['padding'] }}">
         <div class="max-w-7xl mx-auto px-5 sm:px-8">
@@ -163,7 +240,7 @@ $watch('previewLang', () => setTimeout(() => window.initScrollReveal?.(), 50));"
             @endphp
 
             <x-dynamic-component :component="$componentName" :data="$block['data']" :lang="$lang" :all-content="$allContent" />
-          @endforeach --}}
+          @endforeach --}
 
           @foreach ($section['blocks'] as $index => $blockId)
             @php
@@ -175,7 +252,7 @@ $watch('previewLang', () => setTimeout(() => window.initScrollReveal?.(), 50));"
               $delay = min($index * 150, 750);
             @endphp
 
-            {{-- 🌟 PEMBUNGKUS ANIMASI GLOBAL ALPINE.JS --}}
+            {{-- 🌟 PEMBUNGKUS ANIMASI GLOBAL ALPINE.JS --}
             <div x-data="{ shown: false }" x-init="setTimeout(() => shown = true, 100)" :class="shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'" class="transition-all duration-700 ease-out delay-[{{ $delay }}ms]">
 
               <x-dynamic-component :component="$componentName" :data="$block['data']" :lang="$lang" :all-content="$allContent" />
@@ -186,6 +263,6 @@ $watch('previewLang', () => setTimeout(() => window.initScrollReveal?.(), 50));"
         </div>
       </section>
     @endforeach
-  </div>
+  </div> --}}
 
 </div>

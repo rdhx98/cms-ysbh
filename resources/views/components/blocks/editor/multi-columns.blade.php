@@ -19,8 +19,8 @@
       default => 'md:grid-cols-2',
   };
 @endphp
-{{-- 
-				
+{{--
+
 				// Jaring pengaman: Jika jumlah kolom dikurangi, pastikan tab aktif kembali ke 1
         this.$watch('$wire.content.{{ $blockId }}.data.col_count', (value) => {
             let maxTab = parseInt(value);
@@ -67,7 +67,8 @@
         $wire.reorderChildBlocks('{{ $blockId }}', zone, order);
     }
 }" @toggle-collapse-all.window="isCollapsed = $event.detail"
-  @sync-columns-tab-{{ strtolower($blockId) }}.window="activeTab = $event.detail" @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail">
+  @sync-columns-tab-{{ strtolower($blockId) }}.window="activeTab = $event.detail"
+  @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail">
 
   <!-- HEADER -->
   <div class="flex items-center justify-between p-2 bg-gray-100 cursor-pointer select-none transition-colors group-hover:bg-white" :class="isCollapsed ? 'rounded-xl' : 'rounded-t-xl border-b border-gray-200'">

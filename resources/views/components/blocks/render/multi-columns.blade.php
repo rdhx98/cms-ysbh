@@ -1,4 +1,4 @@
-@props(['data', 'lang', 'allContent'])
+@props(['block','data', 'lang', 'allContent'])
 
 @php
   $colCount = (int) ($data['col_count'] ?? 2);

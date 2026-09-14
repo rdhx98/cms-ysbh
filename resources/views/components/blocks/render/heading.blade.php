@@ -1,4 +1,4 @@
-@props(['data', 'lang', 'allContent' => []])
+@props(['block', 'data', 'lang', 'allContent' => []])
 
 @php
   $level = $data['level'] ?? 'h2';
@@ -36,7 +36,7 @@
   };
 @endphp --}}
 
-{{-- 
+{{--
   role="heading" dan aria-level="..." memastikan struktur SEO tetap sempurna layaknya <h1>/<h2>/<h3>
   meskipun secara teknis kita menggunakan tag <div> agar HTML tetap valid jika TipTap memuntahkan tag <p>.
 --}}

@@ -167,24 +167,47 @@ trait HasContentBlocks
                 'text_color' => 'text-gray-900',
                 'padding'    => 'py-16 sm:py-24',
             ],
-						'buttons' => [
-							[
-								'label' => ['id' => 'Donasi Sekarang', 'en' => 'Donate Now'],
-								'url' => '#donasi',
-								'style' => 'primary' // opsi: primary / outline
-							],
-								// ... bisa tambah tombol lagi
-						],
-						'badges' => [
-								[
-									'label' => ['id' => 'Ibu & Anak', 'en' => 'Mother & Child'],
-									'url' => '#program',
-									'icon' => 'heart-pulse', // Sesuaikan dengan nama ikon Lucide
-									'icon_bg' => 'bg-goldy-soft', 
-									'icon_color' => '#064F3B'
-								],
-									// ... bisa tambah badge lagi
-							],
+						// 'buttons' => [
+						// 	[
+						// 		'label' => ['id' => 'Donasi Sekarang', 'en' => 'Donate Now'],
+						// 		'url' => '#donasi',
+						// 		'style' => 'primary' // opsi: primary / outline
+						// 	],
+						// 		// ... bisa tambah tombol lagi
+						// ],
+						// 'badges' => [
+						// 		[
+						// 			'label' => ['id' => 'Ibu & Anak', 'en' => 'Mother & Child'],
+						// 			'url' => '#program',
+						// 			'icon' => 'heart-pulse', // Sesuaikan dengan nama ikon Lucide
+						// 			'icon_bg' => 'bg-goldy-soft',
+						// 			'icon_color' => '#064F3B',
+						// 		],
+						// 			// ... bisa tambah badge lagi
+						// 	],
+            'button-group', 'button_group' => [
+              'align' => 'left', // 🌟 1. TAMBAHKAN BARIS INI DI SINI
+              'buttons' => [
+                [
+                  'label' => ['id' => 'Donasi Sekarang', 'en' => 'Donate Now'],
+                  'url' => '#donasi',
+                  'style' => 'primary' // opsi: primary / secondary / outline / text
+                ],
+              ],
+            ],
+
+            'badge-group', 'badge_group' => [
+              'align' => 'left',
+              'badges' => [
+                [
+                  'label' => ['id' => 'Ibu & Anak', 'en' => 'Mother & Child'],
+                  'url' => '#program',
+                  'icon' => 'heart-pulse',
+                  'icon_bg' => 'bg-goldy-soft',
+                  'icon_color' => '#064F3B'
+                ],
+              ],
+            ],
             'stats_grid' => [
                 'columns'      => 4,
                 'color_title'  => '#eab308', // Default: Kuning (seperti gambar)

@@ -1,5 +1,5 @@
 {{-- resources/views/components/blocks/frontend/columns.blade.php --}}
-@props(['data', 'lang', 'allContent' => []])
+@props(['block', 'data', 'lang', 'allContent' => []])
 
 @php
   // $data dan $lang dikirim dari looping utama frontend

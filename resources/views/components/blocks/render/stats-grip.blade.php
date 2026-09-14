@@ -1,4 +1,4 @@
-@props(['data', 'lang', 'allContent' => []])
+@props(['block','data', 'lang', 'allContent' => []])
 
 @php
     $colorTitle = $data['color_title'] ?? '#eab308';

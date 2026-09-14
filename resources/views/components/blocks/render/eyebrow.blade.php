@@ -1,4 +1,5 @@
 @props([
+    'block',
     'data' => [], // Menerima :data="$block['data']" dari parent
     'lang' => app()->getLocale(), // Menerima :lang="$lang" dari parent
 ])

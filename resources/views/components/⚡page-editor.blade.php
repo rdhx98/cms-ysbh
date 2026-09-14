@@ -330,7 +330,7 @@ new class extends Component {
           Livewire.hook('commit', ({ succeed }) => {
               // 1. Catat posisi sebelum update
               this.scrollPos = this.$el.scrollTop;
-  
+
               succeed(() => {
                   // 2. Selalu paksa kembali ke posisi semula (mencegah lemparan ke atas)
                   requestAnimationFrame(() => {
@@ -423,54 +423,33 @@ new class extends Component {
           @if ($block)
             <!-- PERBAIKAN 1: Bungkusan Utama -->
             <!-- Hapus bg-white, border, dan rounded dari sini. Sisakan hanya 'group' dan 'relative' -->
-            <div id="block-wrapper-{{ $blockId }}" wire:key="block-{{ $blockId }}" x-sort:item="'{{ $blockId }}'" class="group relative w-full">
+            <div id="block-wrapper-{{ $blockId }}"
+            wire:key="block-{{ $blockId }}" x-sort:item="'{{ $blockId }}'" class="group relative w-full" x-data="{ showAnchorSetting: false }">
               <!-- 1. DRAG HANDLE (Selalu Tampil di Atas-Kiri saat < 1366px, Hover di Luar-Kiri saat PC) -->
               <div class="absolute transition-opacity z-20" :class="windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-4 -left-4 opacity-0 group-hover:opacity-100'">
                 <button type="button" class="drag-handle bg-white shadow-sm" title="Geser Blok"></button>
               </div>
 
-              <!-- OLD 2. TOMBOL AKSI: Gandakan & Hapus (Selalu Tampil di Atas-Kanan saat < 1366px, Hover di PC) -->
-              {{-- <div class="absolute -top-5 flex gap-2 transition-opacity z-10" :class="windowWidth < 1366 ? 'right-2 opacity-100' : '-right-3 opacity-0 group-hover:opacity-100'">
-
-                <button wire:click="duplicateBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2">
-                    </path>
-                  </svg>
-                </button>
-
-                <button wire:click="removeBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-gray-200 shadow-sm" title="Hapus Blok">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
-                    </path>
-                  </svg>
-                </button>
-
-              </div> --}}
-              <!-- 2. TOMBOL AKSI: Pengaturan, Gandakan & Hapus -->
-              <div class="absolute -top-5 flex gap-2 transition-opacity z-10" :class="windowWidth < 1366 ? 'right-2 opacity-100' : '-right-3 opacity-0 group-hover:opacity-100'">
+              <div class="absolute -top-5 flex gap-2 transition-all duration-200 z-30"
+                   :class="(windowWidth < 1366 || showAnchorSetting) ? 'right-2 opacity-100 visible' : '-right-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible'">
 
                 {{-- 🌟 TOMBOL PENGATURAN BLOK (ANCHOR) --}}
-                {{-- Pindahkan @click.outside ke pembungkus paling luar (div) ini --}}
-                <div x-data="{ openSettings: false }" @click.outside="openSettings = false" class="relative">
+                {{-- 🌟 PERBAIKAN 2: Hapus x-data="{ openSettings: false }" karena kita pakai showAnchorSetting dari parent --}}
+                <div @click.outside="showAnchorSetting = false" class="relative">
 
-                  <button @click="openSettings = !openSettings" type="button" class="p-1.5 bg-white text-gray-600 rounded-full hover:bg-gray-50 border border-gray-200 shadow-sm transition-colors"
+                  {{-- 🌟 PERBAIKAN 3: Tombol menyala jika panel sedang aktif --}}
+                  <button @click="showAnchorSetting = !showAnchorSetting" type="button"
+                    class="p-1.5 text-gray-600 rounded-full border border-gray-200 shadow-sm transition-colors"
+                    :class="showAnchorSetting ? 'bg-foresty text-white hover:bg-forest' : 'bg-white hover:bg-gray-50'"
                     title="Pengaturan Blok">
                     <x-dynamic-component component="lucide-settings-2" class="w-4 h-4" />
                   </button>
 
                   {{-- Popover Pengaturan --}}
-                  <div x-show="openSettings" x-cloak style="display: none;" class="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-50">
+                  <div x-show="showAnchorSetting" x-cloak style="display: none;" class="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-50">
                     <label class="block text-xs font-bold text-foresty uppercase mb-1">ID Tautan (Anchor)</label>
                     <p class="text-[10px] text-gray-500 mb-2 leading-tight">Melompat ke blok ini (Contoh: <span class="font-mono text-coral">tentang-kami</span>).</p>
 
-                    {{-- 
-                      🌟 FITUR BARU: @input Alpine.js
-                      1. toLowerCase(): Memaksa huruf kecil.
-                      2. replace(/\s+/g, '-'): Mengubah semua spasi menjadi setrip.
-                      3. replace(/[^a-z0-9-]/g, ''): Menghapus simbol apa pun selain huruf, angka, dan setrip.
-                    --}}
                     <input type="text" wire:model.live.debounce.500ms="content.{{ $blockId }}.anchor"
                       @input="$event.target.value = $event.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')" placeholder="nama-anchor"
                       class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-foresty focus:border-foresty">
@@ -577,7 +556,7 @@ new class extends Component {
       searchQuery: '',
       selectedText: '',
       targetWireModel: null, // Menyimpan alamat input Livewire jika dipanggil dari Lencana/Tombol
-  
+
       // Fungsi untuk mengindeks semua Anchor yang ada di halaman ini secara real-time
       get inPageAnchors() {
           let anchors = [];
@@ -589,7 +568,7 @@ new class extends Component {
           }
           return anchors;
       },
-  
+
       // Fungsi pamungkas untuk mengirim URL ke pemanggilnya
       applyUrl(url) {
           if (this.targetWireModel) {
@@ -607,9 +586,9 @@ new class extends Component {
       }
   }" {{-- Listener untuk menangkap perintah buka modal --}}
     @buka-modal-link.window="
-        open = true; 
-        selectedText = $event.detail.text || ''; 
-        targetWireModel = $event.detail.target || null; 
+        open = true;
+        selectedText = $event.detail.text || '';
+        targetWireModel = $event.detail.target || null;
         searchQuery = '';
     " x-show="open">
 

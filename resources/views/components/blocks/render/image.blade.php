@@ -1,4 +1,4 @@
-@props(['data', 'lang', 'allContent' => []])
+@props(['block','data', 'lang', 'allContent' => []])
 
 @php
   $imageUrl = $data['url'] ?? '';
@@ -23,10 +23,10 @@
 
 {{-- @if (!empty($data['url']))
     <div class="w-full my-6 flex flex-col justify-center">
-        <img src="{{ $data['url'] }}" 
-             alt="Visual konten" 
-             loading="lazy" 
-             class="w-full h-auto rounded-xl shadow-md border border-gray-100 object-cover" 
+        <img src="{{ $data['url'] }}"
+             alt="Visual konten"
+             loading="lazy"
+             class="w-full h-auto rounded-xl shadow-md border border-gray-100 object-cover"
         />
     </div>
 @endif --}}
