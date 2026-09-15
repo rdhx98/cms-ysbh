@@ -16,7 +16,7 @@
   };
 @endphp
 
-<div id="{{ $block['anchor'] ?? '' }}" role="heading" aria-level="{{ $ariaLevel }}" class="tiptap-content {{ $baseClasses }} mt-8 mb-4 reveal animate-scroll-reveal [&>p]:m-0">
+<div id="{{ $block['anchor'] ?? '' }}" role="heading" aria-level="{{ $ariaLevel }}" class="tiptap-content {{ $baseClasses }} mb-3 reveal animate-scroll-reveal [&>p]:m-0">
   {!! $data['text'][$lang] ?? '' !!}
 </div>
 

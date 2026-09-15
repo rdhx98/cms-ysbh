@@ -330,7 +330,7 @@ new class extends Component {
           Livewire.hook('commit', ({ succeed }) => {
               // 1. Catat posisi sebelum update
               this.scrollPos = this.$el.scrollTop;
-
+  
               succeed(() => {
                   // 2. Selalu paksa kembali ke posisi semula (mencegah lemparan ke atas)
                   requestAnimationFrame(() => {
@@ -423,25 +423,22 @@ new class extends Component {
           @if ($block)
             <!-- PERBAIKAN 1: Bungkusan Utama -->
             <!-- Hapus bg-white, border, dan rounded dari sini. Sisakan hanya 'group' dan 'relative' -->
-            <div id="block-wrapper-{{ $blockId }}"
-            wire:key="block-{{ $blockId }}" x-sort:item="'{{ $blockId }}'" class="group relative w-full" x-data="{ showAnchorSetting: false }">
+            <div id="block-wrapper-{{ $blockId }}" wire:key="block-{{ $blockId }}" x-sort:item="'{{ $blockId }}'" class="group relative w-full" x-data="{ showAnchorSetting: false }">
               <!-- 1. DRAG HANDLE (Selalu Tampil di Atas-Kiri saat < 1366px, Hover di Luar-Kiri saat PC) -->
               <div class="absolute transition-opacity z-20" :class="windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-4 -left-4 opacity-0 group-hover:opacity-100'">
                 <button type="button" class="drag-handle bg-white shadow-sm" title="Geser Blok"></button>
               </div>
 
-              <div class="absolute -top-5 flex gap-2 transition-all duration-200 z-30"
-                   :class="(windowWidth < 1366 || showAnchorSetting) ? 'right-2 opacity-100 visible' : '-right-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible'">
+              <div class="absolute -top-4 flex gap-2 transition-all duration-200 z-30 right-3"
+                :class="(windowWidth < 1366 || showAnchorSetting) ? ' opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'">
 
                 {{-- 🌟 TOMBOL PENGATURAN BLOK (ANCHOR) --}}
                 {{-- 🌟 PERBAIKAN 2: Hapus x-data="{ openSettings: false }" karena kita pakai showAnchorSetting dari parent --}}
                 <div @click.outside="showAnchorSetting = false" class="relative">
 
                   {{-- 🌟 PERBAIKAN 3: Tombol menyala jika panel sedang aktif --}}
-                  <button @click="showAnchorSetting = !showAnchorSetting" type="button"
-                    class="p-1.5 text-gray-600 rounded-full border border-gray-200 shadow-sm transition-colors"
-                    :class="showAnchorSetting ? 'bg-foresty text-white hover:bg-forest' : 'bg-white hover:bg-gray-50'"
-                    title="Pengaturan Blok">
+                  <button @click="showAnchorSetting = !showAnchorSetting" type="button" class="p-1.5 text-gray-600 rounded-full border border-gray-200 shadow-sm transition-colors"
+                    :class="showAnchorSetting ? 'bg-foresty text-white hover:bg-forest' : 'bg-white hover:bg-gray-50'" title="Pengaturan Blok">
                     <x-dynamic-component component="lucide-settings-2" class="w-4 h-4" />
                   </button>
 
@@ -510,6 +507,10 @@ new class extends Component {
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('image')" icon="image-plus" label="Gambar" />
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('button-group')" icon="plus-square" label="Grup Tombol" />
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('badge-group')" icon="badge-plus" label="Grup Lencana" />
+      <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('stats-group')" icon="chart-column-big" label="Grup Statistik" />
+      <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('card-group')" icon="credit-card" label="Grup Kartu" />
+      <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('testimonial-group')" icon="message-circle" label="Grup Testimoni" />
+      <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('card-builder')" icon="playing-cards-fan" label="Kartu Builder" />
     </div>
 
     <!-- KELOMPOK MAKRO (TATA LETAK & SEKSI) -->
@@ -556,7 +557,7 @@ new class extends Component {
       searchQuery: '',
       selectedText: '',
       targetWireModel: null, // Menyimpan alamat input Livewire jika dipanggil dari Lencana/Tombol
-
+  
       // Fungsi untuk mengindeks semua Anchor yang ada di halaman ini secara real-time
       get inPageAnchors() {
           let anchors = [];
@@ -568,7 +569,7 @@ new class extends Component {
           }
           return anchors;
       },
-
+  
       // Fungsi pamungkas untuk mengirim URL ke pemanggilnya
       applyUrl(url) {
           if (this.targetWireModel) {

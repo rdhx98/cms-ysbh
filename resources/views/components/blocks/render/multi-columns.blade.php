@@ -1,4 +1,4 @@
-@props(['block','data', 'lang', 'allContent'])
+@props(['block', 'data', 'lang', 'allContent'])
 
 @php
   $colCount = (int) ($data['col_count'] ?? 2);
@@ -13,8 +13,47 @@
   };
 
   $isReverseMobile = $data['mobile_reverse'] ?? false;
+  $gapClass = $data['gap'] ?? 'gap-2';
+  $alignYClass = $data['align_y'] ?? 'justify-start'; // justify-start, center, end
+  $alignXClass = $data['align_x'] ?? 'items-start'; // items-start, center, end
 @endphp
 
+<div id="{{ $block['anchor'] ?? '' }}" class="grid grid-cols-1 gap-6 {{ $gridClass }} w-full mb-8 reveal animate-scroll-reveal">
+
+  @for ($i = 1; $i <= $colCount; $i++)
+    @php
+      $zoneKey = "col_{$i}_zone";
+      $childIds = $data[$zoneKey] ?? [];
+
+      $orderClass = '';
+      if ($isReverseMobile && $colCount === 2) {
+          $orderClass = $i === 1 ? 'order-2 md:order-1' : 'order-1 md:order-2';
+      }
+    @endphp
+
+    {{-- 🌟 PERBAIKAN 2: Suntikkan class tata letak. WAJIB pakai h-full agar justify (Y) berfungsi --}}
+    <div class="flex flex-col h-full {{ $orderClass }} {{ $gapClass }} {{ $alignYClass }} {{ $alignXClass }}">
+
+      @if (!empty($childIds) && is_array($childIds))
+        @foreach ($childIds as $childId)
+          @if (isset($allContent[$childId]))
+            @php
+              $childBlock = $allContent[$childId];
+              $component = 'blocks.render.' . str_replace('_', '-', $childBlock['type'] ?? 'unknown');
+            @endphp
+
+            {{-- Render Mikro Blok --}}
+            <div class="w-full"> {{-- Bungkus tambahan opsional jika items-center merusak lebar mikro blok --}}
+              <x-dynamic-component :component="$component" :data="$childBlock['data'] ?? []" :lang="$lang" :all-content="$allContent" />
+            </div>
+          @endif
+        @endforeach
+      @endif
+
+    </div>
+  @endfor
+</div>
+{{-- 
 <div id="{{ $block['anchor'] ?? '' }}" class="grid grid-cols-1 gap-6 {{ $gridClass }} w-full my-6">
 
   @for ($i = 1; $i <= $colCount; $i++)
@@ -31,9 +70,9 @@
       }
     @endphp
 
-    {{-- 🌟 Wadah Kolom dengan 'reveal' dan modifier '[&.is-revealed]:' --}}
-    <div class="flex flex-col gap-4 {{ $orderClass }}">
-      {{-- <div style="transition-delay: {{ $delay }}ms;" class="flex flex-col gap-4 {{ $orderClass }} reveal animate-scroll-reveal"> --}}
+    {{-- 🌟 Wadah Kolom dengan 'reveal' dan modifier '[&.is-revealed]:' --}
+    <div class="flex flex-col gap-1 justify-end {{ $orderClass }}">
+      {{-- <div style="transition-delay: {{ $delay }}ms;" class="flex flex-col gap-4 {{ $orderClass }} reveal animate-scroll-reveal"> --}
 
       @if (!empty($childIds) && is_array($childIds))
         @foreach ($childIds as $childId)
@@ -43,7 +82,7 @@
               $component = 'blocks.render.' . str_replace('_', '-', $childBlock['type'] ?? 'unknown');
             @endphp
 
-            {{-- Render Mikro Blok --}}
+            {{-- Render Mikro Blok --}
             <x-dynamic-component :component="$component" :data="$childBlock['data'] ?? []" :lang="$lang" :all-content="$allContent" />
           @endif
         @endforeach
@@ -51,4 +90,4 @@
 
     </div>
   @endfor
-</div>
+</div> --}}

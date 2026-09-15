@@ -13,6 +13,7 @@ trait HasContentBlocks
     }
 
     public function addBlock(String $type) {
+			
         $id = 'blk_' . Str::random(8);
         $this->content[$id] = [
             'id' => $id,
@@ -25,26 +26,53 @@ trait HasContentBlocks
     }
 
     /**
-     * Menambahkan blok anak ke dalam zona milik induk (Kontainer)
+     * OLD AF Menambahkan blok anak ke dalam zona milik induk (Kontainer)
      */
-    public function addChildBlock($parentId, $zone, $type = 'paragraph')
+    // public function addChildBlock($parentId, $zone, $type = 'paragraph')
+    // {
+    //     // 1. Buat ID unik untuk anak baru
+    //     $newChildId = 'blk_' . uniqid();
+
+    //     // 2. Siapkan data default sejajar di root $this->content
+    //     $this->content[$newChildId] = [
+    //         'type' => $type,
+    //         'data' => [
+    //             'text' => ['id' => '', 'en' => '']
+    //         ]
+    //     ];
+
+    //     // 3. Pastikan array zona tersedia di induk, lalu masukkan ID anak
+    //     if (!isset($this->content[$parentId]['data'][$zone])) {
+    //         $this->content[$parentId]['data'][$zone] = [];
+    //     }
+    //     $this->content[$parentId]['data'][$zone][] = $newChildId;
+    //     $this->dispatch('block-added', id: $newChildId);
+    // }
+
+		public function addChildBlock($parentId, $zone, $type = 'paragraph')
     {
         // 1. Buat ID unik untuk anak baru
         $newChildId = 'blk_' . uniqid();
 
+        // 🌟 PERBAIKAN: Ambil struktur data default yang benar dari match($type)
+        // Pastikan Anda memanggil metode yang berisi kerangka match($type) Anda. 
+        // (Biasanya bernama getBlockDefaultData, getDefaultData, atau serupa yang Anda pakai di fungsi tambah blok utama)
+        
+        $defaultData = $this->getDefaultDataForType($type); // Sesuaikan nama fungsinya dengan milik Anda!
+
         // 2. Siapkan data default sejajar di root $this->content
         $this->content[$newChildId] = [
             'type' => $type,
-            'data' => [
-                'text' => ['id' => '', 'en' => '']
-            ]
+            'data' => $defaultData // ✅ Sekarang data yang dimasukkan sudah komplit (ada align, buttons, dll)
         ];
 
         // 3. Pastikan array zona tersedia di induk, lalu masukkan ID anak
         if (!isset($this->content[$parentId]['data'][$zone])) {
             $this->content[$parentId]['data'][$zone] = [];
         }
+        
         $this->content[$parentId]['data'][$zone][] = $newChildId;
+        
         $this->dispatch('block-added', id: $newChildId);
     }
 
@@ -150,9 +178,12 @@ trait HasContentBlocks
                 'mobile_reverse' => 'false'
                 // 'bg_color'   => 'transparent',
             ],
-            'multi_columns' => [
+            'multi-columns' => [
               'col_count'      => 2, // Default saat pertama kali ditambahkan
               'mobile_reverse' => false,
+							'align_x'        => 'items-start',   // 🌟 BARU
+							'align_y'        => 'justify-start', // 🌟 BARU
+							'gap'            => 'gap-2',           // 🌟 BARU
 
               // Siapkan 6 zona sekaligus (walau yang dirender nanti hanya sesuai col_count)
               'col_1_zone' => [],
@@ -166,6 +197,11 @@ trait HasContentBlocks
                 'background' => 'bg-white',
                 'text_color' => 'text-gray-900',
                 'padding'    => 'py-16 sm:py-24',
+            ],
+						'card-builder' => [
+                'template'  => '', // Kosong di awal agar klien memilih dulu
+                'col_count' => 3,
+                'items'     => [] // Akan diisi otomatis setelah template dipilih
             ],
 						// 'buttons' => [
 						// 	[
@@ -185,7 +221,7 @@ trait HasContentBlocks
 						// 		],
 						// 			// ... bisa tambah badge lagi
 						// 	],
-            'button-group', 'button_group' => [
+            'button-group' => [
               'align' => 'left', // 🌟 1. TAMBAHKAN BARIS INI DI SINI
               'buttons' => [
                 [
@@ -196,7 +232,7 @@ trait HasContentBlocks
               ],
             ],
 
-            'badge-group', 'badge_group' => [
+            'badge-group' => [
               'align' => 'left',
               'badges' => [
                 [
@@ -208,7 +244,81 @@ trait HasContentBlocks
                 ],
               ],
             ],
-            'stats_grid' => [
+						'stats-group' => [
+                'align' => 'left',
+                'stats' => [
+                    [
+                        'value' => ['id' => '2014', 'en' => '2014'],
+                        'label' => ['id' => 'Tahun berdiri', 'en' => 'Founded'],
+                    ],
+                    [
+                        'value' => ['id' => '76', 'en' => '76'],
+                        'label' => ['id' => 'Desa dampingan', 'en' => 'Villages'],
+                    ],
+                    [
+                        'value' => ['id' => '18', 'en' => '18'],
+                        'label' => ['id' => 'Kabupaten tersebar', 'en' => 'Districts'],
+                    ],
+                ]
+            ],
+						'card-group' => [
+                'col_count' => 3, // Pilihan: 1, 2, 3, atau 4 kolom
+                'cards' => [
+                    [
+                        'icon'        => 'activity',
+                        'icon_bg'     => 'bg-goldy-soft',
+                        'icon_color'  => '#064F3B', // foresty
+                        'eyebrow'     => ['id' => 'Kesehatan Ibu & Anak', 'en' => 'Maternal & Child Health'],
+                        'title'       => ['id' => 'Mendampingi Sejak dalam Kandungan', 'en' => 'Supporting Since Pregnancy'],
+                        'description' => ['id' => 'Pemeriksaan kehamilan berkala, pendampingan persalinan aman bersama bidan desa...', 'en' => 'Regular checkups, safe delivery...'],
+                        'url'         => '',
+                    ],
+                    [
+                        'icon'        => 'shield-check',
+                        'icon_bg'     => 'bg-mist',
+                        'icon_color'  => '#064F3B',
+                        'eyebrow'     => ['id' => 'Imunisasi', 'en' => 'Immunization'],
+                        'title'       => ['id' => 'Vaksin Lengkap, Sampai ke Pelosok', 'en' => 'Complete Vaccines to Remote Areas'],
+                        'description' => ['id' => 'Menjangkau anak-anak di dusun terpencil dengan imunisasi dasar lengkap...', 'en' => 'Reaching children in remote villages...'],
+                        'url'         => '',
+                    ],
+                    [
+                        'icon'        => 'bug',
+                        'icon_bg'     => 'bg-coral/20',
+                        'icon_color'  => '#E06B5E', // coral
+                        'eyebrow'     => ['id' => 'Penanganan Malaria', 'en' => 'Malaria Treatment'],
+                        'title'       => ['id' => 'Memutus Rantai Penularan', 'en' => 'Breaking the Chain of Transmission'],
+                        'description' => ['id' => 'Distribusi kelambu berinsektisida, tes cepat untuk deteksi dini...', 'en' => 'Distribution of insecticide-treated nets...'],
+                        'url'         => '',
+                    ],
+                ]
+            ],
+						'testimonial-group' => [
+                'col_count' => 3, // Pilihan: 1, 2, atau 3 kolom
+                'testimonials' => [
+                    [
+                        'quote'  => ['id' => 'Kader posyandu di kampung kami jadi lebih percaya diri mendampingi ibu hamil sejak ada pelatihan rutin dari yayasan.', 'en' => 'Health cadres in our village are more confident...'],
+                        'name'   => ['id' => 'Sri Wahyuni', 'en' => 'Sri Wahyuni'],
+                        'role'   => ['id' => 'Kader Posyandu, Sikka · NTT', 'en' => 'Health Cadre, Sikka · NTT'],
+												'theme' => 'theme-forest'
+                    ],
+                    [
+                        'quote'  => ['id' => 'Anak saya sekarang lengkap imunisasinya. Petugas datang langsung ke dusun, kami tidak perlu jalan jauh lagi.', 'en' => 'My child is now fully immunized...'],
+                        'name'   => ['id' => 'Fatimah', 'en' => 'Fatimah'],
+                        'role'   => ['id' => 'Warga, Waepana · Manggarai', 'en' => 'Resident, Waepana · Manggarai'],
+												'theme' => 'theme-forest'
+                    ],
+                    [
+                        'quote'  => ['id' => 'Sejak dapat kelambu dan edukasi rutin, kasus malaria di dusun kami turun jauh dibanding tiga tahun lalu.', 'en' => 'Since receiving mosquito nets...'],
+                        'name'   => ['id' => 'Yosef Bunga', 'en' => 'Yosef Bunga'],
+                        'role'   => ['id' => 'Kepala Dusun, Sumba Timur', 'en' => 'Village Head, East Sumba'],
+												'theme' => 'theme-forest'
+                    ],
+                ]
+            ],
+
+
+            'stats-grid' => [
                 'columns'      => 4,
                 'color_title'  => '#eab308', // Default: Kuning (seperti gambar)
                 'color_desc'   => '#ffffff', // Default: Putih
@@ -221,7 +331,7 @@ trait HasContentBlocks
                 ]
             ],
             // BLOK TESTIMONI DINAMIS (Dari Database)
-            'dynamic_testimonials' => [
+            'dynamic-testimonials' => [
                 'tagline'      => $emptyLocales,
                 'title'        => $emptyLocales,
                 'limit'        => 5,         // Berapa maksimal kartu yang ditarik dari DB

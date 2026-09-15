@@ -67,8 +67,7 @@
         $wire.reorderChildBlocks('{{ $blockId }}', zone, order);
     }
 }" @toggle-collapse-all.window="isCollapsed = $event.detail"
-  @sync-columns-tab-{{ strtolower($blockId) }}.window="activeTab = $event.detail"
-  @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail">
+  @sync-columns-tab-{{ strtolower($blockId) }}.window="activeTab = $event.detail" @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail">
 
   <!-- HEADER -->
   <div class="flex items-center justify-between p-2 bg-gray-100 cursor-pointer select-none transition-colors group-hover:bg-white" :class="isCollapsed ? 'rounded-xl' : 'rounded-t-xl border-b border-gray-200'">
@@ -138,11 +137,12 @@
   <div x-show="!isCollapsed" x-collapse x-cloak :class="layoutMode === 'single' ?
       'grid grid-cols-1 {{ $editorGridClass }} divide-y md:divide-y-0 md:divide-x divide-gray-200' : 'block'"
     class="bg-gray-100 rounded-b-xl">
-    <div class="justify-between flex items-center p-4">
+
+    {{-- <div class="justify-between flex items-center p-4">
       <label class="block text-xs font-semibold text-gray-500 uppercase">Kontrol</label>
       <!-- 🌟 BAGIAN KANAN: Kontrol Jumlah Kolom & Urutan HP (Hanya untuk 2 Kolom) -->
       <div class="flex items-center gap-4">
-        {{-- 🌟 KONTROL URUTAN HP (Hanya muncul jika 2 Kolom) --}}
+        {{-- 🌟 KONTROL URUTAN HP (Hanya muncul jika 2 Kolom) --}
         @if ($colCount === 2)
           <div class="flex items-center gap-2 border-l border-gray-200 pl-4">
             <div class="flex items-center gap-1">
@@ -179,7 +179,7 @@
           </div>
         @endif
 
-        {{-- KONTROL JUMLAH KOLOM --}}
+        {{-- KONTROL JUMLAH KOLOM --}
         <div class="flex items-center gap-2">
           <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Jumlah Kolom:</label>
           <select wire:model.live="content.{{ $blockId }}.data.col_count" class="text-xs font-bold text-forest border-gray-300 rounded py-1 pl-2 pr-6 shadow-sm focus:ring-forest focus:border-forest bg-white">
@@ -191,6 +191,125 @@
           </select>
         </div>
       </div>
+    </div> --}}
+    {{-- 🌟 HEADER KONTROL (Diperbarui dengan Pengaturan Tata Letak) --}}
+    <div class="flex flex-col gap-4 p-4 border-b border-gray-200">
+
+      {{-- BARIS 1: Kontrol Dasar --}}
+      <div class="flex items-center justify-between">
+        <label class="block text-xs font-semibold text-gray-500 uppercase">Kontrol Dasar</label>
+        <div class="flex items-center gap-4">
+
+          {{-- KONTROL URUTAN HP --}}
+          @if ($colCount === 2)
+            <div class="flex items-center gap-2 border-r border-gray-200 pr-4">
+              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Urutan HP:</span>
+              <button type="button" wire:click="$toggle('content.{{ $blockId }}.data.mobile_reverse')"
+                class="flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded-md text-[10px] font-bold shadow-sm hover:bg-gray-50 focus:outline-none">
+                @if ($block['data']['mobile_reverse'] ?? false)
+                  <x-dynamic-component component="lucide-arrow-up-down" class="w-3.5 h-3.5 text-blue-500" />
+                  <span class="text-blue-600">Kanan di Atas</span>
+                @else
+                  <x-dynamic-component component="lucide-arrow-down-up" class="w-3.5 h-3.5 text-foresty" />
+                  <span class="text-gray-600">Kiri di Atas</span>
+                @endif
+              </button>
+            </div>
+          @endif
+
+          {{-- KONTROL JUMLAH KOLOM --}}
+          <div class="flex items-center gap-2">
+            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Jumlah Kolom:</label>
+            <select wire:model.live="content.{{ $blockId }}.data.col_count" class="text-xs font-bold text-forest border-gray-300 rounded py-1 pl-2 pr-6 shadow-sm focus:ring-forest focus:border-forest bg-white">
+              <option value="2">2 Kolom</option>
+              <option value="3">3 Kolom</option>
+              <option value="4">4 Kolom</option>
+              <option value="5">5 Kolom</option>
+              <option value="6">6 Kolom</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {{-- BARIS 2: Tata Letak & Spasi Internal --}}
+      <div class="bg-gray-50 p-3.5 rounded-lg border border-gray-200 shadow-inner" {{-- 🌟 Deklarasikan state entangle khusus untuk Baris 2 agar tidak ada flicker --}} x-data="{
+          localAlignX: $wire.entangle('content.{{ $blockId }}.data.align_x').live || 'items-start',
+          localAlignY: $wire.entangle('content.{{ $blockId }}.data.align_y').live || 'justify-start',
+          localGap: $wire.entangle('content.{{ $blockId }}.data.gap').live || 'gap-4'
+      }">
+
+        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-3">Tata Letak & Spasi Kolom</label>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+          {{-- 1. Sumbu X (Kiri - Kanan) --}}
+          <div class="flex flex-col gap-1.5">
+            <span class="text-[9px] font-bold text-foresty uppercase tracking-wider">Perataan X (Kiri-Kanan)</span>
+            <div class="flex items-center gap-1 bg-gray-200/50 p-1 rounded-lg border border-gray-200/50">
+              <button type="button" @click="localAlignX = 'items-start'" class="flex-1 justify-center px-2 py-1.5 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1.5"
+                :class="localAlignX === 'items-start' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'">
+                <x-dynamic-component component="lucide-align-left" class="w-3.5 h-3.5" /> Kiri
+              </button>
+              <button type="button" @click="localAlignX = 'items-center'" class="flex-1 justify-center px-2 py-1.5 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1.5"
+                :class="localAlignX === 'items-center' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'">
+                <x-dynamic-component component="lucide-align-center" class="w-3.5 h-3.5" /> Tengah
+              </button>
+              <button type="button" @click="localAlignX = 'items-end'" class="flex-1 justify-center px-2 py-1.5 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1.5"
+                :class="localAlignX === 'items-end' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'">
+                <x-dynamic-component component="lucide-align-right" class="w-3.5 h-3.5" /> Kanan
+              </button>
+            </div>
+          </div>
+
+          {{-- 2. Sumbu Y (Atas - Bawah) --}}
+          <div class="flex flex-col gap-1.5">
+            <span class="text-[9px] font-bold text-foresty uppercase tracking-wider">Perataan Y (Atas-Bawah)</span>
+            <div class="flex flex-wrap items-center gap-1 bg-gray-200/50 p-1 rounded-lg border border-gray-200/50">
+              <button type="button" @click="localAlignY = 'justify-start'" class="flex-1 justify-center px-2 py-1.5 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1"
+                :class="localAlignY === 'justify-start' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'">
+                <x-dynamic-component component="lucide-align-vertical-justify-start" class="w-3.5 h-3.5" /> Atas
+              </button>
+              <button type="button" @click="localAlignY = 'justify-center'" class="flex-1 justify-center px-2 py-1.5 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1"
+                :class="localAlignY === 'justify-center' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'">
+                <x-dynamic-component component="lucide-align-vertical-justify-center" class="w-3.5 h-3.5" /> Tgh
+              </button>
+              <button type="button" @click="localAlignY = 'justify-end'" class="flex-1 justify-center px-2 py-1.5 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1"
+                :class="localAlignY === 'justify-end' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'">
+                <x-dynamic-component component="lucide-align-vertical-justify-end" class="w-3.5 h-3.5" /> Bwh
+              </button>
+              <button type="button" @click="localAlignY = 'justify-between'" class="flex-1 justify-center px-2 py-1.5 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1"
+                :class="localAlignY === 'justify-between' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'" title="Menyebar merata">
+                <x-dynamic-component component="lucide-unfold-vertical" class="w-3.5 h-3.5" /> Sebar
+              </button>
+            </div>
+          </div>
+
+          {{-- 3. Jarak Antar Blok (Gap) --}}
+          <div class="flex flex-col gap-1.5">
+            <span class="text-[9px] font-bold text-foresty uppercase tracking-wider">Jarak Antar Blok</span>
+            <div class="flex items-center gap-1 bg-gray-200/50 p-1 rounded-lg border border-gray-200/50">
+              <button type="button" @click="localGap = 'gap-0'" class="flex-1 justify-center px-1 py-1.5 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1"
+                :class="localGap === 'gap-0' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'" title="Tanpa Jarak (0px)">
+                0px
+              </button>
+              <button type="button" @click="localGap = 'gap-2'" class="flex-1 justify-center px-1 py-1.5 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1"
+                :class="localGap === 'gap-2' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'" title="Jarak Rapat (8px)">
+                8px
+              </button>
+              <button type="button" @click="localGap = 'gap-4'" class="flex-1 justify-center px-1 py-1.5 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1"
+                :class="localGap === 'gap-4' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'" title="Jarak Normal (16px)">
+                16px
+              </button>
+              <button type="button" @click="localGap = 'gap-8'" class="flex-1 justify-center px-1 py-1.5 text-[10px] font-bold rounded-md transition-all duration-300 flex items-center gap-1"
+                :class="localGap === 'gap-8' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'" title="Jarak Renggang (32px)">
+                32px
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
 
     <!-- 🌟 NAVIGASI TAB DINAMIS DENGAN SINKRONISASI -->
@@ -280,6 +399,12 @@
                   class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Grup Tombol</button>
                 <button type="button" wire:click="addChildBlock('{{ $blockId }}', '{{ $zoneKey }}', 'badge-group'); openDropdown = false"
                   class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Grup Lencana</button>
+                <button type="button" wire:click="addChildBlock('{{ $blockId }}', '{{ $zoneKey }}', 'stats-group'); openDropdown = false"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Grup Statistik</button>
+                <button type="button" wire:click="addChildBlock('{{ $blockId }}', '{{ $zoneKey }}', 'card-group'); openDropdown = false"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Grup Kartu</button>
+                <button type="button" wire:click="addChildBlock('{{ $blockId }}', '{{ $zoneKey }}', 'testimonial-group'); openDropdown = false"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Grup Testimoni</button>
               </div>
             </div>
           </div>
