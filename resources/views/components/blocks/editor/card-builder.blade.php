@@ -1,262 +1,338 @@
 @props(['blockId', 'block', 'code'])
 
+@php
+  $iconsList = config('icons.lucide', []);
+
+  $data = $block['data'] ?? [];
+  $grid = $data['grid'] ?? ['cols' => 3, 'margin_bottom' => 'mb-8'];
+  $cards = $data['cards'] ?? [];
+@endphp
+
 <div class="bg-white border border-gray-200 transition-all duration-300 rounded-xl shadow-md" x-data="{
-    isCollapsed: false,
-    blockData: $wire.entangle('content.{{ $blockId }}.data'),
     activeCard: 0,
+    activeSlot: 'main',
 
-    init() {
-        // MIGRASI / INISIALISASI DATA BARU
-        if (!this.blockData || !this.blockData.grid) {
-            this.blockData = {
-                grid: { cols: 3, margin_bottom: 'mb-8' },
-                cards: []
-            };
-        }
-    },
-
-    syncPreview() {
-        let rawData = JSON.parse(JSON.stringify(this.blockData));
-        $wire.set('content.{{ $blockId }}.data', rawData);
-    },
-
-    addCard(blueprintType = 'stack') {
-        let newCard = {
-            id: 'card_' + Math.random().toString(36).substr(2, 9),
-            blueprint: blueprintType,
-            container: {
-                padding: 'p-6',
-                radius: 'rounded-[18px]',
-                bg: 'bg-white',
-                border: 'border border-foresty/15',
-                shadow: 'shadow-sm',
-                hover: 'hover:-translate-y-1'
-            },
-            slots: { main: [] }
-        };
-        this.blockData.cards.push(newCard);
-        this.activeCard = this.blockData.cards.length - 1;
-        this.syncPreview();
-    },
-
-    removeCard(index) {
-        this.blockData.cards.splice(index, 1);
-        this.activeCard = Math.max(0, this.activeCard - 1);
-        this.syncPreview();
-    },
-
-    addElement(cardIndex, slotName, elType) {
-        let el = { id: 'el_' + Math.random().toString(36).substr(2, 9), type: elType, content: { id: '', en: '' }, style: {} };
-
-        // Setel Design Token Bawaan (Default)
-        if (elType === 'text') {
-            el.style = { font: 'font-sans', size: 'text-[15px]', weight: 'font-normal', color: 'text-ink-soft', align: 'text-left', margin: 'mb-2' };
-        } else if (elType === 'badge') {
-            el.style = { bg: 'bg-goldy-soft', color: 'text-foresty', radius: 'rounded-full', align: 'self-start', margin: 'mb-3' };
-        }
-
-        this.blockData.cards[cardIndex].slots[slotName].push(el);
-        this.syncPreview();
-    },
-
-    removeElement(cardIndex, slotName, elIndex) {
-        this.blockData.cards[cardIndex].slots[slotName].splice(elIndex, 1);
-        this.syncPreview();
+    syncTabs(cardIndex, slotName) {
+        this.activeCard = cardIndex;
+        this.activeSlot = slotName;
+        $dispatch('sync-card-{{ strtolower($blockId) }}', { card: cardIndex, slot: slotName });
     }
-}" @input.debounce.1000ms="syncPreview()" wire:key="super-wrapper-{{ $blockId }}">
+}"
+  @sync-card-{{ strtolower($blockId) }}.window="
+        if ($event.detail) {
+            activeCard = $event.detail.card;
+            activeSlot = $event.detail.slot;
+        }
+    ">
 
-  <!-- HEADER BLOK -->
+  <!-- HEADER BLOK PENGATURAN GRID -->
   <div class="flex items-center justify-between p-2 bg-gray-100 rounded-t-xl border-b border-gray-200">
     <div class="flex items-center gap-2">
       <div class="p-1 bg-sage-soft rounded-md"><x-dynamic-component component="lucide-blocks" class="h-4 w-4 text-foresty" /></div>
-      <span class="text-xs font-extrabold text-gray-500 uppercase tracking-widest">Atomic Card Builder</span>
+      <span class="text-xs font-extrabold text-gray-500 uppercase tracking-widest">Card Builder</span>
     </div>
     <div class="flex gap-4 items-center">
-      <select x-model="blockData.grid.cols" @change="syncPreview()" class="text-xs border-gray-300 rounded py-1 bg-white shadow-sm font-bold text-foresty">
+      {{-- Setting ringan seperti Select Box tetap bisa pakai .live karena tidak ada lag saat mengetik --}}
+      <select wire:model.live="content.{{ $blockId }}.data.grid.cols" class="text-xs border-gray-300 rounded py-1 bg-white shadow-sm font-bold text-foresty">
         <option value="1">1 Kolom</option>
         <option value="2">2 Kolom</option>
         <option value="3">3 Kolom</option>
+        <option value="4">4 Kolom</option>
       </select>
-      <select x-model="blockData.grid.margin_bottom" @change="syncPreview()" class="text-xs border-gray-300 rounded py-1 bg-white shadow-sm font-bold text-foresty">
+      <select wire:model.live="content.{{ $blockId }}.data.grid.margin_bottom" class="text-xs border-gray-300 rounded py-1 bg-white shadow-sm font-bold text-foresty">
         <option value="mb-0">Jarak Bawah: 0px</option>
         <option value="mb-8">Jarak Bawah: Normal</option>
         <option value="mb-16">Jarak Bawah: Jauh</option>
       </select>
+      <span class="text-xs font-bold text-foresty uppercase bg-sage-soft px-1.5 py-0.5 rounded shadow-sm shrink-0">{{ $code }}</span>
     </div>
   </div>
 
-  <div class="p-4" wire:ignore>
-
-    {{-- LAYAR 1: KOSONG --}}
-    <template x-if="blockData.cards.length === 0">
+  <div class="p-4">
+    @if (count($cards) === 0)
       <div class="py-10 text-center">
-        <p class="text-sm text-gray-500 mb-4">Belum ada kartu. Mulai bangun kartu pertama Anda.</p>
-        <button type="button" @click="addCard('stack')" class="px-4 py-2 bg-foresty text-white rounded-lg text-xs font-bold shadow-sm hover:bg-foresty-dark transition-colors">
-          + Buat Kartu Baru
-        </button>
-      </div>
-    </template>
-
-    {{-- LAYAR 2: EDITOR KARTU --}}
-    <template x-if="blockData.cards.length > 0">
-      <div>
-        {{-- Tab Kartu --}}
-        <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
-          <template x-for="(card, index) in blockData.cards" :key="card.id">
-            <button type="button" @click="activeCard = index" :class="activeCard === index ? 'bg-foresty text-white' : 'bg-gray-100 text-gray-600'"
-              class="px-3 py-1.5 rounded-md text-xs font-bold border flex items-center gap-2">
-              <span x-text="'Kartu ' + (index + 1)"></span>
-              <div @click.stop="removeCard(index)" class="p-0.5 hover:bg-red-500 hover:text-white rounded"><x-dynamic-component component="lucide-x" class="w-3 h-3" /></div>
-            </button>
-          </template>
-          <button type="button" @click="addCard('stack')" class="px-3 py-1.5 rounded-md text-xs font-bold bg-sage-soft text-foresty hover:bg-foresty hover:text-white transition-colors flex items-center gap-1">
-            <x-dynamic-component component="lucide-plus" class="w-3 h-3" /> Tambah Kartu
+        <p class="text-sm text-gray-500 mb-4">Belum ada kartu. Silakan pilih kerangka dasar (blueprint) kartu pertama Anda.</p>
+        <div class="flex justify-center gap-4">
+          {{-- Alpine memindah tab aktif, Livewire memproses data di server --}}
+          <button type="button" wire:click="addCardItem('{{ $blockId }}', 'stack')" @click="syncTabs(0, 'main')"
+            class="px-5 py-3 border-2 border-dashed border-gray-300 rounded-xl hover:border-foresty transition-colors flex flex-col items-center gap-3 group outline-none">
+            <div class="flex flex-col gap-1 w-12 items-center">
+              <div class="w-8 h-2 bg-gray-300 rounded group-hover:bg-foresty/50 transition-colors"></div>
+              <div class="w-12 h-2 bg-gray-300 rounded group-hover:bg-foresty/50 transition-colors"></div>
+              <div class="w-10 h-2 bg-gray-300 rounded group-hover:bg-foresty/50 transition-colors"></div>
+            </div>
+            <span class="text-xs font-bold text-gray-600 group-hover:text-foresty transition-colors">Stack (Tumpuk)</span>
+          </button>
+          <button type="button" wire:click="addCardItem('{{ $blockId }}', 'media-object')" @click="syncTabs(0, 'middle')"
+            class="px-5 py-3 border-2 border-dashed border-gray-300 rounded-xl hover:border-foresty transition-colors flex flex-col items-center gap-3 group outline-none">
+            <div class="flex gap-2 items-center">
+              <div class="w-5 h-5 bg-gray-300 rounded-sm group-hover:bg-foresty/50 transition-colors"></div>
+              <div class="flex flex-col gap-1">
+                <div class="w-8 h-1.5 bg-gray-300 rounded group-hover:bg-foresty/50 transition-colors"></div>
+                <div class="w-12 h-1.5 bg-gray-300 rounded group-hover:bg-foresty/50 transition-colors"></div>
+              </div>
+            </div>
+            <span class="text-xs font-bold text-gray-600 group-hover:text-foresty transition-colors">Dokumen (3 Kolom)</span>
           </button>
         </div>
+      </div>
+    @else
+      <div class="flex items-center gap-2 mb-4 border-b border-gray-200 pb-2">
+        <div class="flex-1 overflow-x-auto flex gap-2 no-scrollbar pb-1">
+          @foreach ($cards as $index => $card)
+            <div wire:key="tab-{{ $blockId }}-{{ $card['id'] ?? $index }}" class="flex items-center gap-1 border rounded-md px-2 py-1 transition-colors"
+              :class="activeCard === {{ $index }} ? 'bg-foresty text-white border-foresty shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-white hover:border-gray-300'">
 
-        {{-- Area Kerja Kartu Aktif --}}
-        <div class="bg-gray-50 border border-gray-200 p-5 rounded-xl">
-          <template x-if="blockData.cards[activeCard]">
-            <div>
-              {{-- PENGATURAN KONTAINER (Design Tokens) --}}
-              <div class="flex flex-wrap gap-3 mb-6 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <div class="text-[10px] font-bold text-gray-400 uppercase w-full mb-1">Gaya Kotak Pembungkus</div>
-                <select x-model="blockData.cards[activeCard].container.bg" @change="syncPreview()" class="text-xs border-gray-200 rounded p-1.5">
+              {{-- Tab hanya memicu perubahan Alpine UI --}}
+              <button type="button" @click="syncTabs({{ $index }}, '{{ ($card['blueprint'] ?? 'stack') === 'stack' ? 'main' : 'middle' }}')" class="text-xs font-bold pl-1 pr-2 whitespace-nowrap outline-none">
+                Kartu {{ $index + 1 }}
+              </button>
+
+              <button type="button" wire:click="removeCardItem('{{ $blockId }}', {{ $index }})" @click="syncTabs(Math.max(0, activeCard - 1), 'main')"
+                class="p-0.5 hover:bg-red-500 hover:text-white rounded transition-colors outline-none" title="Hapus Kartu">
+                <x-dynamic-component component="lucide-x" class="w-3 h-3" />
+              </button>
+            </div>
+          @endforeach
+        </div>
+
+        <div class="relative shrink-0" x-data="{ openMenu: false }">
+          <button type="button" @click="openMenu = !openMenu" @click.away="openMenu = false"
+            class="px-3 py-1.5 rounded-md text-xs font-bold bg-sage-soft text-foresty hover:bg-foresty hover:text-white transition-colors flex items-center gap-1">
+            <x-dynamic-component component="lucide-plus" class="w-3 h-3" /> Tambah
+          </button>
+          <div x-show="openMenu" x-cloak class="absolute top-full right-0 mt-1 w-40 bg-white border border-gray-200 shadow-lg rounded-md overflow-hidden z-50">
+            <button type="button" wire:click="addCardItem('{{ $blockId }}', 'stack')" @click="syncTabs({{ count($cards) }}, 'main'); openMenu = false"
+              class="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 border-b border-gray-100 outline-none">Stack (Tumpuk)</button>
+            <button type="button" wire:click="addCardItem('{{ $blockId }}', 'media-object')" @click="syncTabs({{ count($cards) }}, 'middle'); openMenu = false"
+              class="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 outline-none">Dokumen (3 Kolom)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-gray-50 border border-gray-200 p-5 rounded-xl">
+        @foreach ($cards as $cIndex => $card)
+          <div x-show="activeCard === {{ $cIndex }}" x-cloak wire:key="card-editor-{{ $blockId }}-{{ $cIndex }}">
+
+            <div class="flex flex-col gap-3 mb-6 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+              <div class="flex items-center justify-between">
+                <div class="text-[10px] font-bold text-gray-400 uppercase w-full">Gaya Kotak & Tautan</div>
+                <span class="px-2 py-0.5 bg-gray-100 rounded text-[9px] text-gray-500 font-bold shrink-0">Blueprint: {{ $card['blueprint'] ?? 'stack' }}</span>
+              </div>
+
+              <div class="flex flex-wrap gap-2">
+                <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.bg" class="text-xs border-gray-200 rounded p-1.5">
                   <option value="bg-white">Latar Putih</option>
                   <option value="bg-mist">Latar Mist</option>
                   <option value="bg-foresty text-white">Latar Foresty</option>
+                  <option value="bg-transparent">Transparan</option>
                 </select>
-                <select x-model="blockData.cards[activeCard].container.border" @change="syncPreview()" class="text-xs border-gray-200 rounded p-1.5">
+                <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.border" class="text-xs border-gray-200 rounded p-1.5">
+                  <option value="border border-gray-200">Border Standar</option>
                   <option value="border border-foresty/15">Border Tipis</option>
-                  <option value="border-2 border-foresty">Border Tebal</option>
                   <option value="border-0">Tanpa Border</option>
                 </select>
-                <select x-model="blockData.cards[activeCard].container.radius" @change="syncPreview()" class="text-xs border-gray-200 rounded p-1.5">
+                <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.radius" class="text-xs border-gray-200 rounded p-1.5">
                   <option value="rounded-none">Siku</option>
-                  <option value="rounded-md">Sedikit Bulat</option>
-                  <option value="rounded-[18px]">Sangat Bulat</option>
+                  <option value="rounded-[14px]">Agak Bulat</option>
+                  <option value="rounded-[28px]">Sangat Bulat</option>
+                </select>
+                <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.padding" class="text-xs border-gray-200 rounded p-1.5">
+                  <option value="p-4">Padding Kecil</option>
+                  <option value="p-6 md:p-8">Padding Besar</option>
+                  <option value="p-0">Tanpa Padding</option>
                 </select>
               </div>
 
-              {{-- SLOT UTAMA (Main Slot untuk Blueprint Stack) --}}
-              <div class="space-y-3">
-                <template x-for="(el, elIndex) in blockData.cards[activeCard].slots.main" :key="el.id">
-                  <div class="p-3 bg-white border border-gray-200 rounded-lg shadow-sm relative group">
-
-                    {{-- Tombol Hapus Elemen --}}
-                    <button @click="removeElement(activeCard, 'main', elIndex)" type="button"
-                      class="absolute -right-2 -top-2 bg-red-100 text-red-600 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><x-dynamic-component component="lucide-x" class="w-3 h-3" /></button>
-
-                    {{-- JIKA ELEMEN TEKS --}}
-                    <template x-if="el.type === 'text'">
-                      <div class="grid grid-cols-1 gap-2">
-                        <div class="flex justify-between items-center mb-1">
-                          <span class="text-[10px] font-extrabold text-foresty uppercase tracking-widest bg-foresty/10 px-2 py-0.5 rounded">Teks</span>
-                        </div>
-                        <input type="text" x-model="el.content.{{ strtolower($code) }}" placeholder="Ketik teks di sini..." class="text-sm font-semibold border-gray-300 rounded focus:ring-foresty w-full">
-
-                        {{-- Token Teks --}}
-                        <div class="flex gap-2 flex-wrap mt-1">
-                          <select x-model="el.style.font" class="text-[11px] py-1 border-gray-200 rounded">
-                            <option value="font-sans">Font Standar</option>
-                            <option value="font-display">Font Judul</option>
-                            <option value="font-serif">Font Serif</option>
-                          </select>
-                          <select x-model="el.style.size" class="text-[11px] py-1 border-gray-200 rounded">
-                            <option value="text-[13px]">Kecil</option>
-                            <option value="text-[15px]">Normal</option>
-                            <option value="text-[17px]">Agak Besar</option>
-                            <option value="text-[26px]">Besar (Judul)</option>
-                          </select>
-                          <select x-model="el.style.weight" class="text-[11px] py-1 border-gray-200 rounded">
-                            <option value="font-normal">Reguler</option>
-                            <option value="font-semibold">Semi Bold</option>
-                            <option value="font-bold">Bold</option>
-                          </select>
-                          <select x-model="el.style.color" class="text-[11px] py-1 border-gray-200 rounded">
-                            <option value="text-ink-soft">Abu-abu</option>
-                            <option value="text-foresty">Foresty</option>
-                            <option value="text-goldy">Goldy</option>
-                            <option value="text-coral">Coral</option>
-                          </select>
-                          <select x-model="el.style.align" class="text-[11px] py-1 border-gray-200 rounded">
-                            <option value="text-left">Kiri</option>
-                            <option value="text-center">Tengah</option>
-                            <option value="text-right">Kanan</option>
-                          </select>
-                        </div>
-                      </div>
-                    </template>
-
-                    {{-- JIKA ELEMEN BADGE --}}
-                    <template x-if="el.type === 'badge'">
-                      <div class="grid grid-cols-1 gap-2">
-                        <div class="flex justify-between items-center mb-1">
-                          <span class="text-[10px] font-extrabold text-goldy-dark uppercase tracking-widest bg-goldy-soft px-2 py-0.5 rounded">Lencana (Pill)</span>
-                        </div>
-                        <input type="text" x-model="el.content.{{ strtolower($code) }}" placeholder="Teks lencana..." class="text-sm font-semibold border-gray-300 rounded focus:ring-foresty w-full">
-
-                        {{-- Token Badge --}}
-                        <div class="flex gap-2 flex-wrap mt-1">
-                          <select x-model="el.style.bg" class="text-[11px] py-1 border-gray-200 rounded">
-                            <option value="bg-goldy-soft">Bg Goldy Soft</option>
-                            <option value="bg-mist">Bg Mist</option>
-                            <option value="bg-[#FBE6E6]">Bg Merah Muda</option>
-                            <option value="bg-foresty text-white">Bg Foresty</option>
-                          </select>
-                          <select x-model="el.style.color" class="text-[11px] py-1 border-gray-200 rounded">
-                            <option value="text-foresty">Teks Foresty</option>
-                            <option value="text-coral-dark">Teks Coral</option>
-                            <option value="text-white">Teks Putih</option>
-                          </select>
-                          <select x-model="el.style.align" class="text-[11px] py-1 border-gray-200 rounded">
-                            <option value="self-start">Posisi Kiri</option>
-                            <option value="self-center">Posisi Tengah</option>
-                            <option value="self-end">Posisi Kanan</option>
-                          </select>
-                        </div>
-                      </div>
-                    </template>
-
-                  </div>
-                </template>
-              </div>
-
-              {{-- TOMBOL TAMBAH ELEMEN --}}
-              <div class="flex gap-2 mt-4">
-                <button type="button" @click="addElement(activeCard, 'main', 'text')"
-                  class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-600 hover:border-foresty transition-colors flex-1 flex justify-center items-center gap-1">
-                  + Tambah Teks
-                </button>
-                <button type="button" @click="addElement(activeCard, 'main', 'badge')"
-                  class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-600 hover:border-goldy transition-colors flex-1 flex justify-center items-center gap-1">
-                  + Tambah Lencana
+              <div class="flex items-center gap-1 mt-1">
+                <input type="text" wire:model.blur="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.url" placeholder="https:// atau pilih dari pencarian internal..."
+                  class="w-full text-xs border-gray-300 rounded py-1.5 focus:ring-foresty shadow-sm">
+                <button type="button" @click="$dispatch('buka-modal-link', { target: 'content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.url' })"
+                  class="p-1.5 border border-gray-200 bg-white hover:bg-sage-soft text-gray-400 hover:text-foresty rounded-md shadow-sm shrink-0 transition-colors">
+                  <x-dynamic-component component="lucide-search" class="w-4 h-4" stroke-width="2.5" />
                 </button>
               </div>
             </div>
-          </template>
-        </div>
+
+            @if (($card['blueprint'] ?? 'stack') === 'media-object')
+              <div class="flex gap-2 mb-4 border-b border-gray-200 pb-2">
+                <button type="button" @click="activeSlot = 'left'" :class="activeSlot === 'left' ? 'text-foresty border-foresty' : 'text-gray-400 border-transparent hover:text-foresty'"
+                  class="px-2 py-1 text-xs font-bold border-b-2 outline-none transition-colors">Area Kiri</button>
+                <button type="button" @click="activeSlot = 'middle'" :class="activeSlot === 'middle' ? 'text-foresty border-foresty' : 'text-gray-400 border-transparent hover:text-foresty'"
+                  class="px-2 py-1 text-xs font-bold border-b-2 outline-none transition-colors">Area Tengah</button>
+                <button type="button" @click="activeSlot = 'right'" :class="activeSlot === 'right' ? 'text-foresty border-foresty' : 'text-gray-400 border-transparent hover:text-foresty'"
+                  class="px-2 py-1 text-xs font-bold border-b-2 outline-none transition-colors">Area Kanan</button>
+              </div>
+            @endif
+
+            <div class="space-y-3">
+              @foreach ($card['slots'] ?? [] as $slotName => $elements)
+                <div x-show="activeSlot === '{{ $slotName }}'" x-cloak>
+                  @foreach ($elements as $elIndex => $el)
+                    <div wire:key="el-{{ $blockId }}-{{ $cIndex }}-{{ $slotName }}-{{ $elIndex }}" class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm relative group mb-3">
+
+                      <button type="button" wire:click="removeCardElement('{{ $blockId }}', {{ $cIndex }}, '{{ $slotName }}', {{ $elIndex }})"
+                        class="absolute -right-2 -top-2 bg-red-100 text-red-600 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity outline-none shadow-sm">
+                        <x-dynamic-component component="lucide-x" class="w-3 h-3" />
+                      </button>
+
+                      @if (($el['type'] ?? 'text') === 'text')
+                        <div class="flex justify-between items-center mb-2">
+                          <span class="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded {{ $el['style']['is_pill'] ?? false ? 'bg-goldy-soft text-goldy-dark' : 'bg-foresty/10 text-foresty' }}">
+                            {{ $el['style']['is_pill'] ?? false ? 'Lencana (Pill)' : 'Teks' }}
+                          </span>
+                          <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.is_pill"
+                              class="rounded text-foresty focus:ring-foresty w-3.5 h-3.5 border-gray-300">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase">Mode Pill</span>
+                          </label>
+                        </div>
+
+                        {{-- 🌟 Solusi Lag: Menggunakan wire:model.blur --}}
+                        <textarea rows="2" wire:model.blur="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.content.{{ $code }}"
+                          placeholder="Ketik isi teks di sini..." class="w-full text-sm font-semibold border-gray-200 rounded-lg focus:ring-foresty mb-2 shadow-sm resize-none"></textarea>
+
+                        <div class="flex gap-2 flex-wrap bg-gray-50 p-2 rounded-lg border border-gray-100">
+                          @if (!($el['style']['is_pill'] ?? false))
+                            <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.font"
+                              class="text-[11px] py-1 border-gray-200 rounded">
+                              <option value="font-sans">Sistem Font</option>
+                              <option value="font-display">Display Font</option>
+                            </select>
+                            <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.size"
+                              class="text-[11px] py-1 border-gray-200 rounded">
+                              <option value="text-[13px]">Kecil</option>
+                              <option value="text-[15px]">Normal</option>
+                              <option value="text-[21px]">Besar (H3)</option>
+                            </select>
+                            <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.weight"
+                              class="text-[11px] py-1 border-gray-200 rounded">
+                              <option value="font-normal">Reguler</option>
+                              <option value="font-semibold">Semi Bold</option>
+                            </select>
+                          @else
+                            <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.pill_bg"
+                              class="text-[11px] py-1 border-gray-200 rounded">
+                              <option value="bg-goldy-soft">Bg Goldy</option>
+                              <option value="bg-mist">Bg Mist</option>
+                              <option value="bg-sage-soft">Bg Sage</option>
+                            </select>
+                            <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.pill_radius"
+                              class="text-[11px] py-1 border-gray-200 rounded">
+                              <option value="rounded-md">Sedikit Bulat</option>
+                              <option value="rounded-full">Bulat Penuh</option>
+                            </select>
+                          @endif
+                          <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.color"
+                            class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="text-ink-soft">Abu Gelap</option>
+                            <option value="text-foresty">Foresty</option>
+                            <option value="text-coral">Coral</option>
+                          </select>
+                          <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.margin"
+                            class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="mb-0">Jarak Bawah: 0</option>
+                            <option value="mb-2">Jarak Bawah: Kecil</option>
+                            <option value="mb-4">Jarak Bawah: Sedang</option>
+                          </select>
+                        </div>
+                      @elseif(($el['type'] ?? 'icon') === 'icon')
+                        <div class="flex justify-between items-center mb-2">
+                          <span class="text-[10px] font-extrabold text-white uppercase tracking-widest bg-foresty px-2 py-0.5 rounded">Ikon</span>
+                        </div>
+
+                        <div class="relative mb-2" x-data="{ openPicker: false, search: '' }">
+                          <button type="button" @click="openPicker = !openPicker"
+                            class="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg py-2 px-3 text-xs shadow-sm hover:border-foresty focus:outline-none transition-colors">
+                            <div class="flex items-center gap-2 truncate">
+                              <x-dynamic-component :component="'lucide-' . ($el['content']['icon'] ?: 'box')" class="w-5 h-5 text-foresty shrink-0" stroke-width="2.5" />
+                              <span class="truncate uppercase font-mono text-[11px] font-bold text-gray-700">{{ $el['content']['icon'] ?: 'PILIH IKON...' }}</span>
+                            </div>
+                            <x-dynamic-component component="lucide-chevron-down" class="w-4 h-4 text-gray-400 shrink-0" />
+                          </button>
+
+                          <div x-show="openPicker" @click.outside="openPicker = false" x-cloak
+                            class="absolute left-0 mt-1 w-full sm:w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 z-50 flex flex-col gap-2">
+                            <div class="relative">
+                              <x-dynamic-component component="lucide-search" class="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+                              <input type="text" x-model="search" placeholder="Cari ikon (cth: heart, user)..."
+                                class="w-full text-xs border border-gray-200 rounded-lg pl-9 pr-2 py-2 focus:ring-foresty focus:border-foresty shadow-sm" />
+                            </div>
+                            <div class="grid grid-cols-5 gap-1.5 max-h-48 overflow-y-auto p-1 scrollbar-thin">
+                              @foreach ($iconsList as $iconName)
+                                <button type="button" x-show="'{{ $iconName }}'.includes(search.toLowerCase())"
+                                  wire:click="$set('content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.content.icon', '{{ $iconName }}')"
+                                  @click="openPicker = false; search = ''"
+                                  class="p-2.5 rounded-lg flex items-center justify-center transition-all duration-200 border {{ ($el['content']['icon'] ?? '') === $iconName ? 'bg-sage-soft text-foresty border-foresty shadow-sm scale-110' : 'bg-gray-50 text-gray-400 border-transparent hover:border-foresty/50 hover:text-foresty' }}">
+                                  <x-dynamic-component :component="'lucide-' . $iconName" class="w-5 h-5 shrink-0" stroke-width="2" />
+                                </button>
+                              @endforeach
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="flex gap-2 flex-wrap bg-gray-50 p-2 rounded-lg border border-gray-100">
+                          <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.bg"
+                            class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="bg-goldy-soft">Latar Goldy</option>
+                            <option value="bg-mist">Latar Mist</option>
+                            <option value="bg-transparent">Latar Transparan</option>
+                          </select>
+                          <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.color"
+                            class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="text-foresty">Warna Foresty</option>
+                            <option value="text-coral">Warna Coral</option>
+                          </select>
+                          <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.size"
+                            class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="w-10 h-10">Ukuran Standar</option>
+                            <option value="w-16 h-16">Ukuran Besar</option>
+                          </select>
+                          <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.radius"
+                            class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="rounded-[14px]">Agak Bulat</option>
+                            <option value="rounded-full">Lingkaran</option>
+                          </select>
+                        </div>
+                      @endif
+                    </div>
+                  @endforeach
+                </div>
+              @endforeach
+            </div>
+
+            <div class="flex gap-2 mt-2">
+              <button type="button" wire:click="addCardElement('{{ $blockId }}', {{ $cIndex }}, activeSlot, 'text')"
+                class="flex-1 py-2.5 bg-white border border-dashed border-gray-300 rounded-lg text-xs font-bold text-gray-500 hover:border-foresty hover:text-foresty transition-colors shadow-sm outline-none">+
+                Teks</button>
+              <button type="button" wire:click="addCardElement('{{ $blockId }}', {{ $cIndex }}, activeSlot, 'icon')"
+                class="flex-1 py-2.5 bg-white border border-dashed border-gray-300 rounded-lg text-xs font-bold text-gray-500 hover:border-foresty hover:text-foresty transition-colors shadow-sm outline-none">+
+                Ikon</button>
+            </div>
+
+          </div>
+        @endforeach
       </div>
-    </template>
+    @endif
   </div>
 
-  {{-- LIVE PREVIEW --}}
-  <div x-show="blockData.cards.length > 0" x-cloak class="mt-4 bg-gray-50 border-t border-gray-200 relative overflow-hidden rounded-b-xl">
-    <div class="bg-gray-200/60 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
-      <span class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Live Preview</span>
-    </div>
+  {{-- AREA LIVE PREVIEW --}}
+  @if (count($cards) > 0)
+    <div class="mt-4 bg-gray-50 border-t border-gray-200 relative overflow-hidden rounded-b-xl">
+      <div class="bg-gray-200/60 px-4 py-2 border-b border-gray-200">
+        <span class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Live Preview ({{ strtoupper($code) }})</span>
+      </div>
 
-    {{-- CSS Isolator: Menyembunyikan kartu lain di preview --}}
-    <style
-      x-text="`
-            .preview-atomic-${blockId} .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; }
-            .preview-atomic-${blockId} .grid > *:not(:nth-child(${activeCard + 1})) { display: none !important; }
-        `">
-    </style>
+      <style
+        x-text="`
+                .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; }
+                .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid > *:not(:nth-child(${activeCard + 1})) { display: none !important; }
+            `">
+      </style>
 
-    <div :class="'preview-atomic-' + blockId" class="p-6 md:p-10 w-full min-h-[150px]">
-      @php $liveData = (isset($this) && property_exists($this, 'content')) ? ($this->content[$blockId]['data'] ?? []) : ($block['data'] ?? []); @endphp
-      @include('components.blocks.render.card-builder', ['data' => $liveData, 'lang' => strtolower($code), 'isPreview' => true])
+      <div class="preview-atomic-{{ $blockId }}-{{ strtolower($code) }} p-6 md:p-10 w-full min-h-[150px] flex justify-center">
+        @include('components.blocks.render.card-builder', ['data' => $data, 'lang' => strtolower($code), 'isPreview' => true])
+      </div>
     </div>
-  </div>
+  @endif
 </div>

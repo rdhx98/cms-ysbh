@@ -1,91 +1,108 @@
 @props(['data' => [], 'lang' => 'id', 'isPreview' => false])
 
 @php
-  // 1. Tangkap Pengaturan Grid
-  $grid = $data['grid'] ?? ['cols' => 3, 'margin_bottom' => 'mb-8'];
-  $cols = (int) ($grid['cols'] ?? 3);
-  $cards = $data['cards'] ?? [];
-
-  $gridClass = match ($cols) {
+  // 1. PENGATURAN GRID & MARGIN UTAMA
+  $gridCols = $data['grid']['cols'] ?? 3;
+  $gridClass = match ((int) $gridCols) {
       1 => 'grid-cols-1',
       2 => 'grid-cols-1 md:grid-cols-2',
-      4 => 'grid-cols-2 md:grid-cols-4',
-      default => 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+      3 => 'grid-cols-1 md:grid-cols-3',
+      4 => 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+      default => 'grid-cols-1 md:grid-cols-3',
   };
+  $marginBottom = $data['grid']['margin_bottom'] ?? 'mb-8';
+  $cards = $data['cards'] ?? [];
 @endphp
 
-@if (count($cards) > 0)
-  <div class="grid {{ $gridClass }} {{ $grid['margin_bottom'] }} gap-6 w-full relative">
-    @foreach ($cards as $card)
-      @php
-        $blueprint = $card['blueprint'] ?? 'stack';
-        $c = $card['container'] ?? [];
+<div class="grid gap-6 {{ $gridClass }} {{ $marginBottom }}">
+  @foreach ($cards as $card)
+    @php
+      // 2. PENGATURAN KONTAINER KARTU
+      $c = $card['container'] ?? [];
+      $classes = implode(
+          ' ',
+          array_filter([
+              $c['bg'] ?? 'bg-white',
+              $c['border'] ?? 'border border-gray-200',
+              $c['radius'] ?? 'rounded-[18px]',
+              $c['padding'] ?? 'p-5',
+              $c['shadow'] ?? 'shadow-sm',
+              $c['hover'] ?? '',
+              'transition-all duration-300 relative group flex flex-col h-full',
+          ]),
+      );
 
-        // 2. Susun kelas Tailwind untuk Kontainer Kartu
-        $containerClasses = collect([
-            $c['bg'] ?? 'bg-white',
-            $c['border'] ?? 'border border-foresty/15',
-            $c['radius'] ?? 'rounded-[18px]',
-            $c['padding'] ?? 'p-6',
-            $c['shadow'] ?? 'shadow-sm',
-            $c['hover'] ?? 'hover:-translate-y-1',
-            'transition-all duration-300 group flex flex-col', // Kelas wajib
-        ])
-            ->filter()
-            ->implode(' ');
-      @endphp
+      $url = $c['url'] ?? '';
+      $isLink = !empty($url);
+      $Tag = $isLink ? 'a' : 'div';
+      $href = $isLink ? 'href="' . $url . '"' : '';
+    @endphp
 
-      {{-- BUNGKUS KARTU --}}
-      <div class="{{ $containerClasses }}">
+    <{{ $Tag }} {!! $href !!} class="{{ $classes }}">
 
-        {{-- BLUEPRINT: STACK (1 Kolom Menumpuk) --}}
-        @if ($blueprint === 'stack')
-          @php $mainSlot = $card['slots']['main'] ?? []; @endphp
+      {{-- 3. PERCABANGAN BLUEPRINT LAYOUT --}}
+      @if (($card['blueprint'] ?? 'stack') === 'stack')
+        {{-- A. LAYOUT TUMPUK (STACK) --}}
+        <div class="flex flex-col w-full h-full">
+          @foreach ($card['slots']['main'] ?? [] as $el)
+            @if (in_array($el['type'], ['text', 'icon']))
+              @include('components.blocks.render.partials._atomic-' . $el['type'], [
+                  'el' => $el,
+                  'lang' => $lang,
+                  'isPreview' => $isPreview,
+              ])
+            @endif
+          @endforeach
+        </div>
+      @else
+        {{-- B. LAYOUT DOKUMEN (MEDIA OBJECT / 3 KOLOM) --}}
+        <div class="flex gap-4 items-start w-full h-full">
 
-          <div class="flex flex-col w-full h-full">
-            @foreach ($mainSlot as $el)
-              @php
-                $type = $el['type'] ?? '';
-                $s = $el['style'] ?? [];
-                // Fallback Dummy Text untuk Preview
-                $textContent = $el['content'][$lang] ?? '';
-                if ($isPreview && empty($textContent)) {
-                    $textContent = $type === 'badge' ? 'Label Baru' : 'Teks Sementara...';
-                }
-              @endphp
-
-              {{-- ELEMEN: TEKS --}}
-              @if ($type === 'text')
-                @php
-                  $textClasses = collect([$s['font'] ?? 'font-sans', $s['size'] ?? 'text-[15px]', $s['weight'] ?? 'font-normal', $s['color'] ?? 'text-ink-soft', $s['align'] ?? 'text-left', $s['margin'] ?? 'mb-2'])
-                      ->filter()
-                      ->implode(' ');
-                @endphp
-                <div class="{{ $textClasses }}">{{ $textContent }}</div>
-
-                {{-- ELEMEN: LENCANA / PILL --}}
-              @elseif ($type === 'badge')
-                @php
-                  $badgeClasses = collect([
-                      $s['bg'] ?? 'bg-goldy-soft',
-                      $s['color'] ?? 'text-foresty',
-                      $s['radius'] ?? 'rounded-full',
-                      $s['align'] ?? 'self-start', // self-start, self-center, self-end untuk badge
-                      $s['margin'] ?? 'mb-3',
-                      'inline-block px-3 py-1.5 text-[11.5px] font-extrabold tracking-[0.06em] uppercase',
+          {{-- Area Kiri --}}
+          @if (!empty($card['slots']['left']))
+            <div class="shrink-0 flex flex-col">
+              @foreach ($card['slots']['left'] as $el)
+                @if (in_array($el['type'], ['text', 'icon']))
+                  @include('components.blocks.render.partials._atomic-' . $el['type'], [
+                      'el' => $el,
+                      'lang' => $lang,
+                      'isPreview' => $isPreview,
                   ])
-                      ->filter()
-                      ->implode(' ');
-                @endphp
-                <div class="flex {{ $s['align'] === 'self-center' ? 'justify-center' : ($s['align'] === 'self-end' ? 'justify-end' : 'justify-start') }} w-full">
-                  <span class="{{ $badgeClasses }}">{{ $textContent }}</span>
-                </div>
+                @endif
+              @endforeach
+            </div>
+          @endif
+
+          {{-- Area Tengah --}}
+          <div class="flex-1 flex flex-col min-w-0">
+            @foreach ($card['slots']['middle'] ?? [] as $el)
+              @if (in_array($el['type'], ['text', 'icon']))
+                @include('components.blocks.render.partials._atomic-' . $el['type'], [
+                    'el' => $el,
+                    'lang' => $lang,
+                    'isPreview' => $isPreview,
+                ])
               @endif
             @endforeach
           </div>
-        @endif
 
-      </div>
-    @endforeach
-  </div>
-@endif
+          {{-- Area Kanan --}}
+          @if (!empty($card['slots']['right']))
+            <div class="shrink-0 flex flex-col">
+              @foreach ($card['slots']['right'] as $el)
+                @if (in_array($el['type'], ['text', 'icon']))
+                  @include('components.blocks.render.partials._atomic-' . $el['type'], [
+                      'el' => $el,
+                      'lang' => $lang,
+                      'isPreview' => $isPreview,
+                  ])
+                @endif
+              @endforeach
+            </div>
+          @endif
+        </div>
+      @endif
+
+      </{{ $Tag }}>
+  @endforeach
+</div>

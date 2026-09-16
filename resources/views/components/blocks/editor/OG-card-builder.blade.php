@@ -35,6 +35,7 @@
 
         this.$watch('activeTab', value => {
             this.$dispatch('sync-active-tab-{{ strtolower($blockId) }}', value);
+            console.log('Nilai ActiveTab:', value);
         });
     },
 

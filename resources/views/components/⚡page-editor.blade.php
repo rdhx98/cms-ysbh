@@ -465,7 +465,7 @@ new class extends Component {
 
               </div>
 
-              <!-- RENDER ISI BLOK -->
+              <!-- old RENDER ISI BLOK -->
               <div class="w-full">
                 <div class="gap-6"
                   :class="{
@@ -487,6 +487,36 @@ new class extends Component {
                   @endforeach
                 </div>
               </div>
+
+              <!-- RENDER ISI BLOK -->
+              {{-- <div class="w-full">
+                <div class="gap-6"
+                  :class="{
+                      'grid grid-cols-1': effectiveLayout === 'single',
+                      'grid grid-cols-1 md:grid-cols-2': effectiveLayout === 'split' && splitLanguages.length === 2,
+                      'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3': effectiveLayout === 'split' && splitLanguages.length === 3,
+                      'grid grid-cols-1': effectiveLayout === 'split' && splitLanguages.length === 1
+                  }">
+                  @foreach ($activeLocales as $code)
+                    <div x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
+                      class="space-y-3 bg-gray-100 group-hover:bg-white rounded-xl border-2 border-transparent group-hover:border-foresty/80 transition-colors">
+
+                      {{-- 🌟 PERCABANGAN KOMPONEN --}
+              @if ($block['type'] === 'card-builder')
+                {{-- Panggil Komponen Livewire/Volt dari folder components Anda --}}
+              {{-- Catatan: Sesuaikan alias tag ini dengan cara Anda mendaftarkan path-nya. --}
+                <livewire:blocks.editor.card-builder wire:model="content.{{ $blockId }}.data" :blockId="$blockId" :code="$code" wire:key="card-builder-{{ $blockId }}-{{ $code }}" />
+              @else
+                {{-- Panggil Komponen Blade Dinamis Biasa --}
+                <x-dynamic-component :component="'blocks.editor.' . str_replace('_', '-', $block['type'])" :block-id="$blockId" :code="$code" :block="$block" :all-content="$content" />
+              @endif
+
+            </div>
+          @endforeach
+      </div>
+    </div> --}}
+
+
             </div>
           @endif
         @endforeach
@@ -510,6 +540,7 @@ new class extends Component {
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('stats-group')" icon="chart-column-big" label="Grup Statistik" />
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('card-group')" icon="credit-card" label="Grup Kartu" />
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('testimonial-group')" icon="message-circle" label="Grup Testimoni" />
+      <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('OG-card-builder')" icon="playing-cards-fan" label="OG Kartu Builder" />
       <x-buttons.add-blocks mode="icon-hover" command="editorTab = 'content'; addNewBlock('card-builder')" icon="playing-cards-fan" label="Kartu Builder" />
     </div>
 

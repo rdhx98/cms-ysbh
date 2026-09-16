@@ -198,10 +198,17 @@ trait HasContentBlocks
                 'text_color' => 'text-gray-900',
                 'padding'    => 'py-16 sm:py-24',
             ],
+						// 'card-builder' => [
+            //     'template'  => '', // Kosong di awal agar klien memilih dulu
+            //     'col_count' => 3,
+            //     'items'     => [] // Akan diisi otomatis setelah template dipilih
+            // ],
 						'card-builder' => [
-                'template'  => '', // Kosong di awal agar klien memilih dulu
-                'col_count' => 3,
-                'items'     => [] // Akan diisi otomatis setelah template dipilih
+                'grid' => [
+                    'cols' => 3, 
+                    'margin_bottom' => 'mb-8'
+                ],
+                'cards' => [] 
             ],
 						// 'buttons' => [
 						// 	[
@@ -405,4 +412,59 @@ trait HasContentBlocks
     }
 
     // Fungsi-fungsi manipulasi blok lainnya ditaruh di sini...
+
+		// ==========================================
+    // LOGIKA KHUSUS CARD BUILDER
+    // ==========================================
+
+    public function addCardItem(String $blockId, String $blueprint)
+    {
+        $newCard = [
+            'id' => uniqid('card_'),
+            'blueprint' => $blueprint,
+            'container' => [
+                'bg' => 'bg-white', 'padding' => 'p-5', 'border' => 'border border-gray-200', 'radius' => 'rounded-[18px]', 'shadow' => 'shadow-sm', 'hover' => 'hover:-translate-y-1', 'url' => ''
+            ],
+            'slots' => $blueprint === 'stack' ? ['main' => []] : ['left' => [], 'middle' => [], 'right' => []],
+        ];
+
+        if (!isset($this->content[$blockId]['data']['cards'])) {
+            $this->content[$blockId]['data']['cards'] = [];
+        }
+        $this->content[$blockId]['data']['cards'][] = $newCard;
+    }
+
+    public function removeCardItem(String $blockId, int $index)
+    {
+        if (isset($this->content[$blockId]['data']['cards'][$index])) {
+            unset($this->content[$blockId]['data']['cards'][$index]);
+            // Re-index array agar Blade tidak panik saat looping
+            $this->content[$blockId]['data']['cards'] = array_values($this->content[$blockId]['data']['cards']);
+        }
+    }
+
+    public function addCardElement(String $blockId, int $cardIndex, String $slotName, String $type)
+    {
+        $el = ['id' => uniqid('el_'), 'type' => $type, 'content' => [], 'style' => []];
+        
+        // Buat struktur bahasa kosong
+        foreach ($this->activeLocales as $loc) { $el['content'][$loc] = ''; }
+
+        if ($type === 'text') {
+            $el['style'] = ['is_pill' => false, 'font' => 'font-sans', 'size' => 'text-[15px]', 'weight' => 'font-normal', 'color' => 'text-ink-soft', 'align' => 'text-left', 'margin' => 'mb-0', 'pill_bg' => 'bg-goldy-soft', 'pill_radius' => 'rounded-full'];
+        } else {
+            $el['content']['icon'] = 'box';
+            $el['style'] = ['bg' => 'bg-goldy-soft', 'color' => 'text-foresty', 'radius' => 'rounded-[14px]', 'size' => 'w-[52px] h-[52px]', 'icon_size' => 'w-6 h-6', 'hover' => ''];
+        }
+
+        $this->content[$blockId]['data']['cards'][$cardIndex]['slots'][$slotName][] = $el;
+    }
+
+    public function removeCardElement(String $blockId, int $cardIndex, String $slotName, int $elIndex)
+    {
+        if (isset($this->content[$blockId]['data']['cards'][$cardIndex]['slots'][$slotName][$elIndex])) {
+            unset($this->content[$blockId]['data']['cards'][$cardIndex]['slots'][$slotName][$elIndex]);
+            $this->content[$blockId]['data']['cards'][$cardIndex]['slots'][$slotName] = array_values($this->content[$blockId]['data']['cards'][$cardIndex]['slots'][$slotName]);
+        }
+    }
 }
