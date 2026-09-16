@@ -1,41 +1,18 @@
 @props(['blockId', 'block', 'code'])
 
-@php
-  $templates = [
-      'stats' => ['label' => 'Angka Statistik', 'icon' => 'bar-chart-2', 'desc' => 'Gaya dasbor, angka besar.'],
-      'document' => ['label' => 'Dokumen Unduhan', 'icon' => 'file-text', 'desc' => 'Ikon PDF, judul, subjudul, tautan.'],
-      'profile' => ['label' => 'Profil / Tim', 'icon' => 'users', 'desc' => 'Avatar inisial otomatis.'],
-      'impact' => ['label' => 'Kartu Dampak', 'icon' => 'target', 'desc' => 'Teks panjang dengan lencana (tags).'],
-      'partner' => ['label' => 'Grid Mitra', 'icon' => 'layout-grid', 'desc' => 'Kotak ringkas (rasio 2:1).'],
-      'minimal' => ['label' => 'Info Minimalis', 'icon' => 'credit-card', 'desc' => 'Teks bersih, tanpa ikon.'],
-  ];
-@endphp
-
-{{-- 🌟 SUPER WRAPPER --}}
-<div class="bg-white border border-gray-200 transition-all duration-300 rounded-xl" x-data="{
+<div class="bg-white border border-gray-200 transition-all duration-300 rounded-xl shadow-md" x-data="{
     isCollapsed: false,
     blockData: $wire.entangle('content.{{ $blockId }}.data'),
-    activeTab: 0,
-    showConfirmModal: false,
+    activeCard: 0,
 
     init() {
-        if (!this.blockData.items) this.blockData.items = [];
-        if (!this.blockData.col_count) this.blockData.col_count = 3;
-
-        // 🌟 Setelan bawaan untuk margin (Jarak Bawah)
-        if (this.blockData.margin_bottom === undefined) this.blockData.margin_bottom = 'mb-4';
-
-        // Normalisasi data lama
-        this.blockData.items.forEach(item => {
-            if (typeof item.title !== 'object') item.title = { id: item.title || '', en: item.title || '' };
-            if (typeof item.subtitle !== 'object') item.subtitle = { id: item.subtitle || '', en: item.subtitle || '' };
-            if (typeof item.desc !== 'object') item.desc = { id: item.desc || '', en: item.desc || '' };
-            if (typeof item.tags !== 'object') item.tags = { id: item.tags || '', en: item.tags || '' };
-        });
-
-        this.$watch('activeTab', value => {
-            this.$dispatch('sync-active-tab-{{ strtolower($blockId) }}', value);
-        });
+        // MIGRASI / INISIALISASI DATA BARU
+        if (!this.blockData || !this.blockData.grid) {
+            this.blockData = {
+                grid: { cols: 3, margin_bottom: 'mb-8' },
+                cards: []
+            };
+        }
     },
 
     syncPreview() {
@@ -43,288 +20,243 @@
         $wire.set('content.{{ $blockId }}.data', rawData);
     },
 
-    setTemplate(tpl) {
-        this.blockData.template = tpl;
-        if (!this.blockData.items || this.blockData.items.length === 0) {
-            this.addItem(false);
+    addCard(blueprintType = 'stack') {
+        let newCard = {
+            id: 'card_' + Math.random().toString(36).substr(2, 9),
+            blueprint: blueprintType,
+            container: {
+                padding: 'p-6',
+                radius: 'rounded-[18px]',
+                bg: 'bg-white',
+                border: 'border border-foresty/15',
+                shadow: 'shadow-sm',
+                hover: 'hover:-translate-y-1'
+            },
+            slots: { main: [] }
+        };
+        this.blockData.cards.push(newCard);
+        this.activeCard = this.blockData.cards.length - 1;
+        this.syncPreview();
+    },
+
+    removeCard(index) {
+        this.blockData.cards.splice(index, 1);
+        this.activeCard = Math.max(0, this.activeCard - 1);
+        this.syncPreview();
+    },
+
+    addElement(cardIndex, slotName, elType) {
+        let el = { id: 'el_' + Math.random().toString(36).substr(2, 9), type: elType, content: { id: '', en: '' }, style: {} };
+
+        // Setel Design Token Bawaan (Default)
+        if (elType === 'text') {
+            el.style = { font: 'font-sans', size: 'text-[15px]', weight: 'font-normal', color: 'text-ink-soft', align: 'text-left', margin: 'mb-2' };
+        } else if (elType === 'badge') {
+            el.style = { bg: 'bg-goldy-soft', color: 'text-foresty', radius: 'rounded-full', align: 'self-start', margin: 'mb-3' };
         }
+
+        this.blockData.cards[cardIndex].slots[slotName].push(el);
         this.syncPreview();
     },
 
-    executeResetTemplate() {
-        this.blockData.template = '';
-        this.activeTab = 0;
-        this.blockData.items = [];
-        this.showConfirmModal = false;
+    removeElement(cardIndex, slotName, elIndex) {
+        this.blockData.cards[cardIndex].slots[slotName].splice(elIndex, 1);
         this.syncPreview();
-    },
-
-    addItem(triggerSync = true) {
-        if (!this.blockData.items) this.blockData.items = [];
-        this.blockData.items.push({
-            title: { id: '', en: '' },
-            subtitle: { id: '', en: '' },
-            desc: { id: '', en: '' },
-            url: '',
-            tags: { id: '', en: '' },
-            theme: 'default'
-        });
-        this.activeTab = this.blockData.items.length - 1;
-        if (triggerSync) this.syncPreview();
-    },
-
-    removeItem(index) {
-        this.blockData.items.splice(index, 1);
-        this.activeTab = Math.max(0, this.activeTab - 1);
-        this.syncPreview();
-    },
-
-    isTemplate(list) {
-        return list.includes(this.blockData.template);
     }
-}" {{-- 🌟 EVENT LISTENERS: Menggabungkan tab sync dengan tambahan global collapse Anda --}} @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail"
-  @sync-active-tab-{{ strtolower($blockId) }}.window="activeTab = $event.detail" @toggle-collapse-all.window="isCollapsed = $event.detail"
-  @force-collapse-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = true; window.blockCollapseState['{{ $blockId }}'] = true; }"
-  @force-expand-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = false; window.blockCollapseState['{{ $blockId }}'] = false; }" wire:key="super-wrapper-{{ $blockId }}"
-  class="space-y-8">
+}" @input.debounce.1000ms="syncPreview()" wire:key="super-wrapper-{{ $blockId }}">
 
-  <!-- ==========================================
-         KOTAK 1: EDITOR
-         ========================================== -->
-  <div class="bg-white border border-gray-200 transition-all duration-300" :class="isCollapsed ? 'rounded-xl shadow-sm' : 'rounded-xl shadow-md'">
-
-    <!-- HEADER STANDAR -->
-    <div class="flex items-center justify-between p-2 bg-gray-100 cursor-pointer select-none transition-all duration-200 hover:bg-white" :class="isCollapsed ? 'rounded-xl' : 'rounded-t-xl border-b border-gray-200'">
-
-      <div class="flex items-center gap-2">
-        <button type="button" @click="isCollapsed = !isCollapsed; $dispatch('sync-collapse-{{ strtolower($blockId) }}', isCollapsed)"
-          class="p-1 hover:bg-sage-soft text-foresty rounded-full transition-all duration-200 focus:outline-none cursor-pointer">
-          <x-dynamic-component component="lucide-circle-chevron-down" class="w-5 h-5 text-foresty transition-transform duration-200" x-bind:class="isCollapsed ? '-rotate-90' : 'rotate-0'" />
-        </button>
-        <div class="p-1 bg-sage-soft rounded-md">
-          <x-dynamic-component component="lucide-layout-template" class="h-4 w-4 text-foresty" stroke-width="2.5" />
-        </div>
-
-        <span class="text-xs font-extrabold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-          Card Builder
-          <span x-show="blockData.template" x-cloak class="px-1.5 py-0.5 bg-foresty/10 text-foresty rounded border border-foresty/20 text-[9px] font-bold">
-            <span x-text="blockData.template"></span>
-          </span>
-        </span>
-      </div>
-
-      <div class="flex items-center justify-end gap-2 flex-1 min-w-0">
-        <div x-show="isCollapsed" x-cloak class="flex-1 min-w-0 px-2 sm:px-4 text-xs text-gray-400 font-medium">
-          <span class="block truncate w-full text-right font-bold text-foresty uppercase">
-            <span x-text="blockData.template ? 'Mode: ' + blockData.template : 'Pilih Template'"></span>
-          </span>
-        </div>
-
-        <div x-show="blockData.items && blockData.items.length > 0" x-cloak class="flex items-center gap-1 px-1.5 py-0.5 bg-gray-200 text-gray-600 text-[10px] font-bold rounded-md shrink-0">
-          <span x-text="blockData.items.length"></span> Kartu
-        </div>
-
-        <span class="text-xs font-bold text-foresty uppercase bg-sage-soft px-1.5 py-0.5 rounded shadow-sm shrink-0">
-          {{ $code }}
-        </span>
-      </div>
+  <!-- HEADER BLOK -->
+  <div class="flex items-center justify-between p-2 bg-gray-100 rounded-t-xl border-b border-gray-200">
+    <div class="flex items-center gap-2">
+      <div class="p-1 bg-sage-soft rounded-md"><x-dynamic-component component="lucide-blocks" class="h-4 w-4 text-foresty" /></div>
+      <span class="text-xs font-extrabold text-gray-500 uppercase tracking-widest">Atomic Card Builder</span>
     </div>
-
-    <!-- EDITOR BODY -->
-    <div x-show="!isCollapsed" x-collapse wire:ignore>
-
-      <!-- MODAL CUSTOM -->
-      <div x-show="showConfirmModal" x-cloak class="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm transition-opacity" x-transition.opacity.duration.300ms>
-        <div @click.away="showConfirmModal = false" class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 mx-4 transform transition-all" x-transition.scale.80.duration.300ms>
-          <div class="flex items-center gap-3 mb-3 text-coral">
-            <div class="p-2 bg-coral/10 rounded-full">
-              <x-dynamic-component component="lucide-alert-triangle" class="w-6 h-6" />
-            </div>
-            <h3 class="text-lg font-bold font-display text-gray-800">Ganti Template?</h3>
-          </div>
-          <p class="text-[13.5px] text-gray-600 mb-6 leading-relaxed">
-            Mengganti template akan <strong>menghapus semua teks dan kartu</strong> yang sudah Anda buat. Yakin ingin mengulang?
-          </p>
-          <div class="flex items-center justify-end gap-3">
-            <button type="button" @click="showConfirmModal = false" class="px-5 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Batal</button>
-            <button type="button" @click="executeResetTemplate()" class="px-5 py-2 text-xs font-bold text-white bg-coral hover:bg-red-600 rounded-xl shadow-sm transition-colors">Ya, Ganti Template</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- LAYAR 1: PEMILIH TEMPLATE -->
-      <template x-if="!blockData.template">
-        <div class="p-8 relative">
-          <div class="text-center mb-8">
-            <h3 class="font-display text-xl font-bold text-foresty mb-2">Pilih Desain Kartu</h3>
-            <p class="text-sm text-gray-500">Pilih tata letak dasar untuk grup kartu ini.</p>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            @foreach ($templates as $key => $tpl)
-              <button type="button" @click="setTemplate('{{ $key }}')" class="text-left p-5 border-2 border-gray-100 rounded-xl hover:border-foresty hover:bg-sage-soft transition-all group">
-                <div class="w-10 h-10 rounded-lg bg-gray-100 text-gray-500 group-hover:bg-foresty flex items-center justify-center mb-4 transition-colors">
-                  <x-dynamic-component :component="'lucide-' . $tpl['icon']" class="w-5 h-5 group-hover:text-white" />
-                </div>
-                <div class="font-bold text-foresty text-sm mb-1">{{ $tpl['label'] }}</div>
-                <div class="text-[11.5px] text-gray-500">{{ $tpl['desc'] }}</div>
-              </button>
-            @endforeach
-          </div>
-        </div>
-      </template>
-
-      <!-- LAYAR 2: EDITOR GRID STACK -->
-      <template x-if="blockData.template">
-        <div class="p-4 relative">
-          {{-- 🌟 TOOLBAR: Pengaturan Kolom, Pengaturan Margin, dan Ganti Template --}}
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100 mb-4">
-
-            {{-- Pengaturan Layout --}}
-            <div class="flex flex-wrap items-center gap-4 shrink-0">
-              {{-- Kolom --}}
-              <div class="flex items-center gap-2">
-                <label class="text-[10px] font-bold text-gray-400 uppercase">Kolom:</label>
-                <select x-model="blockData.col_count" @change="syncPreview()" class="text-xs font-bold text-forest border-gray-300 rounded py-1 pl-2 pr-6 shadow-sm bg-white">
-                  <option value="1">1 Kol</option>
-                  <option value="2">2 Kol</option>
-                  <option value="3">3 Kol</option>
-                  <option value="4">4 Kol</option>
-                </select>
-              </div>
-
-              {{-- Margin Bawah --}}
-              <div class="flex items-center gap-2">
-                <label class="text-[10px] font-bold text-gray-400 uppercase">Jarak Bawah:</label>
-                <select x-model="blockData.margin_bottom" @change="syncPreview()" class="text-xs font-bold text-forest border-gray-300 rounded py-1 pl-2 pr-6 shadow-sm bg-white">
-                  <option value="mb-0">0px (Rapat)</option>
-                  <option value="mb-4">16px (Normal)</option>
-                  <option value="mb-8">32px (Sedang)</option>
-                  <option value="mb-12">48px (Jauh)</option>
-                  <option value="mb-16">64px (Sangat Jauh)</option>
-                </select>
-              </div>
-            </div>
-
-            <button type="button" @click="showConfirmModal = true" class="text-[10px] font-bold text-coral uppercase hover:underline flex items-center gap-1.5 ml-auto sm:ml-0">
-              <x-dynamic-component component="lucide-refresh-cw" class="w-3 h-3" /> Ganti Template
-            </button>
-          </div>
-
-
-          {{-- Tab Navigasi --}}
-          <div class="flex flex-wrap items-center gap-2 mb-4" x-show="blockData.items && blockData.items.length > 0">
-            <template x-for="(item, index) in blockData.items" :key="index">
-              <button type="button" @click="activeTab = index" :class="activeTab === index ? 'bg-foresty text-white shadow-md border-transparent' : 'bg-white text-gray-500 hover:bg-gray-50 border-gray-200'"
-                class="px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1.5 shrink-0 transition-colors">
-                <span x-text="'#' + String(index + 1).padStart(2, '0')"></span>
-                <div @click.stop="removeItem(index)" class="p-0.5 rounded ml-0.5 hover:bg-red-500 hover:text-white">
-                  <x-dynamic-component component="lucide-x" class="w-3 h-3" />
-                </div>
-              </button>
-            </template>
-          </div>
-
-          {{-- Formulir Input --}}
-          <div class="grid grid-cols-1" @input.debounce.1000ms="syncPreview()">
-            <template x-for="(item, index) in blockData.items" :key="index">
-              <template x-if="blockData.items[index]">
-                <div x-show="activeTab === index" x-transition.opacity.duration.200ms class="col-start-1 row-start-1 p-5 border border-gray-100 bg-gray-50 rounded-xl"
-                  :style="activeTab === index ? 'position: relative; z-index: 10;' : 'pointer-events: none; visibility: hidden; z-index: 0;'">
-
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {{-- Field 1: Judul Utama --}}
-                    <div class="flex flex-col gap-1.5 md:col-span-2" x-show="isTemplate(['stats', 'document', 'profile', 'impact', 'partner', 'minimal'])">
-                      <label class="text-[10px] font-bold text-foresty uppercase" x-text="blockData.template === 'stats' ? 'Angka Statistik' : (blockData.template === 'profile' ? 'Nama Tokoh' : 'Judul Utama')"></label>
-                      <input type="text" x-model="blockData.items[index].title.{{ $code }}" class="text-sm font-bold border-gray-200 focus:ring-foresty rounded-md py-2 bg-white shadow-sm">
-                    </div>
-
-                    {{-- Field 2: Subtitle --}}
-                    <div class="flex flex-col gap-1.5" x-show="isTemplate(['document', 'profile', 'impact', 'minimal'])">
-                      <label class="text-[10px] font-bold text-foresty uppercase" x-text="blockData.template === 'profile' ? 'Jabatan' : 'Teks Kecil (Eyebrow)'"></label>
-                      <input type="text" x-model="blockData.items[index].subtitle.{{ $code }}" class="text-xs border-gray-200 focus:ring-foresty rounded-md py-1.5 bg-white shadow-sm">
-                    </div>
-
-                    {{-- Field 3: Deskripsi / Kutipan --}}
-                    <div class="flex flex-col gap-1.5 md:col-span-2" x-show="isTemplate(['stats', 'profile', 'impact'])">
-                      <label class="text-[10px] font-bold text-foresty uppercase" x-text="blockData.template === 'profile' ? 'Bio/Kutipan' : 'Deskripsi Paragraf'"></label>
-                      <textarea x-model="blockData.items[index].desc.{{ $code }}" rows="2" class="text-xs border-gray-200 focus:ring-foresty rounded-md py-1.5 bg-white shadow-sm resize-none"></textarea>
-                    </div>
-
-                    {{-- Field 4: Tautan URL --}}
-                    <div class="flex flex-col gap-1.5" x-show="isTemplate(['document', 'partner'])">
-                      <label class="text-[10px] font-bold text-foresty uppercase">Tautan URL</label>
-                      <input type="text" x-model="blockData.items[index].url" placeholder="https://..." class="text-xs border-gray-200 focus:ring-foresty rounded-md py-1.5 bg-white shadow-sm">
-                    </div>
-
-                    {{-- Field 5: Tags (Dampak) --}}
-                    <div class="flex flex-col gap-1.5 md:col-span-2" x-show="isTemplate(['impact'])">
-                      <label class="text-[10px] font-bold text-foresty uppercase">Lencana Bawah (Koma)</label>
-                      <input type="text" x-model="blockData.items[index].tags.{{ $code }}" placeholder="Misal: 50 langsung, 1.7 juta"
-                        class="text-xs border-gray-200 focus:ring-foresty rounded-md py-1.5 bg-white shadow-sm">
-                    </div>
-
-                    {{-- Field 6: Style Variation (Stats) --}}
-                    <div class="flex flex-col gap-1.5" x-show="isTemplate(['stats'])">
-                      <label class="text-[10px] font-bold text-foresty uppercase">Gaya Kartu</label>
-                      <select x-model="blockData.items[index].theme" @change="syncPreview()" class="text-xs border-gray-200 focus:ring-foresty rounded-md py-1 bg-white shadow-sm">
-                        <option value="default">Angka Saja (Bawaan)</option>
-                        <option value="boxed">Boxed Putih</option>
-                        <option value="dashed">Dashed Gelap</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </template>
-            </template>
-          </div>
-
-          <button type="button" @click="addItem()"
-            class="w-full mt-4 py-3 border-2 border-dashed border-gray-300 text-gray-500 rounded-xl hover:border-foresty transition-colors text-xs font-bold uppercase flex items-center justify-center gap-2 bg-gray-50">
-            <x-dynamic-component component="lucide-plus-square" class="w-4.5 h-4.5" /> Tambah Kartu
-          </button>
-        </div>
-      </template>
+    <div class="flex gap-4 items-center">
+      <select x-model="blockData.grid.cols" @change="syncPreview()" class="text-xs border-gray-300 rounded py-1 bg-white shadow-sm font-bold text-foresty">
+        <option value="1">1 Kolom</option>
+        <option value="2">2 Kolom</option>
+        <option value="3">3 Kolom</option>
+      </select>
+      <select x-model="blockData.grid.margin_bottom" @change="syncPreview()" class="text-xs border-gray-300 rounded py-1 bg-white shadow-sm font-bold text-foresty">
+        <option value="mb-0">Jarak Bawah: 0px</option>
+        <option value="mb-8">Jarak Bawah: Normal</option>
+        <option value="mb-16">Jarak Bawah: Jauh</option>
+      </select>
     </div>
   </div>
-  <!-- ==========================================
-         KOTAK 2: LIVE PREVIEW (HANYA KARTU AKTIF)
-         ========================================== -->
-  <div x-show="blockData.template && !isCollapsed" x-collapse x-cloak wire:key="preview-wrapper-{{ $blockId }}" class="relative rounded-2xl overflow-hidden bg-gray-50 border border-gray-200">
+
+  <div class="p-4" wire:ignore>
+
+    {{-- LAYAR 1: KOSONG --}}
+    <template x-if="blockData.cards.length === 0">
+      <div class="py-10 text-center">
+        <p class="text-sm text-gray-500 mb-4">Belum ada kartu. Mulai bangun kartu pertama Anda.</p>
+        <button type="button" @click="addCard('stack')" class="px-4 py-2 bg-foresty text-white rounded-lg text-xs font-bold shadow-sm hover:bg-foresty-dark transition-colors">
+          + Buat Kartu Baru
+        </button>
+      </div>
+    </template>
+
+    {{-- LAYAR 2: EDITOR KARTU --}}
+    <template x-if="blockData.cards.length > 0">
+      <div>
+        {{-- Tab Kartu --}}
+        <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
+          <template x-for="(card, index) in blockData.cards" :key="card.id">
+            <button type="button" @click="activeCard = index" :class="activeCard === index ? 'bg-foresty text-white' : 'bg-gray-100 text-gray-600'"
+              class="px-3 py-1.5 rounded-md text-xs font-bold border flex items-center gap-2">
+              <span x-text="'Kartu ' + (index + 1)"></span>
+              <div @click.stop="removeCard(index)" class="p-0.5 hover:bg-red-500 hover:text-white rounded"><x-dynamic-component component="lucide-x" class="w-3 h-3" /></div>
+            </button>
+          </template>
+          <button type="button" @click="addCard('stack')" class="px-3 py-1.5 rounded-md text-xs font-bold bg-sage-soft text-foresty hover:bg-foresty hover:text-white transition-colors flex items-center gap-1">
+            <x-dynamic-component component="lucide-plus" class="w-3 h-3" /> Tambah Kartu
+          </button>
+        </div>
+
+        {{-- Area Kerja Kartu Aktif --}}
+        <div class="bg-gray-50 border border-gray-200 p-5 rounded-xl">
+          <template x-if="blockData.cards[activeCard]">
+            <div>
+              {{-- PENGATURAN KONTAINER (Design Tokens) --}}
+              <div class="flex flex-wrap gap-3 mb-6 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                <div class="text-[10px] font-bold text-gray-400 uppercase w-full mb-1">Gaya Kotak Pembungkus</div>
+                <select x-model="blockData.cards[activeCard].container.bg" @change="syncPreview()" class="text-xs border-gray-200 rounded p-1.5">
+                  <option value="bg-white">Latar Putih</option>
+                  <option value="bg-mist">Latar Mist</option>
+                  <option value="bg-foresty text-white">Latar Foresty</option>
+                </select>
+                <select x-model="blockData.cards[activeCard].container.border" @change="syncPreview()" class="text-xs border-gray-200 rounded p-1.5">
+                  <option value="border border-foresty/15">Border Tipis</option>
+                  <option value="border-2 border-foresty">Border Tebal</option>
+                  <option value="border-0">Tanpa Border</option>
+                </select>
+                <select x-model="blockData.cards[activeCard].container.radius" @change="syncPreview()" class="text-xs border-gray-200 rounded p-1.5">
+                  <option value="rounded-none">Siku</option>
+                  <option value="rounded-md">Sedikit Bulat</option>
+                  <option value="rounded-[18px]">Sangat Bulat</option>
+                </select>
+              </div>
+
+              {{-- SLOT UTAMA (Main Slot untuk Blueprint Stack) --}}
+              <div class="space-y-3">
+                <template x-for="(el, elIndex) in blockData.cards[activeCard].slots.main" :key="el.id">
+                  <div class="p-3 bg-white border border-gray-200 rounded-lg shadow-sm relative group">
+
+                    {{-- Tombol Hapus Elemen --}}
+                    <button @click="removeElement(activeCard, 'main', elIndex)" type="button"
+                      class="absolute -right-2 -top-2 bg-red-100 text-red-600 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><x-dynamic-component component="lucide-x" class="w-3 h-3" /></button>
+
+                    {{-- JIKA ELEMEN TEKS --}}
+                    <template x-if="el.type === 'text'">
+                      <div class="grid grid-cols-1 gap-2">
+                        <div class="flex justify-between items-center mb-1">
+                          <span class="text-[10px] font-extrabold text-foresty uppercase tracking-widest bg-foresty/10 px-2 py-0.5 rounded">Teks</span>
+                        </div>
+                        <input type="text" x-model="el.content.{{ strtolower($code) }}" placeholder="Ketik teks di sini..." class="text-sm font-semibold border-gray-300 rounded focus:ring-foresty w-full">
+
+                        {{-- Token Teks --}}
+                        <div class="flex gap-2 flex-wrap mt-1">
+                          <select x-model="el.style.font" class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="font-sans">Font Standar</option>
+                            <option value="font-display">Font Judul</option>
+                            <option value="font-serif">Font Serif</option>
+                          </select>
+                          <select x-model="el.style.size" class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="text-[13px]">Kecil</option>
+                            <option value="text-[15px]">Normal</option>
+                            <option value="text-[17px]">Agak Besar</option>
+                            <option value="text-[26px]">Besar (Judul)</option>
+                          </select>
+                          <select x-model="el.style.weight" class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="font-normal">Reguler</option>
+                            <option value="font-semibold">Semi Bold</option>
+                            <option value="font-bold">Bold</option>
+                          </select>
+                          <select x-model="el.style.color" class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="text-ink-soft">Abu-abu</option>
+                            <option value="text-foresty">Foresty</option>
+                            <option value="text-goldy">Goldy</option>
+                            <option value="text-coral">Coral</option>
+                          </select>
+                          <select x-model="el.style.align" class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="text-left">Kiri</option>
+                            <option value="text-center">Tengah</option>
+                            <option value="text-right">Kanan</option>
+                          </select>
+                        </div>
+                      </div>
+                    </template>
+
+                    {{-- JIKA ELEMEN BADGE --}}
+                    <template x-if="el.type === 'badge'">
+                      <div class="grid grid-cols-1 gap-2">
+                        <div class="flex justify-between items-center mb-1">
+                          <span class="text-[10px] font-extrabold text-goldy-dark uppercase tracking-widest bg-goldy-soft px-2 py-0.5 rounded">Lencana (Pill)</span>
+                        </div>
+                        <input type="text" x-model="el.content.{{ strtolower($code) }}" placeholder="Teks lencana..." class="text-sm font-semibold border-gray-300 rounded focus:ring-foresty w-full">
+
+                        {{-- Token Badge --}}
+                        <div class="flex gap-2 flex-wrap mt-1">
+                          <select x-model="el.style.bg" class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="bg-goldy-soft">Bg Goldy Soft</option>
+                            <option value="bg-mist">Bg Mist</option>
+                            <option value="bg-[#FBE6E6]">Bg Merah Muda</option>
+                            <option value="bg-foresty text-white">Bg Foresty</option>
+                          </select>
+                          <select x-model="el.style.color" class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="text-foresty">Teks Foresty</option>
+                            <option value="text-coral-dark">Teks Coral</option>
+                            <option value="text-white">Teks Putih</option>
+                          </select>
+                          <select x-model="el.style.align" class="text-[11px] py-1 border-gray-200 rounded">
+                            <option value="self-start">Posisi Kiri</option>
+                            <option value="self-center">Posisi Tengah</option>
+                            <option value="self-end">Posisi Kanan</option>
+                          </select>
+                        </div>
+                      </div>
+                    </template>
+
+                  </div>
+                </template>
+              </div>
+
+              {{-- TOMBOL TAMBAH ELEMEN --}}
+              <div class="flex gap-2 mt-4">
+                <button type="button" @click="addElement(activeCard, 'main', 'text')"
+                  class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-600 hover:border-foresty transition-colors flex-1 flex justify-center items-center gap-1">
+                  + Tambah Teks
+                </button>
+                <button type="button" @click="addElement(activeCard, 'main', 'badge')"
+                  class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-600 hover:border-goldy transition-colors flex-1 flex justify-center items-center gap-1">
+                  + Tambah Lencana
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  {{-- LIVE PREVIEW --}}
+  <div x-show="blockData.cards.length > 0" x-cloak class="mt-4 bg-gray-50 border-t border-gray-200 relative overflow-hidden rounded-b-xl">
     <div class="bg-gray-200/60 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
-      <div class="flex items-center gap-2 text-gray-500">
-        <x-dynamic-component component="lucide-eye" class="w-4 h-4" />
-        <span class="text-[10px] font-bold uppercase tracking-widest">Live Preview (Kartu Aktif)</span>
-      </div>
-      <div class="flex gap-1.5">
-        <div class="w-2.5 h-2.5 rounded-full bg-coral/50"></div>
-        <div class="w-2.5 h-2.5 rounded-full bg-goldy/50"></div>
-        <div class="w-2.5 h-2.5 rounded-full bg-foresty/50"></div>
-      </div>
+      <span class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Live Preview</span>
     </div>
 
+    {{-- CSS Isolator: Menyembunyikan kartu lain di preview --}}
     <style
       x-text="`
-            .preview-grid-{{ $blockId }} .grid { 
-                grid-template-columns: 1fr !important;
-                max-width: 400px; 
-                margin: 0 auto; 
-            }
-            .preview-grid-{{ $blockId }} .grid > div { display: none !important; }
-            .preview-grid-{{ $blockId }} .grid > div:nth-child(${activeTab + 1}) { display: block !important; }
+            .preview-atomic-${blockId} .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; }
+            .preview-atomic-${blockId} .grid > *:not(:nth-child(${activeCard + 1})) { display: none !important; }
         `">
     </style>
 
-    <div class="preview-grid-{{ $blockId }} p-6 md:p-10 w-full overflow-x-auto min-h-[150px]">
-      @php
-        $liveData = isset($this) && property_exists($this, 'content') ? $this->content[$blockId]['data'] ?? [] : $block['data'] ?? [];
-      @endphp
-      {{-- 🌟 Solusi Bahasa: Mengirim strtolower($code) agar sesuai ID/EN --}}
-      @include('components.blocks.render.card-builder', [
-          'data' => $liveData,
-          'lang' => strtolower($code),
-      ])
+    <div :class="'preview-atomic-' + blockId" class="p-6 md:p-10 w-full min-h-[150px]">
+      @php $liveData = (isset($this) && property_exists($this, 'content')) ? ($this->content[$blockId]['data'] ?? []) : ($block['data'] ?? []); @endphp
+      @include('components.blocks.render.card-builder', ['data' => $liveData, 'lang' => strtolower($code), 'isPreview' => true])
     </div>
   </div>
-
-
 </div>
