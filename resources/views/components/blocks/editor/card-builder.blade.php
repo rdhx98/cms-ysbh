@@ -8,7 +8,7 @@
   $cards = $data['cards'] ?? [];
 @endphp
 
-<!-- 🌟 PEMBUNGKUS LUAR -->
+<!-- 🌟 PEMBUNGKUS LUAR (Kelas flex diubah menjadi dinamis) -->
 <div x-data="{
     activeCard: 0,
     activeSlot: 'main',
@@ -25,7 +25,7 @@
 
     togglePin() {
         if (this.isCollapsed) this.isCollapsed = false;
-        console.log('togglePin Fired');
+
         this.isPinned = !this.isPinned;
         if (this.isPinned) {
             let area = document.getElementById('main-editor-scroll-area');
@@ -46,21 +46,16 @@
             this.togglePin();
         }
         $dispatch('sync-collapse-{{ strtolower($blockId) }}', this.isCollapsed);
-
-    },
-    //fireToggleRowPin() {
-    //    $dispatch('toggle-row-pin-{{ strtolower($blockId) }}', this.isCollapsed);
-    //}
-}" @sync-card-{{ strtolower($blockId) }}.window=" if ($event.detail) { activeCard = $event.detail.card; activeSlot = $event.detail.slot;} "
+    }
+}" @sync-card-{{ strtolower($blockId) }}.window="if ($event.detail) { activeCard = $event.detail.card; activeSlot = $event.detail.slot; }"
   @resize.window="if(isPinned) { togglePin(); togglePin(); }"
   @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail; if(isCollapsed && isPinned) { togglePin(); }"
   @toggle-collapse-all.window="isCollapsed = $event.detail; if(isCollapsed && isPinned) { togglePin(); } "
   @force-collapse-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = true; window.blockCollapseState['{{ $blockId }}'] = true; if(isPinned) { togglePin(); } } "
-  	@force-expand-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = false; window.blockCollapseState['{{ $blockId }}'] = false; }"
-  {{-- 🌟 MENDENGARKAN SINYAL ROW PIN DARI DIRI SENDIRI / KEMBARANNYA --}}
+  @force-expand-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = false; window.blockCollapseState['{{ $blockId }}'] = false; }"
   x-on:toggle-row-pin-{{ strtolower($blockId) }}.window="isRowPinned = !isRowPinned"
-  class="w-full h-full flex flex-col min-h-0"
->
+  class="w-full"
+  x-bind:class="(isPinned || isRowPinned) ? 'h-full flex flex-col min-h-0' : ''">
 
   {{-- PLACEHOLDER --}}
   <div x-ref="placeholder" x-show="isPinned" x-cloak class="w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center">
@@ -71,62 +66,10 @@
   </div>
 
   {{-- EDITOR UTAMA --}}
-	<div x-ref="editor" :style="isPinned ? pinStyle : ''" class="bg-white border transition-all duration-200 rounded-xl flex flex-col"
+  <div x-ref="editor" :style="isPinned ? pinStyle : ''" class="bg-white border transition-all duration-200 rounded-xl flex flex-col"
        x-bind:class="isPinned ? 'border-foresty ring-4 ring-foresty/20 shadow-2xl overflow-hidden' : (isRowPinned ? 'border-foresty/50 ring-2 ring-foresty/20 overflow-hidden flex-1 min-h-0' : 'border-gray-200 shadow-md relative h-auto')">
 
     <!-- HEADER BLOK -->
-    {{-- <div class="flex items-center justify-between p-2 bg-gray-100 rounded-t-xl border-b border-gray-200 shrink-0">
-      <div class="flex items-center gap-2">
-        <div class="p-1 bg-sage-soft rounded-md"><x-dynamic-component component="lucide-blocks" class="h-4 w-4 text-foresty" /></div>
-        <span class="text-xs font-extrabold text-gray-500 uppercase tracking-widest">Card Builder</span>
-      </div>
-      
-      <div class="flex gap-4 items-center">
-        <!-- Pengaturan Grid (Sembunyi saat dilipat) -->
-        <div class="flex items-center gap-2" x-show="!isCollapsed">
-          <select wire:model.live="content.{{ $blockId }}.data.grid.cols" class="text-xs border-gray-300 rounded py-1 bg-white shadow-sm font-bold text-foresty">
-            <option value="1">1 Kolom</option>
-            <option value="2">2 Kolom</option>
-            <option value="3">3 Kolom</option>
-            <option value="4">4 Kolom</option>
-          </select>
-          <select wire:model.live="content.{{ $blockId }}.data.grid.margin_bottom" class="text-xs border-gray-300 rounded py-1 bg-white shadow-sm font-bold text-foresty">
-            <option value="mb-0">Jarak Bawah: 0px</option>
-            <option value="mb-8">Jarak Bawah: Normal</option>
-            <option value="mb-16">Jarak Bawah: Jauh</option>
-          </select>
-          <span class="text-xs font-bold text-foresty uppercase bg-sage-soft px-1.5 py-0.5 rounded shadow-sm shrink-0">{{ $code }}</span>
-        </div>
-        
-        <!-- Grup Tombol Aksi -->
-        <div class="flex items-center gap-1 border-l border-gray-300 pl-4">
-          
-          {{-- 1. TOMBOL PIN BARIS (Split View) -->
-          <button type="button" x-on:click="$dispatch('toggle-row-pin-{{ strtolower($blockId) }}'); console.log('e dispatched')"
-                  class="p-1.5 rounded-md transition-colors outline-none text-gray-500 hover:text-foresty hover:bg-gray-200"
-                  title="Pin Baris (Split View)">
-            <x-dynamic-component component="lucide-columns" class="w-3.5 h-3.5" />
-          </button>
-
-          {{-- 2. TOMBOL PIN FOKUS (Layar Penuh Bahasa Ini) -->
-          <button type="button" x-on:click="togglePin()"
-                  x-bind:class="isPinned ? 'bg-foresty text-white shadow-inner' : 'bg-gray-200 text-gray-500 hover:text-foresty hover:bg-gray-300'"
-                  class="p-1.5 rounded-md transition-colors outline-none shadow-sm flex items-center justify-center"
-                  title="Fokus Layar Penuh">
-            <x-dynamic-component component="lucide-maximize" class="w-3.5 h-3.5" x-bind:class="isPinned ? 'scale-90' : ''" />
-          </button>
-          
-          {{-- 3. TOMBOL LIPAT (COLLAPSE) -->
-          <button type="button" x-on:click="toggleCollapse()"
-                  class="p-1.5 rounded-md transition-colors outline-none text-gray-400 hover:text-foresty hover:bg-gray-200"
-                  title="Lipat / Buka Editor">
-            <x-dynamic-component component="lucide-chevron-down" class="w-4 h-4 transition-transform duration-300" x-bind:class="isCollapsed ? 'rotate-180' : ''" />
-          </button>
-
-        </div>
-      </div>
-    </div> --}}
-		<!-- HEADER BLOK -->
     <div class="flex items-center justify-between p-2 bg-gray-100 rounded-t-xl border-b border-gray-200 shrink-0">
       <div class="flex items-center gap-2">
         <div class="p-1 bg-sage-soft rounded-md"><x-dynamic-component component="lucide-blocks" class="h-4 w-4 text-foresty" /></div>
@@ -160,16 +103,11 @@
       </div>
     </div>
 
-		<!-- BUNGKUSAN LIPATAN -->
-    <div x-show="!isCollapsed" x-collapse x-cloak class="flex-1 flex flex-col min-h-0">
+    <!-- 🌟 BUNGKUSAN LIPATAN (Kelas flex diubah menjadi dinamis) -->
+    <div x-show="!isCollapsed" x-collapse x-cloak class="flex flex-col" x-bind:class="(isPinned || isRowPinned) ? 'flex-1 min-h-0' : ''">
       
-      {{-- BADAN TENGAH (Scrollable jika isPinned ATAU isRowPinned) --}}
-      <div class="flex-1 flex flex-col min-h-0 p-4" x-bind:class="(isPinned || isRowPinned) ? 'overflow-y-auto scrollbar-thin' : ''">
-    <!-- 🌟 BUNGKUSAN LIPATAN -->
-    {{-- <div x-show="!isCollapsed" x-collapse x-cloak class="flex-1 flex flex-col min-h-0"> --}}
-      
-      {{-- BADAN TENGAH --}}
-      {{-- <div class="flex-1 flex flex-col min-h-0 p-4"> --}}
+      {{-- 🌟 BADAN TENGAH (Kelas flex diubah menjadi dinamis) --}}
+      <div class="flex flex-col p-4" x-bind:class="(isPinned || isRowPinned) ? 'flex-1 min-h-0 overflow-y-auto scrollbar-thin' : ''">
         
         @if (count($cards) === 0)
           <!-- Tampilan Kosong (Zero State) -->
@@ -234,7 +172,7 @@
 </div>
 
 <!-- AREA KOMPONEN (Isi Kartu) -->
-<div class="flex-1 min-h-0 bg-gray-50 border border-gray-200 p-4 sm:p-5 rounded-xl" x-bind:class="isPinned ? 'overflow-y-auto scrollbar-thin' : ''">
+<div class="flex flex-col bg-gray-50 border border-gray-200 p-4 sm:p-5 rounded-xl" x-bind:class="(isPinned || isRowPinned) ? 'flex-1 min-h-0 overflow-y-auto scrollbar-thin' : ''">
 
   @foreach ($cards as $cIndex => $card)
     <div x-show="activeCard === {{ $cIndex }}" x-cloak wire:key="card-editor-{{ $blockId }}-{{ $cIndex }}">
@@ -455,42 +393,24 @@
 
 </div> {{-- Akhir Badan Tengah --}}
 
-{{-- PREVIEW BLOK --}}
-{{-- @if (count($cards) > 0)
-  <div class="shrink-0 bg-gray-50 border-t border-gray-200 rounded-b-xl overflow-hidden flex flex-col" x-bind:class="isPinned ? 'max-h-[35vh] border-t-2 border-foresty/20' : ''">
-    <div class="bg-gray-200/60 px-4 py-2 border-b border-gray-200 shrink-0">
-      <span class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Live Preview ({{ strtoupper($code) }})</span>
-    </div>
-
-    <style
-      x-text="`
-              .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; }
-              .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid > *:not(:nth-child(${activeCard + 1})) { display: none !important; }
-          `">
-    </style>
-
-    <div class="preview-atomic-{{ $blockId }}-{{ strtolower($code) }} p-6 md:p-10 w-full flex-1 flex justify-center bg-gray-50"
-      x-bind:class="isPinned ? 'overflow-y-auto scrollbar-thin' : 'min-h-[150px]'"> ugal-ugalan
-      @include('components.blocks.render.card-builder', ['data' => $data, 'lang' => strtolower($code), 'isPreview' => true])
-    </div>
-  </div>
-@endif --}}
-{{-- PREVIEW BLOK --}}
+{{-- 🌟 PREVIEW BLOK (Kelas flex diubah menjadi dinamis) --}}
 @if (count($cards) > 0)
   <div class="shrink-0 bg-gray-50 border-t border-gray-200 rounded-b-xl overflow-hidden flex flex-col"
     x-bind:class="(isPinned || isRowPinned) ? 'max-h-[35vh] border-t-2 border-foresty/20' : ''">
+
     <div class="bg-gray-200/60 px-4 py-2 border-b border-gray-200 shrink-0">
       <span class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Live Preview ({{ strtoupper($code) }})</span>
     </div>
 
     <style
-      x-text="` .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; } .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid > *:not(:nth-child(${activeCard + 1})) { display: none !important; } `">
+      x-text="`.preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; } .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid > *:not(:nth-child(${activeCard + 1})) { display: none !important; }`">
     </style>
 
-    <div class="preview-atomic-{{ $blockId }}-{{ strtolower($code) }} p-6 md:p-10 w-full flex-1 flex justify-center bg-gray-50"
-      x-bind:class="(isPinned || isRowPinned) ? 'overflow-y-auto scrollbar-thin' : 'min-h-[150px]'">
+    <div class="preview-atomic-{{ $blockId }}-{{ strtolower($code) }} p-6 md:p-10 w-full flex justify-center bg-gray-50"
+      x-bind:class="(isPinned || isRowPinned) ? 'flex-1 overflow-y-auto scrollbar-thin' : 'min-h-[150px]'">
       @include('components.blocks.render.card-builder', ['data' => $data, 'lang' => strtolower($code), 'isPreview' => true])
     </div>
+
   </div>
 @endif
 

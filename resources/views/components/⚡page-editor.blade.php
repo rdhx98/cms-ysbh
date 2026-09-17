@@ -281,13 +281,13 @@ new class extends Component {
 <x-slot:title>{{ __('ui.header.write_page') }}</x-slot:title>
 
 <div class="h-[calc(100vh-4rem)] flex flex-col overflow-x-hidden bg-linear-to-b from-white via-gray-50 to-gray-100 rounded-md p-2 box-border"
-     x-data='pageEditor(
+  x-data='pageEditor(
         @json($activeLocales),
         @json(array_slice($activeLocales, 0, 2)),
         {{ count($activeLocales) }},
         $wire,
     )'
-     @block-added.window="
+  @block-added.window="
     let newId = $event.detail.id;
     // Beri jeda 100ms agar Livewire & pengunci scroll selesai merapikan DOM
     setTimeout(() => {
@@ -358,19 +358,19 @@ new class extends Component {
         </select>
       </div>
       <div
-           x-bind:class="{
-               'grid grid-cols-1': effectiveLayout === 'single',
-               'grid grid-cols-1 md:grid-cols-2': effectiveLayout === 'split' && splitLanguages.length === 2,
-               'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3': effectiveLayout === 'split' && splitLanguages
-                   .length === 3,
-               'grid grid-cols-1': effectiveLayout === 'split' && splitLanguages.length === 1
-           }"
-           class="gap-6">
+        x-bind:class="{
+            'grid grid-cols-1': effectiveLayout === 'single',
+            'grid grid-cols-1 md:grid-cols-2': effectiveLayout === 'split' && splitLanguages.length === 2,
+            'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3': effectiveLayout === 'split' && splitLanguages
+                .length === 3,
+            'grid grid-cols-1': effectiveLayout === 'split' && splitLanguages.length === 1
+        }"
+        class="gap-6">
 
         @foreach ($activeLocales as $code)
           <div {{-- x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))" --}}
-               x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
-               class="p-5 bg-white border border-gray-200 rounded-xl shadow-sm space-y-4">
+            x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
+            class="p-5 bg-white border border-gray-200 rounded-xl shadow-sm space-y-4">
             <div class="mb-4 flex items-center justify-between">
               <h3 class="font-bold text-gray-700 text-sm">Metadata ({{ strtoupper($code) }})</h3>
               <span class="px-2 py-0.5 bg-blue-100 text-foresty text-[10px] font-bold rounded">{{ strtoupper($code) }}</span>
@@ -379,23 +379,23 @@ new class extends Component {
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Judul Halaman <span class="text-red-500">*</span></label>
                 <input type="text" wire:model="page_title.{{ $code }}" placeholder="Contoh: Layanan Kesehatan Ibu dan Anak"
-                       class="w-full text-md p-2 border-gray-300 rounded-md shadow-sm">
+                  class="w-full text-md p-2 border-gray-300 rounded-md shadow-sm">
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Slug URL</label>
                 <input type="text" wire:model="slug.{{ $code }}" placeholder="Contoh: layanan-kesehatan-ibu-dan-anak"
-                       class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
+                  class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Judul Meta</label>
                 <input type="text" wire:model="meta_title.{{ $code }}" placeholder="Contoh: Layanan Kesehatan Ibu & Anak Terpadu | YSBH"
-                       class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
+                  class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500">
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Deskripsi Meta</label>
                 <textarea row="6" wire:model="meta_description.{{ $code }}"
-                          placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
-                          class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500 min-h-36 resize-none"></textarea>
+                  placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
+                  class="w-full text-md p-2 bg-gray-50 border-gray-300 rounded-md shadow-sm text-gray-500 min-h-36 resize-none"></textarea>
               </div>
             </div>
           </div>
@@ -414,7 +414,7 @@ new class extends Component {
 
       <!-- ALPINE SORTABLE CONTAINER -->
       <div x-sort="handleSort" class="flex flex-col gap-6"
-           x-sort:config="{
+        x-sort:config="{
             animation: 200,
             handle: '.drag-handle',
             ghostClass: 'opacity-50',
@@ -434,9 +434,9 @@ new class extends Component {
               <div class="absolute -top-4 flex gap-2 transition-all duration-200 z-30 right-3"
                 x-bind:class="(windowWidth < 1366 || showAnchorSetting) ? ' opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'">
 
-                <div @click.outside="showAnchorSetting = false" class="relative">
+                <div x-on:click.outside="showAnchorSetting = false" class="relative">
 
-                  <button @click="showAnchorSetting = !showAnchorSetting" type="button" class="p-1.5 text-gray-600 rounded-full border border-gray-200 shadow-sm transition-colors"
+                  <button x-on:click="showAnchorSetting = !showAnchorSetting" type="button" class="p-1.5 text-gray-600 rounded-full border border-gray-200 shadow-sm transition-colors"
                     x-bind:class="showAnchorSetting ? 'bg-foresty text-white hover:bg-forest' : 'bg-white hover:bg-gray-50'" title="Pengaturan Blok">
                     <x-dynamic-component component="lucide-settings-2" class="w-4 h-4" />
                   </button>
@@ -488,57 +488,56 @@ new class extends Component {
             </div> --}}
             <!-- BUNGKUSAN UTAMA BLOK (Di dalam loop blockOrder) -->
             <div id="block-wrapper-{{ $blockId }}" wire:key="block-{{ $blockId }}" x-sort:item="'{{ $blockId }}'" class="group relative w-full"
-                 x-data="{
-                     showAnchorSetting: false,
-                 
-                     // 🌟 LOGIKA PIN BARIS (Semua Bahasa)
-                     isRowPinned: false,
-                     rowPinStyle: '',
-                 
-                     toggleRowPin() {
-                         console.log('toggleRowPin Fired');
-                 
-                         this.isRowPinned = !this.isRowPinned;
-                         if (this.isRowPinned) {
-                             let area = document.getElementById('main-editor-scroll-area');
-                             if (area) {
-                                 let rect = area.getBoundingClientRect();
-                                 // z-index 35 (di bawah Focus Pin agar tidak bentrok)
-                                 this.rowPinStyle = `position: fixed; top: ${rect.top + 5}px; left: ${rect.left + 16}px; width: ${rect.width - 32}px; height: ${rect.height - 10}px; z-index: 35;`;
-                                 this.$refs.rowPlaceholder.style.height = this.$refs.rowEditor.offsetHeight + 'px';
-                             }
-                         } else {
-                             this.rowPinStyle = '';
-                         }
-                     }
-                 
-                 }"
-                 @toggle-row-pin-{{ $blockId }}.window="toggleRowPin()"
-                 @resize.window="if(isRowPinned) { toggleRowPin(); toggleRowPin(); }">
+              x-data="{
+                  showAnchorSetting: false,
+              
+                  // 🌟 LOGIKA PIN BARIS (Semua Bahasa)
+                  isRowPinned: false,
+                  rowPinStyle: '',
+              
+                  toggleRowPin() {
+                      console.log('toggleRowPin Fired');
+              
+                      this.isRowPinned = !this.isRowPinned;
+                      if (this.isRowPinned) {
+                          let area = document.getElementById('main-editor-scroll-area');
+                          if (area) {
+                              let rect = area.getBoundingClientRect();
+                              // z-index 35 (di bawah Focus Pin agar tidak bentrok)
+                              this.rowPinStyle = `position: fixed; top: ${rect.top + 5}px; left: ${rect.left + 16}px; width: ${rect.width - 32}px; height: ${rect.height - 10}px; z-index: 35;`;
+                              this.$refs.rowPlaceholder.style.height = this.$refs.rowEditor.offsetHeight + 'px';
+                          }
+                      } else {
+                          this.rowPinStyle = '';
+                      }
+                  }
+              
+              }" @toggle-row-pin-{{ $blockId }}.window="toggleRowPin()" @resize.window="if(isRowPinned) { toggleRowPin(); toggleRowPin(); }">
 
               <!-- 🌟 PLACEHOLDER BARIS -->
               <div x-ref="rowPlaceholder" x-show="isRowPinned" x-cloak
-                   class="w-full rounded-xl border-2 border-dashed border-foresty/50 bg-foresty/5 flex items-center justify-center mb-6">
+                class="w-full rounded-xl border-2 border-dashed border-foresty/50 bg-foresty/5 flex items-center justify-center mb-6">
                 <span class="text-xs font-bold text-foresty uppercase tracking-widest">Pin Baris (Split View) Aktif</span>
               </div>
 
               <!-- 🌟 EDITOR BARIS (Akan fixed jika isRowPinned = true) -->
               <div x-ref="rowEditor" :style="rowPinStyle" class="transition-all duration-300 w-full"
-                   x-bind:class="isRowPinned ? 'bg-gray-100/90 backdrop-blur-md p-4 rounded-xl ring-4 ring-foresty/30 shadow-2xl overflow-y-auto no-scrollbar flex flex-col' : ''">
+                x-bind:class="isRowPinned ? 'bg-gray-100/90 backdrop-blur-md p-4 rounded-xl ring-4 ring-foresty/30 shadow-2xl overflow-y-auto no-scrollbar flex flex-col' : ''">
 
                 <!-- 1. DRAG HANDLE (Kode Asli Anda) -->
-                <div class="absolute transition-opacity z-20" x-bind:class="windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-4 -left-4 opacity-0 group-hover:opacity-100'">
+                <div class="absolute transition-opacity z-20"
+                  x-bind:class="isRowPinned ? 'hidden' : (windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-4 -left-4 opacity-0 group-hover:opacity-100')">
                   <button type="button" class="drag-handle bg-white shadow-sm" title="Geser Blok"></button>
                 </div>
 
                 <div class="absolute -top-4 flex gap-2 transition-all duration-200 z-30 right-3"
-                     x-bind:class="(windowWidth < 1366 || showAnchorSetting) ? ' opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'">
+                  x-bind:class="isRowPinned ? 'hidden' : ((windowWidth < 1366 || showAnchorSetting) ? 'opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible')">
+                  {{-- Anchor ID Input --}}
+                  <div x-on:click.outside="showAnchorSetting = false" class="relative">
 
-                  <div @click.outside="showAnchorSetting = false" class="relative">
-
-                    <button @click="showAnchorSetting = !showAnchorSetting" type="button"
-                            class="p-1.5 text-gray-600 rounded-full border border-gray-200 shadow-sm transition-colors"
-                            x-bind:class="showAnchorSetting ? 'bg-foresty text-white hover:bg-forest' : 'bg-white hover:bg-gray-50'" title="Pengaturan Blok">
+                    <button x-on:click="showAnchorSetting = !showAnchorSetting" type="button"
+                      class="p-1.5 text-gray-600 rounded-full border border-gray-200 shadow-sm transition-colors"
+                      x-bind:class="showAnchorSetting ? 'bg-foresty text-white hover:bg-forest' : 'bg-white hover:bg-gray-50'" title="Pengaturan Blok">
                       <x-dynamic-component component="lucide-settings-2" class="w-4 h-4" />
                     </button>
 
@@ -547,23 +546,63 @@ new class extends Component {
                       <p class="text-[10px] text-gray-500 mb-2 leading-tight">Melompat ke blok ini (Contoh: <span class="font-mono text-coral">tentang-kami</span>).</p>
 
                       <input type="text" wire:model.live.debounce.500ms="content.{{ $blockId }}.anchor"
-                             @input="$event.target.value = $event.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')" placeholder="nama-anchor"
-                             class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-foresty focus:border-foresty">
+                        @input="$event.target.value = $event.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')" placeholder="nama-anchor"
+                        class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-foresty focus:border-foresty">
                     </div>
                   </div>
 
                   {{-- Tombol Duplikat --}}
                   <button wire:click="duplicateBlock('{{ $blockId }}')" type="button"
-                          class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
+                    class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
                     <x-dynamic-component component="lucide-copy" class="w-4 h-4" />
                   </button>
 
                   {{-- Tombol Hapus --}}
                   <button wire:click="removeBlock('{{ $blockId }}')" type="button"
-                          class="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-gray-200 shadow-sm" title="Hapus Blok">
+                    class="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-gray-200 shadow-sm" title="Hapus Blok">
                     <x-dynamic-component component="lucide-trash-2" class="w-4 h-4" />
                   </button>
 
+                </div>
+
+                <!-- 🌟 3. BUNGKUSAN EDITOR BARIS -->
+                <div x-ref="rowEditor" :style="rowPinStyle" class="transition-all duration-300 w-full"
+                  :class="isRowPinned ? 'bg-gray-100/90 backdrop-blur-md p-4 rounded-xl ring-4 ring-foresty/30 shadow-2xl overflow-hidden flex flex-col' : ''">
+                  {{-- Perhatikan di atas: overflow-y-auto diganti menjadi overflow-hidden --}}
+
+                  <!-- Pembungkus Dalam (Harus flex-col saat dipin) -->
+                  <div class="w-full relative flex flex-col" :class="isRowPinned ? 'flex-1 min-h-0' : ''">
+
+                    <!-- Drag Handle & Setting Asli Anda biarkan seperti semula -->
+                    <div class="absolute transition-opacity z-20" :class="windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-4 -left-4 opacity-0 group-hover:opacity-100'">
+                      <button type="button" class="drag-handle..."></button>
+                    </div>
+                    <div class="absolute -top-4 flex gap-2 transition-all duration-200 z-30 right-3"
+                      :class="showAnchorSetting ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'">
+                      ...
+                    </div>
+
+                    <!-- Grid Multi-Bahasa -->
+                    <div class="gap-6 flex flex-col"
+                      :class="{
+                          'grid grid-cols-1': effectiveLayout === 'single',
+                          'grid grid-cols-1 md:grid-cols-2': effectiveLayout === 'split' && splitLanguages.length === 2,
+                          'flex-1 min-h-0': isRowPinned
+                      }">
+                      @foreach ($activeLocales as $code)
+                        <div
+                          x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
+                          class="space-y-3 bg-gray-100 group-hover:bg-white rounded-xl border-2 border-transparent group-hover:border-foresty/80 transition-colors flex flex-col"
+                          :class="isRowPinned ? 'flex-1 min-h-0' : 'h-full'">
+
+                          <!-- Render Blok Komponen -->
+                          <x-dynamic-component :component="'blocks.editor.' . str_replace('_', '-', $block['type'])" :block-id="$blockId" :code="$code" :block="$block" :all-content="$content" />
+
+                        </div>
+                      @endforeach
+                    </div>
+
+                  </div>
                 </div>
 
                 <!-- 3. RENDER ISI BLOK BAHASA (Kode Asli Anda yang disesuaikan) -->
@@ -586,41 +625,6 @@ new class extends Component {
                     @endforeach
                   </div>
                 </div> --}}
-                <!-- 🌟 3. BUNGKUSAN EDITOR BARIS -->
-                <div x-ref="rowEditor" :style="rowPinStyle" class="transition-all duration-300 w-full"
-                     :class="isRowPinned ? 'bg-gray-100/90 backdrop-blur-md p-4 rounded-xl ring-4 ring-foresty/30 shadow-2xl overflow-hidden flex flex-col' : ''">
-                  {{-- Perhatikan di atas: overflow-y-auto diganti menjadi overflow-hidden --}}
-
-                  <!-- Pembungkus Dalam (Harus flex-col saat dipin) -->
-                  <div class="w-full relative flex flex-col" :class="isRowPinned ? 'flex-1 min-h-0' : ''">
-
-                    <!-- Drag Handle & Setting Asli Anda biarkan seperti semula -->
-                    <div class="absolute transition-opacity z-20" :class="windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-4 -left-4 opacity-0 group-hover:opacity-100'">
-                      <button type="button" class="drag-handle..."></button></div>
-                    <div class="absolute -top-4 flex gap-2 transition-all duration-200 z-30 right-3"
-                         :class="showAnchorSetting ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'">...</div>
-
-                    <!-- Grid Multi-Bahasa -->
-                    <div class="gap-6 flex flex-col"
-                         :class="{
-                             'grid grid-cols-1': effectiveLayout === 'single',
-                             'grid grid-cols-1 md:grid-cols-2': effectiveLayout === 'split' && splitLanguages.length === 2,
-                             'flex-1 min-h-0': isRowPinned
-                         }">
-                      @foreach ($activeLocales as $code)
-                        <div x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
-                             class="space-y-3 bg-gray-100 group-hover:bg-white rounded-xl border-2 border-transparent group-hover:border-foresty/80 transition-colors flex flex-col"
-                             :class="isRowPinned ? 'flex-1 min-h-0' : 'h-full'">
-
-                          <!-- Render Blok Komponen -->
-                          <x-dynamic-component :component="'blocks.editor.' . str_replace('_', '-', $block['type'])" :block-id="$blockId" :code="$code" :block="$block" :all-content="$content" />
-
-                        </div>
-                      @endforeach
-                    </div>
-
-                  </div>
-                </div>
 
               </div> <!-- Akhir rowEditor -->
             </div> <!-- Akhir block-wrapper -->
@@ -705,15 +709,15 @@ new class extends Component {
           this.targetWireModel = null;
       }
   }" {{-- Listener untuk menangkap perintah buka modal --}}
-       @buka-modal-link.window="
+    @buka-modal-link.window="
         open = true;
         selectedText = $event.detail.text || '';
         targetWireModel = $event.detail.target || null;
         searchQuery = '';
     "
-       x-show="open">
+    x-show="open">
 
-    <div @click.outside="open = false" class="bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-lg p-0 flex flex-col max-h-[85vh] overflow-hidden">
+    <div x-on:click.outside="open = false" class="bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-lg p-0 flex flex-col max-h-[85vh] overflow-hidden">
 
       {{-- Header & Input Pencarian --}}
       <div class="p-5 border-b border-gray-100 bg-gray-50/50 shrink-0">
@@ -721,7 +725,7 @@ new class extends Component {
         <div class="relative">
           <x-dynamic-component component="lucide-search" class="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
           <input type="text" x-model="searchQuery" placeholder="Cari halaman atau rekatkan URL eksternal (https://)..."
-                 class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-foresty focus:border-foresty">
+            class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-foresty focus:border-foresty">
         </div>
       </div>
 
@@ -733,8 +737,8 @@ new class extends Component {
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">Melompat ke Titik di Halaman Ini</span>
           <div class="grid grid-cols-2 gap-2">
             <template x-for="anchor in inPageAnchors" :key="anchor.id">
-              <button type="button" @click="applyUrl('#' + anchor.id)"
-                      class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:border-foresty hover:bg-sage-soft transition-colors text-left group">
+              <button type="button" x-on:click="applyUrl('#' + anchor.id)"
+                class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:border-foresty hover:bg-sage-soft transition-colors text-left group">
                 <div class="p-1.5 bg-gray-100 text-gray-500 rounded-md group-hover:bg-white group-hover:text-foresty transition-colors">
                   <x-dynamic-component component="lucide-hash" class="w-3.5 h-3.5" />
                 </div>
@@ -758,8 +762,8 @@ new class extends Component {
 
         {{-- 🌟 SEGMEN 3: URL EKSTERNAL KUSTOM --}}
         <div x-show="searchQuery !== '' && (searchQuery.startsWith('http') || searchQuery.startsWith('mailto:') || searchQuery.startsWith('tel:'))">
-          <button type="button" @click="applyUrl(searchQuery)"
-                  class="w-full flex items-center justify-between p-3 rounded-lg border border-foresty bg-sage-soft text-left hover:bg-[#c2ded3] transition-colors">
+          <button type="button" x-on:click="applyUrl(searchQuery)"
+            class="w-full flex items-center justify-between p-3 rounded-lg border border-foresty bg-sage-soft text-left hover:bg-[#c2ded3] transition-colors">
             <div>
               <p class="text-xs font-bold text-foresty">Gunakan Tautan Eksternal Ini</p>
               <p class="text-sm text-foresty truncate" x-text="searchQuery"></p>
@@ -772,8 +776,8 @@ new class extends Component {
 
       {{-- Footer Tutup --}}
       <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end shrink-0">
-        <button type="button" @click="open = false"
-                class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-lg transition-colors">
+        <button type="button" x-on:click="open = false"
+          class="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-lg transition-colors">
           Batal
         </button>
       </div>
@@ -782,25 +786,23 @@ new class extends Component {
 
   <!-- 🌟 PANEL PRATINJAU SLIDE-OVER (Meluncur dari Kanan) -->
   <div x-cloak class="relative z-[100]" @open-preview-panel.window="previewUrl = $event.detail.url; previewOpen = true;" aria-labelledby="slide-over-title" role="dialog"
-       aria-modal="true" x-data="{
-           previewOpen: false,
-           previewUrl: '',
-           deviceMode: 'desktop', // Pilihan: 'desktop' atau 'mobile'
-       }">
+    aria-modal="true" x-data="{
+        previewOpen: false,
+        previewUrl: '',
+        deviceMode: 'desktop', // Pilihan: 'desktop' atau 'mobile'
+    }">
 
     <div x-show="previewOpen" class="fixed inset-0 overflow-hidden" style="display: none;">
       <!-- Latar Belakang Gelap (Klik untuk menutup) -->
-      <div x-show="previewOpen" x-transition.opacity.duration.300ms @click="previewOpen = false; previewUrl = ''"
-           class="absolute inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity">
+      <div x-show="previewOpen" x-transition.opacity.duration.300ms x-on:click="previewOpen = false; previewUrl = ''"
+        class="absolute inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity">
       </div>
 
       <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
         <!-- Panel Utama -->
         <div x-show="previewOpen" x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700" x-transition:enter-start="translate-x-full"
-             x-transition:enter-end="translate-x-0"
-             x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700" x-transition:leave-start="translate-x-0"
-             x-transition:leave-end="translate-x-full"
-             class="pointer-events-auto w-screen max-w-screen flex flex-col bg-gray-100 shadow-2xl">
+          x-transition:enter-end="translate-x-0" x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700" x-transition:leave-start="translate-x-0"
+          x-transition:leave-end="translate-x-full" class="pointer-events-auto w-screen max-w-screen flex flex-col bg-gray-100 shadow-2xl">
           <!-- max-w-7xl -->
 
           <!-- HEADER PANEL -->
@@ -810,21 +812,21 @@ new class extends Component {
 
               <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
               <div class=" bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner hidden md:flex">
-                <button @click="deviceMode = 'desktop'"
-                        x-bind:class="deviceMode === 'desktop' ? 'bg-white shadow text-foresty' :
-                            'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
-                        class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
+                <button x-on:click="deviceMode = 'desktop'"
+                  x-bind:class="deviceMode === 'desktop' ? 'bg-white shadow text-foresty' :
+                      'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
+                  class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
                     </path>
                   </svg>
                   Desktop
                 </button>
-                <button @click="deviceMode = 'mobile'"
-                        x-bind:class="deviceMode === 'mobile' ? 'bg-white shadow text-foresty' :
-                            'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
-                        class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
+                <button x-on:click="deviceMode = 'mobile'"
+                  x-bind:class="deviceMode === 'mobile' ? 'bg-white shadow text-foresty' :
+                      'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
+                  class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                   </svg>
@@ -836,16 +838,18 @@ new class extends Component {
 
                 <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
                 <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner  md:flex" x-data="{ activeLang: '{{ app()->getLocale() }}' }">
-                  <button type="button" @click="activeLang = 'id'; document.getElementById('preview-iframe').contentWindow.postMessage({ type: 'change-lang', lang: 'id' }, '*')"
-                          x-bind:class="activeLang === 'id' ? 'bg-white shadow text-foresty' :
-                              'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
-                          class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
+                  <button type="button"
+                    x-on:click="activeLang = 'id'; document.getElementById('preview-iframe').contentWindow.postMessage({ type: 'change-lang', lang: 'id' }, '*')"
+                    x-bind:class="activeLang === 'id' ? 'bg-white shadow text-foresty' :
+                        'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
+                    class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
                     ID
                   </button>
-                  <button type="button" @click="activeLang = 'en'; document.getElementById('preview-iframe').contentWindow.postMessage({ type: 'change-lang', lang: 'en' }, '*')"
-                          x-bind:class="activeLang === 'en' ? 'bg-white shadow text-foresty' :
-                              'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
-                          class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
+                  <button type="button"
+                    x-on:click="activeLang = 'en'; document.getElementById('preview-iframe').contentWindow.postMessage({ type: 'change-lang', lang: 'en' }, '*')"
+                    x-bind:class="activeLang === 'en' ? 'bg-white shadow text-foresty' :
+                        'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
+                    class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-md transition-all">
                     EN
                   </button>
                 </div>
@@ -853,8 +857,8 @@ new class extends Component {
             </div>
 
             <!-- Tombol Tutup -->
-            <button @click="previewOpen = false; previewUrl = ''"
-                    class="rounded-full p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 focus:outline-none transition-colors">
+            <button x-on:click="previewOpen = false; previewUrl = ''"
+              class="rounded-full p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 focus:outline-none transition-colors">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -865,8 +869,8 @@ new class extends Component {
           <div class="flex-1 overflow-y-auto bg-gray-200 flex justify-center items-start pt-6 pb-12 transition-all duration-500">
             <!-- Wrapper Iframe (Lebarnya menyesuaikan pilihan device) -->
             <div class="transition-all duration-500 ease-in-out shadow-2xl overflow-hidden bg-white"
-                 x-bind:class="deviceMode === 'desktop' ? 'w-full h-full mx-6 rounded-xl border border-gray-300' :
-                     'w-[375px] h-[812px] rounded-[2.5rem] border-[12px] border-gray-800'">
+              x-bind:class="deviceMode === 'desktop' ? 'w-full h-full mx-6 rounded-xl border border-gray-300' :
+                  'w-[375px] h-[812px] rounded-[2.5rem] border-[12px] border-gray-800'">
               <!-- Iframe Halaman Publik -->
               <template x-if="previewUrl !== ''">
                 <iframe id="preview-iframe" :src="previewUrl" class="w-full h-full border-0 bg-white"></iframe>
