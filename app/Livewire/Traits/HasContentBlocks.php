@@ -417,22 +417,23 @@ trait HasContentBlocks
     // LOGIKA KHUSUS CARD BUILDER
     // ==========================================
 
-    public function addCardItem(String $blockId, String $blueprint)
-    {
-        $newCard = [
-            'id' => uniqid('card_'),
-            'blueprint' => $blueprint,
-            'container' => [
-                'bg' => 'bg-white', 'padding' => 'p-5', 'border' => 'border border-gray-200', 'radius' => 'rounded-[18px]', 'shadow' => 'shadow-sm', 'hover' => 'hover:-translate-y-1', 'url' => ''
-            ],
-            'slots' => $blueprint === 'stack' ? ['main' => []] : ['left' => [], 'middle' => [], 'right' => []],
-        ];
+    // OLD 
+    // public function addCardItem(String $blockId, String $blueprint)
+    // {
+    //     $newCard = [
+    //         'id' => uniqid('card_'),
+    //         'blueprint' => $blueprint,
+    //         'container' => [
+    //             'bg' => 'bg-white', 'padding' => 'p-5', 'border' => 'border border-gray-200', 'radius' => 'rounded-[18px]', 'shadow' => 'shadow-sm', 'hover' => 'hover:-translate-y-1', 'url' => ''
+    //         ],
+    //         'slots' => $blueprint === 'stack' ? ['main' => []] : ['left' => [], 'middle' => [], 'right' => []],
+    //     ];
 
-        if (!isset($this->content[$blockId]['data']['cards'])) {
-            $this->content[$blockId]['data']['cards'] = [];
-        }
-        $this->content[$blockId]['data']['cards'][] = $newCard;
-    }
+    //     if (!isset($this->content[$blockId]['data']['cards'])) {
+    //         $this->content[$blockId]['data']['cards'] = [];
+    //     }
+    //     $this->content[$blockId]['data']['cards'][] = $newCard;
+    // }
 
     public function removeCardItem(String $blockId, int $index)
     {
@@ -467,4 +468,208 @@ trait HasContentBlocks
             $this->content[$blockId]['data']['cards'][$cardIndex]['slots'][$slotName] = array_values($this->content[$blockId]['data']['cards'][$cardIndex]['slots'][$slotName]);
         }
     }
+
+  /*Below is NEW implementation*/
+
+  /**
+   * Tambahan untuk HasContentBlocks.php - model layout kartu row/column/element.
+   *
+   * addCardItem() yang lama diganti (parameter kedua sekarang nama PRESET,
+   * bukan 'stack'/'media-object' langsung - lihat cardLayoutPresets()).
+   * Method-method baru di bawahnya BOLEH ditambahkan berdampingan dengan
+   * method lain yang sudah ada di trait Anda (removeCardItem, dst) - tidak
+   * ada yang perlu dihapus selain addCardItem() versi lama.
+   *
+   * CATATAN PENTING mengikuti pelajaran dari sesi debugging sebelumnya:
+   * setiap node BARU (column atau element) SELALU dibuatkan 'id' unik lewat
+   * uniqid() saat dibuat - tidak pernah mengandalkan index posisi di array,
+   * supaya wire:key di Blade nanti selalu punya sumber ID yang stabil.
+   */
+
+  /** Tiga titik awal cepat - lihat docs/card-layout-schema.md */
+  protected function cardLayoutPresets(): array
+{
+    return [
+        'stack' => [
+            'type' => 'row',
+            'children' => [
+                ['id' => uniqid('col_'), 'type' => 'column', 'width' => 1, 'children' => []],
+            ],
+        ],
+        'icon-text' => [
+            'type' => 'row',
+            'children' => [
+                ['id' => uniqid('col_'), 'type' => 'column', 'width' => 1, 'children' => []],
+                ['id' => uniqid('col_'), 'type' => 'column', 'width' => 3, 'children' => []],
+            ],
+        ],
+        'document' => [
+            'type' => 'row',
+            'children' => [
+                ['id' => uniqid('col_'), 'type' => 'column', 'width' => 1, 'children' => []],
+                ['id' => uniqid('col_'), 'type' => 'column', 'width' => 2, 'children' => []],
+                ['id' => uniqid('col_'), 'type' => 'column', 'width' => 1, 'children' => []],
+            ],
+        ],
+    ];
+}
+ 
+/** Ganti addCardItem() lama dengan versi ini - parameter kedua sekarang
+ *  nama preset ('stack' | 'icon-text' | 'document'), bukan blueprint. */
+public function addCardItem(string $blockId, string $preset = 'stack')
+{
+    $presets = $this->cardLayoutPresets();
+    $layout = $presets[$preset] ?? $presets['stack'];
+ 
+    $newCard = [
+        'id' => uniqid('card_'),
+        'layout' => $layout,
+        'container' => [
+            'bg' => 'bg-white', 'padding' => 'p-5', 'border' => 'border border-gray-200',
+            'radius' => 'rounded-[18px]', 'shadow' => 'shadow-sm', 'hover' => 'hover:-translate-y-1', 'url' => ''
+        ],
+    ];
+ 
+    if (!isset($this->content[$blockId]['data']['cards'])) {
+        $this->content[$blockId]['data']['cards'] = [];
+    }
+    $this->content[$blockId]['data']['cards'][] = $newCard;
+}
+ 
+// ================= Kolom =================
+ 
+public function addColumnToCard(string $blockId, int $cardIndex): void
+{
+    $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'][] = [
+        'id' => uniqid('col_'),
+        'type' => 'column',
+        'width' => 1,
+        'children' => [],
+    ];
+}
+ 
+public function removeColumnFromCard(string $blockId, int $cardIndex, string $columnId): void
+{
+    $children = $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] ?? [];
+    $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] =
+        array_values(array_filter($children, fn ($col) => $col['id'] !== $columnId));
+}
+ 
+public function updateColumnWidth(string $blockId, int $cardIndex, string $columnId, int $width): void
+{
+    $children = $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] ?? [];
+    foreach ($children as $i => $col) {
+        if ($col['id'] === $columnId) {
+            $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'][$i]['width'] = max(1, $width);
+            break;
+        }
+    }
+}
+ 
+// ================= Elemen di dalam kolom =================
+// Catatan: default 'data' di bawah ini MINIMAL dengan sengaja - saya belum
+// melihat seluruh field yang dipakai editor elemen teks/ikon Anda saat ini.
+// Sesuaikan array 'data' di bawah supaya field-nya cocok dengan yang sudah
+// dibaca form edit elemen yang ada, jangan dibiarkan berbeda.
+ 
+public function addElementToColumn(string $blockId, int $cardIndex, string $columnId, string $elementType): void
+{
+    $children = $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] ?? [];
+    foreach ($children as $i => $col) {
+        if ($col['id'] === $columnId) {
+            $newElement = [
+                'id' => uniqid('el_'),
+                'type' => 'element',
+                'elementType' => $elementType,
+                'data' => $elementType === 'text'
+                    ? [
+                        'content' => ['id' => '', 'en' => ''],
+                        'style' => [
+                            'is_pill' => false,
+                            'font' => 'font-sans',
+                            'size' => 'text-[15px]',
+                            'weight' => 'font-normal',
+                            'pill_bg' => 'bg-goldy-soft',
+                            'pill_radius' => 'rounded-md',
+                            'color' => 'text-ink-soft',
+                            'margin' => 'mb-2',
+                        ],
+                    ]
+                    : [
+                        'content' => ['icon' => ''],
+                        'style' => [
+                            'bg' => 'bg-mist',
+                            'color' => 'text-foresty',
+                            'size' => 'w-10 h-10',
+                            'radius' => 'rounded-[14px]',
+                        ],
+                    ],
+            ];
+            $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'][$i]['children'][] = $newElement;
+            break;
+        }
+    }
+}
+ 
+public function removeElementFromColumn(string $blockId, int $cardIndex, string $columnId, string $elementId): void
+{
+    $children = $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] ?? [];
+    foreach ($children as $i => $col) {
+        if ($col['id'] === $columnId) {
+            $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'][$i]['children'] =
+                array_values(array_filter($col['children'] ?? [], fn ($el) => $el['id'] !== $elementId));
+            break;
+        }
+    }
+}
+ 
+// ================= Migrasi format lama =================
+ 
+/** Panggil ini sekali (mis. lewat perintah artisan, loop semua Post yang
+ *  punya blok card-builder) untuk konversi kartu blueprint+slots lama ke
+ *  format layout row/column/element baru. */
+protected function migrateCardToLayoutModel(array $card): array
+{
+    if (isset($card['layout'])) {
+        return $card; // sudah format baru, lewati
+    }
+ 
+    $blueprint = $card['blueprint'] ?? 'stack';
+    $slots = $card['slots'] ?? [];
+ 
+    if ($blueprint === 'stack') {
+        $columns = [
+            [
+                'id' => uniqid('col_'),
+                'type' => 'column',
+                'width' => 1,
+                'children' => $this->migrateElementsToNodes($slots['main'] ?? []),
+            ],
+        ];
+    } else {
+        $columns = [
+            ['id' => uniqid('col_'), 'type' => 'column', 'width' => 1, 'children' => $this->migrateElementsToNodes($slots['left'] ?? [])],
+            ['id' => uniqid('col_'), 'type' => 'column', 'width' => 2, 'children' => $this->migrateElementsToNodes($slots['middle'] ?? [])],
+            ['id' => uniqid('col_'), 'type' => 'column', 'width' => 1, 'children' => $this->migrateElementsToNodes($slots['right'] ?? [])],
+        ];
+    }
+ 
+    $card['layout'] = ['type' => 'row', 'children' => $columns];
+    unset($card['blueprint'], $card['slots']);
+ 
+    return $card;
+}
+ 
+protected function migrateElementsToNodes(array $elements): array
+{
+    return array_map(function ($el) {
+        return [
+            'id' => uniqid('el_'),
+            'type' => 'element',
+            'elementType' => $el['type'] ?? 'text',
+            'data' => $el, // nilai lama disimpan APA ADANYA, tidak ada field yang dibuang
+        ];
+    }, $elements);
+}
+  // End of Claude implementation
 }
