@@ -8,19 +8,20 @@
   $cards = $data['cards'] ?? [];
 @endphp
 
-<!-- 🌟 PEMBUNGKUS LUAR -->
+<!-- 🌟 PEMBUNGKUS LUAR (Kelas flex diubah menjadi dinamis) -->
 <div
   x-data="{
     activeCard: 0,
     activeSlot: 'main',
     isPinned: false,
-    isRowPinned: false, 
+    isRowPinned: false, // Hanya sebagai pengintai status baris
     isCollapsed: false,
     pinStyle: '',
 
     init() {
         const reportPinStatus = () => {
-            this.$dispatch('global-pin-update', { 
+            // Selalu laporkan status gabungan, mencegah error balapan (race-condition)
+            $dispatch('global-pin-update', { 
                 id: '{{ $blockId }}', 
                 active: this.isPinned || this.isRowPinned 
             });
@@ -33,20 +34,22 @@
     syncTabs(cardIndex, slotName) {
         this.activeCard = cardIndex;
         this.activeSlot = slotName;
-        // 🌟 PERBAIKAN 1: Wajib menggunakan this.$dispatch
-        this.$dispatch('sync-card-{{ strtolower($blockId) }}', { card: cardIndex, slot: slotName });
+        $dispatch('sync-card-{{ strtolower($blockId) }}', { card: cardIndex, slot: slotName });
     },
 
     togglePin() {
+        // 1. MATIKAN COLLAPSE JIKA AKTIF
         if (this.isCollapsed) {
             this.isCollapsed = false;
-            this.$dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
+            $dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
         }
 
+        // 2. MATIKAN ROW PIN JIKA SEDANG AKTIF
         if (!this.isPinned && this.isRowPinned) {
-            this.$dispatch('force-close-row-pin-{{ strtolower($blockId) }}');
+            $dispatch('force-close-row-pin-{{ strtolower($blockId) }}');
         }
 
+        // 3. JALANKAN FOCUS PIN TUNGGAL
         this.isPinned = !this.isPinned;
         if (this.isPinned) {
             let area = document.getElementById('main-editor-scroll-area');
@@ -64,20 +67,22 @@
         this.isCollapsed = !this.isCollapsed;
 
         if (this.isCollapsed) {
+            // JIKA RUNTUH, PAKSA MATIKAN SEMUA PIN
             if (this.isPinned) {
                 this.isPinned = false;
                 this.pinStyle = '';
             }
             if (this.isRowPinned) {
-                this.$dispatch('force-close-row-pin-{{ strtolower($blockId) }}');
+                $dispatch('force-close-row-pin-{{ strtolower($blockId) }}');
             }
         }
-        this.$dispatch('sync-collapse-{{ strtolower($blockId) }}', this.isCollapsed);
+        $dispatch('sync-collapse-{{ strtolower($blockId) }}', this.isCollapsed);
     }
   }"
   @toggle-row-pin-{{ strtolower($blockId) }}.window="
     isRowPinned = !isRowPinned;
     if (isRowPinned) {
+        // JIKA ROW PIN HIDUP, MATIKAN FOCUS PIN & BUKA COLLAPSE
         if (isPinned) {
             isPinned = false;
             pinStyle = '';
@@ -97,8 +102,6 @@
       pinStyle = '';
     }
   "
-  {{-- 🌟 PERBAIKAN 2: Listener untuk menangkap perintah pindah tab antar bahasa --}}
-  @sync-card-{{ strtolower($blockId) }}.window="if ($event.detail) { activeCard = $event.detail.card; activeSlot = $event.detail.slot; }"
   class="flex w-full flex-col"
   x-bind:class="isPinned || isRowPinned ? 'h-full flex-1 min-h-0' : ''"
 >
@@ -127,10 +130,9 @@
     class="flex flex-col bg-white transition-all duration-200"
     x-bind:class="
       isPinned
-        ? 'border-foresty ring-4 ring-foresty/20 shadow-2xl overflow-hidden flex-1 min-h-0 h-full'
+        ? 'border-foresty ring-4 ring-foresty/20 shadow-2xl overflow-hidden flex-1 min-h-0'
         : isRowPinned
-          {{-- 🌟 PERBAIKAN 3: Penambahan h-full untuk menjamin batas scroll bekerja --}}
-          ? 'border-foresty/50 ring-2 ring-foresty/20 overflow-hidden flex-1 min-h-0 h-full max-h-[calc(100vh-120px)]'
+          ? 'border-foresty/50 ring-2 ring-foresty/20 overflow-hidden flex-1 min-h-0 max-h-[calc(100vh-120px)]'
           : 'rounded-xl border border-gray-200 shadow-md relative h-auto'
     "
   >
@@ -183,11 +185,9 @@
             :disabled="isPinned || isCollapsed"
             x-on:click="$dispatch('toggle-row-pin-{{ strtolower($blockId) }}')"
             x-bind:class="
-              isPinned || isCollapsed
-                ? 'bg-gray-100 text-gray-300 cursor-not-allowed opacity-50'
-                : isRowPinned
-                  ? 'bg-foresty/10 text-foresty shadow-inner'
-                  : 'bg-gray-200 text-gray-500 hover:text-foresty hover:bg-gray-300'
+              isRowPinned
+                ? 'bg-foresty/10 text-foresty shadow-inner'
+                : 'bg-gray-200 text-gray-500 hover:text-foresty hover:bg-gray-300'
             "
             class="flex items-center justify-center rounded-md p-1.5 transition-colors outline-none"
             title="Pin Baris (Split View)"
@@ -204,11 +204,9 @@
             :disabled="isRowPinned || isCollapsed"
             x-on:click="togglePin()"
             x-bind:class="
-              isRowPinned || isCollapsed
-                ? 'bg-gray-100 text-gray-300 cursor-not-allowed opacity-50'
-                : isPinned
-                  ? 'bg-foresty text-white shadow-inner'
-                  : 'bg-gray-200 text-gray-500 hover:text-foresty hover:bg-gray-300'
+              isPinned
+                ? 'bg-foresty text-white shadow-inner'
+                : 'bg-gray-200 text-gray-500 hover:text-foresty hover:bg-gray-300'
             "
             class="flex items-center justify-center rounded-md p-1.5 shadow-sm transition-colors outline-none"
             title="Fokus Layar Penuh"
@@ -225,13 +223,7 @@
             type="button"
             :disabled="isPinned || isRowPinned"
             x-on:click="toggleCollapse()"
-            x-bind:class="
-              isPinned || isRowPinned
-                ? 'text-gray-300 cursor-not-allowed opacity-50'
-                : 'hover:text-foresty text-gray-400 hover:bg-gray-200'
-            "
-            class="rounded-md p-1.5 transition-colors outline-none"
-            title="Lipat Blok"
+            class="hover:text-foresty rounded-md p-1.5 text-gray-400 transition-colors outline-none hover:bg-gray-200"
           >
             <x-dynamic-component
               component="lucide-chevron-down"
@@ -243,20 +235,28 @@
       </div>
     </div>
 
-    <!-- 🌟 BUNGKUSAN LIPATAN -->
+    <!-- 🌟 BUNGKUSAN LIPATAN (Kelas flex diubah menjadi dinamis) -->
     <div
       x-show="!isCollapsed"
       x-collapse
       x-cloak
       class="flex flex-col"
-      {{-- 🌟 Penambahan h-full untuk menembus gaya height:auto bawaan x-collapse --}}
-      x-bind:class="isPinned || isRowPinned ? 'flex-1 min-h-0 h-full' : ''"
+      x-bind:class="isPinned || isRowPinned ? 'flex-1 min-h-0' : ''"
     >
-      {{-- 🌟 BADAN TENGAH --}}
+      {{-- 🌟 BADAN TENGAH (Kelas flex diubah menjadi dinamis) --}}
+      {{-- <div
+        class="flex flex-col p-4"
+        x-bind:class="
+          isPinned || isRowPinned
+            ? 'flex-1 min-h-0 overflow-y-auto scrollbar-thin'
+            : ''
+        "
+      > --}}
       <div
         class="flex flex-col p-4"
-        x-bind:class="isPinned || isRowPinned ? 'flex-1 min-h-0 h-full' : ''"
+        x-bind:class="isPinned || isRowPinned ? 'flex-1 min-h-0' : ''"
       >
+        {{-- CHEKCED --}}
         @if (count($cards) === 0)
           <!-- Tampilan Kosong (Zero State) -->
           <div class="flex flex-1 flex-col items-center justify-center py-10">
@@ -362,18 +362,16 @@
               >
                 <button
                   type="button"
-                  wire:key="add-stack-{{ $blockId }}"
-                  {{-- wire:click="addCardItem('{{ $blockId }}', 'stack')" --}}
-                  x-on:click="$wire.addCardItem('{{ $blockId }}', 'stack'); syncTabs({{ count($cards) }}, 'main'); openMenu = false"
+                  wire:click="addCardItem('{{ $blockId }}', 'stack')"
+                  x-on:click="syncTabs({{ count($cards) }}, 'main'); openMenu = false"
                   class="w-full border-b border-gray-100 px-3 py-2 text-left text-xs outline-none hover:bg-gray-50"
                 >
                   Stack (Tumpuk)
                 </button>
                 <button
                   type="button"
-                  wire:key="add-media-{{ $blockId }}"
-                  {{-- wire:click="" --}}
-                  x-on:click="$wire.addCardItem('{{ $blockId }}', 'media-object'); syncTabs({{ count($cards) }}, 'middle'); openMenu = false"
+                  wire:click="addCardItem('{{ $blockId }}', 'media-object')"
+                  x-on:click="syncTabs({{ count($cards) }}, 'middle'); openMenu = false"
                   class="w-full px-3 py-2 text-left text-xs outline-none hover:bg-gray-50"
                 >
                   Dokumen (3 Kolom)
@@ -592,7 +590,7 @@
                                   </option>
                                 </select>
                                 <select
-                                  wire:model.live="content.{{ $blockId }}.data.cards.{{$cIndex }}.slots.{{ $slotName }}.{{$elIndex }}.style.weight"
+                                  wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.weight"
                                   class="rounded border-gray-200 py-1 text-[11px]"
                                 >
                                   <option value="font-normal">Reguler</option>
@@ -602,7 +600,7 @@
                                 </select>
                               @else
                                 <select
-                                  wire:model.live="content.{{ $blockId }}.data.cards.{{$cIndex }}.slots.{{ $slotName }}.{{$elIndex }}.style.pill_bg"
+                                  wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.pill_bg"
                                   class="rounded border-gray-200 py-1 text-[11px]"
                                 >
                                   <option value="bg-goldy-soft">
@@ -612,7 +610,7 @@
                                   <option value="bg-sage-soft">Bg Sage</option>
                                 </select>
                                 <select
-                                  wire:model.live="content.{{ $blockId }}.data.cards.{{$cIndex }}.slots.{{ $slotName }}.{{$elIndex }}.style.pill_radius"
+                                  wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.pill_radius"
                                   class="rounded border-gray-200 py-1 text-[11px]"
                                 >
                                   <option value="rounded-md">
@@ -624,7 +622,7 @@
                                 </select>
                               @endif
                               <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{$cIndex }}.slots.{{ $slotName }}.{{$elIndex }}.style.color"
+                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.color"
                                 class="rounded border-gray-200 py-1 text-[11px]"
                               >
                                 <option value="text-ink-soft">Abu Gelap</option>
@@ -632,7 +630,7 @@
                                 <option value="text-coral">Coral</option>
                               </select>
                               <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{$cIndex }}.slots.{{ $slotName }}.{{$elIndex }}.style.margin"
+                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.margin"
                                 class="rounded border-gray-200 py-1 text-[11px]"
                               >
                                 <option value="mb-0">Jarak Bawah: 0</option>
@@ -703,12 +701,12 @@
                                     <button
                                       type="button"
                                       x-show="'{{ $iconName }}'.includes(search.toLowerCase())"
-                                      wire:click="$set('content.{{$blockId }}.data.cards.{{ $cIndex }}.slots.{{$slotName }}.{{ $elIndex }}.content.icon', '{{$iconName }}')"
+                                      wire:click="$set('content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.content.icon', '{{ $iconName }}')"
                                       x-on:click="
                                         openPicker = false;
                                         search = '';
                                       "
-                                      class="p-2.5 rounded-lg flex items-center justify-center transition-all duration-200 border {{ ($el['content']['icon'] ?? '') ===$iconName ? 'bg-sage-soft text-foresty border-foresty shadow-sm scale-110' : 'bg-gray-50 text-gray-400 border-transparent hover:border-foresty/50 hover:text-foresty' }}"
+                                      class="p-2.5 rounded-lg flex items-center justify-center transition-all duration-200 border {{ ($el['content']['icon'] ?? '') === $iconName ? 'bg-sage-soft text-foresty border-foresty shadow-sm scale-110' : 'bg-gray-50 text-gray-400 border-transparent hover:border-foresty/50 hover:text-foresty' }}"
                                     >
                                       <x-dynamic-component
                                         :component="'lucide-' . $iconName"
@@ -725,7 +723,7 @@
                               class="flex flex-wrap gap-2 rounded-lg border border-gray-100 bg-gray-50 p-2"
                             >
                               <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{$cIndex }}.slots.{{ $slotName }}.{{$elIndex }}.style.bg"
+                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.bg"
                                 class="rounded border-gray-200 py-1 text-[11px]"
                               >
                                 <option value="bg-goldy-soft">
@@ -737,7 +735,7 @@
                                 </option>
                               </select>
                               <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{$cIndex }}.slots.{{ $slotName }}.{{$elIndex }}.style.color"
+                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.color"
                                 class="rounded border-gray-200 py-1 text-[11px]"
                               >
                                 <option value="text-foresty">
@@ -746,7 +744,7 @@
                                 <option value="text-coral">Warna Coral</option>
                               </select>
                               <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{$cIndex }}.slots.{{ $slotName }}.{{$elIndex }}.style.size"
+                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.size"
                                 class="rounded border-gray-200 py-1 text-[11px]"
                               >
                                 <option value="w-10 h-10">
@@ -755,7 +753,7 @@
                                 <option value="w-16 h-16">Ukuran Besar</option>
                               </select>
                               <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{$cIndex }}.slots.{{ $slotName }}.{{$elIndex }}.style.radius"
+                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.radius"
                                 class="rounded border-gray-200 py-1 text-[11px]"
                               >
                                 <option value="rounded-[14px]">
@@ -775,14 +773,14 @@
                 <div class="mt-2 flex gap-2">
                   <button
                     type="button"
-                    wire:click="addCardElement('{{ $blockId }}', {{$cIndex }}, activeSlot, 'text')"
+                    wire:click="addCardElement('{{ $blockId }}', {{ $cIndex }}, activeSlot, 'text')"
                     class="hover:border-foresty hover:text-foresty flex-1 rounded-lg border border-dashed border-gray-300 bg-white py-2.5 text-xs font-bold text-gray-500 shadow-sm transition-colors outline-none"
                   >
                     + Teks
                   </button>
                   <button
                     type="button"
-                    wire:click="addCardElement('{{ $blockId }}', {{$cIndex }}, activeSlot, 'icon')"
+                    wire:click="addCardElement('{{ $blockId }}', {{ $cIndex }}, activeSlot, 'icon')"
                     class="hover:border-foresty hover:text-foresty flex-1 rounded-lg border border-dashed border-gray-300 bg-white py-2.5 text-xs font-bold text-gray-500 shadow-sm transition-colors outline-none"
                   >
                     + Ikon
@@ -795,7 +793,7 @@
       </div>
       {{-- Akhir Badan Tengah --}}
 
-      {{-- PREVIEW BLOK --}}
+      {{-- CHECKED PREVIEW BLOK (Kelas flex diubah menjadi dinamis) --}}
       @if (count($cards) > 0)
         <div
           class="flex shrink-0 flex-col overflow-hidden rounded-b-xl border-t border-gray-200 bg-gray-50"
@@ -814,9 +812,8 @@
             >
           </div>
 
-          {{-- 🌟 PERBAIKAN 4: Penambahan \x3E untuk memperbaiki error DOM Parser di VS Code --}}
           <style
-            x-text="`.preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; } .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid \x3E *:not(:nth-child(${activeCard + 1})) { display: none !important; }`"
+            x-text="`.preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; } .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid > *:not(:nth-child(${activeCard + 1})) { display: none !important; }`"
           ></style>
 
           <div
@@ -834,4 +831,6 @@
     </div>
     {{-- Akhir Bungkusan Lipatan --}}
   </div>
+  {{-- Akhir Editor Utama --}}
 </div>
+{{-- Akhir Pembungkus Luar --}}
