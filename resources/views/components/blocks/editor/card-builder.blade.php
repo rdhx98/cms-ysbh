@@ -14,18 +14,18 @@
     activeCard: 0,
     activeSlot: 'main',
     isPinned: false,
-    isRowPinned: false, 
+    isRowPinned: false,
     isCollapsed: false,
     pinStyle: '',
 
     init() {
         const reportPinStatus = () => {
-            this.$dispatch('global-pin-update', { 
-                id: '{{ $blockId }}', 
-                active: this.isPinned || this.isRowPinned 
+            this.$dispatch('global-pin-update', {
+                id: '{{ $blockId }}',
+                active: this.isPinned || this.isRowPinned
             });
         };
-        
+
         this.$watch('isPinned', reportPinStatus);
         this.$watch('isRowPinned', reportPinStatus);
     },
@@ -130,8 +130,9 @@
         ? 'border-foresty ring-4 ring-foresty/20 shadow-2xl overflow-hidden flex-1 min-h-0 h-full'
         : isRowPinned
           {{-- 🌟 PERBAIKAN 3: Penambahan h-full untuk menjamin batas scroll bekerja --}}
-          ? 'border-foresty/50 ring-2 ring-foresty/20 overflow-hidden flex-1 min-h-0 h-full max-h-[calc(100vh-120px)]'
-          : 'rounded-xl border border-gray-200 shadow-md relative h-auto'
+          ? 'border-foresty/50 rounded-xl ring-2 ring-foresty/20 overflow-hidden flex-1 min-h-0 h-full max-h-[calc(100vh-120px)]'
+          {{-- : 'rounded-xl border border-gray-200 shadow-md relative h-auto' --}}
+          : 'rounded-xl border border-gray-200 shadow-md relative overflow-hidden flex-1 min-h-0 max-h-[calc(100vh-160px)]'
     "
   >
     <!-- HEADER BLOK -->
@@ -244,18 +245,31 @@
     </div>
 
     <!-- 🌟 BUNGKUSAN LIPATAN -->
-    <div
+    <!-- <div
       x-show="!isCollapsed"
       x-collapse
       x-cloak
       class="flex flex-col"
       {{-- 🌟 Penambahan h-full untuk menembus gaya height:auto bawaan x-collapse --}}
-      x-bind:class="isPinned || isRowPinned ? 'flex-1 min-h-0 h-full' : ''"
+      x-bind: class="isPinned || isRowPinned ? 'flex-1 min-h-0 h-full' : ''"
+    > -->
+      {{-- 🌟 BADAN TENGAH --}}
+      {{-- <div
+        class="flex flex-col p-4"
+        x-bind:class="isPinned || isRowPinned ? 'flex-1 min-h-0 h-full' : ''"
+      > --}}
+      <!-- 🌟 BUNGKUSAN LIPATAN -->
+    <div
+      x-show="!isCollapsed"
+      x-collapse
+      x-cloak
+      class="flex flex-col flex-1 min-h-0"
+      x-bind:class="isPinned || isRowPinned ? 'h-full' : ''"
     >
       {{-- 🌟 BADAN TENGAH --}}
       <div
-        class="flex flex-col p-4"
-        x-bind:class="isPinned || isRowPinned ? 'flex-1 min-h-0 h-full' : ''"
+        class="flex flex-col p-4 flex-1 min-h-0"
+        x-bind:class="isPinned || isRowPinned ? 'h-full' : ''"
       >
         @if (count($cards) === 0)
           <!-- Tampilan Kosong (Zero State) -->
@@ -397,13 +411,17 @@
           </div>
 
           <!-- AREA KOMPONEN (Isi Kartu) -->
-          <div
+          {{-- <div
             class="flex flex-col border border-gray-200 bg-gray-50 p-4 sm:p-5"
             x-bind:class="
               isPinned || isRowPinned
                 ? 'flex-1 min-h-0 overflow-y-auto scrollbar-thin rounded-none'
                 : 'rounded-xl'
             "
+          > --}}
+          <div
+            class="flex flex-col border border-gray-200 bg-gray-50 p-4 sm:p-5 flex-1 min-h-0 overflow-y-auto scrollbar-thin"
+            x-bind:class="isPinned || isRowPinned ? 'rounded-none' : 'rounded-xl'"
           >
             @foreach ($cards as $cIndex => $card)
               <div
@@ -467,6 +485,15 @@
                       <option value="p-6 md:p-8">Padding Besar</option>
                       <option value="p-0">Tanpa Padding</option>
                     </select>
+                    <select
+                      wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.align_y"
+                      class="rounded border-gray-200 p-1.5 text-xs"
+                    >
+                      <option value="items-start">Posisi Atas (Top)</option>
+                      <option value="items-center">Posisi Tengah (Center)</option>
+                      <option value="items-end">Posisi Bawah (Bottom)</option>
+                      <option value="items-stretch">Sama Tinggi (Stretch)</option>
+                    </select>
                   </div>
 
                   <div class="mt-1 flex items-center gap-1">
@@ -509,13 +536,17 @@
 
       {{-- PREVIEW BLOK --}}
       @if (count($cards) > 0)
-        <div
+        {{-- <div
           class="flex shrink-0 flex-col overflow-hidden rounded-b-xl border-t border-gray-200 bg-gray-50"
-          x-bind:class="
+          x-bind: class="
             isPinned || isRowPinned
               ? 'max-h-[35vh] border-t-2 border-foresty/20'
               : ''
           "
+        > --}}
+        <div
+          class="flex shrink-0 flex-col overflow-hidden rounded-b-xl border-t border-gray-200 bg-gray-50 max-h-[35vh]"
+          x-bind:class="isPinned || isRowPinned ? 'border-t-2 border-foresty/20' : ''"
         >
           <div
             class="shrink-0 border-b border-gray-200 bg-gray-200/60 px-4 py-2"
@@ -535,13 +566,18 @@
             x-text="`.preview-atomic-{{ $blockId }}-{{ strtolower($code) }} \x3E .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; width: 100%; } .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} \x3E .grid \x3E *:not(:nth-child(${activeCard + 1})) { display: none !important; }`"
           ></style>
 
-          <div
+          {{-- <div
             class="preview-atomic-{{ $blockId }}-{{ strtolower($code) }} p-6 md:p-10 w-full flex justify-center bg-gray-50"
-            x-bind:class="
+            x-bind: class="
               isPinned || isRowPinned
                 ? 'flex-1 overflow-y-auto scrollbar-thin'
                 : 'min-h-[150px]'
             "
+          >
+            @include ('components.blocks.render.card-builder', ['data' => $data, 'lang' => strtolower($code), 'isPreview' => true])
+          </div> --}}
+          <div
+            class="preview-atomic-{{ $blockId }}-{{ strtolower($code) }} p-6 md:p-10 w-full flex justify-center bg-gray-50 flex-1 overflow-y-auto scrollbar-thin"
           >
             @include ('components.blocks.render.card-builder', ['data' => $data, 'lang' => strtolower($code), 'isPreview' => true])
           </div>

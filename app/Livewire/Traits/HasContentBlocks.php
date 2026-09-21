@@ -13,7 +13,7 @@ trait HasContentBlocks
     }
 
     public function addBlock(String $type) {
-			
+
         $id = 'blk_' . Str::random(8);
         $this->content[$id] = [
             'id' => $id,
@@ -55,9 +55,9 @@ trait HasContentBlocks
         $newChildId = 'blk_' . uniqid();
 
         // 🌟 PERBAIKAN: Ambil struktur data default yang benar dari match($type)
-        // Pastikan Anda memanggil metode yang berisi kerangka match($type) Anda. 
+        // Pastikan Anda memanggil metode yang berisi kerangka match($type) Anda.
         // (Biasanya bernama getBlockDefaultData, getDefaultData, atau serupa yang Anda pakai di fungsi tambah blok utama)
-        
+
         $defaultData = $this->getDefaultDataForType($type); // Sesuaikan nama fungsinya dengan milik Anda!
 
         // 2. Siapkan data default sejajar di root $this->content
@@ -70,9 +70,9 @@ trait HasContentBlocks
         if (!isset($this->content[$parentId]['data'][$zone])) {
             $this->content[$parentId]['data'][$zone] = [];
         }
-        
+
         $this->content[$parentId]['data'][$zone][] = $newChildId;
-        
+
         $this->dispatch('block-added', id: $newChildId);
     }
 
@@ -205,10 +205,10 @@ trait HasContentBlocks
             // ],
 						'card-builder' => [
                 'grid' => [
-                    'cols' => 3, 
+                    'cols' => 3,
                     'margin_bottom' => 'mb-8'
                 ],
-                'cards' => [] 
+                'cards' => []
             ],
 						// 'buttons' => [
 						// 	[
@@ -417,7 +417,7 @@ trait HasContentBlocks
     // LOGIKA KHUSUS CARD BUILDER
     // ==========================================
 
-    // OLD 
+    // OLD
     // public function addCardItem(String $blockId, String $blueprint)
     // {
     //     $newCard = [
@@ -447,7 +447,7 @@ trait HasContentBlocks
     public function addCardElement(String $blockId, int $cardIndex, String $slotName, String $type)
     {
         $el = ['id' => uniqid('el_'), 'type' => $type, 'content' => [], 'style' => []];
-        
+
         // Buat struktur bahasa kosong
         foreach ($this->activeLocales as $loc) { $el['content'][$loc] = ''; }
 
@@ -513,14 +513,14 @@ trait HasContentBlocks
         ],
     ];
 }
- 
+
 /** Ganti addCardItem() lama dengan versi ini - parameter kedua sekarang
  *  nama preset ('stack' | 'icon-text' | 'document'), bukan blueprint. */
 public function addCardItem(string $blockId, string $preset = 'stack')
 {
     $presets = $this->cardLayoutPresets();
     $layout = $presets[$preset] ?? $presets['stack'];
- 
+
     $newCard = [
         'id' => uniqid('card_'),
         'layout' => $layout,
@@ -529,15 +529,15 @@ public function addCardItem(string $blockId, string $preset = 'stack')
             'radius' => 'rounded-[18px]', 'shadow' => 'shadow-sm', 'hover' => 'hover:-translate-y-1', 'url' => ''
         ],
     ];
- 
+
     if (!isset($this->content[$blockId]['data']['cards'])) {
         $this->content[$blockId]['data']['cards'] = [];
     }
     $this->content[$blockId]['data']['cards'][] = $newCard;
 }
- 
+
 // ================= Kolom =================
- 
+
 public function addColumnToCard(string $blockId, int $cardIndex): void
 {
     $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'][] = [
@@ -547,31 +547,33 @@ public function addColumnToCard(string $blockId, int $cardIndex): void
         'children' => [],
     ];
 }
- 
+
 public function removeColumnFromCard(string $blockId, int $cardIndex, string $columnId): void
 {
     $children = $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] ?? [];
     $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] =
         array_values(array_filter($children, fn ($col) => $col['id'] !== $columnId));
 }
- 
-public function updateColumnWidth(string $blockId, int $cardIndex, string $columnId, int $width): void
+
+// public function updateColumnWidth(string $blockId, int $cardIndex, string $columnId, int $width): void
+public function updateColumnWidth(string $blockId, int $cardIndex, string $columnId, string $width): void
 {
     $children = $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] ?? [];
     foreach ($children as $i => $col) {
         if ($col['id'] === $columnId) {
-            $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'][$i]['width'] = max(1, $width);
+            // $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'][$i]['width'] = max(1, $width);
+            $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'][$i]['width'] = $width === 'auto' ? 'auto' : max(1, (int)$width);
             break;
         }
     }
 }
- 
+
 // ================= Elemen di dalam kolom =================
 // Catatan: default 'data' di bawah ini MINIMAL dengan sengaja - saya belum
 // melihat seluruh field yang dipakai editor elemen teks/ikon Anda saat ini.
 // Sesuaikan array 'data' di bawah supaya field-nya cocok dengan yang sudah
 // dibaca form edit elemen yang ada, jangan dibiarkan berbeda.
- 
+
 public function addElementToColumn(string $blockId, int $cardIndex, string $columnId, string $elementType): void
 {
     $children = $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] ?? [];
@@ -610,7 +612,7 @@ public function addElementToColumn(string $blockId, int $cardIndex, string $colu
         }
     }
 }
- 
+
 public function removeElementFromColumn(string $blockId, int $cardIndex, string $columnId, string $elementId): void
 {
     $children = $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] ?? [];
@@ -622,9 +624,9 @@ public function removeElementFromColumn(string $blockId, int $cardIndex, string 
         }
     }
 }
- 
+
 // ================= Migrasi format lama =================
- 
+
 /** Panggil ini sekali (mis. lewat perintah artisan, loop semua Post yang
  *  punya blok card-builder) untuk konversi kartu blueprint+slots lama ke
  *  format layout row/column/element baru. */
@@ -633,10 +635,10 @@ protected function migrateCardToLayoutModel(array $card): array
     if (isset($card['layout'])) {
         return $card; // sudah format baru, lewati
     }
- 
+
     $blueprint = $card['blueprint'] ?? 'stack';
     $slots = $card['slots'] ?? [];
- 
+
     if ($blueprint === 'stack') {
         $columns = [
             [
@@ -653,13 +655,13 @@ protected function migrateCardToLayoutModel(array $card): array
             ['id' => uniqid('col_'), 'type' => 'column', 'width' => 1, 'children' => $this->migrateElementsToNodes($slots['right'] ?? [])],
         ];
     }
- 
+
     $card['layout'] = ['type' => 'row', 'children' => $columns];
     unset($card['blueprint'], $card['slots']);
- 
+
     return $card;
 }
- 
+
 protected function migrateElementsToNodes(array $elements): array
 {
     return array_map(function ($el) {

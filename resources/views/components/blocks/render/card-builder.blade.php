@@ -16,24 +16,31 @@
             $border = $container['border'] ?? 'border border-gray-200';
             $radius = $container['radius'] ?? 'rounded-[18px]';
             $padding = $container['padding'] ?? 'p-5';
-            
+            // $alignY = $container['align_y'] ?? 'justify-start';
+            $alignY = $container['align_y'] ?? 'items-start';
+
             // Matikan efek hover dan link jika sedang di dalam Live Preview Editor
             $hover = $isPreview ? '' : ($container['hover'] ?? 'hover:-translate-y-1 hover:shadow-md transition-all duration-300');
             $url = $isPreview ? '' : ($container['url'] ?? '');
 
             $columns = $card['layout']['children'] ?? [];
             // Terjemahkan array lebar kolom menjadi pecahan grid (contoh: "1fr 2fr 1fr")
-            $gridTemplate = collect($columns)->map(fn($c) => ($c['width'] ?? 1) . 'fr')->implode(' ');
+            // $gridTemplate = collect($columns)->map(fn($c) => ($c['width'] ?? 1) . 'fr')->implode(' ');
+            $gridTemplate = collect($columns)->map(function($c) {
+                $w = $c['width'] ?? 1;
+                return $w === 'auto' ? 'auto' : $w . 'fr';
+            })->implode(' ');
         @endphp
 
     <{{ $url ? 'a' : 'div' }}
       {!! $url ? 'href="' . htmlspecialchars($url) . '"' : '' !!}
       class="block h-full overflow-hidden {{ $bg }} {{ $border }} {{ $radius }} {{ $hover }}"
     >
-      <div class="{{ $padding }} h-full flex flex-col min-w-0">
+      {{-- <div class="{{ $padding }} h-full flex flex-col min-w-0"> --}}
+        <div class="{{ $padding }} h-full flex flex-col min-w-0">
         {{-- 🌟 PEMBUNGKUS BARIS (ROW) --}}
         <div
-          class="grid items-start gap-4 lg:gap-5"
+          class="grid {{ $alignY }} gap-4 lg:gap-5"
           style="grid-template-columns: {{ $gridTemplate }};"
         >
           @foreach ($columns as $col)
