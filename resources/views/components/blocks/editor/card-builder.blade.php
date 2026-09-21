@@ -410,92 +410,272 @@
             </div>
           </div>
 
-          <!-- AREA KOMPONEN (Isi Kartu) -->
-          {{-- <div
-            class="flex flex-col border border-gray-200 bg-gray-50 p-4 sm:p-5"
-            x-bind:class="
-              isPinned || isRowPinned
-                ? 'flex-1 min-h-0 overflow-y-auto scrollbar-thin rounded-none'
-                : 'rounded-xl'
-            "
-          > --}}
+          <!-- 🌟 AREA PENGATURAN KOTAK (Menempel di atas area scroll) -->
           <div
-            class="flex flex-col border border-gray-200 bg-gray-50 p-4 sm:p-5 flex-1 min-h-0 overflow-y-auto scrollbar-thin"
-            x-bind:class="isPinned || isRowPinned ? 'rounded-none' : 'rounded-xl'"
+            class="border border-gray-200 border-b-0 bg-gray-50 pb-3 sm:pb-4"
+            x-bind:class="isPinned || isRowPinned ? '' : 'rounded-t-xl'"
           >
             @foreach ($cards as $cIndex => $card)
               <div
                 x-show="activeCard === {{ $cIndex }}"
                 x-cloak
-                wire:key="card-editor-{{ $blockId }}-{{ $cIndex }}"
+                wire:key="card-settings-{{ $blockId }}-{{ $cIndex }}"
+                class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
               >
-                <!-- Pengaturan Kontainer Kartu -->
-                <div
-                  class="mb-6 flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
-                >
-                  <div class="flex items-center justify-between">
-                    <div
-                      class="w-full text-[10px] font-bold text-gray-400 uppercase"
-                    >
-                      Gaya Kotak & Tautan
+                {{-- <div class="flex items-center justify-between">
+                  <div class="w-full text-[10px] font-bold text-gray-400 uppercase">
+                    Gaya Kotak & Tautan
+                  </div>
+                  <span class="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-[9px] font-bold text-gray-500">
+                    Blueprint: {{ $card['blueprint'] ?? 'stack' }}
+                  </span>
+                </div> --}}
+
+                {{-- <div class="flex flex-wrap gap-2">
+                  <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.bg" class="rounded border-gray-200 p-1.5 text-xs">
+                    <option value="bg-white">Latar Putih</option>
+                    <option value="bg-mist">Latar Mist</option>
+                    <option value="bg-foresty text-white">Latar Foresty</option>
+                    <option value="bg-transparent">Transparan</option>
+                  </select>
+                  <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.border" class="rounded border-gray-200 p-1.5 text-xs">
+                    <option value="border border-gray-200">Border Standar</option>
+                    <option value="border border-foresty/15">Border Tipis</option>
+                    <option value="border-0">Tanpa Border</option>
+                  </select>
+                  <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.radius" class="rounded border-gray-200 p-1.5 text-xs">
+                    <option value="rounded-none">Siku</option>
+                    <option value="rounded-[14px]">Agak Bulat</option>
+                    <option value="rounded-[28px]">Sangat Bulat</option>
+                  </select>
+                  <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.padding" class="rounded border-gray-200 p-1.5 text-xs">
+                    <option value="p-4">Padding Kecil</option>
+                    <option value="p-6 md:p-8">Padding Besar</option>
+                    <option value="p-0">Tanpa Padding</option>
+                  </select>
+                  <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.align_y" class="rounded border-gray-200 p-1.5 text-xs">
+                    <option value="items-start">Posisi Atas (Top)</option>
+                    <option value="items-center">Posisi Tengah (Center)</option>
+                    <option value="items-end">Posisi Bawah (Bottom)</option>
+                    <option value="items-stretch">Sama Tinggi (Stretch)</option>
+                  </select>
+                </div> --}}
+                @php
+                    $cBg = $card['container']['bg'] ?? 'bg-white';
+                    // $cBorder = $card['container']['border'] ?? 'border border-gray-200';
+                    $cBorderWidth = $card['container']['border_width'] ?? 'border';
+                    $cBorderStyle = $card['container']['border_style'] ?? 'border-solid'; // 🌟 BARU
+                    $cBorderColor = $card['container']['border_color'] ?? 'border-gray-200';
+                    $cRadius = $card['container']['radius'] ?? 'rounded-[14px]';
+                    $cPad = $card['container']['padding'] ?? 'p-4';
+                    $cAlign = $card['container']['align_y'] ?? 'items-start';
+                    $basePath = "content.{$blockId}.data.cards.{$cIndex}.container";
+                @endphp
+                {{--
+                <div class="flex flex-wrap gap-4 pb-2">
+                  {{-- 1. Latar Belakang --}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Latar Belakang</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.bg', 'bg-white')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBg === 'bg-white' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Putih</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.bg', 'bg-mist')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBg === 'bg-mist' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Mist</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.bg', 'bg-foresty text-white')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBg === 'bg-foresty text-white' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Foresty</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.bg', 'bg-transparent')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBg === 'bg-transparent' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Transparan</button>
                     </div>
-                    <span
-                      class="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-[9px] font-bold text-gray-500"
-                      >Blueprint: {{ $card['blueprint'] ?? 'stack' }}</span
-                    >
                   </div>
 
-                  <div class="flex flex-wrap gap-2">
-                    <select
-                      wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.bg"
-                      class="rounded border-gray-200 p-1.5 text-xs"
-                    >
-                      <option value="bg-white">Latar Putih</option>
-                      <option value="bg-mist">Latar Mist</option>
-                      <option value="bg-foresty text-white">
-                        Latar Foresty
-                      </option>
-                      <option value="bg-transparent">Transparan</option>
-                    </select>
-                    <select
-                      wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.border"
-                      class="rounded border-gray-200 p-1.5 text-xs"
-                    >
-                      <option value="border border-gray-200">
-                        Border Standar
-                      </option>
-                      <option value="border border-foresty/15">
-                        Border Tipis
-                      </option>
-                      <option value="border-0">Tanpa Border</option>
-                    </select>
-                    <select
-                      wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.radius"
-                      class="rounded border-gray-200 p-1.5 text-xs"
-                    >
-                      <option value="rounded-none">Siku</option>
-                      <option value="rounded-[14px]">Agak Bulat</option>
-                      <option value="rounded-[28px]">Sangat Bulat</option>
-                    </select>
-                    <select
-                      wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.padding"
-                      class="rounded border-gray-200 p-1.5 text-xs"
-                    >
-                      <option value="p-4">Padding Kecil</option>
-                      <option value="p-6 md:p-8">Padding Besar</option>
-                      <option value="p-0">Tanpa Padding</option>
-                    </select>
-                    <select
-                      wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.align_y"
-                      class="rounded border-gray-200 p-1.5 text-xs"
-                    >
-                      <option value="items-start">Posisi Atas (Top)</option>
-                      <option value="items-center">Posisi Tengah (Center)</option>
-                      <option value="items-end">Posisi Bawah (Bottom)</option>
-                      <option value="items-stretch">Sama Tinggi (Stretch)</option>
-                    </select>
+                  {{-- 2. Garis Batas (Border) --}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Garis Batas</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.border', 'border border-gray-200')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBorder === 'border border-gray-200' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Standar</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.border', 'border border-foresty/15')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBorder === 'border border-foresty/15' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Tipis</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.border', 'border-0')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBorder === 'border-0' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Tanpa Border</button>
+                    </div>
                   </div>
 
+                  {{-- 3. Sudut Kotak --}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Sudut Kotak</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.radius', 'rounded-none')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cRadius === 'rounded-none' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Siku</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.radius', 'rounded-[14px]')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cRadius === 'rounded-[14px]' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Agak Bulat</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.radius', 'rounded-[28px]')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cRadius === 'rounded-[28px]' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Sangat Bulat</button>
+                    </div>
+                  </div>
+
+                  {{-- 4. Ruang Dalam (Padding) --}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Ruang Dalam (Padding)</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.padding', 'p-4')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cPad === 'p-4' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Kecil</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.padding', 'p-6 md:p-8')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cPad === 'p-6 md:p-8' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Besar</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.padding', 'p-0')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cPad === 'p-0' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Tanpa Padding</button>
+                    </div>
+                  </div>
+
+                  {{-- 5. Posisi Y --}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Posisi Vertikal (Y)</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.align_y', 'items-start')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cAlign === 'items-start' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Atas</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.align_y', 'items-center')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cAlign === 'items-center' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Tengah</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.align_y', 'items-end')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cAlign === 'items-end' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Bawah</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.align_y', 'items-stretch')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cAlign === 'items-stretch' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Sama Tinggi</button>
+                    </div>
+                  </div>
+                </div>
+
+                {{-- 6. Tautan Kartu --}
+                <div class="mt-1 flex flex-col gap-1.5 border-t border-gray-100 pt-3">
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Tautan Kartu Penuh (Opsional)</span>
+                  <div class="flex items-center gap-1">
+                    <input
+                      type="text"
+                      wire:model.blur="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.url"
+                      placeholder="https:// atau pilih dari pencarian internal..."
+                      class="focus:ring-foresty w-full rounded border-gray-300 py-1.5 text-xs shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      x-on:click="$dispatch('buka-modal-link', { target: 'content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.url' })"
+                      class="hover:bg-sage-soft hover:text-foresty shrink-0 rounded-md border border-gray-200 bg-white p-1.5 text-gray-400 shadow-sm transition-colors"
+                    >
+                      <x-dynamic-component component="lucide-search" class="h-4 w-4" stroke-width="2.5" />
+                    </button>
+                  </div>
+                </div> --}}
+                <div class="flex flex-wrap gap-5 pb-2">
+                  {{-- 1. Latar Belakang (Warna Murni) --}}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Latar Belakang</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" title="Putih" x-on:click="$wire.set('{{ $basePath }}.bg', 'bg-white')" class="rounded p-1.5 transition-all outline-none {{ $cBg === 'bg-white' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-full border border-gray-300 bg-white shadow-sm"></div>
+                      </button>
+                      <button type="button" title="Mist" x-on:click="$wire.set('{{ $basePath }}.bg', 'bg-mist')" class="rounded p-1.5 transition-all outline-none {{ $cBg === 'bg-mist' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-full border border-gray-200 bg-gray-100 shadow-sm"></div>
+                      </button>
+                      <button type="button" title="Foresty" x-on:click="$wire.set('{{ $basePath }}.bg', 'bg-foresty text-white')" class="rounded p-1.5 transition-all outline-none {{ $cBg === 'bg-foresty text-white' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-full bg-foresty shadow-sm"></div>
+                      </button>
+                      <button type="button" title="Transparan" x-on:click="$wire.set('{{ $basePath }}.bg', 'bg-transparent')" class="rounded p-1.5 transition-all outline-none {{ $cBg === 'bg-transparent' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="relative h-4 w-4 overflow-hidden rounded-full border border-gray-300 bg-white shadow-sm">
+                          <div class="absolute top-1/2 left-0 h-[1.5px] w-full -translate-y-1/2 -rotate-45 bg-red-500"></div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {{-- 2. Garis Batas (Ketebalan Border CSS) --}}
+                  {{-- <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Garis Batas</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" title="Border Standar" x-on:click="$wire.set('{{ $basePath }}.border', 'border border-gray-200')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cBorder === 'border border-gray-200' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-sm border-2 border-current"></div>
+                      </button>
+                      <button type="button" title="Border Tipis" x-on:click="$wire.set('{{ $basePath }}.border', 'border border-foresty/15')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cBorder === 'border border-foresty/15' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-sm border border-current opacity-60"></div>
+                      </button>
+                      <button type="button" title="Tanpa Border" x-on:click="$wire.set('{{ $basePath }}.border', 'border-0')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cBorder === 'border-0' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-sm border border-dashed border-current opacity-40"></div>
+                      </button>
+                    </div>
+                  </div> --}}
+                  {{-- 2A. Ketebalan Garis (Border Width) --}}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Tebal Garis</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" title="Tanpa Garis" x-on:click="$wire.set('{{ $basePath }}.border_width', 'border-0')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cBorderWidth === 'border-0' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="flex h-4 w-4 items-center justify-center"><div class="h-0.5 w-full bg-current opacity-40"></div></div>
+                      </button>
+                      <button type="button" title="Standar (1px)" x-on:click="$wire.set('{{ $basePath }}.border_width', 'border')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cBorderWidth === 'border' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-sm border border-current"></div>
+                      </button>
+                      <button type="button" title="Tebal (2px)" x-on:click="$wire.set('{{ $basePath }}.border_width', 'border-2')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cBorderWidth === 'border-2' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-sm border-2 border-current"></div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {{-- 2B. Tipe Garis (Border Style) --}}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Tipe Garis</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" title="Solid (Lurus)" x-on:click="$wire.set('{{ $basePath }}.border_style', 'border-solid')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cBorderStyle === 'border-solid' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-sm border-2 border-solid border-current"></div>
+                      </button>
+                      <button type="button" title="Dashed (Putus-putus)" x-on:click="$wire.set('{{ $basePath }}.border_style', 'border-dashed')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cBorderStyle === 'border-dashed' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-sm border-2 border-dashed border-current"></div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {{-- 2C. Warna Garis (Border Color) --}}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Warna Garis</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" title="Abu-abu (Gray 200)" x-on:click="$wire.set('{{ $basePath }}.border_color', 'border-gray-200')" class="rounded p-1.5 transition-all outline-none {{ $cBorderColor === 'border-gray-200' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-sm border-2 border-gray-200 bg-white"></div>
+                      </button>
+                      <button type="button" title="Hijau Pudar (Foresty/20)" x-on:click="$wire.set('{{ $basePath }}.border_color', 'border-foresty/20')" class="rounded p-1.5 transition-all outline-none {{ $cBorderColor === 'border-foresty/20' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-sm border-2 border-foresty/20 bg-white"></div>
+                      </button>
+                      <button type="button" title="Hijau Solid (Foresty)" x-on:click="$wire.set('{{ $basePath }}.border_color', 'border-foresty')" class="rounded p-1.5 transition-all outline-none {{ $cBorderColor === 'border-foresty' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-sm border-2 border-foresty bg-white"></div>
+                      </button>
+                      <button type="button" title="Transparan" x-on:click="$wire.set('{{ $basePath }}.border_color', 'border-transparent')" class="rounded p-1.5 transition-all outline-none {{ $cBorderColor === 'border-transparent' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="relative h-4 w-4 overflow-hidden rounded-sm border-2 border-gray-200 bg-gray-50">
+                          <div class="absolute top-1/2 left-0 h-[1.5px] w-full -translate-y-1/2 -rotate-45 bg-red-500 opacity-40"></div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {{-- 3. Sudut Kotak (Radius CSS) --}}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Sudut Kotak</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" title="Siku (Tanpa Sudut)" x-on:click="$wire.set('{{ $basePath }}.radius', 'rounded-none')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cRadius === 'rounded-none' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-none border-2 border-current"></div>
+                      </button>
+                      <button type="button" title="Agak Bulat" x-on:click="$wire.set('{{ $basePath }}.radius', 'rounded-[14px]')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cRadius === 'rounded-[14px]' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-md border-2 border-current"></div>
+                      </button>
+                      <button type="button" title="Sangat Bulat" x-on:click="$wire.set('{{ $basePath }}.radius', 'rounded-[28px]')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cRadius === 'rounded-[28px]' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="h-4 w-4 rounded-full border-2 border-current"></div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {{-- 4. Posisi Y (Simulasi Layout Flex CSS) --}}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Posisi Vertikal (Y)</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" title="Posisi Atas" x-on:click="$wire.set('{{ $basePath }}.align_y', 'items-start')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cAlign === 'items-start' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="flex h-4 w-4 flex-col justify-start rounded-sm border border-current p-0.5"><div class="h-1 w-full rounded-[1px] bg-current"></div></div>
+                      </button>
+                      <button type="button" title="Posisi Tengah" x-on:click="$wire.set('{{ $basePath }}.align_y', 'items-center')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cAlign === 'items-center' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="flex h-4 w-4 flex-col justify-center rounded-sm border border-current p-0.5"><div class="h-1 w-full rounded-[1px] bg-current"></div></div>
+                      </button>
+                      <button type="button" title="Posisi Bawah" x-on:click="$wire.set('{{ $basePath }}.align_y', 'items-end')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cAlign === 'items-end' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="flex h-4 w-4 flex-col justify-end rounded-sm border border-current p-0.5"><div class="h-1 w-full rounded-[1px] bg-current"></div></div>
+                      </button>
+                      <button type="button" title="Sama Tinggi" x-on:click="$wire.set('{{ $basePath }}.align_y', 'items-stretch')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cAlign === 'items-stretch' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                        <div class="flex h-4 w-4 flex-col justify-stretch rounded-sm border border-current p-0.5"><div class="h-full w-full rounded-[1px] bg-current opacity-70"></div></div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {{-- 5. Ruang Dalam (Padding) --}}
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Padding</span>
+                    <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.padding', 'p-4')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cPad === 'p-4' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Kecil</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.padding', 'p-6 md:p-8')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cPad === 'p-6 md:p-8' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Besar</button>
+                      <button type="button" x-on:click="$wire.set('{{ $basePath }}.padding', 'p-0')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cPad === 'p-0' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Nol</button>
+                    </div>
+                  </div>
                   <div class="mt-1 flex items-center gap-1">
                     <input
                       type="text"
@@ -508,17 +688,31 @@
                       x-on:click="$dispatch('buka-modal-link', { target: 'content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.url' })"
                       class="hover:bg-sage-soft hover:text-foresty shrink-0 rounded-md border border-gray-200 bg-white p-1.5 text-gray-400 shadow-sm transition-colors"
                     >
-                      <x-dynamic-component
-                        component="lucide-search"
-                        class="h-4 w-4"
-                        stroke-width="2.5"
-                      />
+                      <x-dynamic-component component="lucide-search" class="h-4 w-4" stroke-width="2.5" />
                     </button>
                   </div>
-                </div>
+                </div><!-- top container end-->
+
+              </div>
+            @endforeach
+          </div>
+
+
+          <!-- AREA SCROLL KOLOM -->
+          <div
+          class="flex flex-col border border-gray-200 bg-gray-50 p-4 sm:p-5 flex-1 min-h-0 overflow-y-scroll scrollbar-thin"
+          x-bind:class="isPinned || isRowPinned ? 'rounded-none' : 'rounded-xl'"
+          >
+            @foreach ($cards as $cIndex => $card)
+              <div
+                x-show="activeCard === {{ $cIndex }}"
+                x-cloak
+                wire:key="card-editor-{{ $blockId }}-{{ $cIndex }}"
+              >
+                <!--CARD setting was here-->
 
                 <!-- Isi Kartu: pohon layout row/column/element -->
-                {{--  <x-editor.display-control :active-locales="$activeLocales" /> --}}
+                {{-- @include ('components.blocks.editor.card-builder-layout-editor', ['blockId' => $blockId, 'cIndex' => $cIndex, 'card' => $card, 'code' => $code, 'iconsList' => $iconsList]) --}}
                 <x-blocks.editor.card-builder-layout-editor
                   :block-id="$blockId"
                   :c-index="$cIndex"
@@ -526,7 +720,6 @@
                   :code="$code"
                   :icons-list="$iconsList"
                 />
-                {{-- @include ('components.blocks.editor.card-builder-layout-editor', ['blockId' => $blockId, 'cIndex' => $cIndex, 'card' => $card, 'code' => $code, 'iconsList' => $iconsList]) --}}
               </div>
             @endforeach
           </div>

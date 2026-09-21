@@ -13,7 +13,10 @@
     @php
             $container = $card['container'] ?? [];
             $bg = $container['bg'] ?? 'bg-white';
-            $border = $container['border'] ?? 'border border-gray-200';
+            // $border = $container['border'] ?? 'border border-gray-200';
+            $borderWidth = $container['border_width'] ?? 'border';
+            $borderStyle = $container['border_style'] ?? 'border-solid';
+            $borderColor = $container['border_color'] ?? 'border-gray-200';
             $radius = $container['radius'] ?? 'rounded-[18px]';
             $padding = $container['padding'] ?? 'p-5';
             // $alignY = $container['align_y'] ?? 'justify-start';
@@ -34,7 +37,7 @@
 
     <{{ $url ? 'a' : 'div' }}
       {!! $url ? 'href="' . htmlspecialchars($url) . '"' : '' !!}
-      class="block h-full overflow-hidden {{ $bg }} {{ $border }} {{ $radius }} {{ $hover }}"
+      class="block transform-gpu transition-all duration-500 ease-in-out h-full overflow-hidden {{ $bg }} {{ $borderWidth }} {{ $borderStyle }} {{ $borderColor }} {{ $radius }} {{ $hover }}"
     >
       {{-- <div class="{{ $padding }} h-full flex flex-col min-w-0"> --}}
         <div class="{{ $padding }} h-full flex flex-col min-w-0">

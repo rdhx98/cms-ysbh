@@ -153,7 +153,7 @@
               {{-- wire:model.blur="{{ $elPath }}.data.content.{{ $code }}" --}}
               wire:model.live.debounce.1000ms="{{ $elPath }}.data.content.{{ $code }}"
               placeholder="Ketik isi teks di sini..."
-              class="focus:ring-foresty mb-2 w-full resize-none rounded-lg border-gray-200 text-sm font-semibold shadow-sm"
+              class="focus:ring-foresty mb-2 p-2 w-full resize-none rounded-lg border-gray-200 text-sm font-semibold shadow-sm"
             ></textarea>
 
             <div
@@ -346,12 +346,12 @@
       </div>
     </div>
   @endforeach
+  <button
+    type="button"
+    x-on:click="$wire.addColumnToCard('{{ $blockId }}', {{ $cIndex }})"
+    class="bg-forest hover:bg-forest-dark mt-3 rounded-full px-3 py-1.5 text-xs font-bold text-white"
+  >
+    + Tambah Kolom
+  </button>
 </div>
 
-<button
-  type="button"
-  x-on:click="$wire.addColumnToCard('{{ $blockId }}', {{ $cIndex }})"
-  class="bg-forest hover:bg-forest-dark mt-3 rounded-full px-3 py-1.5 text-xs font-bold text-white"
->
-  + Tambah Kolom
-</button>
