@@ -525,10 +525,19 @@ public function addCardItem(string $blockId, string $preset = 'stack')
         'id' => uniqid('card_'),
         'layout' => $layout,
         'container' => [
-            'bg' => 'bg-white', 'padding' => 'p-5', 'border' => 'border border-gray-200',
-            'radius' => 'rounded-[18px]', 'shadow' => 'shadow-sm', 'hover' => 'hover:-translate-y-1', 'url' => ''
+            'bg' => 'bg-white',
+            'padding' => 'p-4',
+            'border_width' => 'border-0',
+            'border_style' => 'border-colid',
+            'border_color' => 'border-gray-200',
+            'radius' => 'rounded-[14px]',
+            'shadow' => 'shadow-sm',
+            'hover' => 'hover:-translate-y-1',
+            'align_y' => 'items-start',
+            'url' => ''
         ],
     ];
+
 
     if (!isset($this->content[$blockId]['data']['cards'])) {
         $this->content[$blockId]['data']['cards'] = [];
