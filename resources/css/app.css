@@ -16,7 +16,6 @@
 @tailwind utilities;
 
 
-
 /* =========================================
    1. Fraunces (.woff2)
    ========================================= */
@@ -260,6 +259,9 @@
     --font-arial: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
     --font-times: 'Times New Roman', Times, Baskerville, Georgia, serif;
     --font-roboto: 'Roboto', sans-serif;
+    --font-fraunces: 'Fraunces', serif;
+    --font-jetbrains: 'JetBrains Mono', monospace;
+    --font-opensans: 'Open Sans', sans-serif;
     /* --font-sans: 'Plus Jakarta Sans', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif; */
 
     --color-zinc-50: #fafafa;
@@ -311,6 +313,13 @@ body, html {
 }
 @utility transition-radius {
   transition-property: border-radius;
+}
+@utility no-scrollbar {
+  scrollbar-width: none; /* Untuk Firefox */
+  -ms-overflow-style: none; /* Untuk IE dan Edge lama */
+  &::-webkit-scrollbar {
+    display: none; /* Untuk Chrome, Safari, dan Opera */
+  }
 }
 @layer base {
     button {

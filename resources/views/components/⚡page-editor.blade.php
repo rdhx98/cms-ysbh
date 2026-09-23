@@ -772,6 +772,33 @@ new class extends Component {
                         />
                       </div>
                     @endforeach
+                    {{-- @foreach ($activeLocales as $code)
+                      <div
+                        wire:key="lang-wrapper-{{ $blockId }}-{{ $code }}"
+                        x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
+                        class="group-hover:border-foresty/80 flex flex-col space-y-3 rounded-xl border-2 border-transparent bg-gray-100 transition-colors group-hover:bg-white"
+                        :class="isRowPinned ? 'flex-1 min-h-0' : 'h-full'"
+                      >
+                        <!-- 🌟 LOGIKA PENCARIAN KOMPONEN OTOMATIS -->
+                        @php
+                            $baseName = 'blocks.editor.' . str_replace('_', '-', $block['type']);
+                            
+                            // Cek apakah ada file index.blade.php di dalam folder tersebut
+                            $componentPath = View::exists('components.' . $baseName . '.index') 
+                                ? $baseName . '.index' 
+                                : $baseName;
+                        @endphp
+
+                        <!-- Render Blok Komponen -->
+                        <x-dynamic-component
+                          :component="$componentPath"
+                          :block-id="$blockId"
+                          :code="$code"
+                          :block="$block"
+                          :all-content="$content"
+                        />
+                      </div>
+                    @endforeach --}}
                   </div>
                 </div>
                 {{-- </div> --}}

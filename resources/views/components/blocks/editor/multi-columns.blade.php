@@ -405,6 +405,8 @@
                   class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Grup Kartu</button>
                 <button type="button" wire:click="addChildBlock('{{ $blockId }}', '{{ $zoneKey }}', 'testimonial-group'); openDropdown = false"
                   class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Grup Testimoni</button>
+                <button type="button" wire:click="addChildBlock('{{ $blockId }}', '{{ $zoneKey }}', 'card-builder'); openDropdown = false"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-blue-50 rounded-md transition text-left">Card Builder</button>
               </div>
             </div>
           </div>

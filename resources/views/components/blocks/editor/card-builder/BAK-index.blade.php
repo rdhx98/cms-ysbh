@@ -244,6 +244,20 @@
       </div>
     </div>
 
+    <!-- 🌟 BUNGKUSAN LIPATAN -->
+    <!-- <div
+      x-show="!isCollapsed"
+      x-collapse
+      x-cloak
+      class="flex flex-col"
+      {{-- 🌟 Penambahan h-full untuk menembus gaya height:auto bawaan x-collapse --}}
+      x-bind: class="isPinned || isRowPinned ? 'flex-1 min-h-0 h-full' : ''"
+    > -->
+      {{-- 🌟 BADAN TENGAH --}}
+      {{-- <div
+        class="flex flex-col p-4"
+        x-bind:class="isPinned || isRowPinned ? 'flex-1 min-h-0 h-full' : ''"
+      > --}}
       <!-- 🌟 BUNGKUSAN LIPATAN -->
     <div
       x-show="!isCollapsed"
@@ -254,7 +268,7 @@
     >
       {{-- 🌟 BADAN TENGAH --}}
       <div
-        class="flex flex-col p-2 flex-1 min-h-0"
+        class="flex flex-col p-4 flex-1 min-h-0"
         x-bind:class="isPinned || isRowPinned ? 'h-full' : ''"
       >
         @if (count($cards) === 0)
@@ -312,98 +326,38 @@
             </div>
           </div>
         @else
-          
           <!-- KONTROL TAB KARTU -->
-          <div class="mb-1.5 pb-1.5  flex shrink-0 items-center gap-2 border-b border-gray-200">
-            
-            {{-- 🌟 PEMBUNGKUS TAB (TOMBOL PERMANEN, UI STABIL) --}}
-            <div 
-              class="flex flex-1 items-center gap-1.5 min-w-0"
-              x-data="{
-                canScrollLeft: false,
-                canScrollRight: false,
-                checkScroll() {
-                  const el = this.$refs.tabContainer;
-                  if (!el || el.clientWidth === 0) return;
-                  
-                  this.canScrollLeft = el.scrollLeft > 0;
-                  this.canScrollRight = Math.ceil(el.scrollLeft + el.clientWidth) < (el.scrollWidth - 2);
-                },
-                scrollLeft() {
-                  this.$refs.tabContainer.scrollBy({ left: -200, behavior: 'smooth' });
-                },
-                scrollRight() {
-                  this.$refs.tabContainer.scrollBy({ left: 200, behavior: 'smooth' });
-                },
-                init() {
-                  this.$nextTick(() => this.checkScroll());
-                  
-                  const interval = setInterval(() => {
-                    if (!this.$el || !this.$el.isConnected) {
-                      clearInterval(interval);
-                      return;
-                    }
-                    this.checkScroll();
-                  }, 200);
-                }
-              }"
-            >
-              {{-- 1. Tombol Panah Kiri (Permanen) --}}
-              <button 
-                type="button" 
-                :disabled="!canScrollLeft"
-                @click="scrollLeft()" 
-                class="shrink-0 flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors outline-none"
-                x-bind:class="!canScrollLeft ? 'opacity-40 bg-gray-50 cursor-not-allowed shadow-none' : 'shadow-sm hover:border-foresty hover:bg-sage-soft hover:text-foresty'"
-              >
-                <x-dynamic-component component="lucide-chevron-left" class="h-4 w-4" />
-              </button>
-
-              {{-- 🌟 AREA SCROLL TAB ASLI --}}
-              <div 
-                x-ref="tabContainer"
-                @scroll.passive="checkScroll()"
-                class="no-scrollbar flex flex-1 gap-2 overflow-x-auto"
-              >
-                @foreach ($cards as $index => $card)
-                  <div
-                    wire:key="tab-{{ $blockId }}-{{ $card['id'] ?? $index }}"
-                    class="flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 transition-colors"
-                    x-bind:class="activeCard === {{ $index }} ? 'bg-foresty text-white border-foresty shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-white hover:border-gray-300'"
+          <div
+            class="mb-4 flex shrink-0 items-center gap-2 border-b border-gray-200 pb-2"
+          >
+            <div class="no-scrollbar flex flex-1 gap-2 overflow-x-auto pb-1">
+              @foreach ($cards as $index => $card)
+                <div
+                  wire:key="tab-{{ $blockId }}-{{ $card['id'] ?? $index }}"
+                  class="flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 transition-colors"
+                  x-bind:class="activeCard === {{ $index }} ? 'bg-foresty text-white border-foresty shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-white hover:border-gray-300'"
+                >
+                  <button
+                    type="button"
+                    x-on:click="syncTabs({{ $index }}, '{{ ($card['blueprint'] ?? 'stack') === 'stack' ? 'main' : 'middle' }}')"
+                    class="pr-2 pl-1 text-xs font-bold whitespace-nowrap outline-none"
                   >
-                    <button
-                      type="button"
-                      x-on:click="syncTabs({{ $index }}, '{{ ($card['blueprint'] ?? 'stack') === 'stack' ? 'main' : 'middle' }}')"
-                      class="pr-2 pl-1 text-xs font-bold whitespace-nowrap outline-none"
-                    >
-                      Kartu {{ $index + 1 }}
-                    </button>
-                    <button
-                      type="button"
-                      wire:click="removeCardItem('{{ $blockId }}', {{ $index }})"
-                      x-on:click="syncTabs(Math.max(0, activeCard - 1), 'main')"
-                      class="rounded p-0.5 transition-colors outline-none hover:bg-red-500 hover:text-white"
-                      title="Hapus Kartu"
-                    >
-                      <x-dynamic-component component="lucide-x" class="h-3 w-3" />
-                    </button>
-                  </div>
-                @endforeach
-              </div>
+                    Kartu {{ $index + 1 }}
+                  </button>
 
-              {{-- 2. Tombol Panah Kanan (Permanen) --}}
-              <button 
-                type="button" 
-                :disabled="!canScrollRight"
-                @click="scrollRight()" 
-                class="shrink-0 flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors outline-none"
-                x-bind:class="!canScrollRight ? 'opacity-40 bg-gray-50 cursor-not-allowed shadow-none' : 'shadow-sm hover:border-foresty hover:bg-sage-soft hover:text-foresty'"
-              >
-                <x-dynamic-component component="lucide-chevron-right" class="h-4 w-4" />
-              </button>
+                  <button
+                    type="button"
+                    wire:click="removeCardItem('{{ $blockId }}', {{ $index }})"
+                    x-on:click="syncTabs(Math.max(0, activeCard - 1), 'main')"
+                    class="rounded p-0.5 transition-colors outline-none hover:bg-red-500 hover:text-white"
+                    title="Hapus Kartu"
+                  >
+                    <x-dynamic-component component="lucide-x" class="h-3 w-3" />
+                  </button>
+                </div>
+              @endforeach
             </div>
-            
-            
+
             <!-- Tombol Tambah Kartu Baru -->
             <div class="relative shrink-0" x-data="{ openMenu: false }">
               <button
@@ -444,17 +398,18 @@
                 >
                   Dokumen (3 Kolom)
                 </button>
-                <!-- <button
+                {{-- <button
                   type="button"
                   wire:key="add-media-{{ $blockId }}"
                   x-on:click="$wire.addCardItem('{{ $blockId }}', 'media-object'); syncTabs({{ count($cards) }}, 'middle'); openMenu = false"
                   class="w-full px-3 py-2 text-left text-xs outline-none hover:bg-gray-50"
                 >
                   Dokumen (3 Kolom)
-                </button> -->
+                </button> --}}
               </div>
             </div>
           </div>
+
           <!-- 🌟 AREA PENGATURAN KOTAK (Menempel di atas area scroll) -->
           <div
             class="border border-gray-200 border-b-0 bg-gray-50 pb-3 sm:pb-4"
@@ -467,7 +422,44 @@
                 wire:key="card-settings-{{ $blockId }}-{{ $cIndex }}"
                 class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
               >
-                
+                {{-- <div class="flex items-center justify-between">
+                  <div class="w-full text-[10px] font-bold text-gray-400 uppercase">
+                    Gaya Kotak & Tautan
+                  </div>
+                  <span class="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-[9px] font-bold text-gray-500">
+                    Blueprint: {{ $card['blueprint'] ?? 'stack' }}
+                  </span>
+                </div> --}}
+
+                {{-- <div class="flex flex-wrap gap-2">
+                  <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.bg" class="rounded border-gray-200 p-1.5 text-xs">
+                    <option value="bg-white">Latar Putih</option>
+                    <option value="bg-mist">Latar Mist</option>
+                    <option value="bg-foresty text-white">Latar Foresty</option>
+                    <option value="bg-transparent">Transparan</option>
+                  </select>
+                  <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.border" class="rounded border-gray-200 p-1.5 text-xs">
+                    <option value="border border-gray-200">Border Standar</option>
+                    <option value="border border-foresty/15">Border Tipis</option>
+                    <option value="border-0">Tanpa Border</option>
+                  </select>
+                  <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.radius" class="rounded border-gray-200 p-1.5 text-xs">
+                    <option value="rounded-none">Siku</option>
+                    <option value="rounded-[14px]">Agak Bulat</option>
+                    <option value="rounded-[28px]">Sangat Bulat</option>
+                  </select>
+                  <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.padding" class="rounded border-gray-200 p-1.5 text-xs">
+                    <option value="p-4">Padding Kecil</option>
+                    <option value="p-6 md:p-8">Padding Besar</option>
+                    <option value="p-0">Tanpa Padding</option>
+                  </select>
+                  <select wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.align_y" class="rounded border-gray-200 p-1.5 text-xs">
+                    <option value="items-start">Posisi Atas (Top)</option>
+                    <option value="items-center">Posisi Tengah (Center)</option>
+                    <option value="items-end">Posisi Bawah (Bottom)</option>
+                    <option value="items-stretch">Sama Tinggi (Stretch)</option>
+                  </select>
+                </div> --}}
 
                 @php
                   $cBg = $card['container']['bg'] ?? 'bg-white';
@@ -485,7 +477,7 @@
                 <div class="flex flex-wrap gap-5 pb-2">
                   {{-- 1. Latar Belakang (Warna Murni) --}}
                   <div class="flex flex-col gap-1.5">
-                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Latar Kartu</span>
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Latar Belakang</span>
                     <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
                       <button type="button" title="Putih" x-on:click="$wire.set('{{ $basePath }}.bg', 'bg-white')" class="rounded p-1.5 transition-all outline-none {{ $cBg === 'bg-white' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
                         <div class="h-4 w-4 rounded-full border border-gray-300 bg-white shadow-sm"></div>
@@ -506,7 +498,7 @@
 
                   {{-- 2A. Ketebalan Garis (Border Width) --}}
                   <div class="flex flex-col gap-1.5">
-                    <span class="text-xxs font-bold text-gray-400 uppercase tracking-wide">Tebal Tepian</span>
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Tebal Garis</span>
                     <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
                       <button type="button" title="Tanpa Garis" x-on:click="$wire.set('{{ $basePath }}.border_width', 'border-0')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cBorderWidth === 'border-0' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
                         <div class="flex h-4 w-4 items-center justify-center"><div class="h-0.5 w-full bg-current opacity-40"></div></div>
@@ -522,7 +514,7 @@
 
                   {{-- 2B. Tipe Garis (Border Style) --}}
                   <div class="flex flex-col gap-1.5">
-                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Tipe Tepian</span>
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Tipe Garis</span>
                     <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
                       <button type="button" title="Solid (Lurus)" x-on:click="$wire.set('{{ $basePath }}.border_style', 'border-solid')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cBorderStyle === 'border-solid' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
                         <div class="h-4 w-4 rounded-sm border-2 border-solid border-current"></div>
@@ -535,7 +527,7 @@
 
                   {{-- 2C. Warna Garis (Border Color) --}}
                   <div class="flex flex-col gap-1.5">
-                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Warna Tepian</span>
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Warna Garis</span>
                     <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
                       <button type="button" title="Abu-abu (Gray 200)" x-on:click="$wire.set('{{ $basePath }}.border_color', 'border-gray-200')" class="rounded p-1.5 transition-all outline-none {{ $cBorderColor === 'border-gray-200' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
                         <div class="h-4 w-4 rounded-sm border-2 border-gray-200 bg-white"></div>
@@ -556,7 +548,7 @@
 
                   {{-- 3. Sudut Kotak (Radius CSS) --}}
                   <div class="flex flex-col gap-1.5">
-                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Sudut Kartu</span>
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Sudut Kotak</span>
                     <div class="flex w-fit items-center rounded-md bg-gray-100 p-0.5 shadow-inner">
                       <button type="button" title="Siku (Tanpa Sudut)" x-on:click="$wire.set('{{ $basePath }}.radius', 'rounded-none')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $cRadius === 'rounded-none' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
                         <div class="h-4 w-4 rounded-none border-2 border-current"></div>
@@ -651,7 +643,14 @@
 
       {{-- PREVIEW BLOK --}}
       @if (count($cards) > 0)
-        
+        {{-- <div
+          class="flex shrink-0 flex-col overflow-hidden rounded-b-xl border-t border-gray-200 bg-gray-50"
+          x-bind: class="
+            isPinned || isRowPinned
+              ? 'max-h-[35vh] border-t-2 border-foresty/20'
+              : ''
+          "
+        > --}}
         <div
           class="flex shrink-0 flex-col overflow-hidden rounded-b-xl border-t border-gray-200 bg-gray-50 max-h-[35vh]"
           x-bind:class="isPinned || isRowPinned ? 'border-t-2 border-foresty/20' : ''"
@@ -665,11 +664,25 @@
             >
           </div>
 
+          {{-- 🌟 PERBAIKAN 4: Penambahan \x3E untuk memperbaiki error DOM Parser di VS Code --}}
+          {{-- <style
+            x-text="`.preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; } .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid \x3E *:not(:nth-child(${activeCard + 1})) { display: none !important; }`"
+          ></style> --}}
+          {{-- 🌟 PERBAIKAN 5: Penambahan \x3E di depan .grid agar hanya menyasar Grid Kartu terluar, bukan Grid Kolom di dalamnya --}}
           <style
             x-text="`.preview-atomic-{{ $blockId }}-{{ strtolower($code) }} \x3E .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; width: 100%; } .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} \x3E .grid \x3E *:not(:nth-child(${activeCard + 1})) { display: none !important; }`"
           ></style>
 
-          
+          {{-- <div
+            class="preview-atomic-{{ $blockId }}-{{ strtolower($code) }} p-6 md:p-10 w-full flex justify-center bg-gray-50"
+            x-bind: class="
+              isPinned || isRowPinned
+                ? 'flex-1 overflow-y-auto scrollbar-thin'
+                : 'min-h-[150px]'
+            "
+          >
+            @include ('components.blocks.render.card-builder', ['data' => $data, 'lang' => strtolower($code), 'isPreview' => true])
+          </div> --}}
           <div
             class="preview-atomic-{{ $blockId }}-{{ strtolower($code) }} p-6 md:p-10 w-full flex justify-center bg-gray-50 flex-1 overflow-y-auto scrollbar-thin"
           >
