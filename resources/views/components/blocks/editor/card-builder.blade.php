@@ -312,12 +312,12 @@
             </div>
           </div>
         @else
-          
+
           <!-- KONTROL TAB KARTU -->
           <div class="mb-1.5 pb-1.5  flex shrink-0 items-center gap-2 border-b border-gray-200">
-            
+
             {{-- 🌟 PEMBUNGKUS TAB (TOMBOL PERMANEN, UI STABIL) --}}
-            <div 
+            <div
               class="flex flex-1 items-center gap-1.5 min-w-0"
               x-data="{
                 canScrollLeft: false,
@@ -325,7 +325,7 @@
                 checkScroll() {
                   const el = this.$refs.tabContainer;
                   if (!el || el.clientWidth === 0) return;
-                  
+
                   this.canScrollLeft = el.scrollLeft > 0;
                   this.canScrollRight = Math.ceil(el.scrollLeft + el.clientWidth) < (el.scrollWidth - 2);
                 },
@@ -337,7 +337,7 @@
                 },
                 init() {
                   this.$nextTick(() => this.checkScroll());
-                  
+
                   const interval = setInterval(() => {
                     if (!this.$el || !this.$el.isConnected) {
                       clearInterval(interval);
@@ -349,10 +349,10 @@
               }"
             >
               {{-- 1. Tombol Panah Kiri (Permanen) --}}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 :disabled="!canScrollLeft"
-                @click="scrollLeft()" 
+                @click="scrollLeft()"
                 class="shrink-0 flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors outline-none"
                 x-bind:class="!canScrollLeft ? 'opacity-40 bg-gray-50 cursor-not-allowed shadow-none' : 'shadow-sm hover:border-foresty hover:bg-sage-soft hover:text-foresty'"
               >
@@ -360,7 +360,7 @@
               </button>
 
               {{-- 🌟 AREA SCROLL TAB ASLI --}}
-              <div 
+              <div
                 x-ref="tabContainer"
                 @scroll.passive="checkScroll()"
                 class="no-scrollbar flex flex-1 gap-2 overflow-x-auto"
@@ -392,18 +392,18 @@
               </div>
 
               {{-- 2. Tombol Panah Kanan (Permanen) --}}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 :disabled="!canScrollRight"
-                @click="scrollRight()" 
+                @click="scrollRight()"
                 class="shrink-0 flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors outline-none"
                 x-bind:class="!canScrollRight ? 'opacity-40 bg-gray-50 cursor-not-allowed shadow-none' : 'shadow-sm hover:border-foresty hover:bg-sage-soft hover:text-foresty'"
               >
                 <x-dynamic-component component="lucide-chevron-right" class="h-4 w-4" />
               </button>
             </div>
-            
-            
+
+
             <!-- Tombol Tambah Kartu Baru -->
             <div class="relative shrink-0" x-data="{ openMenu: false }">
               <button
@@ -457,7 +457,7 @@
           </div>
           <!-- 🌟 AREA PENGATURAN KOTAK (Menempel di atas area scroll) -->
           <div
-            class="border border-gray-200 border-b-0 bg-gray-50 pb-3 sm:pb-4"
+            class=" pb-3 sm:pb-4"
             x-bind:class="isPinned || isRowPinned ? '' : 'rounded-t-xl'"
           >
             @foreach ($cards as $cIndex => $card)
@@ -467,7 +467,7 @@
                 wire:key="card-settings-{{ $blockId }}-{{ $cIndex }}"
                 class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
               >
-                
+
 
                 @php
                   $cBg = $card['container']['bg'] ?? 'bg-white';
@@ -621,8 +621,9 @@
 
 
           <!-- AREA SCROLL KOLOM -->
-          <div
-          class="flex flex-col border border-gray-200 bg-gray-50 p-4 sm:p-5 flex-1 min-h-0 overflow-y-scroll scrollbar-thin"
+          {{-- bg-gray-50 --}}
+          <x-no-scroll-zone
+          class="flex flex-col border border-gray-200 shadow-sm p-2 sm:p-3 flex-1 min-h-0 overflow-y-scroll scrollbar-none"
           x-bind:class="isPinned || isRowPinned ? 'rounded-none' : 'rounded-xl'"
           >
             @foreach ($cards as $cIndex => $card)
@@ -644,14 +645,14 @@
                 />
               </div>
             @endforeach
-          </div>
+          </x-no-scroll-zone>
         @endif
       </div>
       {{-- Akhir Badan Tengah --}}
 
       {{-- PREVIEW BLOK --}}
       @if (count($cards) > 0)
-        
+
         <div
           class="flex shrink-0 flex-col overflow-hidden rounded-b-xl border-t border-gray-200 bg-gray-50 max-h-[35vh]"
           x-bind:class="isPinned || isRowPinned ? 'border-t-2 border-foresty/20' : ''"
@@ -669,7 +670,7 @@
             x-text="`.preview-atomic-{{ $blockId }}-{{ strtolower($code) }} \x3E .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; width: 100%; } .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} \x3E .grid \x3E *:not(:nth-child(${activeCard + 1})) { display: none !important; }`"
           ></style>
 
-          
+
           <div
             class="preview-atomic-{{ $blockId }}-{{ strtolower($code) }} p-6 md:p-10 w-full flex justify-center bg-gray-50 flex-1 overflow-y-auto scrollbar-thin"
           >

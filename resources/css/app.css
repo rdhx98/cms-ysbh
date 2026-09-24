@@ -1549,3 +1549,48 @@ figure[data-type="image-block"]:focus-within {
         @apply !opacity-100 !translate-y-0 !translate-x-0 !scale-100;
     }
 }
+@layer utilities {
+  /* Targetkan semua elemen yang punya kelas ini */
+  .scrollbar-none {
+    /* 1. Sembunyikan scrollbar standar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    /* 2. Warna dasar (harus solid, sesuaikan jika background Anda bukan putih) */
+    background-color: white;
+
+    /* 3. Trik Magis Scroll Shadow murni CSS */
+    background-image:
+      /* Penutup Atas (Ikut tergulung) */
+      linear-gradient(white 30%, rgba(255,255,255,0)),
+      /* Penutup Bawah (Ikut tergulung) */
+      linear-gradient(rgba(255,255,255,0), white 70%),
+      /* Bayangan Atas (Tetap diam di tempat) */
+      radial-gradient(farthest-side at 50% 0, rgba(0,0,0,0.12), rgba(0,0,0,0)),
+      /* Bayangan Bawah (Tetap diam di tempat) */
+      radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,0.12), rgba(0,0,0,0));
+
+    background-repeat: no-repeat;
+
+    /* Posisi Penutup & Bayangan */
+    background-position:
+      0 0,         /* Penutup Atas */
+      0 100%,      /* Penutup Bawah */
+      0 0,         /* Bayangan Atas */
+      0 100%;      /* Bayangan Bawah */
+
+    /* Ukuran: 40px untuk penutup (harus lebih besar), 14px untuk tebal bayangan */
+    background-size:
+      100% 40px,
+      100% 40px,
+      100% 14px,
+      100% 14px;
+
+    /* KUNCI UTAMA: 'local' berarti ikut scroll, 'scroll' berarti diam */
+    background-attachment: local, local, scroll, scroll;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
