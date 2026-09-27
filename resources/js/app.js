@@ -16,6 +16,6 @@ Alpine.plugin(sort);
 // window.Sortable = Sortable;
 
 // Import modul Tiptap Editor yang terpisah
-import './tiptap/tiptap-editor.js';
+// import './tiptap/tiptap-editor.js';
 import './mikro-tiptap.js';
 import './visual-fx.js';

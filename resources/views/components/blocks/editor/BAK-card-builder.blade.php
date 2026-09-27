@@ -1,836 +1,458 @@
-@props (['blockId', 'block', 'code'])
-
-@php
-  $iconsList = config('icons.lucide', []);
-
-  $data = $block['data'] ?? [];
-  $grid = $data['grid'] ?? ['cols' => 3, 'margin_bottom' => 'mb-8'];
-  $cards = $data['cards'] ?? [];
-@endphp
-
-<!-- 🌟 PEMBUNGKUS LUAR (Kelas flex diubah menjadi dinamis) -->
-<div
-  x-data="{
-    activeCard: 0,
-    activeSlot: 'main',
-    isPinned: false,
-    isRowPinned: false, // Hanya sebagai pengintai status baris
-    isCollapsed: false,
-    pinStyle: '',
-
-    init() {
-        const reportPinStatus = () => {
-            // Selalu laporkan status gabungan, mencegah error balapan (race-condition)
-            $dispatch('global-pin-update', { 
-                id: '{{ $blockId }}', 
-                active: this.isPinned || this.isRowPinned 
-            });
-        };
-        
-        this.$watch('isPinned', reportPinStatus);
-        this.$watch('isRowPinned', reportPinStatus);
-    },
-
-    syncTabs(cardIndex, slotName) {
-        this.activeCard = cardIndex;
-        this.activeSlot = slotName;
-        $dispatch('sync-card-{{ strtolower($blockId) }}', { card: cardIndex, slot: slotName });
-    },
-
-    togglePin() {
-        // 1. MATIKAN COLLAPSE JIKA AKTIF
-        if (this.isCollapsed) {
-            this.isCollapsed = false;
-            $dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
-        }
-
-        // 2. MATIKAN ROW PIN JIKA SEDANG AKTIF
-        if (!this.isPinned && this.isRowPinned) {
-            $dispatch('force-close-row-pin-{{ strtolower($blockId) }}');
-        }
-
-        // 3. JALANKAN FOCUS PIN TUNGGAL
-        this.isPinned = !this.isPinned;
-        if (this.isPinned) {
-            let area = document.getElementById('main-editor-scroll-area');
-            if (area) {
-                let rect = area.getBoundingClientRect();
-                this.pinStyle = `position: fixed !important; top: ${rect.top + 5 }px !important; left: ${rect.left + 16}px !important; width: ${rect.width - 32}px !important; height: ${rect.height - 10}px !important; z-index: 60 !important; margin: 0 !important;`;
-                this.$refs.placeholder.style.height = this.$refs.editor.offsetHeight + 'px';
-            }
-        } else {
-            this.pinStyle = '';
-        }
-    },
-
-    toggleCollapse() {
-        this.isCollapsed = !this.isCollapsed;
-
-        if (this.isCollapsed) {
-            // JIKA RUNTUH, PAKSA MATIKAN SEMUA PIN
-            if (this.isPinned) {
-                this.isPinned = false;
-                this.pinStyle = '';
-            }
-            if (this.isRowPinned) {
-                $dispatch('force-close-row-pin-{{ strtolower($blockId) }}');
-            }
-        }
-        $dispatch('sync-collapse-{{ strtolower($blockId) }}', this.isCollapsed);
-    }
-  }"
-  @toggle-row-pin-{{ strtolower($blockId) }}.window="
-    isRowPinned = !isRowPinned;
-    if (isRowPinned) {
-        // JIKA ROW PIN HIDUP, MATIKAN FOCUS PIN & BUKA COLLAPSE
-        if (isPinned) {
-            isPinned = false;
-            pinStyle = '';
-        }
-        if (isCollapsed) {
-            isCollapsed = false;
-            $dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
-        }
-    }
-  "
-  @force-close-row-pin-{{ strtolower($blockId) }}.window="isRowPinned = false"
-  @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail"
-  @toggle-collapse-all.window="
-    isCollapsed = $event.detail;
-    if (isCollapsed && isPinned) {
-      isPinned = false;
-      pinStyle = '';
-    }
-  "
-  class="flex w-full flex-col"
-  x-bind:class="isPinned || isRowPinned ? 'h-full flex-1 min-h-0' : ''"
->
-  {{-- PLACEHOLDER --}}
-  <div
-    x-ref="placeholder"
-    x-show="isPinned"
-    x-cloak
-    class="flex w-full items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50"
-  >
-    <div class="text-center">
-      <x-dynamic-component
-        component="lucide-maximize"
-        class="mx-auto mb-2 h-6 w-6 text-gray-400"
-      />
-      <span class="text-xs font-bold tracking-widest text-gray-400 uppercase"
-        >Mode Fokus Sedang Aktif</span
-      >
-    </div>
-  </div>
-
-  {{-- EDITOR UTAMA --}}
-  <div
-    x-ref="editor"
-    :style="isPinned ? pinStyle : ''"
-    class="flex flex-col bg-white transition-all duration-200"
-    x-bind:class="
-      isPinned
-        ? 'border-foresty ring-4 ring-foresty/20 shadow-2xl overflow-hidden flex-1 min-h-0'
-        : isRowPinned
-          ? 'border-foresty/50 ring-2 ring-foresty/20 overflow-hidden flex-1 min-h-0 max-h-[calc(100vh-120px)]'
-          : 'rounded-xl border border-gray-200 shadow-md relative h-auto'
-    "
-  >
-    <!-- HEADER BLOK -->
-    <div
-      class="flex shrink-0 items-center justify-between rounded-t-xl border-b border-gray-200 bg-gray-100 p-2"
-    >
-      <div class="flex items-center gap-2">
-        <div class="bg-sage-soft rounded-md p-1">
-          <x-dynamic-component
-            component="lucide-blocks"
-            class="text-foresty h-4 w-4"
-          />
-        </div>
-        <span
-          class="text-xs font-extrabold tracking-widest text-gray-500 uppercase"
-          >Card Builder</span
-        >
-      </div>
-
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-2" x-show="!isCollapsed">
-          <select
-            wire:model.live="content.{{ $blockId }}.data.grid.cols"
-            class="text-foresty rounded border-gray-300 bg-white py-1 text-xs font-bold shadow-sm"
-          >
-            <option value="1">1 Kolom</option>
-            <option value="2">2 Kolom</option>
-            <option value="3">3 Kolom</option>
-            <option value="4">4 Kolom</option>
-          </select>
-          <select
-            wire:model.live="content.{{ $blockId }}.data.grid.margin_bottom"
-            class="text-foresty rounded border-gray-300 bg-white py-1 text-xs font-bold shadow-sm"
-          >
-            <option value="mb-0">Bawah: 0px</option>
-            <option value="mb-8">Bawah: Normal</option>
-            <option value="mb-16">Bawah: Jauh</option>
-          </select>
-          <span
-            class="text-foresty bg-sage-soft shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase shadow-sm"
-            >{{ $code }}</span
-          >
-        </div>
-
-        <div class="flex items-center gap-1 border-l border-gray-300 pl-4">
-          {{-- BUTTON PIN ROW --}}
-          <button
-            type="button"
-            :disabled="isPinned || isCollapsed"
-            x-on:click="$dispatch('toggle-row-pin-{{ strtolower($blockId) }}')"
-            x-bind:class="
-              isRowPinned
-                ? 'bg-foresty/10 text-foresty shadow-inner'
-                : 'bg-gray-200 text-gray-500 hover:text-foresty hover:bg-gray-300'
-            "
-            class="flex items-center justify-center rounded-md p-1.5 transition-colors outline-none"
-            title="Pin Baris (Split View)"
-          >
-            <x-dynamic-component
-              component="lucide-columns"
-              class="h-3.5 w-3.5"
-            />
-          </button>
-
-          {{-- BUTTON PIN --}}
-          <button
-            type="button"
-            :disabled="isRowPinned || isCollapsed"
-            x-on:click="togglePin()"
-            x-bind:class="
-              isPinned
-                ? 'bg-foresty text-white shadow-inner'
-                : 'bg-gray-200 text-gray-500 hover:text-foresty hover:bg-gray-300'
-            "
-            class="flex items-center justify-center rounded-md p-1.5 shadow-sm transition-colors outline-none"
-            title="Fokus Layar Penuh"
-          >
-            <x-dynamic-component
-              component="lucide-maximize"
-              class="h-3.5 w-3.5"
-              x-bind:class="isPinned ? 'scale-90' : ''"
-            />
-          </button>
-
-          {{-- BUTTON COLLAPSE --}}
-          <button
-            type="button"
-            :disabled="isPinned || isRowPinned"
-            x-on:click="toggleCollapse()"
-            class="hover:text-foresty rounded-md p-1.5 text-gray-400 transition-colors outline-none hover:bg-gray-200"
-          >
-            <x-dynamic-component
-              component="lucide-chevron-down"
-              class="h-4 w-4 transition-transform duration-300"
-              x-bind:class="isCollapsed ? 'rotate-180' : ''"
-            />
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 🌟 BUNGKUSAN LIPATAN (Kelas flex diubah menjadi dinamis) -->
-    <div
-      x-show="!isCollapsed"
-      x-collapse
-      x-cloak
-      class="flex flex-col"
-      x-bind:class="isPinned || isRowPinned ? 'flex-1 min-h-0' : ''"
-    >
-      {{-- 🌟 BADAN TENGAH (Kelas flex diubah menjadi dinamis) --}}
-      {{-- <div
-        class="flex flex-col p-4"
-        x-bind:class="
-          isPinned || isRowPinned
-            ? 'flex-1 min-h-0 overflow-y-auto scrollbar-thin'
-            : ''
-        "
-      > --}}
-      <div
-        class="flex flex-col p-4"
-        x-bind:class="isPinned || isRowPinned ? 'flex-1 min-h-0' : ''"
-      >
-        {{-- CHEKCED --}}
-        @if (count($cards) === 0)
-          <!-- Tampilan Kosong (Zero State) -->
-          <div class="flex flex-1 flex-col items-center justify-center py-10">
-            <p class="mb-4 text-sm text-gray-500">Belum ada kartu. Silakan pilih kerangka dasar (blueprint) kartu pertama Anda.</p>
-            <div class="flex justify-center gap-4">
-              <button
-                type="button"
-                wire:click="addCardItem('{{ $blockId }}', 'stack')"
-                x-on:click="syncTabs(0, 'main')"
-                class="hover:border-foresty group flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-gray-300 px-5 py-3 transition-colors outline-none"
-              >
-                <div class="flex w-12 flex-col items-center gap-1">
-                  <div
-                    class="group-hover:bg-foresty/50 h-2 w-8 rounded bg-gray-300 transition-colors"
-                  ></div>
-                  <div
-                    class="group-hover:bg-foresty/50 h-2 w-12 rounded bg-gray-300 transition-colors"
-                  ></div>
-                  <div
-                    class="group-hover:bg-foresty/50 h-2 w-10 rounded bg-gray-300 transition-colors"
-                  ></div>
-                </div>
-                <span
-                  class="group-hover:text-foresty text-xs font-bold text-gray-600 transition-colors"
-                  >Stack (Tumpuk)</span
-                >
-              </button>
-
-              <button
-                type="button"
-                wire:click="addCardItem('{{ $blockId }}', 'media-object')"
-                x-on:click="syncTabs(0, 'middle')"
-                class="hover:border-foresty group flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-gray-300 px-5 py-3 transition-colors outline-none"
-              >
-                <div class="flex items-center gap-2">
-                  <div
-                    class="group-hover:bg-foresty/50 h-5 w-5 rounded-sm bg-gray-300 transition-colors"
-                  ></div>
-                  <div class="flex flex-col gap-1">
-                    <div
-                      class="group-hover:bg-foresty/50 h-1.5 w-8 rounded bg-gray-300 transition-colors"
-                    ></div>
-                    <div
-                      class="group-hover:bg-foresty/50 h-1.5 w-12 rounded bg-gray-300 transition-colors"
-                    ></div>
-                  </div>
-                </div>
-                <span
-                  class="group-hover:text-foresty text-xs font-bold text-gray-600 transition-colors"
-                  >Dokumen (3 Kolom)</span
-                >
-              </button>
-            </div>
-          </div>
-        @else
-          <!-- KONTROL TAB KARTU -->
-          <div
-            class="mb-4 flex shrink-0 items-center gap-2 border-b border-gray-200 pb-2"
-          >
-            <div class="no-scrollbar flex flex-1 gap-2 overflow-x-auto pb-1">
-              @foreach ($cards as $index => $card)
-                <div
-                  wire:key="tab-{{ $blockId }}-{{ $card['id'] ?? $index }}"
-                  class="flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 transition-colors"
-                  x-bind:class="activeCard === {{ $index }} ? 'bg-foresty text-white border-foresty shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-white hover:border-gray-300'"
-                >
-                  <button
-                    type="button"
-                    x-on:click="syncTabs({{ $index }}, '{{ ($card['blueprint'] ?? 'stack') === 'stack' ? 'main' : 'middle' }}')"
-                    class="pr-2 pl-1 text-xs font-bold whitespace-nowrap outline-none"
-                  >
-                    Kartu {{ $index + 1 }}
-                  </button>
-
-                  <button
-                    type="button"
-                    wire:click="removeCardItem('{{ $blockId }}', {{ $index }})"
-                    x-on:click="syncTabs(Math.max(0, activeCard - 1), 'main')"
-                    class="rounded p-0.5 transition-colors outline-none hover:bg-red-500 hover:text-white"
-                    title="Hapus Kartu"
-                  >
-                    <x-dynamic-component component="lucide-x" class="h-3 w-3" />
-                  </button>
-                </div>
-              @endforeach
+{{-- ================= TEKS ================= --}}
+          @if (($el['elementType'] ?? 'text') === 'text')
+            @php
+              $isPill = $style['is_pill'] ?? false;
+              $size = $style['size'] ?? 'text-[13px]';
+              $weight = $style['weight'] ?? 'font-normal';
+              $pillBg = $style['pill_bg'] ?? 'bg-goldy-soft';
+              $pillRadius = $style['pill_radius'] ?? 'rounded-md';
+              $textColor = $style['color'] ?? 'text-ink-soft';
+              $margin = $style['margin'] ?? 'mb-0';
+              // 🌟 MAPPING DAFTAR FONT YANG DIIZINKAN KE KELAS TAILWIND
+              $font = $style['font'] ?? 'font-fraunces';
+              $fontOptions = [
+                  'font-arial'    => 'Arial',
+                  'font-fraunces' => 'Fraunces',
+                  'font-times'    => 'Times New Roman',
+                  'font-roboto'   => 'Roboto',
+                  'font-jetbrains'=> 'JetBrains Mono',
+                  'font-opensans' => 'Open Sans',
+                  'font-jakarta'  => 'Plus Jakarta Sans',
+              ];
+              $currentFontName = $fontOptions[$font] ?? 'Fraunces';
+            @endphp
+            <div class="mb-2 flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded {{ $isPill ? 'bg-goldy-soft text-goldy-dark' : 'bg-foresty/10 text-foresty' }}">{{ $isPill ? 'Lencana (Pill)' : 'Teks' }}</span>
+              <label class="flex cursor-pointer items-center gap-1.5">
+                <input type="checkbox" wire:model.live="{{ $elPath }}.data.style.is_pill" class="text-foresty focus:ring-foresty h-3.5 w-3.5 rounded border-gray-300" />
+                <span class="text-[10px] font-bold text-gray-500 uppercase">Mode Pill</span>
+              </label>
             </div>
 
-            <!-- Tombol Tambah Kartu Baru -->
-            <div class="relative shrink-0" x-data="{ openMenu: false }">
-              <button
-                type="button"
-                x-on:click="openMenu = !openMenu"
-                x-on:click.away="openMenu = false"
-                class="bg-sage-soft text-foresty hover:bg-foresty flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-bold transition-colors hover:text-white"
-              >
-                <x-dynamic-component component="lucide-plus" class="h-3 w-3" />
-                Tambah
-              </button>
-              <div
-                x-show="openMenu"
-                x-cloak
-                class="absolute top-full right-0 z-50 mt-1 w-40 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg"
-              >
-                <button
-                  type="button"
-                  wire:click="addCardItem('{{ $blockId }}', 'stack')"
-                  x-on:click="syncTabs({{ count($cards) }}, 'main'); openMenu = false"
-                  class="w-full border-b border-gray-100 px-3 py-2 text-left text-xs outline-none hover:bg-gray-50"
-                >
-                  Stack (Tumpuk)
-                </button>
-                <button
-                  type="button"
-                  wire:click="addCardItem('{{ $blockId }}', 'media-object')"
-                  x-on:click="syncTabs({{ count($cards) }}, 'middle'); openMenu = false"
-                  class="w-full px-3 py-2 text-left text-xs outline-none hover:bg-gray-50"
-                >
-                  Dokumen (3 Kolom)
-                </button>
-              </div>
-            </div>
-          </div>
+            <textarea rows="2" wire:model.live.debounce.1000ms="{{ $elPath }}.data.content.{{ $code }}" placeholder="Ketik isi teks di sini..." class="focus:ring-foresty mb-2 p-2 w-full resize-none rounded-lg border-gray-200 text-sm font-semibold shadow-sm"></textarea>
 
-          <!-- AREA KOMPONEN (Isi Kartu) -->
-          <div
-            class="flex flex-col border border-gray-200 bg-gray-50 p-4 sm:p-5"
-            x-bind:class="
-              isPinned || isRowPinned
-                ? 'flex-1 min-h-0 overflow-y-auto scrollbar-thin rounded-none'
-                : 'rounded-xl'
-            "
-          >
-            @foreach ($cards as $cIndex => $card)
-              <div
-                x-show="activeCard === {{ $cIndex }}"
-                x-cloak
-                wire:key="card-editor-{{ $blockId }}-{{ $cIndex }}"
-              >
-                <!-- Pengaturan Kontainer Kartu -->
-                <div
-                  class="mb-6 flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
-                >
-                  <div class="flex items-center justify-between">
+            <div class="flex flex-wrap gap-4 rounded-lg border border-gray-100 bg-gray-50 p-3">
+              @if (!$isPill)
+                {{-- Font & Weight --}}
+                {{-- <div class="flex flex-col gap-1.5">
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Tipe Font</span>
+                  <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.font', 'font-sans')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $font === 'font-sans' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Sistem</button>
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.font', 'font-display')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $font === 'font-display' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Display</button>
+                  </div>
+                </div> --}}
+                {{-- Font Custom Dropdown --}}
+                <div class="flex flex-col gap-1.5">
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Tipe Font</span>
+
+                  <div class="relative w-36" x-data="{ openFont: false }">
+                    {{-- Tombol Utama --}}
+                    <button
+                      type="button"
+                      x-on:click="openFont = !openFont"
+                      class="flex w-full items-center justify-between rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-[11px] shadow-sm transition-colors hover:border-foresty focus:outline-none"
+                    >
+                      {{-- Teks tombol utama menggunakan inline-style agar persis dengan font terpilih --}}
+                      <span class="truncate" style="font-family: '{{ $currentFontName }}', sans-serif;">
+                        {{ $currentFontName }}
+                      </span>
+                      <x-dynamic-component component="lucide-chevron-down" class="h-3 w-3 shrink-0 text-gray-400" />
+                    </button>
+
+                    {{-- Menu Melayang (Dropdown) --}}
                     <div
-                      class="w-full text-[10px] font-bold text-gray-400 uppercase"
+                      x-show="openFont"
+                      x-on:click.outside="openFont = false"
+                      x-cloak
+                      class="absolute left-0 z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-gray-200 bg-white p-1 shadow-lg scrollbar-thin"
                     >
-                      Gaya Kotak & Tautan
-                    </div>
-                    <span
-                      class="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-[9px] font-bold text-gray-500"
-                      >Blueprint: {{ $card['blueprint'] ?? 'stack' }}</span
-                    >
-                  </div>
-
-                  <div class="flex flex-wrap gap-2">
-                    <select
-                      wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.bg"
-                      class="rounded border-gray-200 p-1.5 text-xs"
-                    >
-                      <option value="bg-white">Latar Putih</option>
-                      <option value="bg-mist">Latar Mist</option>
-                      <option value="bg-foresty text-white">
-                        Latar Foresty
-                      </option>
-                      <option value="bg-transparent">Transparan</option>
-                    </select>
-                    <select
-                      wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.border"
-                      class="rounded border-gray-200 p-1.5 text-xs"
-                    >
-                      <option value="border border-gray-200">
-                        Border Standar
-                      </option>
-                      <option value="border border-foresty/15">
-                        Border Tipis
-                      </option>
-                      <option value="border-0">Tanpa Border</option>
-                    </select>
-                    <select
-                      wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.radius"
-                      class="rounded border-gray-200 p-1.5 text-xs"
-                    >
-                      <option value="rounded-none">Siku</option>
-                      <option value="rounded-[14px]">Agak Bulat</option>
-                      <option value="rounded-[28px]">Sangat Bulat</option>
-                    </select>
-                    <select
-                      wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.padding"
-                      class="rounded border-gray-200 p-1.5 text-xs"
-                    >
-                      <option value="p-4">Padding Kecil</option>
-                      <option value="p-6 md:p-8">Padding Besar</option>
-                      <option value="p-0">Tanpa Padding</option>
-                    </select>
-                  </div>
-
-                  <div class="mt-1 flex items-center gap-1">
-                    <input
-                      type="text"
-                      wire:model.blur="content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.url"
-                      placeholder="https:// atau pilih dari pencarian internal..."
-                      class="focus:ring-foresty w-full rounded border-gray-300 py-1.5 text-xs shadow-sm"
-                    />
-                    <button
-                      type="button"
-                      x-on:click="$dispatch('buka-modal-link', { target: 'content.{{ $blockId }}.data.cards.{{ $cIndex }}.container.url' })"
-                      class="hover:bg-sage-soft hover:text-foresty shrink-0 rounded-md border border-gray-200 bg-white p-1.5 text-gray-400 shadow-sm transition-colors"
-                    >
-                      <x-dynamic-component
-                        component="lucide-search"
-                        class="h-4 w-4"
-                        stroke-width="2.5"
-                      />
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Tab Area (Jika Media Object) -->
-                @if (($card['blueprint'] ?? 'stack') === 'media-object')
-                  <div class="mb-4 flex gap-2 border-b border-gray-200 pb-2">
-                    <button
-                      type="button"
-                      x-on:click="activeSlot = 'left'"
-                      x-bind:class="
-                        activeSlot === 'left'
-                          ? 'text-foresty border-foresty'
-                          : 'text-gray-400 border-transparent hover:text-foresty'
-                      "
-                      class="border-b-2 px-2 py-1 text-xs font-bold transition-colors outline-none"
-                    >
-                      Area Kiri
-                    </button>
-                    <button
-                      type="button"
-                      x-on:click="activeSlot = 'middle'"
-                      x-bind:class="
-                        activeSlot === 'middle'
-                          ? 'text-foresty border-foresty'
-                          : 'text-gray-400 border-transparent hover:text-foresty'
-                      "
-                      class="border-b-2 px-2 py-1 text-xs font-bold transition-colors outline-none"
-                    >
-                      Area Tengah
-                    </button>
-                    <button
-                      type="button"
-                      x-on:click="activeSlot = 'right'"
-                      x-bind:class="
-                        activeSlot === 'right'
-                          ? 'text-foresty border-foresty'
-                          : 'text-gray-400 border-transparent hover:text-foresty'
-                      "
-                      class="border-b-2 px-2 py-1 text-xs font-bold transition-colors outline-none"
-                    >
-                      Area Kanan
-                    </button>
-                  </div>
-                @endif
-
-                <!-- Loop Elemen di dalam Slot -->
-                @foreach ($card['slots'] ?? [] as $slotName => $elements)
-                  <div x-show="activeSlot === '{{ $slotName }}'" x-cloak>
-                    <div class="space-y-3">
-                      @foreach ($elements as $elIndex => $el)
-                        <div
-                          wire:key="el-{{ $blockId }}-{{ $cIndex }}-{{ $slotName }}-{{ $elIndex }}"
-                          class="group relative mb-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                      @foreach ($fontOptions as $fClass => $fName)
+                        <button
+                          type="button"
+                          x-on:click="$wire.set('{{ $elPath }}.data.style.font', '{{ $fClass }}'); openFont = false"
+                          class="group flex w-full items-center rounded-sm px-2 py-1.5 text-left transition-colors {{ $font === $fClass ? 'bg-sage-soft text-foresty font-bold' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}"
                         >
-                          <button
-                            type="button"
-                            wire:click="removeCardElement('{{ $blockId }}', {{ $cIndex }}, '{{ $slotName }}', {{ $elIndex }})"
-                            class="absolute -top-2 -right-2 rounded-full bg-red-100 p-1 text-red-600 opacity-0 shadow-sm transition-opacity outline-none group-hover:opacity-100"
-                          >
-                            <x-dynamic-component
-                              component="lucide-x"
-                              class="h-3 w-3"
-                            />
-                          </button>
+                          {{-- Teks menu menggunakan inline-style agar admin langsung melihat pratinjau bentuk asli font-nya --}}
+                          <span class="text-[11px] truncate transition-transform group-hover:scale-105 origin-left" style="font-family: '{{ $fName }}', sans-serif;">
+                            {{ $fName }}
+                          </span>
 
-                          <!-- Jika Tipe TEKS -->
-                          @if (($el['type'] ?? 'text') === 'text')
-                            <div class="mb-2 flex items-center justify-between">
-                              <span
-                                class="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded {{ $el['style']['is_pill'] ?? false ? 'bg-goldy-soft text-goldy-dark' : 'bg-foresty/10 text-foresty' }}"
-                              >
-                                {{ $el['style']['is_pill'] ?? false ? 'Lencana (Pill)' : 'Teks' }}
-                              </span>
-                              <label
-                                class="flex cursor-pointer items-center gap-1.5"
-                              >
-                                <input
-                                  type="checkbox"
-                                  wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.is_pill"
-                                  class="text-foresty focus:ring-foresty h-3.5 w-3.5 rounded border-gray-300"
-                                />
-                                <span
-                                  class="text-[10px] font-bold text-gray-500 uppercase"
-                                  >Mode Pill</span
-                                >
-                              </label>
-                            </div>
-
-                            <textarea
-                              rows="2"
-                              wire:model.blur="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.content.{{ $code }}"
-                              placeholder="Ketik isi teks di sini..."
-                              class="focus:ring-foresty mb-2 w-full resize-none rounded-lg border-gray-200 text-sm font-semibold shadow-sm"
-                            ></textarea>
-
-                            <div
-                              class="flex flex-wrap gap-2 rounded-lg border border-gray-100 bg-gray-50 p-2"
-                            >
-                              @if (!($el['style']['is_pill'] ?? false))
-                                <select
-                                  wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.font"
-                                  class="rounded border-gray-200 py-1 text-[11px]"
-                                >
-                                  <option value="font-sans">Sistem Font</option>
-                                  <option value="font-display">
-                                    Display Font
-                                  </option>
-                                </select>
-                                <select
-                                  wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.size"
-                                  class="rounded border-gray-200 py-1 text-[11px]"
-                                >
-                                  <option value="text-[13px]">Kecil</option>
-                                  <option value="text-[15px]">Normal</option>
-                                  <option value="text-[21px]">
-                                    Besar (H3)
-                                  </option>
-                                </select>
-                                <select
-                                  wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.weight"
-                                  class="rounded border-gray-200 py-1 text-[11px]"
-                                >
-                                  <option value="font-normal">Reguler</option>
-                                  <option value="font-semibold">
-                                    Semi Bold
-                                  </option>
-                                </select>
-                              @else
-                                <select
-                                  wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.pill_bg"
-                                  class="rounded border-gray-200 py-1 text-[11px]"
-                                >
-                                  <option value="bg-goldy-soft">
-                                    Bg Goldy
-                                  </option>
-                                  <option value="bg-mist">Bg Mist</option>
-                                  <option value="bg-sage-soft">Bg Sage</option>
-                                </select>
-                                <select
-                                  wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.pill_radius"
-                                  class="rounded border-gray-200 py-1 text-[11px]"
-                                >
-                                  <option value="rounded-md">
-                                    Sedikit Bulat
-                                  </option>
-                                  <option value="rounded-full">
-                                    Bulat Penuh
-                                  </option>
-                                </select>
-                              @endif
-                              <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.color"
-                                class="rounded border-gray-200 py-1 text-[11px]"
-                              >
-                                <option value="text-ink-soft">Abu Gelap</option>
-                                <option value="text-foresty">Foresty</option>
-                                <option value="text-coral">Coral</option>
-                              </select>
-                              <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.margin"
-                                class="rounded border-gray-200 py-1 text-[11px]"
-                              >
-                                <option value="mb-0">Jarak Bawah: 0</option>
-                                <option value="mb-2">Jarak Bawah: Kecil</option>
-                                <option value="mb-4">
-                                  Jarak Bawah: Sedang
-                                </option>
-                              </select>
-                            </div>
-
-                            <!-- Jika Tipe IKON -->
-                          @elseif (($el['type'] ?? 'icon') === 'icon')
-                            <div class="mb-2 flex items-center justify-between">
-                              <span
-                                class="bg-foresty rounded px-2 py-0.5 text-[10px] font-extrabold tracking-widest text-white uppercase"
-                                >Ikon</span
-                              >
-                            </div>
-
-                            <div
-                              class="relative mb-2"
-                              x-data="{ openPicker: false, search: '' }"
-                            >
-                              <button
-                                type="button"
-                                x-on:click="openPicker = !openPicker"
-                                class="hover:border-foresty flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs shadow-sm transition-colors focus:outline-none"
-                              >
-                                <div class="flex items-center gap-2 truncate">
-                                  <x-dynamic-component
-                                    :component="'lucide-' . ($el['content']['icon'] ?: 'box')"
-                                    class="text-foresty h-5 w-5 shrink-0"
-                                    stroke-width="2.5"
-                                  />
-                                  <span
-                                    class="truncate font-mono text-[11px] font-bold text-gray-700 uppercase"
-                                    >{{ $el['content']['icon'] ?: 'PILIH IKON...' }}</span
-                                  >
-                                </div>
-                                <x-dynamic-component
-                                  component="lucide-chevron-down"
-                                  class="h-4 w-4 shrink-0 text-gray-400"
-                                />
-                              </button>
-
-                              <div
-                                x-show="openPicker"
-                                x-on:click.outside="openPicker = false"
-                                x-cloak
-                                class="absolute left-0 z-50 mt-1 flex w-full flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3 shadow-xl sm:w-64"
-                              >
-                                <div class="relative">
-                                  <x-dynamic-component
-                                    component="lucide-search"
-                                    class="absolute top-2.5 left-3 h-4 w-4 text-gray-400"
-                                  />
-                                  <input
-                                    type="text"
-                                    x-model="search"
-                                    placeholder="Cari ikon..."
-                                    class="focus:ring-foresty focus:border-foresty w-full rounded-lg border border-gray-200 py-2 pr-2 pl-9 text-xs shadow-sm"
-                                  />
-                                </div>
-                                <div
-                                  class="grid max-h-48 scrollbar-thin grid-cols-5 gap-1.5 overflow-y-auto p-1"
-                                >
-                                  @foreach ($iconsList as $iconName)
-                                    <button
-                                      type="button"
-                                      x-show="'{{ $iconName }}'.includes(search.toLowerCase())"
-                                      wire:click="$set('content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.content.icon', '{{ $iconName }}')"
-                                      x-on:click="
-                                        openPicker = false;
-                                        search = '';
-                                      "
-                                      class="p-2.5 rounded-lg flex items-center justify-center transition-all duration-200 border {{ ($el['content']['icon'] ?? '') === $iconName ? 'bg-sage-soft text-foresty border-foresty shadow-sm scale-110' : 'bg-gray-50 text-gray-400 border-transparent hover:border-foresty/50 hover:text-foresty' }}"
-                                    >
-                                      <x-dynamic-component
-                                        :component="'lucide-' . $iconName"
-                                        class="h-5 w-5 shrink-0"
-                                        stroke-width="2"
-                                      />
-                                    </button>
-                                  @endforeach
-                                </div>
-                              </div>
-                            </div>
-
-                            <div
-                              class="flex flex-wrap gap-2 rounded-lg border border-gray-100 bg-gray-50 p-2"
-                            >
-                              <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.bg"
-                                class="rounded border-gray-200 py-1 text-[11px]"
-                              >
-                                <option value="bg-goldy-soft">
-                                  Latar Goldy
-                                </option>
-                                <option value="bg-mist">Latar Mist</option>
-                                <option value="bg-transparent">
-                                  Latar Transparan
-                                </option>
-                              </select>
-                              <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.color"
-                                class="rounded border-gray-200 py-1 text-[11px]"
-                              >
-                                <option value="text-foresty">
-                                  Warna Foresty
-                                </option>
-                                <option value="text-coral">Warna Coral</option>
-                              </select>
-                              <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.size"
-                                class="rounded border-gray-200 py-1 text-[11px]"
-                              >
-                                <option value="w-10 h-10">
-                                  Ukuran Standar
-                                </option>
-                                <option value="w-16 h-16">Ukuran Besar</option>
-                              </select>
-                              <select
-                                wire:model.live="content.{{ $blockId }}.data.cards.{{ $cIndex }}.slots.{{ $slotName }}.{{ $elIndex }}.style.radius"
-                                class="rounded border-gray-200 py-1 text-[11px]"
-                              >
-                                <option value="rounded-[14px]">
-                                  Agak Bulat
-                                </option>
-                                <option value="rounded-full">Lingkaran</option>
-                              </select>
-                            </div>
+                          @if ($font === $fClass)
+                            <x-dynamic-component component="lucide-check" class="ml-auto h-3 w-3 text-foresty shrink-0" stroke-width="3" />
                           @endif
-                        </div>
+                        </button>
                       @endforeach
                     </div>
                   </div>
-                @endforeach
+                </div>
 
-                <!-- Tombol Tambah Elemen Baru -->
-                <div class="mt-2 flex gap-2">
-                  <button
-                    type="button"
-                    wire:click="addCardElement('{{ $blockId }}', {{ $cIndex }}, activeSlot, 'text')"
-                    class="hover:border-foresty hover:text-foresty flex-1 rounded-lg border border-dashed border-gray-300 bg-white py-2.5 text-xs font-bold text-gray-500 shadow-sm transition-colors outline-none"
-                  >
-                    + Teks
+                <div class="flex flex-col gap-1.5">
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Ketebalan</span>
+                  <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.weight', 'font-normal')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $weight === 'font-normal' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Reguler</button>
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.weight', 'font-semibold')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $weight === 'font-semibold' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Semi Bold</button>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Ukuran</span>
+                  <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.size', 'text-[13px]')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $size === 'text-[13px]' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Kecil</button>
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.size', 'text-[15px]')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $size === 'text-[15px]' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Normal</button>
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.size', 'text-[21px]')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $size === 'text-[21px]' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Besar (H3)</button>
+                  </div>
+                </div>
+              @else
+                {{-- Mode Pill Options --}}
+                <div class="flex flex-col gap-1.5">
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Warna Latar Pill</span>
+                  <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                    <button type="button" title="Goldy" x-on:click="$wire.set('{{ $elPath }}.data.style.pill_bg', 'bg-goldy-soft')" class="rounded p-1.5 transition-all outline-none {{ $pillBg === 'bg-goldy-soft' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                      <div class="h-4 w-4 rounded-full bg-[#fde68a] shadow-sm"></div>
+                    </button>
+                    <button type="button" title="Mist" x-on:click="$wire.set('{{ $elPath }}.data.style.pill_bg', 'bg-mist')" class="rounded p-1.5 transition-all outline-none {{ $pillBg === 'bg-mist' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                      <div class="h-4 w-4 rounded-full bg-gray-200 border border-gray-300 shadow-sm"></div>
+                    </button>
+                    <button type="button" title="Sage" x-on:click="$wire.set('{{ $elPath }}.data.style.pill_bg', 'bg-sage-soft')" class="rounded p-1.5 transition-all outline-none {{ $pillBg === 'bg-sage-soft' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                      <div class="h-4 w-4 rounded-full bg-[#dcfce7] shadow-sm"></div>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Bentuk Pill</span>
+                  <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.pill_radius', 'rounded-md')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $pillRadius === 'rounded-md' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Bulat Sedikit</button>
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.pill_radius', 'rounded-full')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $pillRadius === 'rounded-full' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Lingkaran</button>
+                  </div>
+                </div>
+              @endif
+
+              {{-- Shared Options (Color & Margin) --}}
+              <div class="flex flex-col gap-1.5">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Warna Teks</span>
+                <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                  <button type="button" title="Abu Gelap" x-on:click="$wire.set('{{ $elPath }}.data.style.color', 'text-ink-soft')" class="rounded p-1.5 transition-all outline-none {{ $textColor === 'text-ink-soft' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-full bg-gray-700 shadow-sm"></div>
                   </button>
-                  <button
-                    type="button"
-                    wire:click="addCardElement('{{ $blockId }}', {{ $cIndex }}, activeSlot, 'icon')"
-                    class="hover:border-foresty hover:text-foresty flex-1 rounded-lg border border-dashed border-gray-300 bg-white py-2.5 text-xs font-bold text-gray-500 shadow-sm transition-colors outline-none"
-                  >
-                    + Ikon
+                  <button type="button" title="Foresty" x-on:click="$wire.set('{{ $elPath }}.data.style.color', 'text-foresty')" class="rounded p-1.5 transition-all outline-none {{ $textColor === 'text-foresty' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-full bg-foresty shadow-sm"></div>
+                  </button>
+                  <button type="button" title="Coral" x-on:click="$wire.set('{{ $elPath }}.data.style.color', 'text-coral')" class="rounded p-1.5 transition-all outline-none {{ $textColor === 'text-coral' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-full bg-coral shadow-sm"></div>
                   </button>
                 </div>
               </div>
-            @endforeach
-          </div>
-        @endif
-      </div>
-      {{-- Akhir Badan Tengah --}}
 
-      {{-- CHECKED PREVIEW BLOK (Kelas flex diubah menjadi dinamis) --}}
-      @if (count($cards) > 0)
-        <div
-          class="flex shrink-0 flex-col overflow-hidden rounded-b-xl border-t border-gray-200 bg-gray-50"
-          x-bind:class="
-            isPinned || isRowPinned
-              ? 'max-h-[35vh] border-t-2 border-foresty/20'
-              : ''
-          "
-        >
-          <div
-            class="shrink-0 border-b border-gray-200 bg-gray-200/60 px-4 py-2"
-          >
-            <span
-              class="text-[10px] font-bold tracking-widest text-gray-500 uppercase"
-              >Live Preview ({{ strtoupper($code) }})</span
-            >
-          </div>
+              <div class="flex flex-col gap-1.5">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Jarak Bawah</span>
+                <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                  <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.margin', 'mb-0')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $margin === 'mb-0' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">0px</button>
+                  <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.margin', 'mb-2')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $margin === 'mb-2' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Kecil</button>
+                  <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.margin', 'mb-4')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $margin === 'mb-4' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Sedang</button>
+                </div>
+              </div>
+            </div>
 
-          <style
-            x-text="`.preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid { grid-template-columns: 1fr !important; max-width: 400px; margin: 0 auto; } .preview-atomic-{{ $blockId }}-{{ strtolower($code) }} .grid > *:not(:nth-child(${activeCard + 1})) { display: none !important; }`"
-          ></style>
+            {{-- ================= IKON ================= --}}
+          @elseif (($el['elementType'] ?? 'icon') === 'icon')
+            @php
+              $iconBg = $style['bg'] ?? 'bg-goldy-soft';
+              $iconColor = $style['color'] ?? 'text-foresty';
+              $iconSize = $style['size'] ?? 'w-10 h-10';
+              $iconRadius = $style['radius'] ?? 'rounded-[14px]';
+            @endphp
+            <div class="mb-2 flex items-center justify-between">
+              <span class="bg-foresty rounded px-2 py-0.5 text-[10px] font-extrabold tracking-widest text-white uppercase">Ikon</span>
+            </div>
 
-          <div
-            class="preview-atomic-{{ $blockId }}-{{ strtolower($code) }} p-6 md:p-10 w-full flex justify-center bg-gray-50"
-            x-bind:class="
-              isPinned || isRowPinned
-                ? 'flex-1 overflow-y-auto scrollbar-thin'
-                : 'min-h-[150px]'
-            "
-          >
-            @include ('components.blocks.render.card-builder', ['data' => $data, 'lang' => strtolower($code), 'isPreview' => true])
-          </div>
-        </div>
-      @endif
-    </div>
-    {{-- Akhir Bungkusan Lipatan --}}
-  </div>
-  {{-- Akhir Editor Utama --}}
-</div>
-{{-- Akhir Pembungkus Luar --}}
+            <div class="relative mb-2" x-data="{ openPicker: false, search: '' }">
+              <button type="button" x-on:click="openPicker = !openPicker" class="hover:border-foresty flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs shadow-sm transition-colors focus:outline-none">
+                <div class="flex items-center gap-2 truncate">
+                  <x-dynamic-component :component="'lucide-' . ($el['data']['content']['icon'] ?: 'box')" class="text-foresty h-5 w-5 shrink-0" stroke-width="2.5" />
+                  <span class="truncate font-mono text-[11px] font-bold text-gray-700 uppercase">{{ $el['data']['content']['icon'] ?: 'PILIH IKON...' }}</span>
+                </div>
+                <x-dynamic-component component="lucide-chevron-down" class="h-4 w-4 shrink-0 text-gray-400" />
+              </button>
+
+              <div x-show="openPicker" x-on:click.outside="openPicker = false" x-cloak class="absolute left-0 z-50 mt-1 flex w-full flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3 shadow-xl sm:w-64">
+                <div class="relative">
+                  <x-dynamic-component component="lucide-search" class="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                  <input type="text" x-model="search" placeholder="Cari ikon..." class="focus:ring-foresty focus:border-foresty w-full rounded-lg border border-gray-200 py-2 pr-2 pl-9 text-xs shadow-sm" />
+                </div>
+                <div class="grid max-h-48 scrollbar-thin grid-cols-5 gap-1.5 overflow-y-auto p-1">
+                  @foreach ($iconsList as $iconName)
+                    <button type="button" x-show="'{{ $iconName }}'.includes(search.toLowerCase())" x-on:click="$wire.set('{{ $elPath }}.data.content.icon', '{{ $iconName }}'); openPicker = false; search = '';" class="p-2.5 rounded-lg flex items-center justify-center transition-all duration-200 border {{ ($el['data']['content']['icon'] ?? '') === $iconName ? 'bg-sage-soft text-foresty border-foresty shadow-sm scale-110' : 'bg-gray-50 text-gray-400 border-transparent hover:border-foresty/50 hover:text-foresty' }}">
+                      <x-dynamic-component :component="'lucide-' . $iconName" class="h-5 w-5 shrink-0" stroke-width="2" />
+                    </button>
+                  @endforeach
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-4 rounded-lg border border-gray-100 bg-gray-50 p-3">
+              <div class="flex flex-col gap-1.5">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Latar Ikon</span>
+                <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                  <button type="button" title="Goldy" x-on:click="$wire.set('{{ $elPath }}.data.style.bg', 'bg-goldy-soft')" class="rounded p-1.5 transition-all outline-none {{ $iconBg === 'bg-goldy-soft' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-full bg-[#fde68a] shadow-sm"></div>
+                  </button>
+                  <button type="button" title="Mist" x-on:click="$wire.set('{{ $elPath }}.data.style.bg', 'bg-mist')" class="rounded p-1.5 transition-all outline-none {{ $iconBg === 'bg-mist' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-full bg-gray-200 border border-gray-300 shadow-sm"></div>
+                  </button>
+                  <button type="button" title="Transparan" x-on:click="$wire.set('{{ $elPath }}.data.style.bg', 'bg-transparent')" class="rounded p-1.5 transition-all outline-none {{ $iconBg === 'bg-transparent' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="relative h-4 w-4 overflow-hidden rounded-full border border-gray-300 bg-white shadow-sm">
+                      <div class="absolute top-1/2 left-0 h-[1.5px] w-full -translate-y-1/2 -rotate-45 bg-red-500 opacity-60"></div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Warna Ikon</span>
+                <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                  <button type="button" title="Foresty" x-on:click="$wire.set('{{ $elPath }}.data.style.color', 'text-foresty')" class="rounded p-1.5 transition-all outline-none {{ $iconColor === 'text-foresty' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-full bg-emerald-700 shadow-sm"></div>
+                  </button>
+                  <button type="button" title="Coral" x-on:click="$wire.set('{{ $elPath }}.data.style.color', 'text-coral')" class="rounded p-1.5 transition-all outline-none {{ $iconColor === 'text-coral' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-full bg-orange-500 shadow-sm"></div>
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Ukuran</span>
+                <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                  <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.size', 'w-10 h-10')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $iconSize === 'w-10 h-10' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Standar</button>
+                  <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.size', 'w-16 h-16')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $iconSize === 'w-16 h-16' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Besar</button>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Sudut Ikon</span>
+                <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                  <button type="button" title="Agak Bulat" x-on:click="$wire.set('{{ $elPath }}.data.style.radius', 'rounded-[14px]')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $iconRadius === 'rounded-[14px]' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-md border-2 border-current"></div>
+                  </button>
+                  <button type="button" title="Lingkaran" x-on:click="$wire.set('{{ $elPath }}.data.style.radius', 'rounded-full')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $iconRadius === 'rounded-full' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-full border-2 border-current"></div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          {{-- ================= AKORDION / FAQ ================= --}}
+          @elseif (($el['elementType'] ?? '') === 'accordion')
+            @php
+              $accTheme = $style['theme'] ?? 'foresty';
+            @endphp
+            <div class="mb-2 flex items-center justify-between">
+              <span class="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded bg-blue-100 text-blue-700">FAQ / Akordion</span>
+            </div>
+
+            {{-- <!-- Input Pertanyaan -->
+            <input
+              type="text"
+              wire:model.live.debounce.1000ms="{{ $elPath }}.data.content.question.{{ $code }}"
+              placeholder="Tulis pertanyaan di sini..."
+              class="focus:ring-blue-500 mb-2 w-full rounded-lg border-gray-200 p-2 text-sm font-bold shadow-sm"
+            />
+
+            <!-- Input Jawaban -->
+            <textarea
+              rows="3"
+              wire:model.live.debounce.1000ms="{{ $elPath }}.data.content.answer.{{ $code }}"
+              placeholder="Tulis jawaban di sini..."
+              class="focus:ring-blue-500 mb-2 p-2 w-full resize-none rounded-lg border-gray-200 text-sm shadow-sm"
+            ></textarea> --}}
+            {{-- Input Pertanyaan & Jawaban (Multi-Language) --}}
+            <div class="mb-3 space-y-2">
+              {{-- Input Pertanyaan --}}
+              <div class="relative">
+                <x-dynamic-component component="lucide-message-circle-question" class="absolute top-2.5 left-3 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  wire:model.live.debounce.1000ms="{{ $elPath }}.data.content.question.{{ $code }}"
+                  placeholder="Ketik pertanyaan di sini ({{ strtoupper($code) }})..."
+                  class="focus:ring-foresty focus:border-foresty w-full rounded-lg border-gray-200 p-2 pl-9 text-xs font-bold shadow-sm"
+                />
+              </div>
+
+              {{-- Input Jawaban --}}
+              <div class="relative">
+                <x-dynamic-component component="lucide-message-square-text" class="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+                <textarea
+                  rows="3"
+                  wire:model.live.debounce.1000ms="{{ $elPath }}.data.content.answer.{{ $code }}"
+                  placeholder="Ketik jawaban lengkap di sini ({{ strtoupper($code) }})..."
+                  class="focus:ring-foresty focus:border-foresty w-full resize-none rounded-lg border-gray-200 p-2 pl-9 text-xs shadow-sm"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-4 rounded-lg border border-gray-100 bg-gray-50 p-3">
+              {{-- Warna Aksen (Untuk teks aktif & latar ikon) --}}
+              <div class="flex flex-col gap-1.5">
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Warna Aksen Teks & Ikon</span>
+                <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                  <button type="button" title="Foresty" x-on:click="$wire.set('{{ $elPath }}.data.style.theme', 'foresty')" class="rounded p-1.5 transition-all outline-none {{ $accTheme === 'foresty' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-full bg-emerald-700 shadow-sm"></div>
+                  </button>
+                  <button type="button" title="Coral" x-on:click="$wire.set('{{ $elPath }}.data.style.theme', 'coral')" class="rounded p-1.5 transition-all outline-none {{ $accTheme === 'coral' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-full bg-orange-500 shadow-sm"></div>
+                  </button>
+                  <button type="button" title="Gelap" x-on:click="$wire.set('{{ $elPath }}.data.style.theme', 'dark')" class="rounded p-1.5 transition-all outline-none {{ $accTheme === 'dark' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                    <div class="h-4 w-4 rounded-full bg-gray-800 shadow-sm"></div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {{-- ================= FOTO PROFIL ================= --}}
+            @elseif (($el['elementType'] ?? '') === 'profile_photo')
+              @php
+                $imgUrl = $el['data']['content']['url'] ?? '';
+                $imgAlt = $el['data']['content']['alt'] ?? '';
+                $imgSize = $style['size'] ?? 'w-20 h-20';
+                $imgRadius = $style['radius'] ?? 'rounded-full';
+                $imgBorder = $style['border'] ?? 'border-0';
+                $imgBorderColor = $style['border_color'] ?? 'border-transparent';
+              @endphp
+              <div class="mb-3 flex items-center justify-between">
+                <span class="bg-indigo-100 text-indigo-700 rounded px-2 py-0.5 text-[10px] font-extrabold tracking-widest uppercase">Foto Profil</span>
+              </div>
+
+              {{-- Area Pratinjau & Input Data --}}
+              <div class="mb-3 flex items-start gap-3">
+                {{-- Kotak Pratinjau (Live Preview) --}}
+                <div class="shrink-0 flex items-center justify-center bg-gray-100 object-cover shadow-sm transition-all {{ $imgSize }} {{ $imgRadius }} {{ $imgBorder }} {{ $imgBorderColor }}">
+                  @if($imgUrl)
+                    <img src="{{ $imgUrl }}" class="h-full w-full object-cover {{ $imgRadius }}" alt="Preview">
+                  @else
+                    <x-dynamic-component component="lucide-image" class="h-6 w-6 text-gray-400" />
+                  @endif
+                </div>
+
+                {{-- Input URL & Alt Text --}}
+                <div class="flex-1 space-y-2">
+                  {{-- Opsi 1: Tombol Upload (Via Endpoint API Controller Anda) --}}
+                  <div x-data="{ isUploading: false }" class="w-full">
+                    <label
+                      class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-xs font-bold shadow-sm transition-colors"
+                      x-bind:class="isUploading ? 'cursor-wait bg-gray-200 text-gray-400' : 'hover:border-foresty hover:bg-sage-soft hover:text-foresty text-gray-600'"
+                    >
+                      {{-- Ikon: Berubah jadi spinner saat loading --}}
+                      <x-dynamic-component component="lucide-upload-cloud" class="h-4 w-4 shrink-0" x-show="!isUploading" />
+                      <x-dynamic-component component="lucide-loader-2" class="h-4 w-4 shrink-0 animate-spin" x-show="isUploading" x-cloak />
+
+                      {{-- Teks: Berubah saat proses upload --}}
+                      <span class="truncate" x-text="isUploading ? 'Mengunggah...' : 'Unggah Foto dari Komputer'"></span>
+
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/webp, image/gif"
+                        class="hidden"
+                        :disabled="isUploading"
+                        x-on:change="
+                          const file = $event.target.files[0];
+                          if(!file) return;
+
+                          isUploading = true;
+
+                          // Siapkan data untuk dikirim ke Controller
+                          let formData = new FormData();
+                          formData.append('image', file);
+                          formData.append('_token', '{{ csrf_token() }}'); // Wajib untuk Laravel POST
+
+                          // Kirim ke route yang Anda buat
+                          fetch('{{ route('editor.upload-image') }}', {
+                            method: 'POST',
+                            body: formData
+                          })
+                          .then(res => {
+                            if(!res.ok) throw new Error('Gagal mengunggah gambar.');
+                            return res.json();
+                          })
+                          .then(data => {
+                            // Update Livewire dengan URL final dari server
+                            $wire.set('{{ $elPath }}.data.content.url', data.url);
+                          })
+                          .catch(err => {
+                            alert(err.message);
+                          })
+                          .finally(() => {
+                            isUploading = false;
+                            $event.target.value = ''; // Reset input agar bisa upload file yang sama lagi jika perlu
+                          });
+                        "
+                      />
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    wire:model.live.debounce.1000ms="{{ $elPath }}.data.content.alt"
+                    placeholder="Teks Alternatif (Untuk SEO & Tunanetra)"
+                    class="focus:ring-foresty focus:border-foresty w-full rounded-lg border-gray-200 p-2 text-xs shadow-sm"
+                  />
+                </div>
+              </div>
+
+              {{-- Pengaturan Gaya Visual --}}
+              <div class="flex flex-wrap gap-4 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                {{-- Ukuran --}}
+                <div class="flex flex-col gap-1.5">
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Ukuran</span>
+                  <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.size', 'w-12 h-12')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $imgSize === 'w-12 h-12' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Kecil</button>
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.size', 'w-20 h-20')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $imgSize === 'w-20 h-20' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Sedang</button>
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.size', 'w-32 h-32')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $imgSize === 'w-32 h-32' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Besar</button>
+                  </div>
+                </div>
+
+                {{-- Bentuk --}}
+                <div class="flex flex-col gap-1.5">
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Bentuk</span>
+                  <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                    <button type="button" title="Kotak" x-on:click="$wire.set('{{ $elPath }}.data.style.radius', 'rounded-md')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $imgRadius === 'rounded-md' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                      <div class="h-4 w-4 rounded-md border-2 border-current"></div>
+                    </button>
+                    <button type="button" title="Agak Bulat" x-on:click="$wire.set('{{ $elPath }}.data.style.radius', 'rounded-[20px]')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $imgRadius === 'rounded-[20px]' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                      <div class="h-4 w-4 rounded-[8px] border-2 border-current"></div>
+                    </button>
+                    <button type="button" title="Lingkaran" x-on:click="$wire.set('{{ $elPath }}.data.style.radius', 'rounded-full')" class="text-gray-400 hover:text-gray-700 rounded p-1.5 transition-all outline-none {{ $imgRadius === 'rounded-full' ? 'bg-white !text-foresty shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                      <div class="h-4 w-4 rounded-full border-2 border-current"></div>
+                    </button>
+                  </div>
+                </div>
+
+                {{-- Ketebalan Garis --}}
+                <div class="flex flex-col gap-1.5">
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Garis Tepi</span>
+                  <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.border', 'border-0')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $imgBorder === 'border-0' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Tanpa Garis</button>
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.border', 'border-2')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $imgBorder === 'border-2' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Tipis (2px)</button>
+                    <button type="button" x-on:click="$wire.set('{{ $elPath }}.data.style.border', 'border-4')" class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $imgBorder === 'border-4' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">Tebal (4px)</button>
+                  </div>
+                </div>
+
+                {{-- Warna Garis --}}
+                <div class="flex flex-col gap-1.5">
+                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Warna Garis</span>
+                  <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner w-fit">
+                    <button type="button" title="Transparan" x-on:click="$wire.set('{{ $elPath }}.data.style.border_color', 'border-transparent')" class="rounded p-1.5 transition-all outline-none {{ $imgBorderColor === 'border-transparent' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                      <div class="relative h-4 w-4 overflow-hidden rounded-full border border-gray-300 bg-white shadow-sm">
+                        <div class="absolute top-1/2 left-0 h-[1.5px] w-full -translate-y-1/2 -rotate-45 bg-red-500 opacity-60"></div>
+                      </div>
+                    </button>
+                    <button type="button" title="Foresty" x-on:click="$wire.set('{{ $elPath }}.data.style.border_color', 'border-foresty')" class="rounded p-1.5 transition-all outline-none {{ $imgBorderColor === 'border-foresty' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                      <div class="h-4 w-4 rounded-full bg-emerald-700 shadow-sm"></div>
+                    </button>
+                    <button type="button" title="Coral" x-on:click="$wire.set('{{ $elPath }}.data.style.border_color', 'border-coral')" class="rounded p-1.5 transition-all outline-none {{ $imgBorderColor === 'border-coral' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                      <div class="h-4 w-4 rounded-full bg-orange-500 shadow-sm"></div>
+                    </button>
+                    <button type="button" title="Abu-abu" x-on:click="$wire.set('{{ $elPath }}.data.style.border_color', 'border-gray-200')" class="rounded p-1.5 transition-all outline-none {{ $imgBorderColor === 'border-gray-200' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}">
+                      <div class="h-4 w-4 rounded-full bg-gray-200 border border-gray-300 shadow-sm"></div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+          @endif

@@ -116,7 +116,8 @@
                       // Teks Alt menggunakan multi-lang, URL tidak
                       $imgUrl = $content['url'] ?? '';
                       $imgAlt = $content['alt'][$lang] ?? $content['alt']['id'] ?? '';
-                      $imgSize = $style['size'] ?? 'w-20 h-20';
+                      // $imgSize = $style['size'] ?? 'w-20 h-20';
+                      $imgSize = $style['size'] ?? 'w-16 h-16 md:w-20 md:h-20';
                       $imgRadius = $style['radius'] ?? 'rounded-full';
                       $imgBorder = $style['border'] ?? 'border-0';
                       $imgBorderColor = $style['border_color'] ?? 'border-transparent';
@@ -124,7 +125,7 @@
 
                     @if ($imgUrl)
                       <div class="mb-3 shrink-0">
-                        <img src="{{ $imgUrl }}" alt="{{ $imgAlt }}" class="object-cover shadow-sm {{ $imgSize }} {{ $imgRadius }} {{ $imgBorder }} {{ $imgBorderColor }}">
+                        <img src="{{ $imgUrl }}" alt="{{ $imgAlt }}" class="object-cover aspect-square shadow-sm {{ $imgSize }} {{ $imgRadius }} {{ $imgBorder }} {{ $imgBorderColor }}">
                       </div>
                     @endif
 

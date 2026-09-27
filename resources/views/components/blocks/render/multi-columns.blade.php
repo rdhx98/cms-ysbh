@@ -3,14 +3,14 @@
 @php
   $colCount = (int) ($data['col_count'] ?? 2);
 
-  $gridClass = match ($colCount) {
-      2 => 'md:grid-cols-2',
-      3 => 'md:grid-cols-3',
-      4 => 'md:grid-cols-2 lg:grid-cols-4',
-      5 => 'md:grid-cols-3 lg:grid-cols-5',
-      6 => 'md:grid-cols-3 lg:grid-cols-6',
-      default => 'grid-cols-1 md:grid-cols-2',
-  };
+  // 🌟 1. Bangun susunan grid (grid-template-columns) secara dinamis
+  $gridTemplateArray = [];
+  for ($i = 1; $i <= $colCount; $i++) {
+      // Baca data lebar yang diatur di editor, default 1fr jika kosong
+      $width = $data["col_{$i}_zone_width"] ?? '1'; 
+      $gridTemplateArray[] = $width === 'auto' ? 'auto' : "{$width}fr";
+  }
+  $gridTemplateStr = implode(' ', $gridTemplateArray); // Hasilnya misal: "1fr 2fr 1fr"
 
   $isReverseMobile = $data['mobile_reverse'] ?? false;
   $gapClass = $data['gap'] ?? 'gap-2';
@@ -18,7 +18,10 @@
   $alignXClass = $data['align_x'] ?? 'items-start'; // items-start, center, end
 @endphp
 
-<div id="{{ $block['anchor'] ?? '' }}" class="grid grid-cols-1 gap-6 {{ $gridClass }} w-full mb-8 reveal animate-scroll-reveal">
+{{-- 🌟 2. Suntikkan CSS Variabel --md-grid-cols, dan eksekusi menggunakan kelas Tailwind MD: --}}
+<div id="{{ $block['anchor'] ?? '' }}" 
+     class="grid grid-cols-1 md:[grid-template-columns:var(--md-grid-cols)] gap-6 w-full mb-8 reveal animate-scroll-reveal"
+     style="--md-grid-cols: {{ $gridTemplateStr }};">
 
   @for ($i = 1; $i <= $colCount; $i++)
     @php
@@ -31,7 +34,7 @@
       }
     @endphp
 
-    {{-- 🌟 PERBAIKAN 2: Suntikkan class tata letak. WAJIB pakai h-full agar justify (Y) berfungsi --}}
+    {{-- 🌟 Pembungkus Kolom dengan pengatur perataan --}}
     <div class="flex flex-col h-full {{ $orderClass }} {{ $gapClass }} {{ $alignYClass }} {{ $alignXClass }}">
 
       @if (!empty($childIds) && is_array($childIds))
@@ -43,7 +46,7 @@
             @endphp
 
             {{-- Render Mikro Blok --}}
-            <div class="w-full"> {{-- Bungkus tambahan opsional jika items-center merusak lebar mikro blok --}}
+            <div class="w-full">
               <x-dynamic-component :component="$component" :data="$childBlock['data'] ?? []" :lang="$lang" :all-content="$allContent" />
             </div>
           @endif
@@ -53,41 +56,3 @@
     </div>
   @endfor
 </div>
-{{-- 
-<div id="{{ $block['anchor'] ?? '' }}" class="grid grid-cols-1 gap-6 {{ $gridClass }} w-full my-6">
-
-  @for ($i = 1; $i <= $colCount; $i++)
-    @php
-      // Efek Domino: Jeda waktu kemunculan per kolom
-      $delay = ($i - 1) * 150;
-      $zoneKey = "col_{$i}_zone";
-
-      $childIds = $data[$zoneKey] ?? [];
-
-      $orderClass = '';
-      if ($isReverseMobile && $colCount === 2) {
-          $orderClass = $i === 1 ? 'order-2 md:order-1' : 'order-1 md:order-2';
-      }
-    @endphp
-
-    {{-- 🌟 Wadah Kolom dengan 'reveal' dan modifier '[&.is-revealed]:' --}
-    <div class="flex flex-col gap-1 justify-end {{ $orderClass }}">
-      {{-- <div style="transition-delay: {{ $delay }}ms;" class="flex flex-col gap-4 {{ $orderClass }} reveal animate-scroll-reveal"> --}
-
-      @if (!empty($childIds) && is_array($childIds))
-        @foreach ($childIds as $childId)
-          @if (isset($allContent[$childId]))
-            @php
-              $childBlock = $allContent[$childId];
-              $component = 'blocks.render.' . str_replace('_', '-', $childBlock['type'] ?? 'unknown');
-            @endphp
-
-            {{-- Render Mikro Blok --}
-            <x-dynamic-component :component="$component" :data="$childBlock['data'] ?? []" :lang="$lang" :all-content="$allContent" />
-          @endif
-        @endforeach
-      @endif
-
-    </div>
-  @endfor
-</div> --}}

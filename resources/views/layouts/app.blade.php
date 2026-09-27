@@ -22,5 +22,6 @@
 
     {{-- @livewireScripts --}}
     <x-layouts::app.floating-notifications mobileTop="top-16" />
+    <livewire:file-manager :forceModal="true" />
 </body>
 </html>

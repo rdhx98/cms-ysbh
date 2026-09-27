@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 
 use Spatie\Activitylog\Models\Activity;
 
+use Livewire\Attributes\On;
 use App\Livewire\Traits\WithNotifications;
 use App\Livewire\Traits\HasContentBlocks;
 
@@ -34,6 +35,7 @@ new class extends Component {
     // 🌟 Pendekatan Hibrida: Pisahkan data konten dan urutan
     public array $content = [];
     public array $blockOrder = []; // Menyimpan urutan ID secara akurat
+    public array $settings = []; // Menyimpan urutan ID secara akurat
 
     public $status;
 
@@ -53,6 +55,23 @@ new class extends Component {
         }
 
         return $rules;
+    }
+
+    #[On('mediaSelected')]
+    public function handleMediaSelection($data)
+    {
+        $mediaId = $data['id'];
+        $url = $data['url'];
+        
+        // basePath adalah path array JSON. Contoh: 'content.block_1.data'
+        $basePath = $data['componentId']; 
+
+        // Buang teks awalan 'content.' agar sesuai dengan struktur $this->content di Livewire
+        $cleanPath = preg_replace('/^content\./', '', $basePath);
+
+        // Secara ajaib, helper data_set akan menembus array sedalam apa pun
+        data_set($this->content, $cleanPath . '.url', $url);
+        data_set($this->content, $cleanPath . '.media_id', $mediaId);
     }
 
     protected function messages()
@@ -136,39 +155,24 @@ new class extends Component {
                 $this->meta_description[$loc] = $metaDescData[$loc] ?? '';
             }
 
-            // 4. PENYELAMATAN STRUKTUR BLOK (Dari Seeder ke Livewire)
-            // $rawContent = $modelData['content'] ?? [];
-            // $rawContent = is_string($rawContent) ? json_decode($rawContent, true) ?? [] : (is_array($rawContent) ? $rawContent : []);
-
-            // // Jika konten terbungkus kunci bahasa dari Seeder
-            // if (isset($rawContent['id']) && is_array($rawContent['id']) && isset($rawContent['id'][0]['type'])) {
-            //     $rawContent = $rawContent['id'];
-            // } elseif (isset($rawContent['en']) && is_array($rawContent['en']) && isset($rawContent['en'][0]['type'])) {
-            //     $rawContent = $rawContent['en'];
-            // }
-
-            // // Petakan ke Editor Grid TipTap
-            // $this->content = [];
-            // $this->blockOrder = [];
-            // foreach ($rawContent as $block) {
-            //     if (is_array($block) && isset($block['type'])) {
-            //         $id = $block['id'] ?? 'blk_' . Str::random(8);
-            //         $block['id'] = $id;
-            //         $this->content[$id] = $block;
-            //         $this->blockOrder[] = $id;
-            //     }
-            // }
             // 4. PENYELAMATAN STRUKTUR BLOK (Dari Seeder & Database ke Livewire)
             $rawContent = $modelData['content'] ?? [];
             $rawContent = is_string($rawContent) ? json_decode($rawContent, true) ?? [] : (is_array($rawContent) ? $rawContent : []);
 
             $this->content = [];
             $this->blockOrder = [];
+            $this->settings = []; // 🌟 Inisialisasi
 
             // 🌟 1. DETEKSI FORMAT BARU (Flat Data Structure)
             if (isset($rawContent['blocks']) && isset($rawContent['order'])) {
                 $this->content = $rawContent['blocks'];
                 $this->blockOrder = $rawContent['order'];
+                $this->settings = $rawContent['settings'] ?? []; // Ambil dari root
+                // 🌟 AUTO-MIGRASI: Keluarkan 'settings' jika masih terselip di dalam 'blocks' (dari bug sebelumnya)
+                  if (isset($this->content['settings'])) {
+                      $this->settings = $this->content['settings'];
+                      unset($this->content['settings']);
+                  }
             }
             // 🌟 2. FALLBACK KE FORMAT LAMA (Untuk kompabilitas dengan Seeder lawas)
             else {
@@ -186,6 +190,10 @@ new class extends Component {
                         $this->blockOrder[] = $id;
                     }
                 }
+            }
+            // 🌟 3. Pastikan pengaturan TOC memiliki nilai default agar UI tidak error
+            if (!isset($this->settings['toc_position'])) {
+                $this->settings['toc_position'] = 'right';
             }
         } else {
             // 5. HALAMAN BARU (Jika URL benar-benar tidak ditemukan)
@@ -221,6 +229,7 @@ new class extends Component {
         $this->page->content = [
             'blocks' => $this->content, // Berisi SELURUH blok (induk & anak) dengan key ID (blk_...)
             'order' => $this->blockOrder, // Berisi HANYA urutan ID blok level terluar (root)
+            'settings' => $this->settings,
         ];
 
         // $this->page->content          = $finalContent;
@@ -385,69 +394,98 @@ new class extends Component {
         }"
         class="gap-6"
       >
-        @foreach ($activeLocales as $code)
-          <div
-            {{-- x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))" --}}
-            x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
-            class="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
-          >
-            <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-sm font-bold text-gray-700">
-                Metadata ({{ strtoupper($code) }})
-              </h3>
-              <span
-                class="text-foresty rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold"
-                >{{ strtoupper($code) }}</span
-              >
+          @foreach ($activeLocales as $code)
+            <div
+              {{-- x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))" --}}
+              x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
+              class="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+            >
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-gray-700">
+                  Metadata ({{ strtoupper($code) }})
+                </h3>
+                <span
+                  class="text-foresty rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold"
+                  >{{ strtoupper($code) }}</span
+                >
+              </div>
+              <div class="space-y-3">
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-600"
+                    >Judul Halaman <span class="text-red-500">*</span></label
+                  >
+                  <input
+                    type="text"
+                    wire:model="page_title.{{ $code }}"
+                    placeholder="Contoh: Layanan Kesehatan Ibu dan Anak"
+                    class="text-md w-full rounded-md border-gray-300 p-2 shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-600"
+                    >Slug URL</label
+                  >
+                  <input
+                    type="text"
+                    wire:model="slug.{{ $code }}"
+                    placeholder="Contoh: layanan-kesehatan-ibu-dan-anak"
+                    class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-600"
+                    >Judul Meta</label
+                  >
+                  <input
+                    type="text"
+                    wire:model="meta_title.{{ $code }}"
+                    placeholder="Contoh: Layanan Kesehatan Ibu & Anak Terpadu | YSBH"
+                    class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-600"
+                    >Deskripsi Meta</label
+                  >
+                  <textarea
+                    row="6"
+                    wire:model="meta_description.{{ $code }}"
+                    placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
+                    class="text-md min-h-36 w-full resize-none rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
+                  ></textarea>
+                </div>
+              </div>
             </div>
-            <div class="space-y-3">
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600"
-                  >Judul Halaman <span class="text-red-500">*</span></label
-                >
-                <input
-                  type="text"
-                  wire:model="page_title.{{ $code }}"
-                  placeholder="Contoh: Layanan Kesehatan Ibu dan Anak"
-                  class="text-md w-full rounded-md border-gray-300 p-2 shadow-sm"
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600"
-                  >Slug URL</label
-                >
-                <input
-                  type="text"
-                  wire:model="slug.{{ $code }}"
-                  placeholder="Contoh: layanan-kesehatan-ibu-dan-anak"
-                  class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600"
-                  >Judul Meta</label
-                >
-                <input
-                  type="text"
-                  wire:model="meta_title.{{ $code }}"
-                  placeholder="Contoh: Layanan Kesehatan Ibu & Anak Terpadu | YSBH"
-                  class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600"
-                  >Deskripsi Meta</label
-                >
-                <textarea
-                  row="6"
-                  wire:model="meta_description.{{ $code }}"
-                  placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
-                  class="text-md min-h-36 w-full resize-none rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
-                ></textarea>
-              </div>
-            </div>
-          </div>
-        @endforeach
+          @endforeach
+      </div>
+      <div class="mb-4 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <label class="block text-xs font-extrabold text-gray-500 uppercase tracking-widest mb-3">
+            Navigasi Daftar Isi (TOC)
+        </label>
+        
+        <div class="flex items-center rounded-md bg-gray-100 p-1 shadow-inner w-full">
+            <!-- Opsi Sembunyikan -->
+            <button type="button" 
+                wire:click="$set('settings.toc_position', 'hidden')" 
+                class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'hidden' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
+                Sembunyi
+            </button>
+            
+            <!-- Opsi Kiri -->
+            <button type="button" 
+                wire:click="$set('settings.toc_position', 'left')" 
+                class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'left' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
+                Di Kiri
+            </button>
+            
+            <!-- Opsi Kanan -->
+            <button type="button" 
+                wire:click="$set('settings.toc_position', 'right')" 
+                class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'right' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
+                Di Kanan
+            </button>
+        </div>
+        <p class="text-[10px] text-gray-400 mt-2">Daftar isi akan memindai blok Judul (Heading) secara otomatis. Hanya tampil di layar komputer (Desktop).</p>
       </div>
     </div>
 
@@ -1110,7 +1148,7 @@ new class extends Component {
   </div>
 
   <!-- 🌟 PANEL PRATINJAU SLIDE-OVER (Meluncur dari Kanan) -->
-  <div
+  {{-- <div
     x-cloak
     class="relative z-[100]"
     @open-preview-panel.window="
@@ -1209,7 +1247,7 @@ new class extends Component {
                 </button>
               </div>
               <div class="flex items-center justify-between p-4">
-                {{-- <h3 class="font-bold text-gray-700">Pratinjau Halaman</h3> --}}
+                <!-- <h3 class="font-bold text-gray-700">Pratinjau Halaman</h3> -->
 
                 <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
                 <div
@@ -1285,6 +1323,195 @@ new class extends Component {
                 deviceMode === 'desktop'
                   ? 'w-full h-full mx-6 rounded-xl border border-gray-300'
                   : 'w-[375px] h-[812px] rounded-[2.5rem] border-[12px] border-gray-800'
+              "
+            >
+              <!-- Iframe Halaman Publik -->
+              <template x-if="previewUrl !== ''">
+                <iframe
+                  id="preview-iframe"
+                  :src="previewUrl"
+                  class="h-full w-full border-0 bg-white"
+                ></iframe>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div> --}}
+  <!-- 🌟 PANEL PRATINJAU SLIDE-OVER (Meluncur dari Kanan) -->
+  <div
+    x-cloak
+    class="relative z-[100]"
+    @open-preview-panel.window="
+      previewUrl = $event.detail.url;
+      previewOpen = true;
+    "
+    aria-labelledby="slide-over-title"
+    role="dialog"
+    aria-modal="true"
+    x-data="{
+      previewOpen: false,
+      previewUrl: '',
+      deviceMode: 'desktop', // Pilihan: 'desktop' atau 'mobile'
+    }"
+  >
+    <div
+      x-show="previewOpen"
+      class="fixed inset-0 overflow-hidden"
+      style="display: none"
+    >
+      <!-- Latar Belakang Gelap (Klik untuk menutup) -->
+      <div
+        x-show="previewOpen"
+        x-transition.opacity.duration.300ms
+        x-on:click="
+          previewOpen = false;
+          previewUrl = '';
+        "
+        class="absolute inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity cursor-pointer"
+      ></div>
+
+      <!-- 🌟 KUNCI: w-full memastikan panel bisa tumbuh selebar layar jika diperlukan -->
+      <div
+        class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full w-full justify-end sm:pl-16"
+      >
+        <!-- Panel Utama -->
+        <div
+          x-show="previewOpen"
+          x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700"
+          x-transition:enter-start="translate-x-full"
+          x-transition:enter-end="translate-x-0"
+          x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700"
+          x-transition:leave-start="translate-x-0"
+          x-transition:leave-end="translate-x-full"
+          class="pointer-events-auto flex w-full max-w-full flex-col bg-gray-100 shadow-2xl transition-all duration-500"
+          x-bind:class="deviceMode === 'desktop' ? 'max-w-[100vw]' : 'max-w-2xl'"
+        >
+          <!-- HEADER PANEL -->
+          <div
+            class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4"
+          >
+            <div class="flex items-center gap-4">
+              <h2
+                class="text-foresty text-lg font-extrabold"
+                id="slide-over-title"
+              >
+                Live Preview
+              </h2>
+
+              <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
+              <div
+                class="hidden rounded-lg border border-gray-200 bg-gray-100 p-1 shadow-inner md:flex"
+              >
+                <button
+                  x-on:click="deviceMode = 'desktop'"
+                  x-bind:class="
+                    deviceMode === 'desktop'
+                      ? 'bg-white shadow text-foresty'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                  "
+                  class="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-bold transition-all outline-none"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    ></path>
+                  </svg>
+                  Desktop
+                </button>
+                <button
+                  x-on:click="deviceMode = 'mobile'"
+                  x-bind:class="
+                    deviceMode === 'mobile'
+                      ? 'bg-white shadow text-foresty'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                  "
+                  class="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-bold transition-all outline-none"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                  </svg>
+                  Mobile
+                </button>
+              </div>
+
+              <!-- 🌟 TOMBOL TOGGLE BAHASA -->
+              <div
+                class="flex rounded-lg border border-gray-200 bg-gray-100 p-1 shadow-inner md:flex"
+                x-data="{ activeLang: '{{ app()->getLocale() }}' }"
+              >
+                <button
+                  type="button"
+                  x-on:click="
+                    activeLang = 'id';
+                    document
+                      .getElementById('preview-iframe')
+                      .contentWindow.postMessage(
+                        { type: 'change-lang', lang: 'id' },
+                        '*',
+                      );
+                  "
+                  x-bind:class="
+                    activeLang === 'id'
+                      ? 'bg-white shadow text-foresty'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                  "
+                  class="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-bold transition-all outline-none"
+                >
+                  ID
+                </button>
+                <button
+                  type="button"
+                  x-on:click="
+                    activeLang = 'en';
+                    document
+                      .getElementById('preview-iframe')
+                      .contentWindow.postMessage(
+                        { type: 'change-lang', lang: 'en' },
+                        '*',
+                      );
+                  "
+                  x-bind:class="
+                    activeLang === 'en'
+                      ? 'bg-white shadow text-foresty'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                  "
+                  class="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-bold transition-all outline-none"
+                >
+                  EN
+                </button>
+              </div>
+            </div>
+
+            <!-- Tombol Tutup -->
+            <button
+              x-on:click="
+                previewOpen = false;
+                previewUrl = '';
+              "
+              class="rounded-full bg-gray-50 p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none"
+            >
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- AREA KONTEN (IFRAME) -->
+          <div
+            class="flex flex-1 items-start justify-center overflow-y-auto bg-gray-200 pt-6 pb-12 transition-all duration-500"
+          >
+            <!-- Wrapper Iframe (Lebarnya menyesuaikan pilihan device) -->
+            <div
+              class="overflow-hidden bg-white shadow-2xl transition-all duration-500 ease-in-out"
+              x-bind:class="
+                deviceMode === 'desktop'
+                  ? 'w-full h-full mx-0 sm:mx-6 rounded-none sm:rounded-xl border-0 sm:border border-gray-300'
+                  : 'w-[375px] h-[812px] rounded-[2.5rem] border-[12px] border-gray-800 shrink-0'
               "
             >
               <!-- Iframe Halaman Publik -->

@@ -1,33 +1,58 @@
 @props([
-    'route' => '#',       // URL atau nama route tujuan
-    'active' => false,    // Menentukan apakah rute ini sedang aktif
-    'icon' => null,        // Menerima nama icon atau dibiarkan kosong jika pakai slot
-    'iconSize' => '4', // Menambahkan prop ukuran icon dengan nilai default
-    
+    'route' => '#',       
+    'active' => false,    
+    'icon' => null,       
+    'activeIcon' => null, 
+    'iconSize' => '4',    
 ])
+
+@php
+    // Cek apakah admin memberikan 2 ikon yang berbeda
+    $hasDistinctActiveIcon = $activeIcon && $activeIcon !== $icon;
+@endphp
 
 <a href="{{ $route }}"
    wire:navigate
    {{ $attributes->merge([
-       'class' => 'flex items-center rounded-xl group  whitespace-nowrap transition-all duration-300 easew-full-in-out h-9 ' .
+       'class' => 'flex items-center rounded-xl group whitespace-nowrap transition-all duration-300 ease-in-out h-9 ' .
         ($active
             ? 'bg-forest text-white font-semibold shadow-sm '
             : 'text-forest hover:bg-forest/80 hover:text-white ')
    ]) }}
    :class="isExpanded ? 'w-full' : 'w-9'"
 >
-    <div class="flex items-center justify-center w-9 h-9 shrink-0 transition-transform duration-200 group-hover:scale-105 {{ $active ? 'text-aurum' : 'text-forest group-hover:text-aurum' }}">
+    <!-- 🌟 KOTAK IKON (Relatif agar ikon di dalamnya bisa absolute/bertumpuk) -->
+    <div class="relative flex items-center justify-center w-9 h-9 shrink-0 transition-transform duration-300 group-hover:scale-110 {{ $active ? 'text-aurum' : 'text-forest group-hover:text-aurum' }}">
+        
         @if($icon)
-            <x-dynamic-component
-                :component="'lucide-' . $icon"
-                class="h-{{ $iconSize }} w-{{ $iconSize }}" {{-- Otomatis membuat h-5 w-5, h-7 w-7, dst --}}
-                stroke-width="2"
-            />
+            @if($hasDistinctActiveIcon)
+                <!-- 1. IKON BAWAAN (Akan mengecil & memudar saat aktif) -->
+                <x-dynamic-component
+                    :component="'lucide-' . $icon"
+                    class="absolute h-{{ $iconSize }} w-{{ $iconSize }} transition-all duration-300 ease-in-out {{ $active ? 'opacity-0 scale-50 -rotate-12' : 'opacity-100 scale-100 rotate-0' }}"
+                    stroke-width="2"
+                />
+                
+                <!-- 2. IKON AKTIF (Akan membesar & muncul saat aktif) -->
+                <x-dynamic-component
+                    :component="'lucide-' . $activeIcon"
+                    class="absolute h-{{ $iconSize }} w-{{ $iconSize }} transition-all duration-300 ease-in-out {{ $active ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-12' }}"
+                    stroke-width="2.5"
+                />
+            @else
+                <!-- 3. JIKA HANYA 1 IKON (Gunakan animasi biasa tanpa tumpuk) -->
+                <x-dynamic-component
+                    :component="'lucide-' . $icon"
+                    class="h-{{ $iconSize }} w-{{ $iconSize }} transition-all duration-300 ease-in-out"
+                    stroke-width="{{ $active ? '2.5' : '2' }}"
+                />
+            @endif
         @else
             {{ $iconSlot ?? '' }}
         @endif
     </div>
 
+    <!-- Teks Link -->
     <span x-show="isExpanded"
           x-transition:enter="transition ease-out duration-200 delay-150"
           x-transition:enter-start="opacity-0 translate-x-[-10px]"
@@ -39,4 +64,3 @@
         {{ $title ?? $slot }}
     </span>
 </a>
-

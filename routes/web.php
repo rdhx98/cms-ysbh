@@ -44,6 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/article/preview/{category}/{post:slug}', 'article-preview')->name('article.preview');
 
     Route::post('/editor/upload-image', [EditorImageUploadController::class, 'store'])->name('editor.upload-image');
+    Route::livewire('/files', 'file-manager')->name('files.index');
 
     Route::livewire('/page', 'page-index')->name('page.index');
     Route::livewire('/page/create', 'page-editor')->name('page.create');

@@ -53,15 +53,15 @@
     <div class="border-t border-forest my-2"></div>
     <nav class="flex flex-col w-full space-y-2">
 
-        <x-layouts::app.sidebar-link route="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')" icon="home"> {{ __('ui.nav.dashboard') }} </x-layouts.app.sidebar-link>
+        <x-layouts::app.sidebar-link route="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')" icon="home" activeIcon="house-heart"> {{ __('ui.nav.dashboard') }} </x-layouts.app.sidebar-link>
 
-        <x-layouts::app.sidebar-link route="{{ route('article.index') }}" :active="request()->routeIs('article.*')" icon="newspaper">  {{ __('ui.nav.article') }}  </x-layouts.app.sidebar-link>
+        <x-layouts::app.sidebar-link route="{{ route('article.index') }}" :active="request()->routeIs('article.*')" icon="scroll" activeIcon="scroll-text">  {{ __('ui.nav.article') }}  </x-layouts.app.sidebar-link>
 
-        <x-layouts::app.sidebar-link route="{{ route('page.index') }}" :active="request()->routeIs('page.*')"  icon="chevrons-left-right-ellipsis" iconSize="5">  {{ __('ui.nav.page') }}  </x-layouts.app.sidebar-link>
+        <x-layouts::app.sidebar-link route="{{ route('page.index') }}" :active="request()->routeIs('page.*')"  icon="book-open" activeIcon="book-open-text" iconSize="5">  {{ __('ui.nav.page') }}  </x-layouts.app.sidebar-link>
 
-        <x-layouts::app.sidebar-link route="{{ route('block.index') }}" :active="request()->routeIs('block.*')"  icon="layout-template" iconSize="5">  {{ __('ui.nav.block') }}  </x-layouts.app.sidebar-link>
+        <x-layouts::app.sidebar-link route="{{ route('files.index') }}" :active="request()->routeIs('files.*')"  icon="folder" activeIcon="folder-open" iconSize="5">  Files  </x-layouts.app.sidebar-link>
 
-        <x-layouts::app.sidebar-link route="{{ route('user.index') }}" :active="request()->routeIs('user.*')"  icon="users-round" iconSize="5">  {{ __('ui.nav.user') }}  </x-layouts.app.sidebar-link>
+        <x-layouts::app.sidebar-link route="{{ route('user.index') }}" :active="request()->routeIs('user.*')"  icon="user-round" activeIcon="users-round"  iconSize="5">  {{ __('ui.nav.user') }}  </x-layouts.app.sidebar-link>
 
     </nav>
     {{-- <div class="border-t-2 border-forest my-2"></div> --}}
