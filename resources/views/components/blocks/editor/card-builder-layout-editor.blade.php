@@ -1,6 +1,4 @@
-{{--
-    _card-layout-editor.blade.php (v2 - lengkap dengan UI Warna Visual)
---}}
+s
 @php
     $columns = $card['layout']['children'] ?? [];
 @endphp

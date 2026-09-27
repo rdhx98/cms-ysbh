@@ -363,10 +363,6 @@ new class extends Component {
       },
     }"
   >
-    {{-- <div class="p-4 bg-red-100 text-red-700 font-bold mb-4">
-      Mode Saat Ini: <span x-text="effectiveLayout"></span> <br>\
-      <span x-text="'Aktif: ' + singleActiveLang"></span>
-    </div> --}}
 
     <!-- ==========================================
     RUANGAN 1: METADATA (Hanya Tampil di Tab Meta)
@@ -512,68 +508,7 @@ new class extends Component {
         @foreach ($blockOrder as $blockId)
           @php $block = $content[$blockId] ?? null; @endphp
           @if ($block)
-            <!-- Block Loop -->
-            {{-- <div id="block-wrapper-{{ $blockId }}" wire:key="block-{{ $blockId }}" x-sort:item="'{{ $blockId }}'" class="group relative w-full" x-data="{ showAnchorSetting: false }">
-              <!-- 1. DRAG HANDLE (Selalu Tampil di Atas-Kiri saat < 1366px, Hover di Luar-Kiri saat PC) -->
-              <div class="absolute transition-opacity z-20" x-bind:class="windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-4 -left-4 opacity-0 group-hover:opacity-100'">
-                <button type="button" class="drag-handle bg-white shadow-sm" title="Geser Blok"></button>
-              </div>
-
-              <div class="absolute -top-4 flex gap-2 transition-all duration-200 z-30 right-3"
-                x-bind:class="(windowWidth < 1366 || showAnchorSetting) ? ' opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'">
-
-                <div x-on:click.outside="showAnchorSetting = false" class="relative">
-
-                  <button x-on:click="showAnchorSetting = !showAnchorSetting" type="button" class="p-1.5 text-gray-600 rounded-full border border-gray-200 shadow-sm transition-colors"
-                    x-bind:class="showAnchorSetting ? 'bg-foresty text-white hover:bg-forest' : 'bg-white hover:bg-gray-50'" title="Pengaturan Blok">
-                    <x-dynamic-component component="lucide-settings-2" class="w-4 h-4" />
-                  </button>
-
-                  <div x-show="showAnchorSetting" x-cloak style="display: none;" class="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-4 z-50">
-                    <label class="block text-xs font-bold text-foresty uppercase mb-1">ID Tautan (Anchor)</label>
-                    <p class="text-[10px] text-gray-500 mb-2 leading-tight">Melompat ke blok ini (Contoh: <span class="font-mono text-coral">tentang-kami</span>).</p>
-
-                    <input type="text" wire:model.live.debounce.500ms="content.{{ $blockId }}.anchor"
-                      @input="$event.target.value = $event.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')" placeholder="nama-anchor"
-                      class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-foresty focus:border-foresty">
-                  </div>
-                </div>
-
-                {{-- Tombol Duplikat -->
-                <button wire:click="duplicateBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 border border-gray-200 shadow-sm" title="Gandakan Blok">
-                  <x-dynamic-component component="lucide-copy" class="w-4 h-4" />
-                </button>
-
-                {{-- Tombol Hapus -->
-                <button wire:click="removeBlock('{{ $blockId }}')" type="button" class="p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 border border-gray-200 shadow-sm" title="Hapus Blok">
-                  <x-dynamic-component component="lucide-trash-2" class="w-4 h-4" />
-                </button>
-
-              </div>
-
-              <!-- WORKING RENDER ISI BLOK -->
-              <div class="w-full">
-                <div class="gap-6"
-                  x-bind:class="{
-                      'grid grid-cols-1': effectiveLayout === 'single',
-                      'grid grid-cols-1 md:grid-cols-2': effectiveLayout === 'split' && splitLanguages.length === 2,
-                      'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3': effectiveLayout === 'split' &&
-                          splitLanguages
-                          .length === 3,
-                      'grid grid-cols-1': effectiveLayout === 'split' && splitLanguages.length === 1
-                  }">
-                  @foreach ($activeLocales as $code)
-                    <!-- PERBAIKAN 2: Bungkusan Bahasa (Child) -->
-                    <!-- Pindahkan kelas desain ke sini. Gunakan border-transparent agar layout tidak bergeser saat di-hover -->
-                    <div x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
-                      class="space-y-3 bg-gray-100 group-hover:bg-white rounded-xl border-2 border-transparent group-hover:border-foresty/80 transition-colors">
-
-                      <x-dynamic-component :component="'blocks.editor.' . str_replace('_', '-', $block['type'])" :block-id="$blockId" :code="$code" :block="$block" :all-content="$content" />
-                    </div>
-                  @endforeach
-                </div>
-              </div>
-            </div> --}}
+            
             <!-- BUNGKUSAN UTAMA BLOK (Di dalam loop blockOrder) -->
             <div
               id="block-wrapper-{{ $blockId }}"
@@ -757,15 +692,6 @@ new class extends Component {
                   </button>
                 </div>
 
-                <!-- 🌟 3. BUNGKUSAN EDITOR BARIS -->
-                {{-- <div
-                  class="w-full transition-all duration-300"
-                  x-bind:class="
-                    isRowPinned
-                      ? 'bg-gray-100/90 backdrop-blur-md p-4 rounded-xl ring-4 ring-foresty/30 shadow-2xl overflow-hidden flex flex-col'
-                      : ''
-                  "
-                > --}}
                 {{-- Perhatikan di atas: overflow-y-auto diganti menjadi overflow-hidden --}}
 
                 <!-- Pembungkus Dalam (Harus flex-col saat dipin) -->
@@ -773,14 +699,6 @@ new class extends Component {
                   class="relative flex w-full flex-col"
                   :class="isRowPinned ? 'flex-1 min-h-0' : ''"
                 >
-                  <!-- Drag Handle & Setting Asli Anda biarkan seperti semula -->
-                  {{-- <div class="absolute transition-opacity z-20" :class="windowWidth < 1366 ? '-top-5 left-2 opacity-100' : 'top-4 -left-4 opacity-0 group-hover:opacity-100'">
-                      <button type="button" class="drag-handle..."></button>
-                    </div>
-                    <div class="absolute -top-4 flex gap-2 transition-all duration-200 z-30 right-3"
-                      :class="showAnchorSetting ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'">
-                      ...
-                    </div> --}}
 
                   <!-- Grid Multi-Bahasa -->
                   <div
@@ -810,58 +728,9 @@ new class extends Component {
                         />
                       </div>
                     @endforeach
-                    {{-- @foreach ($activeLocales as $code)
-                      <div
-                        wire:key="lang-wrapper-{{ $blockId }}-{{ $code }}"
-                        x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
-                        class="group-hover:border-foresty/80 flex flex-col space-y-3 rounded-xl border-2 border-transparent bg-gray-100 transition-colors group-hover:bg-white"
-                        :class="isRowPinned ? 'flex-1 min-h-0' : 'h-full'"
-                      >
-                        <!-- 🌟 LOGIKA PENCARIAN KOMPONEN OTOMATIS -->
-                        @php
-                            $baseName = 'blocks.editor.' . str_replace('_', '-', $block['type']);
-                            
-                            // Cek apakah ada file index.blade.php di dalam folder tersebut
-                            $componentPath = View::exists('components.' . $baseName . '.index') 
-                                ? $baseName . '.index' 
-                                : $baseName;
-                        @endphp
-
-                        <!-- Render Blok Komponen -->
-                        <x-dynamic-component
-                          :component="$componentPath"
-                          :block-id="$blockId"
-                          :code="$code"
-                          :block="$block"
-                          :all-content="$content"
-                        />
-                      </div>
-                    @endforeach --}}
                   </div>
                 </div>
-                {{-- </div> --}}
-                <!--delete this-->
-
-                <!-- 3. RENDER ISI BLOK BAHASA (Kode Asli Anda yang disesuaikan) -->
-                {{-- <div class="w-full" x-bind:class="isRowPinned ? 'flex-1 min-h-0' : ''">
-                  <div class="gap-6"
-                       x-bind:class="{
-                           'grid grid-cols-1': effectiveLayout === 'single',
-                           'grid grid-cols-1 md:grid-cols-2': effectiveLayout === 'split' && splitLanguages.length === 2,
-                           'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3': effectiveLayout === 'split' && splitLanguages.length === 3,
-                           'grid grid-cols-1': effectiveLayout === 'split' && splitLanguages.length === 1
-                       }">
-                    @foreach ($activeLocales as $code)
-                      <div x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
-                           class="space-y-3 bg-gray-100 group-hover:bg-white rounded-xl border-2 border-transparent group-hover:border-foresty/80 transition-colors h-full flex flex-col">
-
-                        <!-- Render Blok Komponen -->
-                        <x-dynamic-component :component="'blocks.editor.' . str_replace('_', '-', $block['type'])" :block-id="$blockId" :code="$code" :block="$block" :all-content="$content" />
-
-                      </div>
-                    @endforeach
-                  </div>
-                </div> --}}
+                
               </div>
               <!-- Akhir rowEditor -->
             </div>
@@ -916,7 +785,7 @@ new class extends Component {
         icon="badge-plus"
         label="Grup Lencana"
       />
-      <x-buttons.add-blocks
+      {{-- <x-buttons.add-blocks
         mode="icon-hover"
         command="editorTab = 'content'; addNewBlock('stats-group')"
         icon="chart-column-big"
@@ -939,12 +808,18 @@ new class extends Component {
         command="editorTab = 'content'; addNewBlock('OG-card-builder')"
         icon="playing-cards-fan"
         label="OG Kartu Builder"
-      />
+      /> --}}
       <x-buttons.add-blocks
         mode="icon-hover"
         command="editorTab = 'content'; addNewBlock('card-builder')"
         icon="playing-cards-fan"
         label="Kartu Builder"
+      />
+      <x-buttons.add-blocks
+        mode="icon-hover"
+        command="editorTab = 'content'; addNewBlock('step-group')"
+        icon="list-ordered"
+        label="Step builder"
       />
     </div>
 
@@ -1147,198 +1022,6 @@ new class extends Component {
     </div>
   </div>
 
-  <!-- 🌟 PANEL PRATINJAU SLIDE-OVER (Meluncur dari Kanan) -->
-  {{-- <div
-    x-cloak
-    class="relative z-[100]"
-    @open-preview-panel.window="
-      previewUrl = $event.detail.url;
-      previewOpen = true;
-    "
-    aria-labelledby="slide-over-title"
-    role="dialog"
-    aria-modal="true"
-    x-data="{
-      previewOpen: false,
-      previewUrl: '',
-      deviceMode: 'desktop', // Pilihan: 'desktop' atau 'mobile'
-    }"
-  >
-    <div
-      x-show="previewOpen"
-      class="fixed inset-0 overflow-hidden"
-      style="display: none"
-    >
-      <!-- Latar Belakang Gelap (Klik untuk menutup) -->
-      <div
-        x-show="previewOpen"
-        x-transition.opacity.duration.300ms
-        x-on:click="
-          previewOpen = false;
-          previewUrl = '';
-        "
-        class="absolute inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity"
-      ></div>
-
-      <div
-        class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16"
-      >
-        <!-- Panel Utama -->
-        <div
-          x-show="previewOpen"
-          x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700"
-          x-transition:enter-start="translate-x-full"
-          x-transition:enter-end="translate-x-0"
-          x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700"
-          x-transition:leave-start="translate-x-0"
-          x-transition:leave-end="translate-x-full"
-          class="pointer-events-auto flex w-screen max-w-screen flex-col bg-gray-100 shadow-2xl"
-        >
-          <!-- max-w-7xl -->
-
-          <!-- HEADER PANEL -->
-          <div
-            class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4"
-          >
-            <div class="flex items-center gap-4">
-              <h2
-                class="text-foresty text-lg font-extrabold"
-                id="slide-over-title"
-              >
-                Live Preview
-              </h2>
-
-              <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
-              <div
-                class="hidden rounded-lg border border-gray-200 bg-gray-100 p-1 shadow-inner md:flex"
-              >
-                <button
-                  x-on:click="deviceMode = 'desktop'"
-                  x-bind:class="
-                    deviceMode === 'desktop'
-                      ? 'bg-white shadow text-foresty'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
-                  "
-                  class="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-bold transition-all"
-                >
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    ></path>
-                  </svg>
-                  Desktop
-                </button>
-                <button
-                  x-on:click="deviceMode = 'mobile'"
-                  x-bind:class="
-                    deviceMode === 'mobile'
-                      ? 'bg-white shadow text-foresty'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
-                  "
-                  class="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-bold transition-all"
-                >
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                  </svg>
-                  Mobile
-                </button>
-              </div>
-              <div class="flex items-center justify-between p-4">
-                <!-- <h3 class="font-bold text-gray-700">Pratinjau Halaman</h3> -->
-
-                <!-- 🌟 TOMBOL TOGGLE MOBILE / DESKTOP -->
-                <div
-                  class="flex rounded-lg border border-gray-200 bg-gray-100 p-1 shadow-inner md:flex"
-                  x-data="{ activeLang: '{{ app()->getLocale() }}' }"
-                >
-                  <button
-                    type="button"
-                    x-on:click="
-                      activeLang = 'id';
-                      document
-                        .getElementById('preview-iframe')
-                        .contentWindow.postMessage(
-                          { type: 'change-lang', lang: 'id' },
-                          '*',
-                        );
-                    "
-                    x-bind:class="
-                      activeLang === 'id'
-                        ? 'bg-white shadow text-foresty'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
-                    "
-                    class="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-bold transition-all"
-                  >
-                    ID
-                  </button>
-                  <button
-                    type="button"
-                    x-on:click="
-                      activeLang = 'en';
-                      document
-                        .getElementById('preview-iframe')
-                        .contentWindow.postMessage(
-                          { type: 'change-lang', lang: 'en' },
-                          '*',
-                        );
-                    "
-                    x-bind:class="
-                      activeLang === 'en'
-                        ? 'bg-white shadow text-foresty'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
-                    "
-                    class="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-bold transition-all"
-                  >
-                    EN
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tombol Tutup -->
-            <button
-              x-on:click="
-                previewOpen = false;
-                previewUrl = '';
-              "
-              class="rounded-full bg-gray-50 p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none"
-            >
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <!-- AREA KONTEN (IFRAME) -->
-          <div
-            class="flex flex-1 items-start justify-center overflow-y-auto bg-gray-200 pt-6 pb-12 transition-all duration-500"
-          >
-            <!-- Wrapper Iframe (Lebarnya menyesuaikan pilihan device) -->
-            <div
-              class="overflow-hidden bg-white shadow-2xl transition-all duration-500 ease-in-out"
-              x-bind:class="
-                deviceMode === 'desktop'
-                  ? 'w-full h-full mx-6 rounded-xl border border-gray-300'
-                  : 'w-[375px] h-[812px] rounded-[2.5rem] border-[12px] border-gray-800'
-              "
-            >
-              <!-- Iframe Halaman Publik -->
-              <template x-if="previewUrl !== ''">
-                <iframe
-                  id="preview-iframe"
-                  :src="previewUrl"
-                  class="h-full w-full border-0 bg-white"
-                ></iframe>
-              </template>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div> --}}
   <!-- 🌟 PANEL PRATINJAU SLIDE-OVER (Meluncur dari Kanan) -->
   <div
     x-cloak

@@ -25,30 +25,6 @@ trait HasContentBlocks
         $this->dispatch('block-added', id: $id);
     }
 
-    /**
-     * OLD AF Menambahkan blok anak ke dalam zona milik induk (Kontainer)
-     */
-    // public function addChildBlock($parentId, $zone, $type = 'paragraph')
-    // {
-    //     // 1. Buat ID unik untuk anak baru
-    //     $newChildId = 'blk_' . uniqid();
-
-    //     // 2. Siapkan data default sejajar di root $this->content
-    //     $this->content[$newChildId] = [
-    //         'type' => $type,
-    //         'data' => [
-    //             'text' => ['id' => '', 'en' => '']
-    //         ]
-    //     ];
-
-    //     // 3. Pastikan array zona tersedia di induk, lalu masukkan ID anak
-    //     if (!isset($this->content[$parentId]['data'][$zone])) {
-    //         $this->content[$parentId]['data'][$zone] = [];
-    //     }
-    //     $this->content[$parentId]['data'][$zone][] = $newChildId;
-    //     $this->dispatch('block-added', id: $newChildId);
-    // }
-
 		public function addChildBlock($parentId, $zone, $type = 'paragraph')
     {
         // 1. Buat ID unik untuk anak baru
@@ -76,6 +52,27 @@ trait HasContentBlocks
         $this->dispatch('block-added', id: $newChildId);
     }
 
+    // 27 sept 26 old
+    // public function removeBlock(String $blockId) {
+    //     // 1. Hapus dari gudang data utama
+    //     unset($this->content[$blockId]);
+
+    //     // 2. Bersihkan dari urutan terluar (Root)
+    //     $this->blockOrder = array_values(array_filter($this->blockOrder, fn($id) => $id !== $blockId));
+
+    //     // 3. 🌟 PEMBERSIHAN MENDALAM: Hapus ID hantu dari dalam SEMUA kolom/zona
+    //     foreach ($this->content as $parentId => $blockData) {
+    //         // Bersihkan zona kiri jika ada
+    //         if (isset($blockData['data']['left_zone'])) {
+    //             $this->content[$parentId]['data']['left_zone'] = array_values(array_filter($blockData['data']['left_zone'], fn($id) => $id !== $blockId));
+    //         }
+    //         // Bersihkan zona kanan jika ada
+    //         if (isset($blockData['data']['right_zone'])) {
+    //             $this->content[$parentId]['data']['right_zone'] = array_values(array_filter($blockData['data']['right_zone'], fn($id) => $id !== $blockId));
+    //         }
+    //     }
+    // }
+
     public function removeBlock(String $blockId) {
         // 1. Hapus dari gudang data utama
         unset($this->content[$blockId]);
@@ -93,8 +90,13 @@ trait HasContentBlocks
             if (isset($blockData['data']['right_zone'])) {
                 $this->content[$parentId]['data']['right_zone'] = array_values(array_filter($blockData['data']['right_zone'], fn($id) => $id !== $blockId));
             }
+            // 🌟 TAMBAHAN UNTUK STEP-GROUP & MULTI-COLUMNS: Bersihkan zona 'children'
+            if (isset($blockData['data']['children'])) {
+                $this->content[$parentId]['data']['children'] = array_values(array_filter($blockData['data']['children'], fn($id) => $id !== $blockId));
+            }
         }
     }
+
     public function removeNestedBlock(string $parentId, string $zone, string $childId)
     {
         // 1. Hapus ID anak dari zona induknya
@@ -343,6 +345,14 @@ trait HasContentBlocks
                 'title'        => $emptyLocales,
                 'limit'        => 5,         // Berapa maksimal kartu yang ditarik dari DB
                 'order_by'     => 'latest',  // Pilihan: 'latest' (terbaru) atau 'random' (acak)
+            ],
+
+            'step-group' => [
+                'orientation' => 'vertical',
+                'gap'         => 'gap-8',
+                'node_color'  => 'bg-foresty text-white',
+                'line_color'  => 'bg-foresty/30',
+                'children'    => [], // Zona tempat anak-anak blok akan disimpan
             ],
 
             default => []
