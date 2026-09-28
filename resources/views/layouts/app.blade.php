@@ -22,6 +22,10 @@
 
     {{-- @livewireScripts --}}
     <x-layouts::app.floating-notifications mobileTop="top-16" />
-    <livewire:file-manager :forceModal="true" />
+    
+    @unless(request()->routeIs('files.index') || request()->is('*files*'))
+      <livewire:file-manager :forceModal="true" />
+    @endunless
+    
 </body>
 </html>

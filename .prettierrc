@@ -6,21 +6,18 @@
   ],
   "overrides": [
     {
-      "files": ["*.blade.php"],
+      "files": "*.php",
+      "excludeFiles": "*.blade.php",
+      "options": { "parser": "php", "tabWidth": 4, "printWidth": 120 }
+    },
+    {
+      "files": "*.blade.php",
       "options": {
         "parser": "blade",
         "tabWidth": 2,
         "sortTailwindcssClasses": true,
         "wrapAttributes": "auto",
         "wrapLineLength": 120
-      }
-    },
-    {
-      "files": ["*.php"],
-      "options": {
-        "parser": "php",
-        "tabWidth": 4,
-        "printWidth": 120
       }
     }
   ]
