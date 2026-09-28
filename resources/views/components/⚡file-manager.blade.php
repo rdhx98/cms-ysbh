@@ -109,7 +109,7 @@ new class extends Component {
   {
     $this->selectedItemId = $id;
     $this->selectedItemType = $type;
-    $this->isInfoPanelOpen = true;
+    // $this->isInfoPanelOpen = true;
 
     if ($type === "media") {
       $media = Media::find($id);
@@ -326,7 +326,7 @@ new class extends Component {
   public function updatedSelectedMedia($value)
   {
     if (count($value) > 0) {
-      $this->isInfoPanelOpen = true;
+      // $this->isInfoPanelOpen = true;
       $this->selectedItemType = "media";
 
       if (count($value) === 1) {
@@ -610,6 +610,7 @@ new class extends Component {
       isOpen: {{ $isModal ? 'false' : 'true' }},
       isInfoOpen: @entangle('isInfoPanelOpen')
     }"
+    @item-selected.window="if (window.innerWidth >= 768) isInfoOpen = true;"
     class="{{ $isModal ? 'fixed inset-0 z-[100] flex items-center justify-center' : 'relative w-full h-full flex flex-col' }}"
     @if ($isModal)
       x-on:show-file-manager-modal.window="isOpen = true"
@@ -1072,7 +1073,15 @@ new class extends Component {
               ><span x-text="$wire.selectedMedia.length"></span> Dipilih</span
             >
             <div class="h-6 w-px bg-gray-600"></div>
-
+            <!-- 🌟 TOMBOL DETAIL KHUSUS MOBILE -->
+            <button
+              type="button"
+              @click="isInfoOpen = true"
+              class="flex cursor-pointer items-center gap-2 text-sm font-semibold transition-colors outline-none hover:text-emerald-400 md:hidden"
+            >
+              <x-dynamic-component component="lucide-info" class="h-4 w-4" />
+              Detail
+            </button>
             <button
               type="button"
               wire:click="openMovePanel"
@@ -1253,9 +1262,27 @@ new class extends Component {
                       x-cloak
                       class="absolute top-auto right-2 bottom-8 z-50 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-xl"
                     >
+                      <!-- 🌟 TOMBOL LIHAT DETAIL (Hanya terlihat di Mobile) -->
                       <button
                         type="button"
-                        @click="let n = prompt('Ganti nama file:', '{{ addslashes($media->original_name) }}'); if(n) { $wire.renameMedia({{ $media->id }}, n); } openMenu = false;"
+                        @click="
+                          isInfoOpen = true;
+                          openMenu = false;
+                        "
+                        class="hover:text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100 md:hidden"
+                      >
+                        <x-dynamic-component
+                          component="lucide-info"
+                          class="h-3.5 w-3.5"
+                        />
+                        Lihat Detail
+                      </button>
+                      <div
+                        class="my-1 border-t border-gray-100 md:hidden"
+                      ></div>
+                      <button
+                        type="button"
+                        x-on:click="let n = prompt('Ganti nama file:', '{{ addslashes($media->original_name) }}'); if(n) { $wire.renameMedia({{ $media->id }}, n); } openMenu = false;"
                         class="hover:text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100"
                       >
                         <x-dynamic-component
