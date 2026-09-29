@@ -1,4 +1,3 @@
-s
 @php
     $columns = $card['layout']['children'] ?? [];
 @endphp
@@ -47,7 +46,7 @@ s
               $style = $el['data']['style'] ?? [];
               $content = $el['data']['content'] ?? [];
             @endphp
-            
+
             <div wire:key="el-{{ $blockId }}-{{ $cIndex }}-{{ $col['id'] }}-{{ $el['id'] }}" class="group relative mb-3 rounded-lg bg-white p-4 shadow-sm">
               <button type="button" x-on:click="$wire.removeElementFromColumn('{{ $blockId }}', {{ $cIndex }}, '{{ $col['id'] }}', '{{ $el['id'] }}')" class="absolute -top-2 -right-2 rounded-full bg-red-100 p-1 text-red-600 opacity-0 shadow-sm transition-opacity outline-none group-hover:opacity-100">
                 <x-dynamic-component component="lucide-x" class="h-3 w-3" />

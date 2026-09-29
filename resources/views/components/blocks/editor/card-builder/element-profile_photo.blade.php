@@ -12,81 +12,22 @@
 
 {{-- Area Pratinjau & Input Data --}}
 <div class="mb-3 flex items-start gap-3">
-  {{-- Kotak Pratinjau (Live Preview) --}}
-  {{-- <div class="shrink-0 flex items-center justify-center bg-gray-100 object-cover shadow-sm transition-all {{ $imgSize }} {{ $imgRadius }} {{ $imgBorder }} {{ $imgBorderColor }}">
-    @if($imgUrl)
-      <img src="{{ $imgUrl }}" class="h-full w-full object-cover {{ $imgRadius }}" alt="Preview">
-    @else
-      <x-dynamic-component component="lucide-image" class="h-6 w-6 text-gray-400" />
-    @endif
-  </div> --}}
 
   {{-- Input URL & Alt Text --}}
   <div class="flex-1 space-y-2">
-    {{-- Opsi 1: Tombol Upload (Via Endpoint API Controller Anda) --}}
-    {{-- <div x-data="{ isUploading: false }" class="w-full">
-      <label
-        class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-xs font-bold shadow-sm transition-colors"
-        x-bind:class="isUploading ? 'cursor-wait bg-gray-200 text-gray-400' : 'hover:border-foresty hover:bg-sage-soft hover:text-foresty text-gray-600'"
-      >
-        <!-- Ikon: Berubah jadi spinner saat loading -->
-        <x-dynamic-component component="lucide-upload-cloud" class="h-4 w-4 shrink-0" x-show="!isUploading" />
-        <x-dynamic-component component="lucide-loader-2" class="h-4 w-4 shrink-0 animate-spin" x-show="isUploading" x-cloak />
 
-        <!-- Teks: Berubah saat proses upload -->
-        <span class="truncate" x-text="isUploading ? 'Mengunggah...' : 'Unggah Foto dari Komputer'"></span>
-
-        <input
-          type="file"
-          accept="image/png, image/jpeg, image/webp, image/gif"
-          class="hidden"
-          :disabled="isUploading"
-          x-on:change="
-            const file = $event.target.files[0];
-            if(!file) return;
-
-            isUploading = true;
-
-            // Siapkan data untuk dikirim ke Controller
-            let formData = new FormData();
-            formData.append('image', file);
-            formData.append('_token', '{{ csrf_token() }}'); // Wajib untuk Laravel POST
-
-            // Kirim ke route yang Anda buat
-            fetch('{{ route('editor.upload-image') }}', {
-              method: 'POST',
-              body: formData
-            })
-            .then(res => {
-              if(!res.ok) throw new Error('Gagal mengunggah gambar.');
-              return res.json();
-            })
-            .then(data => {
-              // Update Livewire dengan URL final dari server
-              $wire.set('{{ $elPath }}.data.content.url', data.url);
-
-              $wire.set('{{$elPath }}.data.content.media_id', data.id);
-            })
-              
-            .catch(err => {
-              alert(err.message);
-            })
-            .finally(() => {
-              isUploading = false;
-              $event.target.value = ''; // Reset input agar bisa upload file yang sama lagi jika perlu
-            });
-          "
-        />
-      </label>
-    </div> --}}
+    {{-- <button wire:click="$dispatch('openFileManager', { targetEvent: 'photoSelected', targetComponentId: 'form1', allowedFileType: 'image' })">
+    Pilih Foto Profil
+</button> --}}
+{{-- targetEvent: 'mediaSelectedForCard',  --}}
+{{-- targetComponentId: '{{ $blockId }}-{{ $elPath }}'  --}}
     {{-- Tombol Buka File Manager --}}
     <button
       type="button"
-      x-on:click="$dispatch('openFileManager', { 
-          {{-- targetEvent: 'mediaSelectedForCard',  --}}
+      x-on:click="$dispatch('openFileManager', {
           targetEvent: 'mediaSelected',
-          {{-- targetComponentId: '{{ $blockId }}-{{ $elPath }}'  --}}
-          targetComponentId: '{{ $elPath }}.data.content' 
+          targetComponentId: '{{ $elPath }}.data.content',
+          allowedFileType: 'image'
       })"
       class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-bold shadow-sm transition-colors hover:border-foresty hover:bg-sage-soft hover:text-foresty text-gray-600"
     >

@@ -622,7 +622,7 @@
 
           <!-- AREA SCROLL KOLOM -->
           {{-- bg-gray-50 --}}
-          <x-no-scroll-zone
+          <div
           class="flex flex-col border border-gray-200 shadow-sm p-2 sm:p-3 flex-1 min-h-0 overflow-y-scroll scrollbar-none"
           x-bind:class="isPinned || isRowPinned ? 'rounded-none' : 'rounded-xl'"
           >
@@ -645,7 +645,7 @@
                 />
               </div>
             @endforeach
-          </x-no-scroll-zone>
+          </div>
         @endif
       </div>
       {{-- Akhir Badan Tengah --}}
