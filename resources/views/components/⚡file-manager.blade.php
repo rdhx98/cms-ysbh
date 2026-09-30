@@ -28,7 +28,7 @@ new class extends Component {
 
   public $targetEvent = null;
   public $targetComponentId = null;
-  public $allowedFileType = 'all';
+  public $allowedFileType = "all";
 
   // Variabel Panel Informasi
   public $isInfoPanelOpen = false;
@@ -51,13 +51,13 @@ new class extends Component {
   public function openManager(
     $targetEvent = "mediaSelected",
     $targetComponentId = null,
-    $allowedFileType = "all"
+    $allowedFileType = "all",
   ) {
     if (is_array($targetEvent)) {
       $payload = $targetEvent;
-      $targetEvent = $payload['targetEvent'] ?? 'mediaSelected';
-      $targetComponentId = $payload['targetComponentId'] ?? null;
-      $allowedFileType = $payload['allowedFileType'] ?? 'all';
+      $targetEvent = $payload["targetEvent"] ?? "mediaSelected";
+      $targetComponentId = $payload["targetComponentId"] ?? null;
+      $allowedFileType = $payload["allowedFileType"] ?? "all";
     }
     $this->targetEvent = $targetEvent;
     $this->targetComponentId = $targetComponentId;
@@ -129,7 +129,7 @@ new class extends Component {
       // Ini akan secara otomatis menghapus centang pada gambar di layar.
       $this->selectedMedia = [];
     }
-    $this->dispatch('item-selected');
+    $this->dispatch("item-selected");
   }
 
   public function closeInfoPanel()
@@ -141,7 +141,7 @@ new class extends Component {
     $this->selectedItemId = null; // 🌟 Kosongkan ID item aktif
     $this->selectedItemType = null;
 
-    $this->dispatch('close-info-panel');
+    $this->dispatch("close-info-panel");
   }
 
   public function updatedActiveAltText($value)
@@ -173,11 +173,10 @@ new class extends Component {
       ->log($description);
   }
 
-
   public function saveUploads()
   {
     if (empty($this->uploadFiles)) {
-        return;
+      return;
     }
     // 🌟 Atur aturan dan pesan error secara dinamis
     // $mimes = 'file|mimes:jpg,jpeg,png,webp,gif,svg,pdf|max:25600';
@@ -200,31 +199,31 @@ new class extends Component {
     //     ]
     // );
     // 🌟 Atur aturan dan pesan error secara dinamis
-    $mimes = 'file|mimes:jpg,jpeg,png,webp,gif,svg,pdf|max:25600'; // 25 MB
-    $errorMessage = 'Format ditolak: Hanya menerima Gambar atau PDF.';
+    $mimes = "file|mimes:jpg,jpeg,png,webp,gif,svg,pdf|max:25600"; // 25 MB
+    $errorMessage = "Format ditolak: Hanya menerima Gambar atau PDF.";
 
-    if ($this->allowedFileType === 'image') {
-        $mimes = 'file|mimes:jpg,jpeg,png,webp,gif,svg|max:25600';
-        $errorMessage = 'Format ditolak: Form ini HANYA menerima Gambar.';
-    } elseif ($this->allowedFileType === 'pdf') {
-        $mimes = 'file|mimes:pdf|max:25600';
-        $errorMessage = 'Format ditolak: Form ini HANYA menerima PDF.';
+    if ($this->allowedFileType === "image") {
+      $mimes = "file|mimes:jpg,jpeg,png,webp,gif,svg|max:25600";
+      $errorMessage = "Format ditolak: Form ini HANYA menerima Gambar.";
+    } elseif ($this->allowedFileType === "pdf") {
+      $mimes = "file|mimes:pdf|max:25600";
+      $errorMessage = "Format ditolak: Form ini HANYA menerima PDF.";
     }
 
     $validator = \Illuminate\Support\Facades\Validator::make(
-        ['uploadFiles' => $this->uploadFiles],
-        // 🌟 PERBAIKAN: Gunakan variabel $mimes di sini, JANGAN di-hardcode!
-        ['uploadFiles.*' => $mimes],
-        [
-            'uploadFiles.*.mimes' => $errorMessage,
-            'uploadFiles.*.max' => 'Ukuran ditolak: Maksimal 25MB per berkas.',
-        ]
+      ["uploadFiles" => $this->uploadFiles],
+      // 🌟 PERBAIKAN: Gunakan variabel $mimes di sini, JANGAN di-hardcode!
+      ["uploadFiles.*" => $mimes],
+      [
+        "uploadFiles.*.mimes" => $errorMessage,
+        "uploadFiles.*.max" => "Ukuran ditolak: Maksimal 25MB per berkas.",
+      ],
     );
 
     if ($validator->fails()) {
-        $this->uploadFiles = []; // Hapus file dari memori sementara
-        $this->notify($validator->errors()->first(), 'error');
-        return;
+      $this->uploadFiles = []; // Hapus file dari memori sementara
+      $this->notify($validator->errors()->first(), "error");
+      return;
     }
 
     $count = 0;
@@ -403,7 +402,7 @@ new class extends Component {
         $this->selectedItemId = null;
         $this->activeAltText = "";
       }
-      $this->dispatch('item-selected');
+      $this->dispatch("item-selected");
     } else {
       if ($this->selectedItemType === "media") {
         $this->closeInfoPanel();
@@ -443,18 +442,55 @@ new class extends Component {
     }
 
     // Jika persis 1 file dipilih (paksa ambil data)
+    // if ($mediaCount === 1) {
+    //   $media = Media::with("uploader")->find($this->selectedMedia[0]);
+    //   if ($media) {
+    //     return [
+    //       "id" => $media->id,
+    //       "type" => "media",
+    //       "is_image" => $media->isImage(),
+    //       "url" => $media->url(),
+    //       "name" => $media->original_name,
+    //       "path" => $this->getFullPath($media->folder_id), // Jalur lengkap
+    //       "size" => round($media->size / 1024) . " KB",
+    //       "dimensions" => $media->isImage() ? "Otomatis" : "-",
+    //       "created_at" => $media->created_at->translatedFormat("d M Y"),
+    //       "uploader" => $media->uploader
+    //         ? $media->uploader->name
+    //         : "Administrator",
+    //       "is_used" => $media->isInUse(),
+    //     ];
+    //   }
+    // }
+    // Jika persis 1 file dipilih (paksa ambil data)
     if ($mediaCount === 1) {
       $media = Media::with("uploader")->find($this->selectedMedia[0]);
       if ($media) {
+        // 🌟 PERBAIKAN: Baca dimensi asli dari file fisik di server
+        $dimensions = "-";
+        if ($media->isImage()) {
+          // Dapatkan path lengkap file di folder storage/app/public/
+          $fullPath = storage_path("app/public/" . $media->path);
+
+          if (file_exists($fullPath)) {
+            $imageSize = @getimagesize($fullPath); // Ambil [lebar, tinggi]
+            if ($imageSize) {
+              $dimensions = $imageSize[0] . " x " . $imageSize[1] . " px";
+            }
+          } else {
+            $dimensions = "File tidak ditemukan";
+          }
+        }
+
         return [
           "id" => $media->id,
           "type" => "media",
           "is_image" => $media->isImage(),
           "url" => $media->url(),
           "name" => $media->original_name,
-          "path" => $this->getFullPath($media->folder_id), // Jalur lengkap
+          "path" => $this->getFullPath($media->folder_id),
           "size" => round($media->size / 1024) . " KB",
-          "dimensions" => $media->isImage() ? "Otomatis" : "-",
+          "dimensions" => $dimensions, // 🌟 Gunakan variabel dinamis hasil bacaan
           "created_at" => $media->created_at->translatedFormat("d M Y"),
           "uploader" => $media->uploader
             ? $media->uploader->name
@@ -484,7 +520,7 @@ new class extends Component {
 
     return null;
   }
-  //end of new
+  //en ZXCVb nm,nm,bvcxzXCVbn  er7  d of new
 
   public function executeMove()
   {
@@ -591,7 +627,7 @@ new class extends Component {
       ->when(
         $this->search,
         fn($q) => $q->where("name", "like", "%{$this->search}%"), // Pencarian Global
-        fn($q) => $q->where("parent_id", $this->currentFolderId) // Jika kosong, tampilkan folder aktif
+        fn($q) => $q->where("parent_id", $this->currentFolderId), // Jika kosong, tampilkan folder aktif
       )
       ->orderBy("name")
       ->get();
@@ -604,10 +640,16 @@ new class extends Component {
       ->when(
         $this->search,
         fn($q) => $q->where("original_name", "like", "%{$this->search}%"), // Pencarian Global
-        fn($q) => $q->where("folder_id", $this->currentFolderId) // Jika kosong, tampilkan file aktif
+        fn($q) => $q->where("folder_id", $this->currentFolderId), // Jika kosong, tampilkan file aktif
       )
-      ->when($this->allowedFileType === 'image', fn($q) => $q->where('mime_type', 'like', 'image/%'))
-      ->when($this->allowedFileType === 'pdf', fn($q) => $q->where('mime_type', 'application/pdf'))
+      ->when(
+        $this->allowedFileType === "image",
+        fn($q) => $q->where("mime_type", "like", "image/%"),
+      )
+      ->when(
+        $this->allowedFileType === "pdf",
+        fn($q) => $q->where("mime_type", "application/pdf"),
+      )
       ->latest()
       ->paginate(40);
   }
@@ -628,7 +670,6 @@ new class extends Component {
       ->orderBy("name")
       ->get();
   }
-
 };
 ?>
 
@@ -649,12 +690,15 @@ new class extends Component {
       isOpen: {{ $isModal ? 'false' : 'true' }},
       isInfoOpen: false
     }"
-    @item-selected.window="if (window.innerWidth >= 768) { setTimeout(() => { isInfoOpen = true }, 50); }"
+    @item-selected.window="
+      if (window.innerWidth >= 768) {
+        setTimeout(() => {
+          isInfoOpen = true;
+        }, 50);
+      }
+    "
     @close-info-panel.window="isInfoOpen = false"
     class="{{ $isModal ? 'fixed inset-0 z-[100] flex items-center justify-center' : 'relative w-full h-full flex flex-col' }}"
-
-
-
     @if ($isModal)
       x-on:show-file-manager-modal.window="isOpen = true"
       x-on:hide-file-manager-modal.window="isOpen = false"
@@ -685,7 +729,7 @@ new class extends Component {
         <div
           class="flex shrink-0 items-center justify-between border-b border-gray-200 bg-gray-100 px-6 py-4"
         >
-          <div class="flex items-center gap-3 ">
+          <div class="flex items-center gap-3">
             <x-dynamic-component
               component="lucide-folder-open"
               class="text-foresty h-6 w-6"
@@ -864,6 +908,8 @@ new class extends Component {
           x-data="{
             isDragging: false,
             isUploading: false,
+            viewMode: localStorage.getItem('fm_view_mode') || 'grid',
+
             selected: @entangle('selectedMedia').live,
             lastClicked: null,
 
@@ -999,9 +1045,9 @@ new class extends Component {
           }"
           x-on:dragover.prevent="isDragging = true"
           x-on:dragleave.prevent="isDragging = false"
-
           x-on:drop.prevent="
-            isDragging = false;prosesUnggahan($event.dataTransfer.files);
+            isDragging = false;
+            prosesUnggahan($event.dataTransfer.files);
             //if ($event.dataTransfer.files.length > 0) {
             //  isUploading = true;
             //  $wire.uploadMultiple(
@@ -1012,7 +1058,6 @@ new class extends Component {
             //  );
             //}
           "
-
           x-on:paste.window="handlePaste($event)"
           @keydown.window="handleSelectAll($event)"
           class="relative flex min-w-0 flex-1 flex-col bg-white"
@@ -1111,6 +1156,7 @@ new class extends Component {
                 </form>
               @endif
 
+              <!-- pencarian -->
               <div class="relative">
                 <x-dynamic-component
                   component="lucide-search"
@@ -1120,8 +1166,52 @@ new class extends Component {
                   type="text"
                   wire:model.live.debounce.500ms="search"
                   placeholder="Cari media..."
-                  class="focus:border-sage-soft focus:ring-sage-soft w-full rounded-lg border-gray-200 h-8 pl-9 text-xs shadow-sm sm:w-48"
+                  class="focus:border-sage-soft focus:ring-sage-soft h-8 w-full rounded-lg border-gray-200 pl-9 text-xs shadow-sm sm:w-48"
                 />
+              </div>
+
+              <!-- 🌟 2. TOMBOL SAKLAR TAMPILAN GRID / LIST -->
+              <div
+                class="flex shrink-0 items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 p-1"
+              >
+                <button
+                  type="button"
+                  @click="
+                    viewMode = 'grid';
+                    localStorage.setItem('fm_view_mode', 'grid');
+                  "
+                  class="cursor-pointer rounded-md p-1.5 transition-all outline-none"
+                  x-bind:class="
+                    viewMode === 'grid'
+                      ? 'bg-white text-foresty shadow-sm font-bold'
+                      : 'text-gray-400 hover:text-gray-600'
+                  "
+                  title="Tampilan Kotak"
+                >
+                  <x-dynamic-component
+                    component="lucide-layout-grid"
+                    class="h-4 w-4"
+                  />
+                </button>
+                <button
+                  type="button"
+                  @click="
+                    viewMode = 'list';
+                    localStorage.setItem('fm_view_mode', 'list');
+                  "
+                  class="cursor-pointer rounded-md p-1.5 transition-all outline-none"
+                  x-bind:class="
+                    viewMode === 'list'
+                      ? 'bg-white text-foresty shadow-sm font-bold'
+                      : 'text-gray-400 hover:text-gray-600'
+                  "
+                  title="Tampilan Daftar"
+                >
+                  <x-dynamic-component
+                    component="lucide-list"
+                    class="h-4 w-4"
+                  />
+                </button>
               </div>
 
               <label
@@ -1138,8 +1228,11 @@ new class extends Component {
                   class="hidden"
                   {{-- accept="image/*,application/pdf" --}}
                   x-bind:accept="
-                    $wire.allowedFileType === 'image' ? 'image/*' :
-                    ($wire.allowedFileType === 'pdf' ? 'application/pdf' : 'image/*,application/pdf')
+                    $wire.allowedFileType === 'image'
+                      ? 'image/*'
+                      : $wire.allowedFileType === 'pdf'
+                        ? 'application/pdf'
+                        : 'image/*,application/pdf'
                   "
                   x-on:change="
                     prosesUnggahan($event.target.files);
@@ -1162,7 +1255,7 @@ new class extends Component {
           <div
             x-show="isUploading"
             x-transition
-            class="fixed bottom-8 right-8 z-[120] flex items-center gap-4 rounded-2xl bg-gray-900/95 px-6 py-4 shadow-2xl backdrop-blur-sm"
+            class="fixed right-8 bottom-8 z-[120] flex items-center gap-4 rounded-2xl bg-gray-900/95 px-6 py-4 shadow-2xl backdrop-blur-sm"
             x-cloak
           >
             <x-dynamic-component
@@ -1170,8 +1263,12 @@ new class extends Component {
               class="h-6 w-6 animate-spin text-emerald-400"
             />
             <div class="flex flex-col">
-              <span class="text-sm font-bold text-white">Mengunggah File...</span>
-              <span class="text-xs font-medium text-gray-400">Mohon jangan tutup jendela ini.</span>
+              <span class="text-sm font-bold text-white"
+                >Mengunggah File...</span
+              >
+              <span class="text-xs font-medium text-gray-400"
+                >Mohon jangan tutup jendela ini.</span
+              >
             </div>
           </div>
 
@@ -1181,12 +1278,29 @@ new class extends Component {
             x-show="$wire.selectedMedia.length > 0"
             x-cloak
             x-transition.opacity
-            class="absolute bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-4 rounded-full bg-gray-900 px-6 py-3 text-white shadow-2xl"
+            class="bg-forest absolute bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-4 rounded-full px-6 py-3 text-white shadow-2xl"
           >
-            <span class="rounded-full bg-white/20 px-3 py-1 text-sm font-bold"
-              ><span x-text="$wire.selectedMedia.length"></span> Dipilih</span
+            <span
+              class="bg-sage-soft text-forest flex gap-1.5 rounded-full px-3 py-1 text-sm font-bold"
             >
+              <span x-text="$wire.selectedMedia.length"></span>
+              Dipilih
+            </span>
 
+            <!-- 🌟 TOMBOL BUKA PANEL (Hanya muncul di Mobile/Layar Kecil) -->
+            <button
+              type="button"
+              @click="isInfoOpen = true"
+              class="bg-sage-soft text-forest flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold shadow-sm transition-colors outline-none hover:bg-emerald-500 md:hidden"
+            >
+              Info
+              <x-dynamic-component
+                component="lucide-badge-info"
+                class="h-4 w-4"
+              />
+            </button>
+
+            <div class="h-5 w-px bg-gray-700 md:hidden"></div>
 
             <button
               type="button"
@@ -1215,52 +1329,106 @@ new class extends Component {
                 <p class="text-xs">Seret & lepas, atau <span class="text-foresty font-extrabold">CTRL+V</span> file ke sini untuk mengunggah.</p>
               </div>
             @else
+              <!-- GRID -->
               <div
+                x-show="viewMode === 'grid'"
                 wire:key="fm-grid-state"
-                class="grid gap-4 pb-20 grid-cols-[repeat(auto-fill,minmax(130px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(176px,1fr))]"
+                class="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-4 pb-20 sm:grid-cols-[repeat(auto-fill,minmax(176px,1fr))]"
               >
                 <!-- 🌟 RENDER FOLDER (Perilaku Ala Google Drive) -->
                 @foreach ($this->folders as $folder)
-                  <div wire:key="grid-folder-{{ $folder->id }}"
-                       x-data="{ openMenu: false }"
-                       class="media-card group hover:border-foresty relative flex flex-col overflow-visible rounded-xl border-2 bg-white shadow-sm transition-all"
-                       x-bind:class="$wire.selectedItemId == {{ $folder->id }} && $wire.selectedItemType == 'folder' ? 'border-foresty ring-2 ring-foresty/20' : 'border-gray-200'"
+                  <div
+                    wire:key="grid-folder-{{ $folder->id }}"
+                    x-data="{ openMenu: false }"
+                    class="media-card group hover:border-foresty relative flex flex-col overflow-visible rounded-xl border-2 bg-white shadow-sm transition-all select-none"
+                    x-bind:class="$wire.selectedItemId == {{ $folder->id }} && $wire.selectedItemType == 'folder' ? 'border-foresty ring-2 ring-foresty/20' : 'border-gray-200'"
                   >
-                      <!-- Klik Area Besar -->
-                      <div @click="if (window.innerWidth < 768) { $wire.openFolder({{ $folder->id }}) } else { $wire.selectItem({{ $folder->id }}, 'folder') }"
-                           @dblclick="if (window.innerWidth >= 768) { $wire.openFolder({{ $folder->id }}) }"
-                           class="cursor-pointer relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-t-xl bg-gray-50">
-                          <x-dynamic-component component="lucide-folder" class="text-foresty/40 group-hover:text-foresty h-12 w-12 transition-colors" fill="currentColor" />
+                    <!-- Klik Area Besar -->
+                    <div
+                      x-on:click="if (window.innerWidth < 768) { $wire.openFolder({{ $folder->id }}) } else { $wire.selectItem({{ $folder->id }}, 'folder') }"
+                      x-on:dblclick="if (window.innerWidth >= 768) { $wire.openFolder({{ $folder->id }}) }"
+                      class="relative flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-t-xl bg-gray-50"
+                    >
+                      <x-dynamic-component
+                        component="lucide-folder"
+                        class="text-foresty/40 group-hover:text-foresty h-12 w-12 transition-colors"
+                        fill="currentColor"
+                      />
+                    </div>
+
+                    <div
+                      class="flex items-start justify-between gap-1 border-t border-gray-50 p-2"
+                    >
+                      <div
+                        class="min-w-0 flex-1 cursor-pointer"
+                        x-on:click="if (window.innerWidth < 768) { $wire.openFolder({{ $folder->id }}) } else { $wire.selectItem({{ $folder->id }}, 'folder') }"
+                        x-on:dblclick="if (window.innerWidth >= 768) { $wire.openFolder({{ $folder->id }}) }"
+                      >
+                        <p
+                          class="truncate text-[11px] font-bold text-gray-700"
+                          title="{{ $folder->name }}"
+                        >{{ $folder->name }}</p>
+                        <p class="text-[9px] font-semibold text-gray-400">Folder</p>
                       </div>
 
-                      <div class="flex items-start justify-between gap-1 border-t border-gray-50 p-2">
-                          <div class="min-w-0 cursor-pointer flex-1"
-                               @click="if (window.innerWidth < 768) { $wire.openFolder({{ $folder->id }}) } else { $wire.selectItem({{ $folder->id }}, 'folder') }"
-                               @dblclick="if (window.innerWidth >= 768) { $wire.openFolder({{ $folder->id }}) }">
-                              <p class="truncate text-[11px] font-bold text-gray-700" title="{{ $folder->name }}">{{ $folder->name }}</p>
-                              <p class="text-[9px] font-semibold text-gray-400">Folder</p>
-                          </div>
+                      <!-- Tombol Titik Tiga -->
+                      <button
+                        type="button"
+                        @click.prevent.stop="openMenu = !openMenu"
+                        class="hover:text-foresty hover:bg-sage-soft shrink-0 cursor-pointer rounded p-1 text-gray-400 transition-colors outline-none"
+                      >
+                        <x-dynamic-component
+                          component="lucide-more-vertical"
+                          class="h-4 w-4"
+                        />
+                      </button>
+                    </div>
 
-                          <!-- Tombol Titik Tiga -->
-                          <button type="button" @click.prevent.stop="openMenu = !openMenu" class="hover:text-foresty hover:bg-sage-soft shrink-0 cursor-pointer rounded p-1 text-gray-400 transition-colors outline-none">
-                              <x-dynamic-component component="lucide-more-vertical" class="h-4 w-4" />
-                          </button>
-                      </div>
-
-                      <!-- Menu Dropdown Folder -->
-                      <div x-show="openMenu" @click.outside="openMenu = false" x-transition x-cloak class="absolute top-auto right-2 bottom-8 z-50 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-xl">
-                          <button type="button" @click="$wire.selectItem({{ $folder->id }}, 'folder'); isInfoOpen = true; openMenu = false" class="hover:text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100">
-                              <x-dynamic-component component="lucide-info" class="h-3.5 w-3.5" /> Lihat Detail
-                          </button>
-                          <div class="my-1 border-t border-gray-100"></div>
-                          <button type="button" @click="let n = prompt('Ganti nama folder:', '{{ addslashes($folder->name) }}'); if(n) { $wire.renameFolder({{ $folder->id }}, n); } openMenu = false;" class="hover:text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100">
-                              <x-dynamic-component component="lucide-pencil" class="h-3.5 w-3.5" /> Ganti Nama
-                          </button>
-                          <div class="my-1 border-t border-gray-100"></div>
-                          <button type="button" wire:click="deleteFolder({{ $folder->id }})" wire:confirm="Hapus folder ini? Pastikan kosong." class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-bold text-red-500 transition-colors outline-none hover:bg-red-50 hover:text-red-700">
-                              <x-dynamic-component component="lucide-trash-2" class="h-3.5 w-3.5" /> Hapus
-                          </button>
-                      </div>
+                    <!-- Menu Dropdown Folder -->
+                    <div
+                      x-show="openMenu"
+                      @click.outside="openMenu = false"
+                      x-transition
+                      x-cloak
+                      class="absolute top-auto right-2 bottom-8 z-50 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-xl"
+                    >
+                      <button
+                        type="button"
+                        @click="$wire.selectItem({{ $folder->id }}, 'folder'); isInfoOpen = true; openMenu = false"
+                        class="hover:text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100"
+                      >
+                        <x-dynamic-component
+                          component="lucide-info"
+                          class="h-3.5 w-3.5"
+                        />
+                        Lihat Detail
+                      </button>
+                      <div class="my-1 border-t border-gray-100"></div>
+                      <button
+                        type="button"
+                        @click="let n = prompt('Ganti nama folder:', '{{ addslashes($folder->name) }}'); if(n) { $wire.renameFolder({{ $folder->id }}, n); } openMenu = false;"
+                        class="hover:text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100"
+                      >
+                        <x-dynamic-component
+                          component="lucide-pencil"
+                          class="h-3.5 w-3.5"
+                        />
+                        Ganti Nama
+                      </button>
+                      <div class="my-1 border-t border-gray-100"></div>
+                      <button
+                        type="button"
+                        wire:click="deleteFolder({{ $folder->id }})"
+                        wire:confirm="Hapus folder ini? Pastikan kosong."
+                        class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-bold text-red-500 transition-colors outline-none hover:bg-red-50 hover:text-red-700"
+                      >
+                        <x-dynamic-component
+                          component="lucide-trash-2"
+                          class="h-3.5 w-3.5"
+                        />
+                        Hapus
+                      </button>
+                    </div>
                   </div>
                 @endforeach
 
@@ -1271,11 +1439,11 @@ new class extends Component {
                     data-id="{{ $media->id }}"
                     x-data="{ openMenu: false }"
                     @click.stop="handleSelect($event, '{{ $media->id }}')"
-                    class="media-card group hover:border-foresty relative flex cursor-pointer flex-col overflow-visible rounded-xl border-2 bg-white shadow-sm transition-all"
+                    class="media-card group hover:border-foresty relative flex cursor-pointer flex-col overflow-visible rounded-xl border-2 bg-white shadow-sm transition-all select-none"
                     x-bind:class="selected.includes('{{ $media->id }}') ? 'border-foresty ring-2 ring-foresty/20' : 'border-gray-200'"
                   >
                     <div
-                    x-on:click="
+                      x-on:click="
                           $wire.selectItem({{ $media->id }}, 'media');
                           @if($isModal)
                               if (window.innerWidth < 768) {
@@ -1336,8 +1504,14 @@ new class extends Component {
                       @endif --}}
                       @if ($isModal)
                         <!-- 🌟 PERBAIKAN: Gunakan hidden md:flex agar tombol ini Lenyap di HP -->
-                        <div class="absolute inset-0 hidden md:flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
-                          <button type="button" wire:click.stop="selectMedia({{ $media->id }}, '{{ $media->url() }}')" class="bg-foresty cursor-pointer rounded-lg px-4 py-2 text-xs font-bold text-white shadow-md transition-colors outline-none hover:bg-emerald-700">
+                        <div
+                          class="absolute inset-0 hidden items-center justify-center bg-black/40 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 md:flex"
+                        >
+                          <button
+                            type="button"
+                            wire:click.stop="selectMedia({{ $media->id }}, '{{ $media->url() }}')"
+                            class="bg-foresty cursor-pointer rounded-lg px-4 py-2 text-xs font-bold text-white shadow-md transition-colors outline-none hover:bg-emerald-700"
+                          >
                             Pilih Berkas
                           </button>
                         </div>
@@ -1386,7 +1560,6 @@ new class extends Component {
                       x-cloak
                       class="absolute top-auto right-2 bottom-8 z-50 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-xl"
                     >
-
                       <!-- 🌟 TOMBOL GUNAKAN DI MENU KEBAB (Khusus Modal) -->
                       @if ($isModal)
                         <button
@@ -1394,7 +1567,10 @@ new class extends Component {
                           wire:click="selectMedia({{ $media->id }}, '{{ $media->url() }}')"
                           class="text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-bold transition-colors outline-none hover:bg-emerald-50"
                         >
-                          <x-dynamic-component component="lucide-check-circle" class="h-3.5 w-3.5" />
+                          <x-dynamic-component
+                            component="lucide-check-circle"
+                            class="h-3.5 w-3.5"
+                          />
                           Gunakan
                         </button>
                         <div class="my-1 border-t border-gray-100"></div>
@@ -1457,6 +1633,139 @@ new class extends Component {
                   </div>
                 @endforeach
               </div>
+
+              <!-- LIST -->
+              {{-- border border-gray-200 bg-white pb-20 rounded-xl shadow-sm --}}
+              <div
+                x-show="viewMode === 'list'"
+                wire:key="fm-list-state"
+                class="flex flex-col overflow-hidden"
+                x-cloak
+              >
+                <!-- Header Tabel -->
+                <div
+                  class="border-forest text-forest flex items-center gap-4 border-b-2 px-4 py-3 text-xs font-extrabold tracking-wider uppercase"
+                >
+                  <div class="w-10 shrink-0 text-center">#</div>
+                  <div class="flex-1">Nama File</div>
+                  <div class="hidden w-24 md:block">Ukuran</div>
+                  <div class="hidden w-32 md:block">Diunggah</div>
+                </div>
+
+                <!-- 1. Folder dalam Mode List -->
+                @foreach ($this->folders as $folder)
+                  <div
+                    wire:key="list-folder-{{ $folder->id }}"
+                    x-on:click="if (window.innerWidth < 768) { $wire.openFolder({{ $folder->id }}) } else { $wire.selectItem({{ $folder->id }}, 'folder') }"
+                    x-on:dblclick="if (window.innerWidth >= 768) { $wire.openFolder({{ $folder->id }}) }"
+                    class="group flex cursor-pointer items-center gap-4 border-b border-gray-100 px-4 py-3 transition-colors select-none"
+                    x-bind:class="$wire.selectedItemId == {{ $folder->id }} && $wire.selectedItemType == 'folder' ? 'bg-sage-soft hover:bg-sage-soft' : 'hover:bg-gray-50' "
+                  >
+                    <div
+                      class="text-foresty/50 group-hover:text-foresty flex w-10 shrink-0 justify-center"
+                    >
+                      <x-dynamic-component
+                        component="lucide-folder"
+                        class="h-6 w-6"
+                        fill="currentColor"
+                      />
+                    </div>
+                    <div
+                      class="flex-1 truncate text-sm font-bold text-gray-700"
+                    >
+                      {{ $folder->name }}
+                    </div>
+                    <div
+                      class="hidden w-24 text-xs font-semibold text-gray-400 md:block"
+                    >
+                      -
+                    </div>
+                    <div
+                      class="hidden w-32 text-xs font-semibold text-gray-400 md:block"
+                    >
+                      {{
+                        $folder->created_at->translatedFormat(
+                          "d M Y",
+                        )
+                      }}
+                    </div>
+                  </div>
+                @endforeach
+
+                <!-- 2. File dalam Mode List -->
+                @foreach ($this->mediaItems as $media)
+                  <div
+                    wire:key="list-media-{{ $media->id }}"
+                    data-id="{{ $media->id }}"
+                    @click.stop="handleSelect($event, '{{ $media->id }}')"
+                    x-on:click="
+                        $wire.selectItem({{ $media->id }}, 'media');
+                        @if($isModal)
+                            if (window.innerWidth < 768) {
+                                setTimeout(() => { isInfoOpen = true }, 50);
+                            }
+                        @endif
+                    "
+                    class="media-card group flex cursor-pointer items-center gap-4 border-b border-gray-100 px-4 py-2 transition-colors select-none"
+                    x-bind:class="selected.includes('{{ $media->id }}') ? 'bg-sage-soft hover:bg-sage-soft' : 'hover:bg-gray-50' "
+                  >
+                    <!-- Checkbox Kiri -->
+                    <div class="flex w-10 shrink-0 justify-center">
+                      <input
+                        type="checkbox"
+                        :value="'{{ $media->id }}'"
+                        :checked="selected.includes('{{ $media->id }}')"
+                        @click.stop="handleSelect($event, '{{ $media->id }}', true)"
+                        class="media-checkbox accent-foresty text-foresty focus:ring-foresty h-4 w-4 cursor-pointer rounded border-gray-300 shadow-sm"
+                      />
+                    </div>
+
+                    <!-- Preview Kecil -->
+                    <div
+                      class="flex h-10 w-12 shrink-0 items-center justify-center overflow-hidden rounded bg-gray-100"
+                    >
+                      @if ($media->isImage())
+                        <img
+                          src="{{ $media->url() }}"
+                          class="h-full w-full object-cover"
+                        />
+                      @else
+                        <x-dynamic-component
+                          component="lucide-file-text"
+                          class="h-5 w-5 text-gray-400"
+                        />
+                      @endif
+                    </div>
+
+                    <!-- Informasi -->
+                    <div class="min-w-0 flex-1">
+                      <p
+                        class="truncate text-sm font-bold text-gray-700"
+                        title="{{ $media->original_name }}"
+                      >{{ $media->original_name }}</p>
+                    </div>
+                    <div
+                      class="hidden w-24 text-xs font-semibold text-gray-500 md:block"
+                    >
+                      {{
+                        round(
+                          $media->size / 1024,
+                          1,
+                        )
+                      }} KB
+                    </div>
+                    <div
+                      class="hidden w-32 text-xs font-semibold text-gray-400 md:block"
+                    >
+                      {{
+                        $media->created_at->translatedFormat(
+                          "d M Y",
+                        )
+                      }}
+                    </div>
+                  </div>
+                @endforeach
+              </div>
             @endif
           </div>
         </div>
@@ -1470,14 +1779,18 @@ new class extends Component {
         <div
           x-show="isInfoOpen"
           x-transition.opacity
-          x-on:click="isInfoOpen = false; setTimeout(() => { $wire.closeInfoPanel() }, 300)"
-          class="absolute inset-0 z-[60] cursor-pointer bg-black/40 md:hidden"
+          x-on:click="
+            isInfoOpen = false;
+            setTimeout(() => {
+              $wire.closeInfoPanel();
+            }, 300);
+          "
+          class="absolute inset-0 z-[60] h-screen w-screen cursor-pointer bg-black/40 md:hidden"
           x-cloak
         ></div>
 
         <!-- Panel Info: Laci di Bawah (Mobile) & Kolom Statis di Kanan (PC) -->
-        <!-- 🌟 PERBAIKAN 2: Hapus transition-transform agar w-0 ke w-80 bisa berjalan mulus -->
-        <div
+        {{-- <div
           x-show="isInfoOpen"
           class="absolute inset-x-0 bottom-0 z-[70] flex h-[85vh] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl md:relative md:inset-auto md:z-auto md:h-auto md:shrink-0 md:rounded-none md:border-l md:border-gray-200"
           x-transition:enter="transition-all ease-out duration-300"
@@ -1496,10 +1809,14 @@ new class extends Component {
                 <div
                   class="flex flex-1 flex-col items-center justify-center p-6 text-center"
                 >
-
                   <button
                     type="button"
-                    x-on:click="isInfoOpen = false; setTimeout(() => { $wire.closeInfoPanel() }, 300)"
+                    x-on:click="
+                      isInfoOpen = false;
+                      setTimeout(() => {
+                        $wire.closeInfoPanel();
+                      }, 300);
+                    "
                     class="absolute top-4 right-4 z-10 cursor-pointer rounded-full bg-gray-100 p-1.5 text-gray-500 shadow-sm outline-none hover:text-gray-800"
                   >
                     <x-dynamic-component component="lucide-x" class="h-5 w-5" />
@@ -1562,7 +1879,12 @@ new class extends Component {
                 >
                   <button
                     type="button"
-                    x-on:click="isInfoOpen = false; setTimeout(() => { $wire.closeInfoPanel() }, 300)"
+                    x-on:click="
+                      isInfoOpen = false;
+                      setTimeout(() => {
+                        $wire.closeInfoPanel();
+                      }, 300);
+                    "
                     class="absolute top-4 right-4 z-10 cursor-pointer rounded-full bg-white/80 p-1.5 text-gray-500 shadow-sm backdrop-blur-sm outline-none hover:text-gray-800"
                   >
                     <x-dynamic-component component="lucide-x" class="h-5 w-5" />
@@ -1735,7 +2057,6 @@ new class extends Component {
                   <!-- Tombol Aksi -->
                   <div class="mt-auto space-y-2">
                     @if ($this->selectedDetails["type"] === "media")
-
                       <!-- 🌟 TOMBOL GUNAKAN (Khusus Mode Modal) -->
                       @if ($isModal)
                         <button
@@ -1743,7 +2064,10 @@ new class extends Component {
                           wire:click="selectMedia({{ $this->selectedDetails['id'] }}, '{{ $this->selectedDetails['url'] }}')"
                           class="bg-foresty flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-md transition-colors outline-none hover:bg-emerald-800"
                         >
-                          <x-dynamic-component component="lucide-check-circle" class="h-4 w-4" />
+                          <x-dynamic-component
+                            component="lucide-check-circle"
+                            class="h-4 w-4"
+                          />
                           Gunakan Berkas Ini
                         </button>
                         <div class="my-3 border-t border-gray-100"></div>
@@ -1798,6 +2122,379 @@ new class extends Component {
                   </div>
                 </div>
               @endif
+            </div>
+          @endif
+        </div> --}}
+        <div
+          class="absolute inset-x-0 bottom-0 z-[70] flex h-[85vh] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl transition-transform duration-300 ease-in-out md:relative md:inset-auto md:z-auto md:h-auto md:w-80 md:shrink-0 md:translate-y-0 md:rounded-none md:border-l md:border-gray-200 md:transition-none"
+          x-bind:class="isInfoOpen ? 'translate-y-0' : 'translate-y-full'"
+          x-cloak
+        >
+          @if ($this->selectedDetails)
+            <!-- Pembungkus Lebar Tetap -->
+            <div class="flex h-full w-full flex-col md:w-80">
+              <!-- KONDISI FILE JAMAK (MULTIPLE) -->
+              @if ($this->selectedDetails["type"] === "multiple")
+                <div
+                  class="flex flex-1 flex-col items-center justify-center p-6 text-center"
+                >
+                  <!-- 🌟 PERBAIKAN: Tombol X disembunyikan di PC (md:hidden) -->
+                  {{-- <button
+                    type="button"
+                    x-on:click="
+                      isInfoOpen = false;
+                      setTimeout(() => {
+                        $wire.closeInfoPanel();
+                      }, 300);
+                    "
+                    class="absolute top-4 right-4 z-10 cursor-pointer rounded-full bg-gray-100 p-1.5 text-gray-500 shadow-sm outline-none hover:text-gray-800 md:hidden"
+                  >
+                    <x-dynamic-component component="lucide-x" class="h-5 w-5" />
+                  </button> --}}
+                  <!-- 🌟 TOMBOL X: Batal Pilih Massal -->
+                  <button
+                    type="button"
+                    x-on:click="
+                      if (window.innerWidth >= 768) {
+                        $wire.closeInfoPanel();
+                      } else {
+                        isInfoOpen = false;
+                        setTimeout(() => {
+                          $wire.closeInfoPanel();
+                        }, 300);
+                      }
+                    "
+                    class="absolute top-4 right-4 z-10 cursor-pointer rounded-full bg-gray-100 p-1.5 text-gray-500 shadow-sm outline-none hover:text-gray-800"
+                  >
+                    <x-dynamic-component component="lucide-x" class="h-5 w-5" />
+                  </button>
+
+                  <div class="relative mb-6 h-24 w-24">
+                    <div
+                      class="bg-sage-soft absolute inset-0 scale-105 -rotate-6 rounded-2xl opacity-50"
+                    ></div>
+                    <div
+                      class="absolute inset-0 scale-95 rotate-3 rounded-2xl bg-emerald-100 opacity-75"
+                    ></div>
+                    <div
+                      class="bg-foresty absolute inset-0 flex items-center justify-center rounded-2xl shadow-lg"
+                    >
+                      <span class="text-3xl font-black text-white">{{
+                        $this->selectedDetails[
+                          "count"
+                        ]
+                      }}</span>
+                    </div>
+                  </div>
+                  <h2 class="mb-2 text-xl font-bold text-gray-800">
+                    Item Dipilih
+                  </h2>
+                  <p class="mb-8 text-sm text-gray-500">Pilih aksi massal untuk file-file ini.</p>
+
+                  <div class="mt-auto w-full space-y-3">
+                    <button
+                      type="button"
+                      wire:click="openMovePanel"
+                      class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
+                    >
+                      <x-dynamic-component
+                        component="lucide-folder-symlink"
+                        class="h-4 w-4"
+                      />
+                      Pindahkan Semua
+                    </button>
+                    <button
+                      type="button"
+                      wire:click="bulkDelete"
+                      wire:confirm="Hapus {{ $this->selectedDetails['count'] }} file secara permanen?"
+                      class="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
+                    >
+                      <x-dynamic-component
+                        component="lucide-trash-2"
+                        class="h-4 w-4"
+                      />
+                      Hapus Semua
+                    </button>
+                  </div>
+                </div>
+
+                <!-- KONDISI FILE TUNGGAL & FOLDER -->
+              @else
+                <!-- HEADER PREVIEW -->
+                <div
+                  class="relative flex shrink-0 items-center justify-center border-b border-gray-200 bg-gray-50 p-4"
+                >
+                  <!-- 🌟 PERBAIKAN: Tombol X disembunyikan di PC (md:hidden) -->
+                  {{-- <button
+                    type="button"
+                    x-on:click="
+                      isInfoOpen = false;
+                      setTimeout(() => {
+                        $wire.closeInfoPanel();
+                      }, 300);
+                    "
+                    class="absolute top-4 right-4 z-10 cursor-pointer rounded-full bg-white/80 p-1.5 text-gray-500 shadow-sm backdrop-blur-sm outline-none hover:text-gray-800 md:hidden"
+                  >
+                    <x-dynamic-component component="lucide-x" class="h-5 w-5" />
+                  </button> --}}
+                  <!-- 🌟 TOMBOL X: Batal Pilih Tunggal -->
+                  <button
+                    type="button"
+                    x-on:click="
+                      if (window.innerWidth >= 768) {
+                        $wire.closeInfoPanel();
+                      } else {
+                        isInfoOpen = false;
+                        setTimeout(() => {
+                          $wire.closeInfoPanel();
+                        }, 300);
+                      }
+                    "
+                    class="absolute top-4 right-4 z-10 cursor-pointer rounded-full bg-white/80 p-1.5 text-gray-500 shadow-sm backdrop-blur-sm outline-none hover:text-gray-800"
+                  >
+                    <x-dynamic-component component="lucide-x" class="h-5 w-5" />
+                  </button>
+
+                  @if ($this->selectedDetails["type"] === "media" &&
+                    $this->selectedDetails["is_image"])
+                    <img
+                      src="{{ $this->selectedDetails['url'] }}"
+                      class="h-48 w-full rounded-xl object-cover shadow-sm"
+                      alt="Preview"
+                    />
+                  @elseif ($this->selectedDetails["type"] === "folder")
+                    <x-dynamic-component
+                      component="lucide-folder"
+                      class="text-foresty/40 my-8 h-24 w-24"
+                    />
+                  @else
+                    <x-dynamic-component
+                      component="lucide-file-text"
+                      class="my-8 h-24 w-24 text-gray-400"
+                    />
+                  @endif
+                </div>
+
+                <!-- DETAIL METADATA -->
+                <div class="flex-1 scrollbar-thin overflow-y-auto p-5">
+                  <h2
+                    class="mb-1 text-xl leading-tight font-bold break-words text-gray-800"
+                  >
+                    {{
+                      $this->selectedDetails[
+                        "name"
+                      ]
+                    }}
+                  </h2>
+                  <p class="mb-4 text-xs font-semibold text-gray-400">{{
+                    $this->selectedDetails[
+                      "path"
+                    ]
+                  }}</p>
+
+                  <div
+                    class="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1"
+                  >
+                    <div
+                      class="h-2 w-2 rounded-full {{ $this->selectedDetails['is_used'] ? 'bg-orange-500' : 'bg-foresty' }}"
+                    ></div>
+                    <span
+                      class="text-[11px] font-bold {{ $this->selectedDetails['is_used'] ? 'text-orange-700' : 'text-foresty' }}"
+                    >
+                      {{
+                        $this->selectedDetails["is_used"]
+                          ? "Terpakai"
+                          : "Belum dipakai"
+                      }}
+                    </span>
+                  </div>
+
+                  @if ($this->selectedDetails["type"] === "media" &&
+                    $this->selectedDetails["is_image"])
+                    <div class="mb-6">
+                      <label
+                        class="mb-2 flex items-center gap-2 text-[10px] font-bold tracking-widest text-gray-500"
+                      >
+                        <x-dynamic-component
+                          component="lucide-image"
+                          class="h-3 w-3"
+                        />
+                        TEKS ALTERNATIF (ALT TEXT)
+                      </label>
+                      <input
+                        type="text"
+                        wire:model.blur="activeAltText"
+                        placeholder="Deskripsikan gambar ini..."
+                        class="focus:border-foresty focus:ring-foresty w-full rounded-lg border-orange-200 bg-orange-50/30 p-3 text-sm shadow-sm"
+                      />
+                      @if (empty($this->activeAltText))
+                        <p class="mt-1.5 text-[10px] font-bold text-orange-600">Belum diisi — pembaca layar & mesin pencari tidak akan memahami gambar ini.</p>
+                      @endif
+                    </div>
+                  @endif
+
+                  <div class="mb-6 space-y-3">
+                    <div
+                      class="flex justify-between border-b border-gray-100 py-2"
+                    >
+                      <span class="text-sm font-semibold text-gray-500"
+                        >Ukuran</span
+                      >
+                      <span class="text-sm font-bold text-gray-800">{{
+                        $this->selectedDetails[
+                          "size"
+                        ]
+                      }}</span>
+                    </div>
+                    @if ($this->selectedDetails["type"] === "media")
+                      <div
+                        class="flex justify-between border-b border-gray-100 py-2"
+                      >
+                        <span class="text-sm font-semibold text-gray-500"
+                          >Dimensi</span
+                        >
+                        <span class="text-sm font-bold text-gray-800">{{
+                          $this->selectedDetails[
+                            "dimensions"
+                          ]
+                        }}</span>
+                      </div>
+                    @endif
+                    <div
+                      class="flex justify-between border-b border-gray-100 py-2"
+                    >
+                      <span class="text-sm font-semibold text-gray-500"
+                        >Diunggah</span
+                      >
+                      <span class="text-sm font-bold text-gray-800">{{
+                        $this->selectedDetails[
+                          "created_at"
+                        ]
+                      }}</span>
+                    </div>
+                    <div
+                      class="flex justify-between border-b border-gray-100 py-2"
+                    >
+                      <span class="text-sm font-semibold text-gray-500"
+                        >Oleh</span
+                      >
+                      <span class="text-sm font-bold text-gray-800">{{
+                        $this->selectedDetails[
+                          "uploader"
+                        ]
+                      }}</span>
+                    </div>
+                    @if ($this->selectedDetails["type"] === "folder")
+                      <div
+                        class="flex justify-between border-b border-gray-100 py-2"
+                      >
+                        <span class="text-sm font-semibold text-gray-500"
+                          >Isi Folder</span
+                        >
+                        <span class="text-sm font-bold text-gray-800">{{
+                          $this->selectedDetails[
+                            "count"
+                          ]
+                        }}</span>
+                      </div>
+                    @endif
+                  </div>
+
+                  <div class="mb-6">
+                    <h3
+                      class="mb-2 text-[10px] font-bold tracking-widest text-gray-500"
+                    >
+                      DIGUNAKAN DI
+                    </h3>
+                    <p class="text-xs text-gray-400 italic">
+                      {{
+                        $this->selectedDetails["is_used"]
+                          ? "Digunakan pada artikel/halaman."
+                          : "Belum dipakai di halaman mana pun."
+                      }}
+                    </p>
+                  </div>
+
+                  <!-- Tombol Aksi -->
+                  <div class="mt-auto space-y-2">
+                    @if ($this->selectedDetails["type"] === "media")
+                      @if ($isModal)
+                        <button
+                          type="button"
+                          wire:click="selectMedia({{ $this->selectedDetails['id'] }}, '{{ $this->selectedDetails['url'] }}')"
+                          class="bg-foresty flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-md transition-colors outline-none hover:bg-emerald-800"
+                        >
+                          <x-dynamic-component
+                            component="lucide-check-circle"
+                            class="h-4 w-4"
+                          />
+                          Gunakan Berkas Ini
+                        </button>
+                        <div class="my-3 border-t border-gray-100"></div>
+                      @endif
+
+                      <a
+                        href="{{ $this->selectedDetails['url'] }}"
+                        download
+                        class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors"
+                      >
+                        <x-dynamic-component
+                          component="lucide-download"
+                          class="h-4 w-4"
+                        />
+                        Unduh
+                      </a>
+                      <button
+                        type="button"
+                        @click="navigator.clipboard.writeText('{{ $this->selectedDetails['url'] }}'); $wire.notify('Tautan disalin!', 'success')"
+                        class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
+                      >
+                        <x-dynamic-component
+                          component="lucide-link"
+                          class="h-4 w-4"
+                        />
+                        Salin Tautan
+                      </button>
+                      <button
+                        type="button"
+                        @click="let n = prompt('Ganti nama file:', '{{ addslashes($this->selectedDetails['name']) }}'); if(n) { $wire.renameMedia({{ $this->selectedDetails['id'] }}, n); }"
+                        class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
+                      >
+                        <x-dynamic-component
+                          component="lucide-pencil"
+                          class="h-4 w-4"
+                        />
+                        Ganti Nama
+                      </button>
+                    @endif
+                    <button
+                      type="button"
+                      wire:click="deleteMedia({{ $this->selectedDetails['id'] }})"
+                      wire:confirm="Hapus item ini secara permanen?"
+                      class="mt-4 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
+                    >
+                      <x-dynamic-component
+                        component="lucide-trash-2"
+                        class="h-4 w-4"
+                      />
+                      Pindah ke Sampah
+                    </button>
+                  </div>
+                </div>
+              @endif
+            </div>
+
+            <!-- 🌟 STATE KOSONG BARU (Hanya Muncul di Desktop Saat Tidak Ada Pilihan) -->
+          @else
+            <div
+              class="hidden h-full w-full flex-col items-center justify-center p-6 text-center text-gray-400 md:flex"
+            >
+              <x-dynamic-component
+                component="lucide-mouse-pointer-click"
+                class="mb-4 h-12 w-12 opacity-20"
+              />
+              <p class="text-sm font-bold text-gray-500">Tidak ada item dipilih</p>
+              <p class="mt-2 text-xs">Pilih file atau folder pada area utama untuk melihat properti dan aksinya di sini.</p>
             </div>
           @endif
         </div>

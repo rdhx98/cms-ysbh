@@ -14,281 +14,319 @@ use App\Livewire\Traits\WithNotifications;
 use App\Livewire\Traits\HasContentBlocks;
 
 new class extends Component {
-    use WithFileUploads;
-    use WithNotifications;
-    use HasContentBlocks;
+  use WithFileUploads;
+  use WithNotifications;
+  use HasContentBlocks;
 
-    public ?Page $page = null;
+  public ?Page $page = null;
 
-    public array $activeLocales = [];
+  public array $activeLocales = [];
 
-    public $layoutMode = 'single'; //single split
-    public $singleActiveLang = 'id';
-    public $splitLanguages = [];
+  public $layoutMode = "single"; //single split
+  public $singleActiveLang = "id";
+  public $splitLanguages = [];
 
-    // public array $title = [];
-    public array $page_title = [];
-    public array $slug = [];
-    public array $meta_title = [];
-    public array $meta_description = [];
+  // public array $title = [];
+  public array $page_title = [];
+  public array $slug = [];
+  public array $meta_title = [];
+  public array $meta_description = [];
 
-    // 🌟 Pendekatan Hibrida: Pisahkan data konten dan urutan
-    public array $content = [];
-    public array $blockOrder = []; // Menyimpan urutan ID secara akurat
-    public array $settings = []; // Menyimpan urutan ID secara akurat
+  // 🌟 Pendekatan Hibrida: Pisahkan data konten dan urutan
+  public array $content = [];
+  public array $blockOrder = []; // Menyimpan urutan ID secara akurat
+  public array $settings = []; // Menyimpan urutan ID secara akurat
 
-    public $status;
+  public $status;
 
-    public $isEditMode = false;
+  public $isEditMode = false;
 
-    protected function rules()
-    {
-        $rules = [
-            'status' => 'required|in:offline,online',
-            'content' => 'array',
-        ];
+  protected function rules()
+  {
+    $rules = [
+      "status" => "required|in:offline,online",
+      "content" => "array",
+    ];
 
-        foreach ($this->activeLocales as $locale) {
-            // UBAH VALIDASI MENJADI page_title
-            $rules["page_title.{$locale}"] = 'required|string|max:255';
-            $rules["slug.{$locale}"] = 'required|string|max:255';
-        }
-
-        return $rules;
+    foreach ($this->activeLocales as $locale) {
+      // UBAH VALIDASI MENJADI page_title
+      $rules["page_title.{$locale}"] = "required|string|max:255";
+      $rules["slug.{$locale}"] = "required|string|max:255";
     }
 
-    #[On('mediaSelected')]
-    public function handleMediaSelection($data)
-    {
-        $mediaId = $data['id'];
-        $url = $data['url'];
-        
-        // basePath adalah path array JSON. Contoh: 'content.block_1.data'
-        $basePath = $data['componentId']; 
+    return $rules;
+  }
 
-        // Buang teks awalan 'content.' agar sesuai dengan struktur $this->content di Livewire
-        $cleanPath = preg_replace('/^content\./', '', $basePath);
+  #[On("mediaSelected")]
+  public function handleMediaSelection($data)
+  {
+    $mediaId = $data["id"];
+    $url = $data["url"];
 
-        // Secara ajaib, helper data_set akan menembus array sedalam apa pun
-        data_set($this->content, $cleanPath . '.url', $url);
-        data_set($this->content, $cleanPath . '.media_id', $mediaId);
+    // basePath adalah path array JSON. Contoh: 'content.block_1.data'
+    $basePath = $data["componentId"];
+
+    // Buang teks awalan 'content.' agar sesuai dengan struktur $this->content di Livewire
+    $cleanPath = preg_replace("/^content\./", "", $basePath);
+
+    // Secara ajaib, helper data_set akan menembus array sedalam apa pun
+    data_set($this->content, $cleanPath . ".url", $url);
+    data_set($this->content, $cleanPath . ".media_id", $mediaId);
+  }
+
+  protected function messages()
+  {
+    $messages = [
+      "status.required" => "Status halaman wajib dipilih.",
+      "status.in" => "Status tidak valid.",
+    ];
+
+    foreach ($this->activeLocales as $locale) {
+      $lang = strtoupper($locale);
+      // UBAH PESAN GALAT MENJADI page_title
+      $messages[
+        "page_title.{$locale}.required"
+      ] = "Judul ({$lang}) wajib diisi.";
+      $messages[
+        "page_title.{$locale}.max"
+      ] = "Judul ({$lang}) maksimal 255 karakter.";
+      $messages["slug.{$locale}.required"] = "Slug/URL ({$lang}) wajib diisi.";
+      $messages[
+        "slug.{$locale}.max"
+      ] = "Slug/URL ({$lang}) maksimal 255 karakter.";
     }
 
-    protected function messages()
-    {
-        $messages = [
-            'status.required' => 'Status halaman wajib dipilih.',
-            'status.in' => 'Status tidak valid.',
-        ];
+    return $messages;
+  }
 
-        foreach ($this->activeLocales as $locale) {
-            $lang = strtoupper($locale);
-            // UBAH PESAN GALAT MENJADI page_title
-            $messages["page_title.{$locale}.required"] = "Judul ({$lang}) wajib diisi.";
-            $messages["page_title.{$locale}.max"] = "Judul ({$lang}) maksimal 255 karakter.";
-            $messages["slug.{$locale}.required"] = "Slug/URL ({$lang}) wajib diisi.";
-            $messages["slug.{$locale}.max"] = "Slug/URL ({$lang}) maksimal 255 karakter.";
-        }
+  public function mount($pageSlug = null)
+  {
+    // 1. Konfigurasi Bahasa Dasar
+    $this->activeLocales = config("app.supported_locales", ["id", "en"]);
+    $this->splitLanguages = array_slice($this->activeLocales, 0, 2);
 
-        return $messages;
+    if (!in_array($this->singleActiveLang, $this->activeLocales)) {
+      $this->singleActiveLang = $this->activeLocales[0] ?? "id";
     }
 
-    public function mount($pageSlug = null)
-    {
-        // 1. Konfigurasi Bahasa Dasar
-        $this->activeLocales = config('app.supported_locales', ['id', 'en']);
-        $this->splitLanguages = array_slice($this->activeLocales, 0, 2);
-
-        if (!in_array($this->singleActiveLang, $this->activeLocales)) {
-            $this->singleActiveLang = $this->activeLocales[0] ?? 'id';
+    // 2. KUERI PENCARIAN SUPER KETAT & FLEKSIBEL
+    $pageModel = null;
+    if (!empty($pageSlug)) {
+      $pageModel = \App\Models\Page::where(function ($query) use ($pageSlug) {
+        // Skenario A: Jika URL berupa ID angka
+        if (is_numeric($pageSlug)) {
+          $query->where("id", $pageSlug);
         }
 
-        // 2. KUERI PENCARIAN SUPER KETAT & FLEKSIBEL
-        $pageModel = null;
-        if (!empty($pageSlug)) {
-            $pageModel = \App\Models\Page::where(function ($query) use ($pageSlug) {
-                // Skenario A: Jika URL berupa ID angka
-                if (is_numeric($pageSlug)) {
-                    $query->where('id', $pageSlug);
-                }
+        // Skenario B: Jika slug disimpan sebagai JSON utuh
+        $query->orWhere("slug->id", $pageSlug)->orWhere("slug->en", $pageSlug);
 
-                // Skenario B: Jika slug disimpan sebagai JSON utuh
-                $query->orWhere('slug->id', $pageSlug)->orWhere('slug->en', $pageSlug);
+        // Skenario C: Jika slug disimpan sebagai teks murni (bukan JSON)
+        $query->orWhere("slug", $pageSlug);
 
-                // Skenario C: Jika slug disimpan sebagai teks murni (bukan JSON)
-                $query->orWhere('slug', $pageSlug);
-
-                // Skenario D: Jurus pamungkas menggunakan LIKE
-                $query->orWhere('slug', 'LIKE', '%"' . $pageSlug . '"%');
-            })->first();
-        } elseif ($pageSlug instanceof \App\Models\Page) {
-            $pageModel = $pageSlug; // Berjaga-jaga jika dipanggil via object binding
-        }
-
-        // 3. POPULASI DATA KE FORMULIR JIKA DITEMUKAN
-        if ($pageModel && $pageModel->exists) {
-            $this->isEditMode = true;
-            $this->page = $pageModel;
-            $this->status = $pageModel->status ?? 'draft';
-
-            // 🌟 BYPASS MUTATOR: Ambil data mentah persis seperti hasil dd()
-            $modelData = $pageModel->toArray();
-
-            // Ekstrak data (Pasti berbentuk array jika di DB berupa JSON dan sudah di-cast)
-            $titleData = $modelData['title'] ?? [];
-            $slugData = $modelData['slug'] ?? [];
-            $metaTitleData = $modelData['meta_title'] ?? [];
-            $metaDescData = $modelData['meta_description'] ?? [];
-
-            // Pertahanan ekstra jika ternyata masih ada yang berbentuk string JSON
-            $titleData = is_string($titleData) ? json_decode($titleData, true) ?? [] : (is_array($titleData) ? $titleData : []);
-            $slugData = is_string($slugData) ? json_decode($slugData, true) ?? [] : (is_array($slugData) ? $slugData : []);
-            $metaTitleData = is_string($metaTitleData) ? json_decode($metaTitleData, true) ?? [] : (is_array($metaTitleData) ? $metaTitleData : []);
-            $metaDescData = is_string($metaDescData) ? json_decode($metaDescData, true) ?? [] : (is_array($metaDescData) ? $metaDescData : []);
-
-            // Petakan per bahasa
-            foreach ($this->activeLocales as $loc) {
-                // ✅ Pastikan menggunakan page_title
-                $this->page_title[$loc] = $titleData[$loc] ?? '';
-                $this->slug[$loc] = $slugData[$loc] ?? '';
-                $this->meta_title[$loc] = $metaTitleData[$loc] ?? '';
-                $this->meta_description[$loc] = $metaDescData[$loc] ?? '';
-            }
-
-            // 4. PENYELAMATAN STRUKTUR BLOK (Dari Seeder & Database ke Livewire)
-            $rawContent = $modelData['content'] ?? [];
-            $rawContent = is_string($rawContent) ? json_decode($rawContent, true) ?? [] : (is_array($rawContent) ? $rawContent : []);
-
-            $this->content = [];
-            $this->blockOrder = [];
-            $this->settings = []; // 🌟 Inisialisasi
-
-            // 🌟 1. DETEKSI FORMAT BARU (Flat Data Structure)
-            if (isset($rawContent['blocks']) && isset($rawContent['order'])) {
-                $this->content = $rawContent['blocks'];
-                $this->blockOrder = $rawContent['order'];
-                $this->settings = $rawContent['settings'] ?? []; // Ambil dari root
-                // 🌟 AUTO-MIGRASI: Keluarkan 'settings' jika masih terselip di dalam 'blocks' (dari bug sebelumnya)
-                  if (isset($this->content['settings'])) {
-                      $this->settings = $this->content['settings'];
-                      unset($this->content['settings']);
-                  }
-            }
-            // 🌟 2. FALLBACK KE FORMAT LAMA (Untuk kompabilitas dengan Seeder lawas)
-            else {
-                if (isset($rawContent['id']) && is_array($rawContent['id']) && isset($rawContent['id'][0]['type'])) {
-                    $rawContent = $rawContent['id'];
-                } elseif (isset($rawContent['en']) && is_array($rawContent['en']) && isset($rawContent['en'][0]['type'])) {
-                    $rawContent = $rawContent['en'];
-                }
-
-                foreach ($rawContent as $block) {
-                    if (is_array($block) && isset($block['type'])) {
-                        $id = $block['id'] ?? 'blk_' . Str::random(8);
-                        $block['id'] = $id;
-                        $this->content[$id] = $block;
-                        $this->blockOrder[] = $id;
-                    }
-                }
-            }
-            // 🌟 3. Pastikan pengaturan TOC memiliki nilai default agar UI tidak error
-            if (!isset($this->settings['toc_position'])) {
-                $this->settings['toc_position'] = 'right';
-            }
-        } else {
-            // 5. HALAMAN BARU (Jika URL benar-benar tidak ditemukan)
-            $this->isEditMode = false;
-            $this->page = new \App\Models\Page();
-            $this->status = 'offline';
-            // ✅ Gunakan page_title
-            $this->page_title = array_fill_keys($this->activeLocales, '');
-            $this->slug = array_fill_keys($this->activeLocales, '');
-            $this->meta_title = array_fill_keys($this->activeLocales, '');
-            $this->meta_description = array_fill_keys($this->activeLocales, '');
-        }
-
-        // 6. BUAT BLOK DEFAULT JIKA EDITOR KOSONG TOTAL
-        if (empty($this->content)) {
-            $id = 'blk_' . uniqid();
-            $this->content[$id] = [
-                'id' => $id,
-                'type' => 'heading',
-                'data' => ['text' => array_fill_keys($this->activeLocales, '')],
-            ];
-            $this->blockOrder = [$id];
-        }
+        // Skenario D: Jurus pamungkas menggunakan LIKE
+        $query->orWhere("slug", "LIKE", '%"' . $pageSlug . '"%');
+      })->first();
+    } elseif ($pageSlug instanceof \App\Models\Page) {
+      $pageModel = $pageSlug; // Berjaga-jaga jika dipanggil via object binding
     }
 
-    public function save($isPreview = false)
-    {
-        $this->validate();
+    // 3. POPULASI DATA KE FORMULIR JIKA DITEMUKAN
+    if ($pageModel && $pageModel->exists) {
+      $this->isEditMode = true;
+      $this->page = $pageModel;
+      $this->status = $pageModel->status ?? "draft";
 
-        $this->page->title = $this->page_title;
-        $this->page->slug = $this->slug;
+      // 🌟 BYPASS MUTATOR: Ambil data mentah persis seperti hasil dd()
+      $modelData = $pageModel->toArray();
 
-        $this->page->content = [
-            'blocks' => $this->content, // Berisi SELURUH blok (induk & anak) dengan key ID (blk_...)
-            'order' => $this->blockOrder, // Berisi HANYA urutan ID blok level terluar (root)
-            'settings' => $this->settings,
-        ];
+      // Ekstrak data (Pasti berbentuk array jika di DB berupa JSON dan sudah di-cast)
+      $titleData = $modelData["title"] ?? [];
+      $slugData = $modelData["slug"] ?? [];
+      $metaTitleData = $modelData["meta_title"] ?? [];
+      $metaDescData = $modelData["meta_description"] ?? [];
 
-        // $this->page->content          = $finalContent;
-        $this->page->meta_title = $this->meta_title;
-        $this->page->meta_description = $this->meta_description;
-        $this->page->status = $this->status;
+      // Pertahanan ekstra jika ternyata masih ada yang berbentuk string JSON
+      $titleData = is_string($titleData)
+        ? json_decode($titleData, true) ?? []
+        : (is_array($titleData)
+          ? $titleData
+          : []);
+      $slugData = is_string($slugData)
+        ? json_decode($slugData, true) ?? []
+        : (is_array($slugData)
+          ? $slugData
+          : []);
+      $metaTitleData = is_string($metaTitleData)
+        ? json_decode($metaTitleData, true) ?? []
+        : (is_array($metaTitleData)
+          ? $metaTitleData
+          : []);
+      $metaDescData = is_string($metaDescData)
+        ? json_decode($metaDescData, true) ?? []
+        : (is_array($metaDescData)
+          ? $metaDescData
+          : []);
 
-        $this->page->save();
+      // Petakan per bahasa
+      foreach ($this->activeLocales as $loc) {
+        // ✅ Pastikan menggunakan page_title
+        $this->page_title[$loc] = $titleData[$loc] ?? "";
+        $this->slug[$loc] = $slugData[$loc] ?? "";
+        $this->meta_title[$loc] = $metaTitleData[$loc] ?? "";
+        $this->meta_description[$loc] = $metaDescData[$loc] ?? "";
+      }
 
-        if (!$this->isEditMode && !$isPreview) {
-            // 🌟 PENGAMBIL SLUG SUPER KETAT
-            $redirectSlug = null;
-            if (is_array($this->slug) && !empty($this->slug)) {
-                $locale = app()->getLocale();
-                // Ambil dari bahasa aktif, jika tidak ada, paksa ambil elemen pertama apapun bahasanya
-                $redirectSlug = $this->slug[$locale] ?? reset($this->slug);
-            }
+      // 4. PENYELAMATAN STRUKTUR BLOK (Dari Seeder & Database ke Livewire)
+      $rawContent = $modelData["content"] ?? [];
+      $rawContent = is_string($rawContent)
+        ? json_decode($rawContent, true) ?? []
+        : (is_array($rawContent)
+          ? $rawContent
+          : []);
 
-            if (empty($redirectSlug)) {
-                $redirectSlug = $this->page->id;
-            }
-            // Dapatkan URL edit yang baru berdasarkan slug/id yang baru disimpan
-            $editUrl = route('page.edit', ['pageSlug' => $redirectSlug]);
+      $this->content = [];
+      $this->blockOrder = [];
+      $this->settings = []; // 🌟 Inisialisasi
 
-            // 🌟 UBAH URL BROWSER TANPA REDIRECT (ZERO BLINK)
-            // Ini akan mengganti /pages/create menjadi /pages/slug-baru/edit di address bar
-            $this->js("window.history.replaceState(null, '', '{$editUrl}');");
-
-            $this->isEditMode = true;
+      // 🌟 1. DETEKSI FORMAT BARU (Flat Data Structure)
+      if (isset($rawContent["blocks"]) && isset($rawContent["order"])) {
+        $this->content = $rawContent["blocks"];
+        $this->blockOrder = $rawContent["order"];
+        $this->settings = $rawContent["settings"] ?? []; // Ambil dari root
+        // 🌟 AUTO-MIGRASI: Keluarkan 'settings' jika masih terselip di dalam 'blocks' (dari bug sebelumnya)
+        if (isset($this->content["settings"])) {
+          $this->settings = $this->content["settings"];
+          unset($this->content["settings"]);
         }
-        // $this->notifyFlash(__('ui.notification.page_saved'), 'success');
-        $this->notify(__('ui.notification.page_saved'), 'success');
+      }
+      // 🌟 2. FALLBACK KE FORMAT LAMA (Untuk kompabilitas dengan Seeder lawas)
+      else {
+        if (
+          isset($rawContent["id"]) &&
+          is_array($rawContent["id"]) &&
+          isset($rawContent["id"][0]["type"])
+        ) {
+          $rawContent = $rawContent["id"];
+        } elseif (
+          isset($rawContent["en"]) &&
+          is_array($rawContent["en"]) &&
+          isset($rawContent["en"][0]["type"])
+        ) {
+          $rawContent = $rawContent["en"];
+        }
+
+        foreach ($rawContent as $block) {
+          if (is_array($block) && isset($block["type"])) {
+            $id = $block["id"] ?? "blk_" . Str::random(8);
+            $block["id"] = $id;
+            $this->content[$id] = $block;
+            $this->blockOrder[] = $id;
+          }
+        }
+      }
+      // 🌟 3. Pastikan pengaturan TOC memiliki nilai default agar UI tidak error
+      if (!isset($this->settings["toc_position"])) {
+        $this->settings["toc_position"] = "right";
+      }
+    } else {
+      // 5. HALAMAN BARU (Jika URL benar-benar tidak ditemukan)
+      $this->isEditMode = false;
+      $this->page = new \App\Models\Page();
+      $this->status = "offline";
+      // ✅ Gunakan page_title
+      $this->page_title = array_fill_keys($this->activeLocales, "");
+      $this->slug = array_fill_keys($this->activeLocales, "");
+      $this->meta_title = array_fill_keys($this->activeLocales, "");
+      $this->meta_description = array_fill_keys($this->activeLocales, "");
     }
 
-    public function saveAndPreview()
-    {
-        $this->save(true);
-
-        $slugCantik = $this->page->id;
-        if (is_array($this->slug) && !empty($this->slug['id'])) {
-            $slugCantik = $this->slug['id'];
-        } elseif (is_string($this->slug) && !empty($this->slug)) {
-            $slugCantik = $this->slug;
-        }
-
-        // 🌟 PERBAIKAN: Tambahkan parameter mode => 'raw'
-        $previewUrl = route('page.preview', [
-            'pageSlug' => $slugCantik,
-            'mode' => 'raw', // 'full' 'raw'
-            'lang' => app()->getLocale(),
-        ]);
-
-        $this->dispatch('open-preview-panel', url: $previewUrl);
+    // 6. BUAT BLOK DEFAULT JIKA EDITOR KOSONG TOTAL
+    if (empty($this->content)) {
+      $id = "blk_" . uniqid();
+      $this->content[$id] = [
+        "id" => $id,
+        "type" => "heading",
+        "data" => ["text" => array_fill_keys($this->activeLocales, "")],
+      ];
+      $this->blockOrder = [$id];
     }
+  }
+
+  public function save($isPreview = false)
+  {
+    $this->validate();
+
+    $this->page->title = $this->page_title;
+    $this->page->slug = $this->slug;
+
+    $this->page->content = [
+      "blocks" => $this->content, // Berisi SELURUH blok (induk & anak) dengan key ID (blk_...)
+      "order" => $this->blockOrder, // Berisi HANYA urutan ID blok level terluar (root)
+      "settings" => $this->settings,
+    ];
+
+    // $this->page->content          = $finalContent;
+    $this->page->meta_title = $this->meta_title;
+    $this->page->meta_description = $this->meta_description;
+    $this->page->status = $this->status;
+
+    $this->page->save();
+
+    if (!$this->isEditMode && !$isPreview) {
+      // 🌟 PENGAMBIL SLUG SUPER KETAT
+      $redirectSlug = null;
+      if (is_array($this->slug) && !empty($this->slug)) {
+        $locale = app()->getLocale();
+        // Ambil dari bahasa aktif, jika tidak ada, paksa ambil elemen pertama apapun bahasanya
+        $redirectSlug = $this->slug[$locale] ?? reset($this->slug);
+      }
+
+      if (empty($redirectSlug)) {
+        $redirectSlug = $this->page->id;
+      }
+      // Dapatkan URL edit yang baru berdasarkan slug/id yang baru disimpan
+      $editUrl = route("page.edit", ["pageSlug" => $redirectSlug]);
+
+      // 🌟 UBAH URL BROWSER TANPA REDIRECT (ZERO BLINK)
+      // Ini akan mengganti /pages/create menjadi /pages/slug-baru/edit di address bar
+      $this->js("window.history.replaceState(null, '', '{$editUrl}');");
+
+      $this->isEditMode = true;
+    }
+    // $this->notifyFlash(__('ui.notification.page_saved'), 'success');
+    $this->notify(__("ui.notification.page_saved"), "success");
+  }
+
+  public function saveAndPreview()
+  {
+    $this->save(true);
+
+    $slugCantik = $this->page->id;
+    if (is_array($this->slug) && !empty($this->slug["id"])) {
+      $slugCantik = $this->slug["id"];
+    } elseif (is_string($this->slug) && !empty($this->slug)) {
+      $slugCantik = $this->slug;
+    }
+
+    // 🌟 PERBAIKAN: Tambahkan parameter mode => 'raw'
+    $previewUrl = route("page.preview", [
+      "pageSlug" => $slugCantik,
+      "mode" => "raw", // 'full' 'raw'
+      "lang" => app()->getLocale(),
+    ]);
+
+    $this->dispatch("open-preview-panel", url: $previewUrl);
+  }
 };
 ?>
 
 <x-slot:title>
-  {{ __('ui.header.write_page') }}
+  {{
+    __(
+      "ui.header.write_page",
+    )
+  }}
 </x-slot:title>
 
 <div
@@ -363,7 +401,6 @@ new class extends Component {
       },
     }"
   >
-
     <!-- ==========================================
     RUANGAN 1: METADATA (Hanya Tampil di Tab Meta)
     ========================================== -->
@@ -390,98 +427,114 @@ new class extends Component {
         }"
         class="gap-6"
       >
-          @foreach ($activeLocales as $code)
-            <div
-              {{-- x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))" --}}
-              x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
-              class="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
-            >
-              <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-sm font-bold text-gray-700">
-                  Metadata ({{ strtoupper($code) }})
-                </h3>
-                <span
-                  class="text-foresty rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold"
-                  >{{ strtoupper($code) }}</span
+        @foreach ($activeLocales as $code)
+          <div
+            {{-- x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))" --}}
+            x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
+            class="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+          >
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-sm font-bold text-gray-700">
+                Metadata ({{ strtoupper($code) }})
+              </h3>
+              <span
+                class="text-foresty rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold"
+                >{{
+                  strtoupper(
+                    $code,
+                  )
+                }}</span
+              >
+            </div>
+            <div class="space-y-3">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-600"
+                  >Judul Halaman <span class="text-red-500">*</span></label
                 >
+                <input
+                  type="text"
+                  wire:model="page_title.{{ $code }}"
+                  placeholder="Contoh: Layanan Kesehatan Ibu dan Anak"
+                  class="text-md w-full rounded-md border-gray-300 p-2 shadow-sm"
+                />
               </div>
-              <div class="space-y-3">
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600"
-                    >Judul Halaman <span class="text-red-500">*</span></label
-                  >
-                  <input
-                    type="text"
-                    wire:model="page_title.{{ $code }}"
-                    placeholder="Contoh: Layanan Kesehatan Ibu dan Anak"
-                    class="text-md w-full rounded-md border-gray-300 p-2 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600"
-                    >Slug URL</label
-                  >
-                  <input
-                    type="text"
-                    wire:model="slug.{{ $code }}"
-                    placeholder="Contoh: layanan-kesehatan-ibu-dan-anak"
-                    class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600"
-                    >Judul Meta</label
-                  >
-                  <input
-                    type="text"
-                    wire:model="meta_title.{{ $code }}"
-                    placeholder="Contoh: Layanan Kesehatan Ibu & Anak Terpadu | YSBH"
-                    class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600"
-                    >Deskripsi Meta</label
-                  >
-                  <textarea
-                    row="6"
-                    wire:model="meta_description.{{ $code }}"
-                    placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
-                    class="text-md min-h-36 w-full resize-none rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
-                  ></textarea>
-                </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-600"
+                  >Slug URL</label
+                >
+                <input
+                  type="text"
+                  wire:model="slug.{{ $code }}"
+                  placeholder="Contoh: layanan-kesehatan-ibu-dan-anak"
+                  class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-600"
+                  >Judul Meta</label
+                >
+                <input
+                  type="text"
+                  wire:model="meta_title.{{ $code }}"
+                  placeholder="Contoh: Layanan Kesehatan Ibu & Anak Terpadu | YSBH"
+                  class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-600"
+                  >Deskripsi Meta</label
+                >
+                <textarea
+                  row="6"
+                  wire:model="meta_description.{{ $code }}"
+                  placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
+                  class="text-md min-h-36 w-full resize-none rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
+                ></textarea>
               </div>
             </div>
-          @endforeach
+          </div>
+        @endforeach
       </div>
-      <div class="mb-4 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <label class="block text-xs font-extrabold text-gray-500 uppercase tracking-widest mb-3">
-            Navigasi Daftar Isi (TOC)
+      <div
+        class="mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+      >
+        <label
+          class="mb-3 block text-xs font-extrabold tracking-widest text-gray-500 uppercase"
+        >
+          Navigasi Daftar Isi (TOC)
         </label>
-        
-        <div class="flex items-center rounded-md bg-gray-100 p-1 shadow-inner w-full">
-            <!-- Opsi Sembunyikan -->
-            <button type="button" 
-                wire:click="$set('settings.toc_position', 'hidden')" 
-                class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'hidden' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
-                Sembunyi
-            </button>
-            
-            <!-- Opsi Kiri -->
-            <button type="button" 
-                wire:click="$set('settings.toc_position', 'left')" 
-                class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'left' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
-                Di Kiri
-            </button>
-            
-            <!-- Opsi Kanan -->
-            <button type="button" 
-                wire:click="$set('settings.toc_position', 'right')" 
-                class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'right' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
-                Di Kanan
-            </button>
+
+        <div
+          class="flex w-full items-center rounded-md bg-gray-100 p-1 shadow-inner"
+        >
+          <!-- Opsi Sembunyikan -->
+          <button
+            type="button"
+            wire:click="$set('settings.toc_position', 'hidden')"
+            class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'hidden' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
+          >
+            Sembunyi
+          </button>
+
+          <!-- Opsi Kiri -->
+          <button
+            type="button"
+            wire:click="$set('settings.toc_position', 'left')"
+            class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'left' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
+          >
+            Di Kiri
+          </button>
+
+          <!-- Opsi Kanan -->
+          <button
+            type="button"
+            wire:click="$set('settings.toc_position', 'right')"
+            class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'right' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
+          >
+            Di Kanan
+          </button>
         </div>
-        <p class="text-[10px] text-gray-400 mt-2">Daftar isi akan memindai blok Judul (Heading) secara otomatis. Hanya tampil di layar komputer (Desktop).</p>
+        <p class="mt-2 text-[10px] text-gray-400">Daftar isi akan memindai blok Judul (Heading) secara otomatis. Hanya tampil di layar komputer (Desktop).</p>
       </div>
     </div>
 
@@ -508,7 +561,6 @@ new class extends Component {
         @foreach ($blockOrder as $blockId)
           @php $block = $content[$blockId] ?? null; @endphp
           @if ($block)
-            
             <!-- BUNGKUSAN UTAMA BLOK (Di dalam loop blockOrder) -->
             <div
               id="block-wrapper-{{ $blockId }}"
@@ -594,7 +646,7 @@ new class extends Component {
                     isRowPinned
                       ? 'hidden'
                       : windowWidth < 1366
-                        ? '-top-5 left-2 opacity-100'
+                        ? '-top-8 left-2 opacity-100'
                         : 'top-4 -left-4 opacity-0 group-hover:opacity-100'
                   "
                 >
@@ -607,7 +659,7 @@ new class extends Component {
 
                 <!-- 2. TOMBOL PENGATURAN & HAPUS -->
                 <div
-                  class="absolute -top-4 right-3 z-30 flex gap-2 transition-all duration-200"
+                  class="absolute -top-8 right-3 z-30 flex gap-2 transition-all duration-200"
                   x-bind:class="
                     isRowPinned
                       ? 'hidden'
@@ -699,7 +751,6 @@ new class extends Component {
                   class="relative flex w-full flex-col"
                   :class="isRowPinned ? 'flex-1 min-h-0' : ''"
                 >
-
                   <!-- Grid Multi-Bahasa -->
                   <div
                     class="flex flex-col gap-6"
@@ -730,7 +781,6 @@ new class extends Component {
                     @endforeach
                   </div>
                 </div>
-                
               </div>
               <!-- Akhir rowEditor -->
             </div>
@@ -1052,12 +1102,12 @@ new class extends Component {
           previewOpen = false;
           previewUrl = '';
         "
-        class="absolute inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity cursor-pointer"
+        class="absolute inset-0 cursor-pointer bg-gray-900/75 backdrop-blur-sm transition-opacity"
       ></div>
 
       <!-- 🌟 KUNCI: w-full memastikan panel bisa tumbuh selebar layar jika diperlukan -->
       <div
-        class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full w-full justify-end sm:pl-16"
+        class="pointer-events-none fixed inset-y-0 right-0 flex w-full max-w-full justify-end sm:pl-16"
       >
         <!-- Panel Utama -->
         <div
@@ -1069,7 +1119,9 @@ new class extends Component {
           x-transition:leave-start="translate-x-0"
           x-transition:leave-end="translate-x-full"
           class="pointer-events-auto flex w-full max-w-full flex-col bg-gray-100 shadow-2xl transition-all duration-500"
-          x-bind:class="deviceMode === 'desktop' ? 'max-w-[100vw]' : 'max-w-2xl'"
+          x-bind:class="
+            deviceMode === 'desktop' ? 'max-w-[100vw]' : 'max-w-2xl'
+          "
         >
           <!-- HEADER PANEL -->
           <div
