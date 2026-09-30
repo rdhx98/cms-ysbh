@@ -382,8 +382,8 @@ new class extends Component {
   <!-- AREA KONTEN UTAMA -->
   <div
     id="main-editor-scroll-area"
-    class="relative min-h-0 flex-1 scrollbar-gutter-stable space-y-8 overflow-x-hidden overflow-y-auto px-4 pt-6 pb-24"
-    {{-- class="min-h-0 flex-1 scrollbar-gutter-stable space-y-8 overflow-x-hidden overflow-y-auto px-4 pt-6 pb-24" --}}
+    class="relative min-h-0 flex-1 scrollbar-gutter-stable space-y-8 overflow-x-hidden overflow-y-auto px-4 pt-0 pb-24"
+    {{-- class="relative min-h-0 flex-1 scrollbar-gutter-stable space-y-8 overflow-x-hidden overflow-y-auto px-4 pt-6 pb-24" --}}
     x-data="{
       scrollPos: 0,
       init() {
@@ -561,114 +561,55 @@ new class extends Component {
         @foreach ($blockOrder as $blockId)
           @php $block = $content[$blockId] ?? null; @endphp
           @if ($block)
-            <!-- BUNGKUSAN UTAMA BLOK (Di dalam loop blockOrder) -->
-            <div
+            <x-dynamic-component
+              :component="'blocks.editor.' . str_replace('_', '-', $block['type'])"
+              :block-id="$blockId"
+              :block="$block"
+              :all-content="$content"
+              :active-locales="$activeLocales"
+            />
+            <!-- ========================================================= -->
+            <!-- 🌟 ARSITEKTUR BARU: PEMBUNGKUS BLOK (Single Render) 🌟 -->
+            <!-- ========================================================= -->
+            {{-- <div
               id="block-wrapper-{{ $blockId }}"
               wire:key="block-{{ $blockId }}"
               x-sort:item="'{{ $blockId }}'"
-              class="group relative flex w-full flex-col"
-              x-bind:class="
-                isRowPinned ? '!transform-none !static z-50' : 'relative'
-              "
-              @toggle-row-pin-{{ strtolower($blockId) }}.window="toggleRowPin()"
-              {{-- 🌟 2 LISTENER BARU AGAR DIA MAU MENGALAH --}}
-              @force-close-row-pin-{{ strtolower($blockId) }}.window="if(isRowPinned) toggleRowPin()"
-              @toggle-collapse-all.window="
-                if ($event.detail && isRowPinned) toggleRowPin();
-              "
-              x-data="{
-                showAnchorSetting: false,
-
-                isRowPinned: false,
-
-                rowPinStyle: '',
-
-                toggleRowPin() {
-                    this.isRowPinned = !this.isRowPinned;
-                    let editor = this.$refs.rowEditor;
-                    let wrapper = document.getElementById('block-wrapper-{{ $blockId }}');
-
-                    if (this.isRowPinned) {
-                        // 1. Tahan tinggi pembungkus agar blok lain tidak melompat berantakan
-                        if (wrapper) wrapper.style.minHeight = editor.offsetHeight + 'px';
-
-                        let area = document.getElementById('main-editor-scroll-area');
-                        if (area) {
-                            let rect = area.getBoundingClientRect();
-                            
-                            // 🌟 RUMUS SAKTI (Mode Sederhana): 
-                            // Tiru prinsip togglePin() di card-builder yang terbukti berhasil!
-                            // Tanpa $nextTick, tanpa hitung Trap offset. Langsung tembak ukuran area.
-                            this.rowPinStyle = `position: fixed !important; top: ${rect.top}px !important; left: ${rect.left}px !important; width: ${rect.width}px !important; height: ${rect.height}px !important; z-index: 9999 !important; margin: 0 !important; transform: none !important;`;
-                        }
-                    } else {
-                        // 2. Kembalikan semuanya ke kondisi normal saat Pin dilepas
-                        if (wrapper) wrapper.style.minHeight = '';
-                        this.rowPinStyle = '';
-                    }
-                }                
-              }"
-              @resize.window="
-                if (isRowPinned) {
-                  toggleRowPin();
-                  toggleRowPin();
-                }
-              "
+              x-data="{ showAnchorSetting: false }"
+              class="group relative mb-6 flex w-full flex-col rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200"
             >
-              <!-- 🌟 PLACEHOLDER BARIS -->
+              <!-- 1. HEADER GLOBAL BLOK (Permanen & Sticky di Atas) -->
               <div
-                x-ref="rowPlaceholder"
-                x-show="isRowPinned"
-                x-cloak
-                class="border-foresty/50 bg-foresty/5 mb-6 flex w-full items-center justify-center rounded-xl border-2 border-dashed"
+                class="sticky top-0 z-30 flex items-center justify-between rounded-t-xl border-b border-gray-200 bg-gray-50/95 px-4 py-2 shadow-[0_4px_10px_rgba(0,0,0,0.03)] backdrop-blur-md transition-all"
               >
-                <span
-                  class="text-foresty text-xs font-bold tracking-widest uppercase"
-                  >Pin Baris (Split View) Aktif</span
-                >
-              </div>
-
-              <!-- 🌟 EDITOR BARIS (Akan fixed jika isRowPinned = true) -->
-              <div
-                x-ref="rowEditor"
-                :style="rowPinStyle"
-                class="relative w-full transition-all duration-300"
-                x-bind:class="
-                  isRowPinned
-                    ? 'bg-gray-100/90 backdrop-blur-md p-4 rounded-xl ring-4 ring-foresty/30 shadow-2xl overflow-hidden flex flex-col !static md:!fixed'
-                    : ''
-                "
-              >
-                <!-- 1. DRAG HANDLE (Kode Asli Anda) -->
-                <div
-                  class="absolute z-20 transition-opacity"
-                  x-bind:class="
-                    isRowPinned
-                      ? 'hidden'
-                      : windowWidth < 1366
-                        ? '-top-8 left-2 opacity-100'
-                        : 'top-4 -left-4 opacity-0 group-hover:opacity-100'
-                  "
-                >
+                <!-- Kiri: Drag Handle & Nama Blok -->
+                <div class="flex items-center gap-3">
                   <button
                     type="button"
-                    class="drag-handle bg-white shadow-sm"
+                    class="drag-handle hover:text-foresty cursor-grab text-gray-400 transition-colors outline-none"
                     title="Geser Blok"
-                  ></button>
+                  >
+                    <x-dynamic-component
+                      component="lucide-grip-vertical"
+                      class="h-5 w-5"
+                    />
+                  </button>
+                  <span
+                    class="text-[11px] font-extrabold tracking-widest text-gray-500 uppercase"
+                  >
+                    {{
+                      str_replace(
+                        ["_", "-"],
+                        " ",
+                        $block["type"],
+                      )
+                    }}
+                  </span>
                 </div>
 
-                <!-- 2. TOMBOL PENGATURAN & HAPUS -->
-                <div
-                  class="absolute -top-8 right-3 z-30 flex gap-2 transition-all duration-200"
-                  x-bind:class="
-                    isRowPinned
-                      ? 'hidden'
-                      : windowWidth < 1366 || showAnchorSetting
-                        ? 'opacity-100 visible'
-                        : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'
-                  "
-                >
-                  {{-- Anchor ID Input --}}
+                <!-- Kanan: Anchor, Duplikat, Hapus -->
+                <div class="flex items-center gap-1.5">
+                  <!-- Pengaturan Anchor -->
                   <div
                     x-on:click.outside="showAnchorSetting = false"
                     class="relative"
@@ -676,23 +617,25 @@ new class extends Component {
                     <button
                       x-on:click="showAnchorSetting = !showAnchorSetting"
                       type="button"
-                      class="rounded-full border border-gray-200 p-1.5 text-gray-600 shadow-sm transition-colors"
+                      class="rounded p-1.5 transition-colors outline-none"
                       x-bind:class="
                         showAnchorSetting
-                          ? 'bg-foresty text-white hover:bg-forest'
-                          : 'bg-white hover:bg-gray-50'
+                          ? 'bg-foresty text-white'
+                          : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'
                       "
-                      title="Pengaturan Blok"
+                      title="Pengaturan Tautan (Anchor)"
                     >
                       <x-dynamic-component
-                        component="lucide-settings-2"
+                        component="lucide-link"
                         class="h-4 w-4"
                       />
                     </button>
 
+                    <!-- Popup Anchor -->
                     <div
                       x-show="showAnchorSetting"
                       x-cloak
+                      x-transition
                       style="display: none"
                       class="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-4 shadow-xl"
                     >
@@ -700,7 +643,7 @@ new class extends Component {
                         class="text-foresty mb-1 block text-xs font-bold uppercase"
                         >ID Tautan (Anchor)</label
                       >
-                      <p class="mb-2 text-[10px] leading-tight text-gray-500">Melompat ke blok ini (Contoh: <span class="text-coral font-mono">tentang-kami</span>).</p>
+                      <p class="mb-3 text-[10px] leading-tight text-gray-500">Melompat ke blok ini (Contoh: <span class="text-coral font-mono">tentang-kami</span>).</p>
 
                       <input
                         type="text"
@@ -717,11 +660,14 @@ new class extends Component {
                     </div>
                   </div>
 
-                  {{-- Tombol Duplikat --}}
+                  <!-- Garis Pemisah -->
+                  <div class="mx-1 h-4 w-px bg-gray-300"></div>
+
+                  <!-- Tombol Duplikat -->
                   <button
                     wire:click="duplicateBlock('{{ $blockId }}')"
                     type="button"
-                    class="rounded-full border border-gray-200 bg-gray-100 p-1.5 text-gray-600 shadow-sm hover:bg-gray-200"
+                    class="hover:bg-sage-soft hover:text-foresty rounded p-1.5 text-gray-500 transition-colors outline-none"
                     title="Gandakan Blok"
                   >
                     <x-dynamic-component
@@ -730,11 +676,12 @@ new class extends Component {
                     />
                   </button>
 
-                  {{-- Tombol Hapus --}}
+                  <!-- Tombol Hapus -->
                   <button
                     wire:click="removeBlock('{{ $blockId }}')"
                     type="button"
-                    class="rounded-full border border-gray-200 bg-red-100 p-1.5 text-red-600 shadow-sm hover:bg-red-200"
+                    wire:confirm="Hapus blok ini beserta isinya?"
+                    class="rounded p-1.5 text-red-400 transition-colors outline-none hover:bg-red-50 hover:text-red-600"
                     title="Hapus Blok"
                   >
                     <x-dynamic-component
@@ -743,48 +690,21 @@ new class extends Component {
                     />
                   </button>
                 </div>
-
-                {{-- Perhatikan di atas: overflow-y-auto diganti menjadi overflow-hidden --}}
-
-                <!-- Pembungkus Dalam (Harus flex-col saat dipin) -->
-                <div
-                  class="relative flex w-full flex-col"
-                  :class="isRowPinned ? 'flex-1 min-h-0' : ''"
-                >
-                  <!-- Grid Multi-Bahasa -->
-                  <div
-                    class="flex flex-col gap-6"
-                    :class="{
-                      'grid grid-cols-1': effectiveLayout === 'single',
-                      'grid grid-cols-1 md:grid-cols-2':
-                        effectiveLayout === 'split' &&
-                        splitLanguages.length === 2,
-                      'flex-1 min-h-0': isRowPinned,
-                    }"
-                  >
-                    @foreach ($activeLocales as $code)
-                      <div
-                        wire:key="lang-wrapper-{{ $blockId }}-{{ $code }}"
-                        x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
-                        class="group-hover:border-foresty/80 flex flex-col space-y-3 rounded-xl border-2 border-transparent bg-gray-100 transition-colors group-hover:bg-white"
-                        :class="isRowPinned ? 'flex-1 min-h-0' : 'h-full'"
-                      >
-                        <!-- Render Blok Komponen -->
-                        <x-dynamic-component
-                          :component="'blocks.editor.' . str_replace('_', '-', $block['type'])"
-                          :block-id="$blockId"
-                          :code="$code"
-                          :block="$block"
-                          :all-content="$content"
-                        />
-                      </div>
-                    @endforeach
-                  </div>
-                </div>
               </div>
-              <!-- Akhir rowEditor -->
-            </div>
-            <!-- Akhir block-wrapper -->
+
+              <!-- 2. KONTEN BLOK UTAMA (Hanya Dirender 1 Kali!) -->
+              <div class="flex flex-col p-0">
+                <x-dynamic-component
+                  :component="'blocks.editor.' . str_replace('_', '-', $block['type'])"
+                  :block-id="$blockId"
+                  :block="$block"
+                  :all-content="$content"
+                  :active-locales="$activeLocales"
+                  :code="app()->getLocale()"
+                />
+              </div>
+            </div> --}}
+            <!-- Akhir block-wrapper baru -->
           @endif
         @endforeach
       </div>

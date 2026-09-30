@@ -1,4 +1,9 @@
-@props (["blockId", "code", "block", "allContent"])
+@props ([
+  "blockId",
+  "block",
+  "activeLocales" => [],
+  "allContent" => [],
+])
 
 @php
   $colCount = (int) ($block["data"]["col_count"] ?? 2);
@@ -11,177 +16,138 @@
       $block["data"]["col_{$i}_zone"] ?? [],
     );
   }
-
-  // Kelas grid untuk editor saat mode layoutMode === 'single' (semua kolom dijejerkan)
-  // 🌟 Diperbarui: Kini grid utamanya tidak lagi statis 'grid-cols-2', melainkan diatur
-  // secara dinamis via inline style berdasarkan proporsi lebar (width) masing-masing kolom.
 @endphp
 
-{{-- 🌟 STATE ALPINE LENGKAP --}}
-<div
-  class="is-nested-container relative rounded-xl border border-gray-300 bg-white shadow-sm"
-  x-data="{
-    isCollapsed: false,
-    childrenCollapsed: false,
-    activeTab: 'col_1_zone',
-    layoutMode: 'split', 
-    
-    init() {
-        window.blockCollapseState = window.blockCollapseState || {};
-        if (window.blockCollapseState['{{ $blockId }}'] !== undefined) {
-            this.isCollapsed = window.blockCollapseState['{{ $blockId }}'];
-        }
-
-        this.$watch('isCollapsed', (value) => {
-            window.blockCollapseState['{{ $blockId }}'] = value;
-        });
-
-        this.$watch(
-            () => $wire.content?.['{{ $blockId }}']?.data?.col_count,
-            (value) => {
-                if (value === undefined || value === null) return;
-                let maxTab = parseInt(value);
-                let currentTabNum = parseInt(this.activeTab.replace('col_', '').replace('_zone', ''));
-                if (currentTabNum > maxTab) {
-                    this.activeTab = 'col_1_zone';
-                }
-            }
-        );
-    },
-    updateZoneOrder(evt, zone) {
-        let order = Array.from(evt.to.children).map(el => el.getAttribute('data-id')).filter(Boolean);
-        $wire.reorderChildBlocks('{{ $blockId }}', zone, order);
-    }
-}"
-  @toggle-collapse-all.window="isCollapsed = $event.detail"
-  @sync-columns-tab-{{ strtolower($blockId) }}.window="activeTab = $event.detail"
-  @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail"
->
-  <!-- HEADER UTAMA BLOK -->
-  <div
-    class="flex cursor-pointer items-center justify-between bg-gray-100 p-2 transition-colors select-none group-hover:bg-white"
-    :class="isCollapsed
-      ? 'rounded-xl'
-      : 'rounded-t-xl border-b border-gray-200'"
-  >
-    {{-- LEFT HEADER --}}
-    <div class="flex items-center gap-2">
-      <div class="bg-sage-soft rounded-md p-1">
-        <x-dynamic-component
-          :component="'lucide-layout-template'"
-          class="text-forest h-4 w-4"
-          stroke-width="2.5"
-        />
-      </div>
-      <span
-        class="flex items-center text-xs font-extrabold tracking-widest text-gray-500 uppercase"
-      >
-        Kolom Multi
-      </span>
-    </div>
-
-    {{-- RIGHT HEADER --}}
+<x-blocks.editor.wrapper :block-id="$blockId" :block="$block">
+  <!-- ========================================== -->
+  <!-- 1. IDENTITAS BLOK (Kiri Atas)              -->
+  <!-- ========================================== -->
+  <x-slot:title>
     <div
-      class="flex min-w-0 flex-1 items-center justify-end gap-2 transition-all duration-200"
+      class="bg-sage-soft text-foresty flex h-5 w-5 items-center justify-center rounded-sm shadow-sm"
     >
-      <div
-        x-show="isCollapsed"
-        x-cloak
-        class="min-w-0 flex-1 px-2 text-xs font-medium text-gray-400 sm:px-4"
-        title="{{ $colCount }} Kolom berisi total {{ count($allChildren) }} konten"
-      >
-        <span class="block w-full truncate text-right">
-          <span class="font-bold text-gray-500">{{ $colCount }}</span> Kolom
-          &bull;
-          <span class="font-bold text-gray-500">{{
-            count(
-              $allChildren,
-            )
-          }}</span>
-          Blok
-        </span>
-      </div>
-      <button
-        type="button"
-        x-data="{ childrenCollapsed: false }"
-        x-cloak
-        @click.stop="
-          if (isCollapsed) {
-              isCollapsed = false;
-              $dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
-              childrenCollapsed = true;
-              $dispatch('force-collapse-children', {{ json_encode($allChildren) }});
-          } else {
-              childrenCollapsed = !childrenCollapsed;
-              $dispatch(childrenCollapsed ? 'force-collapse-children' : 'force-expand-children', {{ json_encode($allChildren) }});
-          }
-        "
-        class="bg-sage-soft/50 text-forest border-sage-soft/50 hover:bg-sage-soft flex shrink-0 items-center gap-1 rounded border px-2 py-0.5 text-[9px] font-bold shadow-sm transition-colors"
-        :title="isCollapsed
-          ? 'Buka kolom dan atur susunan blok di dalamnya'
-          : childrenCollapsed
-            ? 'Buka kembali semua isi kolom'
-            : 'Ciutkan semua isi kolom untuk menyusun urutan'"
-      >
-        <x-dynamic-component
-          x-show="isCollapsed"
-          component="lucide-list-tree"
-          class="h-3 w-3"
-          stroke-width="3"
-        />
-        <x-dynamic-component
-          x-show="!isCollapsed && !childrenCollapsed"
-          component="lucide-chevrons-down-up"
-          class="h-3 w-3"
-          stroke-width="3"
-        />
-        <x-dynamic-component
-          x-show="!isCollapsed && childrenCollapsed"
-          component="lucide-chevrons-up-down"
-          class="h-3 w-3"
-          stroke-width="3"
-        />
-        <span
-          x-text="
-            isCollapsed
-              ? 'Atur Blok'
-              : childrenCollapsed
-                ? 'Buka Isi'
-                : 'Ciutkan Isi'
-          "
-        ></span>
-      </button>
-      <span
-        class="text-foresty bg-sage-soft shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase shadow-sm"
-      >
-        {{ $code }}
-      </span>
-      <button
-        type="button"
-        x-on:click="isCollapsed = !isCollapsed; $dispatch('sync-collapse-{{ strtolower($blockId) }}', isCollapsed)"
-        class="hover:bg-sage-soft text-foresty cursor-pointer rounded-full p-1 transition-all duration-200 focus:outline-none"
-      >
-        <x-dynamic-component
-          component="lucide-circle-chevron-down"
-          class="text-foresty h-5 w-5 transition-transform duration-200"
-          x-bind:class="isCollapsed ? '-rotate-90' : 'rotate-0'"
-        />
-      </button>
+      <x-dynamic-component
+        component="lucide-layout-template"
+        class="h-3.5 w-3.5"
+        stroke-width="2.5"
+      />
     </div>
-  </div>
+    Kolom Multi
+  </x-slot:title>
 
-  {{-- 🌟 AREA KONTEN (PENGATURAN & DROPZONE) 🌟 --}}
-  <div x-show="!isCollapsed" x-collapse x-cloak class="rounded-b-xl bg-white">
-    {{-- pb-4 --}}
-    {{-- HEADER KONTROL --}}
-    <div class="flex flex-col gap-4 border-b border-gray-200 p-4">
-      {{-- BARIS 1: Kontrol Dasar --}}
-      <div class="flex items-center justify-between">
+  <!-- ========================================== -->
+  <!-- 2. CUPLIKAN TEKS COLLAPSE (Tengah Atas)    -->
+  <!-- ========================================== -->
+  <x-slot:snippet>
+    <span
+      class="block w-full truncate text-right text-xs font-medium text-gray-400 sm:text-left"
+      title="{{ $colCount }} Kolom berisi total {{ count($allChildren) }} konten"
+    >
+      <span class="font-bold text-gray-500">{{ $colCount }}</span> Kolom &bull;
+      <span class="font-bold text-gray-500">{{
+        count(
+          $allChildren,
+        )
+      }}</span>
+      Blok
+    </span>
+  </x-slot:snippet>
+
+  <!-- ========================================== -->
+  <!-- 3. PENGATURAN GLOBAL BLOK (Kanan Atas)     -->
+  <!-- ========================================== -->
+  <x-slot:settings>
+    <!-- Tombol Runtuhkan Anak -->
+    <button
+      type="button"
+      x-data="{ childrenCollapsed: false }"
+      x-cloak
+      @click.stop="
+                if (isCollapsed) {
+                    isCollapsed = false;
+                    childrenCollapsed = true;
+                    $dispatch('force-collapse-children', {{ json_encode($allChildren) }});
+                } else {
+                    childrenCollapsed = !childrenCollapsed;
+                    $dispatch(childrenCollapsed ? 'force-collapse-children' : 'force-expand-children', {{ json_encode($allChildren) }});
+                }
+             "
+      class="border-sage-soft/50 bg-sage-soft/50 text-forest hover:bg-sage-soft flex shrink-0 items-center gap-1 rounded border px-2 py-1 text-[9px] font-bold shadow-sm transition-colors outline-none"
+      :title="isCollapsed
+        ? 'Buka kolom dan atur susunan blok di dalamnya'
+        : childrenCollapsed
+          ? 'Buka kembali semua isi kolom'
+          : 'Ciutkan semua isi kolom untuk menyusun urutan'"
+    >
+      <x-dynamic-component
+        x-show="isCollapsed"
+        component="lucide-list-tree"
+        class="h-3 w-3"
+        stroke-width="3"
+      />
+      <x-dynamic-component
+        x-show="!isCollapsed && !childrenCollapsed"
+        component="lucide-chevrons-down-up"
+        class="h-3 w-3"
+        stroke-width="3"
+      />
+      <x-dynamic-component
+        x-show="!isCollapsed && childrenCollapsed"
+        component="lucide-chevrons-up-down"
+        class="h-3 w-3"
+        stroke-width="3"
+      />
+      <span
+        x-text="
+          isCollapsed
+            ? 'Atur Blok'
+            : childrenCollapsed
+              ? 'Buka Isi'
+              : 'Ciutkan Isi'
+        "
+      ></span>
+    </button>
+  </x-slot:settings>
+
+  <!-- ========================================== -->
+  <!-- 4. AREA KONTEN UTAMA                       -->
+  <!-- ========================================== -->
+  <div
+    x-data="{
+         activeTab: 'col_1_zone',
+         
+         init() {
+            this.$watch(
+                () => $wire.content?.['{{ $blockId }}']?.data?.col_count,
+                (value) => {
+                    if (value === undefined || value === null) return;
+                    let maxTab = parseInt(value);
+                    let currentTabNum = parseInt(this.activeTab.replace('col_', '').replace('_zone', ''));
+                    if (currentTabNum > maxTab) {
+                        this.activeTab = 'col_1_zone';
+                    }
+                }
+            );
+         },
+         updateZoneOrder(evt, zone) {
+            let order = Array.from(evt.to.children).map(el => el.getAttribute('data-id')).filter(Boolean);
+            $wire.reorderChildBlocks('{{ $blockId }}', zone, order);
+         }
+       }"
+    @sync-columns-tab-{{ strtolower($blockId) }}.window="activeTab = $event.detail"
+  >
+    <!-- HEADER KONTROL -->
+    <div class="mb-6 flex flex-col gap-4 border-b border-gray-100 pb-6">
+      <!-- BARIS 1: Kontrol Dasar -->
+      <div
+        class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+      >
         <label class="block text-xs font-semibold text-gray-500 uppercase"
-          >Kontrol Dasar</label
+          >Pengaturan Kolom</label
         >
-        <div class="flex items-center gap-4">
-          {{-- KONTROL URUTAN HP --}}
+
+        <div class="flex flex-wrap items-center gap-4">
+          <!-- KONTROL URUTAN HP -->
           @if ($colCount === 2)
             <div class="flex items-center gap-2 border-r border-gray-200 pr-4">
               <span
@@ -191,7 +157,7 @@
               <button
                 type="button"
                 wire:click="$toggle('content.{{ $blockId }}.data.mobile_reverse')"
-                class="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 text-[10px] font-bold shadow-sm hover:bg-gray-50 focus:outline-none"
+                class="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 text-[10px] font-bold shadow-sm transition-colors outline-none hover:bg-gray-50"
               >
                 @if ($block["data"]["mobile_reverse"] ?? false)
                   <x-dynamic-component
@@ -210,15 +176,15 @@
             </div>
           @endif
 
-          {{-- KONTROL JUMLAH KOLOM --}}
+          <!-- KONTROL JUMLAH KOLOM -->
           <div class="flex items-center gap-2">
             <label
               class="text-[10px] font-bold tracking-wide text-gray-400 uppercase"
-              >Jumlah Kolom:</label
+              >Jumlah:</label
             >
             <select
               wire:model.live="content.{{ $blockId }}.data.col_count"
-              class="text-forest focus:ring-forest focus:border-forest cursor-pointer rounded border-gray-300 bg-white py-1 pr-6 pl-2 text-xs font-bold shadow-sm outline-none"
+              class="text-forest focus:border-forest focus:ring-forest cursor-pointer rounded border-gray-300 bg-white py-1 pr-6 pl-2 text-xs font-bold shadow-sm outline-none"
             >
               <option value="2">2 Kolom</option>
               <option value="3">3 Kolom</option>
@@ -230,167 +196,102 @@
         </div>
       </div>
 
-      {{-- BARIS 2: Tata Letak & Spasi Internal --}}
+      <!-- BARIS 2: Tata Letak & Spasi Internal -->
       <div
-        class="rounded-lg border border-gray-200 bg-gray-50 p-3.5 shadow-inner"
+        class="rounded-xl border border-gray-100 bg-gray-50/50 p-4"
         x-data="{
-          localAlignX: $wire.entangle('content.{{ $blockId }}.data.align_x').live || 'items-start',
-          localAlignY: $wire.entangle('content.{{ $blockId }}.data.align_y').live || 'justify-start',
-          localGap: $wire.entangle('content.{{ $blockId }}.data.gap').live || 'gap-4'
-      }"
+             localAlignX: $wire.content?.['{{ $blockId }}']?.data?.align_x || 'items-start',
+             localAlignY: $wire.content?.['{{ $blockId }}']?.data?.align_y || 'justify-start',
+             localGap: $wire.content?.['{{ $blockId }}']?.data?.gap || 'gap-4'
+           }"
       >
         <label
-          class="mb-3 block text-[10px] font-bold tracking-wide text-gray-400 uppercase"
+          class="mb-4 block text-[10px] font-bold tracking-wide text-gray-400 uppercase"
           >Tata Letak & Spasi Kolom</label
         >
-        <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          {{-- 1. Sumbu X --}}
-          <div class="flex flex-col gap-1.5">
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <!-- 1. Sumbu X -->
+          <div class="flex flex-col gap-2">
             <span
               class="text-foresty text-[9px] font-bold tracking-wider uppercase"
-              >Perataan X (Kiri-Kanan)</span
+              >Perataan Horizontal (Kiri-Kanan)</span
             >
             <div
               class="flex items-center gap-1 rounded-lg border border-gray-200/50 bg-gray-200/50 p-1"
             >
-              <button
-                type="button"
-                @click="localAlignX = 'items-start'"
-                class="flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-all duration-300"
-                :class="localAlignX === 'items-start'
-                  ? 'bg-white shadow text-foresty'
-                  : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
-              >
-                <x-dynamic-component
-                  component="lucide-align-left"
-                  class="h-3.5 w-3.5"
-                />
-                Kiri
-              </button>
-              <button
-                type="button"
-                @click="localAlignX = 'items-center'"
-                class="flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-all duration-300"
-                :class="localAlignX === 'items-center'
-                  ? 'bg-white shadow text-foresty'
-                  : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
-              >
-                <x-dynamic-component
-                  component="lucide-align-center"
-                  class="h-3.5 w-3.5"
-                />
-                Tengah
-              </button>
-              <button
-                type="button"
-                @click="localAlignX = 'items-end'"
-                class="flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-all duration-300"
-                :class="localAlignX === 'items-end'
-                  ? 'bg-white shadow text-foresty'
-                  : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
-              >
-                <x-dynamic-component
-                  component="lucide-align-right"
-                  class="h-3.5 w-3.5"
-                />
-                Kanan
-              </button>
+              @foreach ([
+                  ["items-start", "lucide-align-left", "Kiri"],
+                  ["items-center", "lucide-align-center", "Tengah"],
+                  ["items-end", "lucide-align-right", "Kanan"]
+                ]
+                as $opt)
+                <button
+                  type="button"
+                  @click="localAlignX = '{{ $opt[0] }}'; $wire.set('content.{{ $blockId }}.data.align_x', '{{ $opt[0] }}')"
+                  class="flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-all duration-300 outline-none"
+                  :class="localAlignX === '{{ $opt[0] }}' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
+                >
+                  <x-dynamic-component
+                    component="{{ $opt[1] }}"
+                    class="h-3.5 w-3.5"
+                  />
+                  {{ $opt[2] }}
+                </button>
+              @endforeach
             </div>
           </div>
 
-          {{-- 2. Sumbu Y --}}
-          <div class="flex flex-col gap-1.5">
+          <!-- 2. Sumbu Y -->
+          <div class="flex flex-col gap-2">
             <span
               class="text-foresty text-[9px] font-bold tracking-wider uppercase"
-              >Perataan Y (Atas-Bawah)</span
+              >Perataan Vertikal (Atas-Bawah)</span
             >
             <div
               class="flex flex-wrap items-center gap-1 rounded-lg border border-gray-200/50 bg-gray-200/50 p-1"
             >
-              <button
-                type="button"
-                @click="localAlignY = 'justify-start'"
-                class="flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[10px] font-bold transition-all duration-300"
-                :class="localAlignY === 'justify-start'
-                  ? 'bg-white shadow text-foresty'
-                  : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
-              >
-                <x-dynamic-component
-                  component="lucide-align-vertical-justify-start"
-                  class="h-3.5 w-3.5"
-                />
-                Atas
-              </button>
-              <button
-                type="button"
-                @click="localAlignY = 'justify-center'"
-                class="flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[10px] font-bold transition-all duration-300"
-                :class="localAlignY === 'justify-center'
-                  ? 'bg-white shadow text-foresty'
-                  : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
-              >
-                <x-dynamic-component
-                  component="lucide-align-vertical-justify-center"
-                  class="h-3.5 w-3.5"
-                />
-                Tgh
-              </button>
-              <button
-                type="button"
-                @click="localAlignY = 'justify-end'"
-                class="flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[10px] font-bold transition-all duration-300"
-                :class="localAlignY === 'justify-end'
-                  ? 'bg-white shadow text-foresty'
-                  : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
-              >
-                <x-dynamic-component
-                  component="lucide-align-vertical-justify-end"
-                  class="h-3.5 w-3.5"
-                />
-                Bwh
-              </button>
+              @foreach ([
+                  ["justify-start", "lucide-align-vertical-justify-start", "Atas"],
+                  ["justify-center", "lucide-align-vertical-justify-center", "Tengah"],
+                  ["justify-end", "lucide-align-vertical-justify-end", "Bawah"]
+                ]
+                as $opt)
+                <button
+                  type="button"
+                  @click="localAlignY = '{{ $opt[0] }}'; $wire.set('content.{{ $blockId }}.data.align_y', '{{ $opt[0] }}')"
+                  class="flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-all duration-300 outline-none"
+                  :class="localAlignY === '{{ $opt[0] }}' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
+                >
+                  <x-dynamic-component
+                    component="{{ $opt[1] }}"
+                    class="h-3.5 w-3.5"
+                  />
+                  {{ $opt[2] }}
+                </button>
+              @endforeach
             </div>
           </div>
 
-          {{-- 3. Jarak Antar Blok --}}
-          <div class="flex flex-col gap-1.5">
+          <!-- 3. Jarak Antar Blok -->
+          <div class="flex flex-col gap-2">
             <span
               class="text-foresty text-[9px] font-bold tracking-wider uppercase"
-              >Jarak Antar Blok</span
+              >Jarak Antar Blok (Gap)</span
             >
             <div
               class="flex items-center gap-1 rounded-lg border border-gray-200/50 bg-gray-200/50 p-1"
             >
-              <button
-                type="button"
-                @click="localGap = 'gap-0'"
-                class="flex flex-1 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-bold transition-all duration-300"
-                :class="localGap === 'gap-0'
-                  ? 'bg-white shadow text-foresty'
-                  : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
-              >
-                0px
-              </button>
-              <button
-                type="button"
-                @click="localGap = 'gap-4'"
-                class="flex flex-1 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-bold transition-all duration-300"
-                :class="localGap === 'gap-4'
-                  ? 'bg-white shadow text-foresty'
-                  : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
-              >
-                16px
-              </button>
-              <button
-                type="button"
-                @click="localGap = 'gap-8'"
-                class="flex flex-1 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-bold transition-all duration-300"
-                :class="localGap === 'gap-8'
-                  ? 'bg-white shadow text-foresty'
-                  : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
-              >
-                32px
-              </button>
+              @foreach ([["gap-0", "0px"], ["gap-4", "16px"], ["gap-8", "32px"]] as $opt)
+                <button
+                  type="button"
+                  @click="localGap = '{{ $opt[0] }}'; $wire.set('content.{{ $blockId }}.data.gap', '{{ $opt[0] }}')"
+                  class="flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-all duration-300 outline-none"
+                  :class="localGap === '{{ $opt[0] }}' ? 'bg-white shadow text-foresty' : 'text-gray-500 hover:text-foresty hover:bg-gray-200'"
+                >
+                  {{ $opt[1] }}
+                </button>
+              @endforeach
             </div>
           </div>
         </div>
@@ -399,9 +300,9 @@
 
     <!-- 🌟 NAVIGASI TAB KOLOM DINAMIS (Hanya muncul jika mode Split) 🌟 -->
     <div
-      x-show="layoutMode === 'split'"
+      x-show="effectiveLayout === 'split'"
       x-cloak
-      class="scrollbar-hide relative flex space-x-1 overflow-x-auto overflow-y-hidden bg-gray-100 px-4 pt-4"
+      class="scrollbar-hide relative flex space-x-1 overflow-x-auto overflow-y-hidden rounded-t-xl border border-b-0 border-gray-200 bg-gray-50/80 px-4 pt-4"
     >
       @for ($i = 1; $i <= $colCount; $i++)
         @php $zoneKey = "col_{$i}_zone"; @endphp
@@ -425,119 +326,95 @@
     </div>
 
     <!-- 🌟 GRID UTAMA & DROPZONE 🌟 -->
-    <!-- Jika mode Single: Semua kolom dirender berurutan dengan CSS Grid -->
-    <!-- Jika mode Split: Hanya kolom aktif yang ditampilkan -->
     <div
-      :class="layoutMode === 'single' ? 'grid grid-cols-1 md:grid-cols-{{ $colCount }} divide-y md:divide-y-0 md:divide-x divide-gray-200' : 'block p-4'"
+      :class="effectiveLayout === 'single' ? 'grid grid-cols-1 lg:grid-cols-{{ $colCount }} gap-4 lg:gap-6' : 'block rounded-b-xl border border-t-0 border-gray-200 bg-white p-4'"
     >
       @for ($i = 1; $i <= $colCount; $i++)
         @php
           $zoneKey = "col_{$i}_zone";
           $zoneBlocks = $block["data"][$zoneKey] ?? [];
-          // Baca nilai width dari JSON, default 'auto'
           $colWidth = $block["data"]["{$zoneKey}_width"] ?? "auto";
         @endphp
 
         <div
-          x-show="layoutMode === 'single' || activeTab === '{{ $zoneKey }}'"
-          class="relative flex h-full flex-col border-gray-200 bg-white"
-          :class="layoutMode === 'split' ? 'border rounded-xl shadow-sm' : ''"
+          x-show="effectiveLayout === 'single' ? true : activeTab === '{{ $zoneKey }}'"
+          class="relative flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-gray-50/30 shadow-sm"
           style="display: none"
         >
-          <!-- 🌟 FITUR BARU: KONTROL LEBAR KOLOM (MUNCUL DI ATAS SETIAP KOLOM) 🌟 -->
+          <!-- KONTROL LEBAR KOLOM (MUNCUL DI ATAS SETIAP KOLOM) -->
           <div
-            class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2"
-            :class="layoutMode === 'split' ? 'rounded-t-xl' : ''"
+            class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-white px-4 py-2"
           >
             <span
               class="shrink-0 text-[10px] font-bold tracking-widest text-gray-500 uppercase"
             >
-              <span x-show="layoutMode === 'single'">Kolom {{ $i }} • </span
+              <span x-show="effectiveLayout === 'single'"
+                >Kolom {{ $i }} • </span
               >Lebar:
             </span>
 
-            <!-- Segmented Control Width -->
             <div
-              class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner transition-all duration-200"
+              class="flex items-center rounded-md bg-gray-100 p-0.5 shadow-inner transition-all duration-200"
             >
-              <button
-                type="button"
-                wire:click="$set('content.{{ $blockId }}.data.{{ $zoneKey }}_width', 'auto')"
-                class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $colWidth === 'auto' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
-              >
-                Auto
-              </button>
-              <button
-                type="button"
-                wire:click="$set('content.{{ $blockId }}.data.{{ $zoneKey }}_width', '1')"
-                class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $colWidth == '1' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
-              >
-                1fr
-              </button>
-              <button
-                type="button"
-                wire:click="$set('content.{{ $blockId }}.data.{{ $zoneKey }}_width', '2')"
-                class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $colWidth == '2' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
-              >
-                2fr
-              </button>
-              <button
-                type="button"
-                wire:click="$set('content.{{ $blockId }}.data.{{ $zoneKey }}_width', '3')"
-                class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $colWidth == '3' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
-              >
-                3fr
-              </button>
+              @foreach ([["auto", "Auto"], ["1", "1fr"], ["2", "2fr"], ["3", "3fr"]] as $opt)
+                <button
+                  type="button"
+                  wire:click="$set('content.{{ $blockId }}.data.{{ $zoneKey }}_width', '{{ $opt[0] }}')"
+                  class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $colWidth === $opt[0] ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
+                >
+                  {{ $opt[1] }}
+                </button>
+              @endforeach
             </div>
           </div>
 
-          {{-- Alpine Sortable Dropzone --}}
+          <!-- DROPZONE ALPINE SORTABLE -->
           <div
             x-sort
             x-sort:config="{ group: '{{ $zoneKey }}_{{ $blockId }}', animation: 150, handle: '.child-drag-handle', onEnd: (evt) => updateZoneOrder(evt, '{{ $zoneKey }}') }"
-            class="min-h-[160px] flex-1 space-y-4 bg-white p-4 transition-colors"
+            class="min-h-[160px] flex-1 space-y-4 p-4 transition-colors"
           >
             @foreach ($zoneBlocks as $childId)
               @if (isset($allContent[$childId]))
                 @php $childBlock = $allContent[$childId]; @endphp
 
-                {{-- Wrapper Mikro Blok --}}
+                <!-- Wrapper Mikro Blok -->
                 <div
                   id="block-wrapper-{{ $childId }}"
                   data-id="{{ $childId }}"
                   x-sort:item="'{{ $childId }}'"
                   wire:key="child-{{ $childId }}"
-                  class="group hover:ring-sage-soft relative rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:ring-2"
+                  class="group relative rounded-xl transition-all"
                 >
                   <!-- Drag Handle -->
                   <div
-                    class="child-drag-handle absolute top-3 -left-2 z-10 cursor-move rounded-full bg-white p-0.5 text-gray-300 opacity-0 shadow-sm group-hover:opacity-100 hover:text-blue-500"
+                    class="child-drag-handle hover:text-foresty absolute top-3 -left-3 z-10 cursor-move rounded-full border border-gray-200 bg-white p-1 text-gray-400 opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
                   >
                     <x-dynamic-component
                       component="lucide-grip-vertical"
-                      class="h-4 w-4"
+                      class="h-3.5 w-3.5"
                     />
                   </div>
 
                   <!-- Tombol Hapus -->
                   <div
-                    class="absolute -top-2.5 -right-2.5 z-20 opacity-0 transition-opacity group-hover:opacity-100"
+                    class="absolute -top-2 -right-2 z-20 opacity-0 transition-opacity group-hover:opacity-100"
                   >
                     <button
                       type="button"
                       wire:click="removeNestedBlock('{{ $blockId }}', '{{ $zoneKey }}', '{{ $childId }}')"
-                      class="cursor-pointer rounded-full border border-red-200 bg-red-100 p-1 text-red-600 shadow-sm outline-none hover:bg-red-200"
+                      class="cursor-pointer rounded-full border border-red-200 bg-white p-1.5 text-red-500 shadow-sm outline-none hover:bg-red-50 hover:text-red-600"
                       title="Hapus Blok Ini"
                     >
                       <x-dynamic-component
                         component="lucide-x"
-                        class="h-3 w-3"
+                        class="h-3.5 w-3.5"
                         stroke-width="2.5"
                       />
                     </button>
                   </div>
 
-                  {{-- Render Komponen Editor Internal --}}
+                  <!-- Render Komponen Editor Internal -->
                   <div class="p-0">
                     <x-dynamic-component
                       :component="'blocks.editor.' . str_replace('_', '-', $childBlock['type'])"
@@ -545,6 +422,7 @@
                       :code="$code"
                       :block="$childBlock"
                       :all-content="$allContent"
+                      :active-locales="$activeLocales"
                     />
                   </div>
                 </div>
@@ -552,20 +430,14 @@
             @endforeach
           </div>
 
-          {{-- Menu Tambah Blok Anak (Ditampilkan di bawah setiap dropzone) --}}
-          <div
-            class="mt-auto bg-white p-4 pt-0"
-            :class="layoutMode === 'split' ? 'rounded-b-xl' : ''"
-          >
-            <div
-              x-data="{ openDropdown: false }"
-              class="relative mt-2 border-t border-gray-100 pt-3"
-            >
+          <!-- Menu Tambah Blok Anak -->
+          <div class="mt-auto border-t border-gray-100 bg-white p-4">
+            <div x-data="{ openDropdown: false }" class="relative">
               <button
                 @click="openDropdown = !openDropdown"
                 @click.outside="openDropdown = false"
                 type="button"
-                class="hover:text-foresty hover:border-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 py-2 text-xs font-bold text-gray-400 transition-colors outline-none"
+                class="hover:border-foresty hover:bg-sage-soft hover:text-foresty flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 py-2.5 text-xs font-bold text-gray-500 transition-colors outline-none"
               >
                 <x-dynamic-component
                   component="lucide-plus"
@@ -585,27 +457,22 @@
                 >
                   @php
                     $availableBlocks = [
-                      ["type" => "heading", "icon" => "heading-1", "label" => "Judul (Heading)"],
+                      ["type" => "heading", "icon" => "heading-1", "label" => "Judul"],
                       ["type" => "paragraph", "icon" => "align-left", "label" => "Paragraf"],
                       ["type" => "eyebrow", "icon" => "minus", "label" => "Eyebrow"],
                       ["type" => "image", "icon" => "image", "label" => "Gambar"],
                       [
                         "type" => "button-group",
                         "icon" => "mouse-pointer-click",
-                        "label" => "Grup Tombol",
+                        "label" => "Tombol",
                       ],
                       ["type" => "badge-group", "icon" => "tag", "label" => "Lencana"],
                       ["type" => "stats-group", "icon" => "bar-chart-2", "label" => "Statistik"],
-                      ["type" => "card-group", "icon" => "layout-grid", "label" => "Grup Kartu"],
+                      ["type" => "card-group", "icon" => "layout-grid", "label" => "Kartu"],
                       [
                         "type" => "testimonial-group",
                         "icon" => "message-square-quote",
                         "label" => "Testimoni",
-                      ],
-                      [
-                        "type" => "card-builder",
-                        "icon" => "layout-panel-top",
-                        "label" => "Card Builder",
                       ],
                     ];
                   @endphp
@@ -613,7 +480,7 @@
                     <button
                       type="button"
                       wire:click="addChildBlock('{{ $blockId }}', '{{ $zoneKey }}', '{{ $b['type'] }}'); openDropdown = false"
-                      class="hover:bg-sage-soft hover:text-foresty flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-left text-[11px] font-semibold text-gray-600 transition outline-none"
+                      class="hover:bg-sage-soft hover:text-foresty flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] font-semibold text-gray-600 transition outline-none"
                     >
                       <x-dynamic-component
                         component="lucide-{{ $b['icon'] }}"
@@ -630,4 +497,4 @@
       @endfor
     </div>
   </div>
-</div>
+</x-blocks.editor.wrapper>

@@ -1,134 +1,291 @@
-@props(['blockId', 'code', 'title' => 'Block Editor', 'icon' => 'lucide-box'])
+@props (["blockId", "block",])
 
 <div
-  x-data="{
-    isPinned: false,
-    isRowPinned: false,
+  id="block-wrapper-{{ $blockId }}"
+  wire:key="block-{{ $blockId }}"
+  x-sort:item="'{{ $blockId }}'"
+  x-data="{ 
+    showAnchorSetting: false,
     isCollapsed: false,
-    pinStyle: '',
+    isFullscreen: false,
+    init() {
+        // 1. Saat dirender ulang, periksa apakah blok ini punya ingatan status
+        window.blockCollapseState = window.blockCollapseState || {};
+        if (window.blockCollapseState['{{ $blockId }}'] !== undefined) {
+            this.isCollapsed = window.blockCollapseState['{{ $blockId }}'];
+        }
 
-    init() {
-        const reportPinStatus = () => {
-            this.$dispatch('global-pin-update', {
-                id: '{{ $blockId }}',
-                active: this.isPinned || this.isRowPinned
-            });
-        };
-        this.$watch('isPinned', reportPinStatus);
-        this.$watch('isRowPinned', reportPinStatus);
-    },
-
-    togglePin() {
-        if (this.isCollapsed) {
-            this.isCollapsed = false;
-            this.$dispatch('sync-collapse-{{ strtolower($blockId) }}', false);
-        }
-        if (!this.isPinned && this.isRowPinned) {
-            this.$dispatch('force-close-row-pin-{{ strtolower($blockId) }}');
-        }
-
-        this.isPinned = !this.isPinned;
-        if (this.isPinned) {
-            let area = document.getElementById('main-editor-scroll-area');
-            if (area) {
-                let rect = area.getBoundingClientRect();
-                this.pinStyle = `position: fixed !important; top: ${rect.top + 5 }px !important; left: ${rect.left + 16}px !important; width: ${rect.width - 32}px !important; height: ${rect.height - 10}px !important; z-index: 60 !important; margin: 0 !important;`;
-                this.$refs.placeholder.style.height = this.$refs.editor.offsetHeight + 'px';
-            }
-        } else {
-            this.pinStyle = '';
-        }
-    },
-
-    toggleCollapse() {
-        this.isCollapsed = !this.isCollapsed;
-        if (this.isCollapsed) {
-            if (this.isPinned) {
-                this.isPinned = false;
-                this.pinStyle = '';
-            }
-            if (this.isRowPinned) {
-                this.$dispatch('force-close-row-pin-{{ strtolower($blockId) }}');
-            }
-        }
-        this.$dispatch('sync-collapse-{{ strtolower($blockId) }}', this.isCollapsed);
-    }
+        // 2. Setiap kali status berubah, titipkan ingatannya ke memori peramban
+        this.$watch('isCollapsed', (value) => {
+            window.blockCollapseState['{{ $blockId }}'] = value;
+        });
+    },
+toggleFullscreen() {
+          this.isFullscreen = !this.isFullscreen;
+          if (this.isFullscreen) {
+              this.isCollapsed = false; // Paksa buka blok jika masuk fullscreen
+              document.body.style.overflow = 'hidden'; // Kunci scroll halaman belakang
+          } else {
+              document.body.style.overflow = ''; // Lepas kunci scroll
+          }
+      },
   }"
-  @toggle-row-pin-{{ strtolower($blockId) }}.window="
-    isRowPinned = !isRowPinned;
-    if (isRowPinned) {
-        if (isPinned) { isPinned = false; pinStyle = ''; }
-        if (isCollapsed) { isCollapsed = false; $dispatch('sync-collapse-{{ strtolower($blockId) }}', false); }
-    }
-  "
-  @force-close-row-pin-{{ strtolower($blockId) }}.window="isRowPinned = false"
-  @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail"
-  @toggle-collapse-all.window="
-    isCollapsed = $event.detail;
-    if (isCollapsed && isPinned) { isPinned = false; pinStyle = ''; }
-  "
-  class="flex w-full flex-col"
-  x-bind:class="isPinned || isRowPinned ? 'h-full flex-1 min-h-0' : ''"
+  @toggle-collapse-all.window="isCollapsed = $event.detail"
+  @force-collapse-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = true; window.blockCollapseState['{{ $blockId }}'] = true; }"
+   
+  @force-expand-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = false; window.blockCollapseState['{{ $blockId }}'] = false; }"
+  class="group relative mb-6 flex w-full flex-col rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200"
 >
-  {{-- PLACEHOLDER SAAT PINNED --}}
+  <!-- 🌟 1. PLACEHOLDER (Muncul saat blok ini terbang menjadi Fullscreen agar tata letak tidak melompat) -->
   <div
-    x-ref="placeholder"
-    x-show="isPinned"
+    x-show="isFullscreen"
     x-cloak
-    class="flex w-full items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50"
+    class="border-foresty/40 bg-foresty/5 flex h-32 w-full items-center justify-center rounded-xl border-2 border-dashed"
   >
-    <div class="text-center">
-      <x-dynamic-component component="lucide-maximize" class="mx-auto mb-2 h-6 w-6 text-gray-400" />
-      <span class="text-xs font-bold tracking-widest text-gray-400 uppercase">Mode Fokus Sedang Aktif</span>
-    </div>
+    <span class="text-foresty text-xs font-bold tracking-widest uppercase">
+      Mode Fokus Sedang Aktif
+    </span>
   </div>
 
-  {{-- EDITOR UTAMA --}}
+  <!-- 🌟 2. KONTEM UTAMA (Bisa normal, bisa terbang jadi Fullscreen) -->
   <div
-    x-ref="editor"
-    :style="isPinned ? pinStyle : ''"
-    class="flex flex-col bg-white transition-all duration-200"
+    class="flex w-full flex-col transition-all duration-300"
     x-bind:class="
-      isPinned ? 'border-foresty ring-4 ring-foresty/20 shadow-2xl overflow-hidden flex-1 min-h-0 h-full'
-      : isRowPinned ? 'border-foresty/50 rounded-xl ring-2 ring-foresty/20 overflow-hidden flex-1 min-h-0 h-full max-h-[calc(100vh-120px)]'
-      : 'rounded-xl border border-gray-200 shadow-md relative overflow-hidden flex-1 min-h-0 max-h-[calc(100vh-160px)]'
+      isFullscreen
+        ? 'fixed inset-0 z-[9999] bg-gray-50 h-screen'
+        : 'relative rounded-xl border border-gray-200 bg-white shadow-sm'
     "
   >
-    <!-- HEADER BLOK -->
-    <div class="flex shrink-0 items-center justify-between rounded-t-xl border-b border-gray-200 bg-gray-100 p-2">
-      <div class="flex items-center gap-2">
-        <div class="bg-sage-soft rounded-md p-1">
-          <x-dynamic-component :component="$icon" class="text-foresty h-4 w-4" />
+    <!-- HEADER GLOBAL BLOK (Sticky) -->
+    <div
+      class="sticky top-0 z-30 flex items-center justify-between rounded-t-xl border-b border-gray-200 bg-gray-50/95 px-4 py-2 shadow-[0_4px_10px_rgba(0,0,0,0.03)] backdrop-blur-md transition-all"
+    >
+      <!-- KIRI: Drag Handle & Identitas Blok (Bisa dikustomisasi via Slot) -->
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          class="drag-handle hover:text-foresty cursor-grab text-gray-400 transition-colors outline-none"
+          title="Geser Blok"
+        >
+          <x-dynamic-component
+            component="lucide-grip-vertical"
+            class="h-5 w-5"
+          />
+        </button>
+
+        <div
+          class="text-xxs flex items-center gap-3 font-extrabold tracking-widest text-gray-500 uppercase"
+        >
+          @if (isset($title))
+            {{ $title }}
+          @else
+            {{
+              str_replace(
+                ["_", "-"],
+                " ",
+                $block["type"],
+              )
+            }}
+          @endif
         </div>
-        <span class="text-xs font-extrabold tracking-widest text-gray-500 uppercase">{{ $title }}</span>
       </div>
 
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-2" x-show="!isCollapsed">
-          {{-- SLOT PENGATURAN HEADER CUSTOM --}}
-          @if (isset($headerSettings))
-            {{ $headerSettings }}
-          @endif
-          <span class="text-foresty bg-sage-soft shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase shadow-sm">{{ $code }}</span>
+      <!-- 🌟 TENGAH: INJEKSI CUPLIKAN TEKS (Hanya muncul saat diringkas) -->
+      @if (isset($snippet))
+        <div
+          x-show="isCollapsed"
+          x-cloak
+          class="min-w-0 flex-1 px-4 text-xs font-medium text-gray-400"
+        >
+          {{ $snippet }}
+        </div>
+      @else
+        <div class="min-w-0 flex-1"></div>
+        <!-- Pendorong agar tata letak tetap rata -->
+      @endif
+
+      <!-- KANAN: Pengaturan Khusus Blok + Aksi Global -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- 🌟 INJEKSI PENGATURAN KHUSUS BLOK (Dari x-slot:settings) -->
+        @if (isset($settings))
+          <div
+            class="flex items-center gap-2 border-r border-gray-300 pr-3 sm:mr-1"
+          >
+            {{ $settings }}
+          </div>
+        @endif
+
+        <!-- Pengaturan Anchor -->
+        <div x-on:click.outside="showAnchorSetting = false" class="relative">
+          <button
+            x-on:click="showAnchorSetting = !showAnchorSetting"
+            type="button"
+            class="rounded p-1.5 transition-colors outline-none"
+            x-bind:class="
+              showAnchorSetting
+                ? 'bg-foresty text-white'
+                : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+            "
+            title="Pengaturan Tautan (Anchor)"
+          >
+            <x-dynamic-component component="lucide-link" class="h-4 w-4" />
+          </button>
+          <!-- Popup Anchor -->
+          <div
+            x-show="showAnchorSetting"
+            x-cloak
+            style="display: none"
+            class="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-4 shadow-xl"
+          >
+            <label class="text-foresty mb-1 block text-xs font-bold uppercase"
+              >ID Tautan (Anchor)</label
+            >
+            <p class="mb-3 text-[10px] leading-tight text-gray-500">Melompat ke blok ini (Contoh: <span class="text-coral font-mono">tentang-kami</span>).</p>
+            <input
+              type="text"
+              wire:model.live.debounce.500ms="content.{{ $blockId }}.anchor"
+              @input="
+                $event.target.value = $event.target.value
+                  .toLowerCase()
+                  .replace(/\s+/g, '-')
+                  .replace(/[^a-z0-9-]/g, '')
+              "
+              placeholder="nama-anchor"
+              class="focus:ring-foresty focus:border-foresty w-full rounded-lg border border-gray-300 p-2 text-xs"
+            />
+          </div>
         </div>
 
-        <div class="flex items-center gap-1 border-l border-gray-300 pl-4">
-          <button type="button" :disabled="isPinned || isCollapsed" x-on:click="$dispatch('toggle-row-pin-{{ strtolower($blockId) }}')" x-bind:class="isPinned || isCollapsed ? 'bg-gray-100 text-gray-300 cursor-not-allowed opacity-50' : isRowPinned ? 'bg-foresty/10 text-foresty shadow-inner' : 'bg-gray-200 text-gray-500 hover:text-foresty hover:bg-gray-300'" class="flex items-center justify-center rounded-md p-1.5 transition-colors outline-none" title="Pin Baris (Split View)">
-            <x-dynamic-component component="lucide-columns" class="h-3.5 w-3.5" />
-          </button>
-          <button type="button" :disabled="isRowPinned || isCollapsed" x-on:click="togglePin()" x-bind:class="isRowPinned || isCollapsed ? 'bg-gray-100 text-gray-300 cursor-not-allowed opacity-50' : isPinned ? 'bg-foresty text-white shadow-inner' : 'bg-gray-200 text-gray-500 hover:text-foresty hover:bg-gray-300'" class="flex items-center justify-center rounded-md p-1.5 shadow-sm transition-colors outline-none" title="Fokus Layar Penuh">
-            <x-dynamic-component component="lucide-maximize" class="h-3.5 w-3.5" x-bind:class="isPinned ? 'scale-90' : ''" />
-          </button>
-          <button type="button" :disabled="isPinned || isRowPinned" x-on:click="toggleCollapse()" x-bind:class="isPinned || isRowPinned ? 'text-gray-300 cursor-not-allowed opacity-50' : 'hover:text-foresty text-gray-400 hover:bg-gray-200'" class="rounded-md p-1.5 transition-colors outline-none" title="Lipat Blok">
-            <x-dynamic-component component="lucide-chevron-down" class="h-4 w-4 transition-transform duration-300" x-bind:class="isCollapsed ? 'rotate-180' : ''" />
-          </button>
-        </div>
+        <!-- Garis Pemisah Kecil -->
+        <div class="hidden h-4 w-px bg-gray-300 sm:block"></div>
+
+        <!-- Tombol Duplikat -->
+        <button
+          wire:click="duplicateBlock('{{ $blockId }}')"
+          type="button"
+          class="hover:bg-sage-soft hover:text-foresty rounded p-1.5 text-gray-500 transition-colors outline-none"
+          title="Gandakan Blok"
+        >
+          <x-dynamic-component component="lucide-copy" class="h-4 w-4" />
+        </button>
+
+        <!-- Tombol Hapus -->
+        <button
+          wire:click="removeBlock('{{ $blockId }}')"
+          type="button"
+          wire:confirm="Hapus blok ini beserta isinya?"
+          class="rounded p-1.5 text-red-400 transition-colors outline-none hover:bg-red-50 hover:text-red-600"
+          title="Hapus Blok"
+        >
+          <x-dynamic-component component="lucide-trash-2" class="h-4 w-4" />
+        </button>
+        <!-- 🌟 TOMBOL FULLSCREEN (FOKUS) -->
+        <button
+          type="button"
+          x-on:click="toggleFullscreen()"
+          class="rounded p-1 transition-colors outline-none"
+          x-bind:class="
+            isFullscreen
+              ? 'bg-foresty text-white hover:bg-forest'
+              : 'text-gray-400 hover:bg-foresty hover:text-white'
+          "
+          title="Mode Fokus (Layar Penuh)"
+        >
+          <x-dynamic-component
+            component="lucide-maximize"
+            x-show="!isFullscreen"
+            class="h-4 w-4"
+          />
+          <x-dynamic-component
+            component="lucide-minimize"
+            x-show="isFullscreen"
+            x-cloak
+            class="h-4 w-4"
+          />
+        </button>
+        <!-- Tombol collapse runtuh -->
+        <button
+          type="button"
+          x-on:click="isCollapsed = !isCollapsed"
+          class="hover:bg-sage-soft text-foresty cursor-pointer rounded-full p-1 transition-all duration-200 focus:outline-none"
+        >
+          <x-dynamic-component
+            component="lucide-circle-chevron-down"
+            class="text-foresty h-4 w-4 transition-transform duration-200"
+            x-bind:class="isCollapsed ? '-rotate-90' : 'rotate-0'"
+          />
+        </button>
       </div>
     </div>
 
-    <!-- BUNGKUSAN LIPATAN (MAIN SLOT) -->
-    <div x-show="!isCollapsed" x-collapse x-cloak class="flex flex-col flex-1 min-h-0" x-bind:class="isPinned || isRowPinned ? 'h-full' : ''">
+    <!-- OLD AREA KONTEN UTAMA -->
+    {{-- <div x-show="!isCollapsed" x-collapse x-cloak class="flex flex-col p-4">
       {{ $slot }}
+    </div> --}}
+
+    <!-- AREA KONTEN (Tengah & Bawah) -->
+    {{-- <div
+      x-show="!isCollapsed"
+      x-collapse
+      x-cloak
+      class="flex h-full min-h-0 flex-col overflow-hidden"
+      x-bind:class="isFullscreen ? 'flex-1' : ''"
+    >
+      <!-- TENGAN: AREA EDITOR (Bisa di-scroll saat fullscreen) -->
+      <div
+        class="flex flex-col"
+        x-bind:class="
+          isFullscreen ? 'flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8' : 'p-4'
+        "
+      >
+        {{ $slot }}
+      </div>
+
+      <!-- 🌟 BAWAH: AREA PREVIEW (Permanen di Bawah saat Fullscreen) -->
+      @if (isset($preview))
+        <div
+          x-show="isFullscreen"
+          x-cloak
+          x-transition:enter="transition ease-out duration-300"
+          x-transition:enter-start="translate-y-full opacity-0"
+          x-transition:enter-end="translate-y-0 opacity-100"
+          class="z-40 shrink-0 border-t border-gray-200 bg-white p-4 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]"
+        >
+          {{ $preview }}
+        </div>
+      @endif
+    </div> --}}
+    <!-- AREA KONTEN (Tengah & Bawah) -->
+    <div
+      x-show="!isCollapsed"
+      x-collapse
+      x-cloak
+      class="flex h-full min-h-0 flex-col overflow-hidden"
+      x-bind:class="isFullscreen ? 'flex-1' : ''"
+    >
+      <!-- TENGAH: AREA EDITOR (Bisa di-scroll saat fullscreen) -->
+      <div
+        class="flex flex-col"
+        x-bind:class="
+          isFullscreen ? 'flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8' : 'p-4'
+        "
+      >
+        {{ $slot }}
+      </div>
+
+      <!-- 🌟 BAWAH: AREA PREVIEW (Selalu Tampil!) -->
+      @if (isset($preview))
+        <div
+          class="shrink-0 border-t border-gray-100 bg-gray-50/50 p-4 transition-all duration-300"
+          x-bind:class="
+            isFullscreen
+              ? 'bg-white shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-40'
+              : 'bg-gray-50/50'
+          "
+        >
+          {{ $preview }}
+        </div>
+      @endif
     </div>
   </div>
 </div>

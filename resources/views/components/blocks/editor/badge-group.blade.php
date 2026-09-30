@@ -1,219 +1,312 @@
-@props(['blockId', 'block', 'code'])
+@props (["blockId", "block", "code", "activeLocales" => []])
 
 @php
-  $badges = $block['data']['badges'] ?? [];
+  $badges = $block["data"]["badges"] ?? [];
   $bgList = [
-      ['value' => 'bg-goldy-soft', 'label' => 'Goldy', 'class' => 'bg-[#FDF8E1]'],
-      ['value' => 'bg-misty', 'label' => 'Misty', 'class' => 'bg-[#E9F1EB]'],
-      ['value' => 'bg-coral/20', 'label' => 'Coral', 'class' => 'bg-[#FBE6E6]'],
+    ["value" => "bg-goldy-soft", "label" => "Goldy", "class" => "bg-[#FDF8E1]"],
+    ["value" => "bg-misty", "label" => "Misty", "class" => "bg-[#E9F1EB]"],
+    ["value" => "bg-coral/20", "label" => "Coral", "class" => "bg-[#FBE6E6]"],
   ];
 @endphp
 
-<div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 group/section" x-data="{
-    isCollapsed: false,
-    activeTab: 0,
-    localAlign: $wire.entangle('content.{{ $blockId }}.data.align').live || 'left',
-    init() {
-        window.blockCollapseState = window.blockCollapseState || {};
-        if (window.blockCollapseState['{{ $blockId }}'] !== undefined) {
-            this.isCollapsed = window.blockCollapseState['{{ $blockId }}'];
-        }
-        this.$watch('isCollapsed', (value) => {
-            window.blockCollapseState['{{ $blockId }}'] = value;
-        });
-    }
-}" {{-- 🌟 EVENT LISTENER SINKRONISASI --}}
-  @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail" @toggle-collapse-all.window="isCollapsed = $event.detail"
-  @force-collapse-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = true; window.blockCollapseState['{{ $blockId }}'] = true; }"
-  @force-expand-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = false; window.blockCollapseState['{{ $blockId }}'] = false; }"
-  @sync-active-tab-{{ strtolower($blockId) }}.window="activeTab = $event.detail">
-
-  <!-- Header Editor -->
-  <div class="flex items-center justify-between p-2 bg-gray-100 cursor-pointer select-none transition-all duration-200 group-hover:bg-white" :class="isCollapsed ? 'rounded-xl' : 'rounded-t-xl border-b border-gray-200'">
-    <div class="flex items-center gap-2">
-      {{-- 🌟 PERBAIKAN: Dispatch saat collapse/expand --}}
-      <button type="button" @click="isCollapsed = !isCollapsed; $dispatch('sync-collapse-{{ strtolower($blockId) }}', isCollapsed)"
-        class="p-1 hover:bg-sage-soft text-foresty rounded-full transition-all duration-200 focus:outline-none">
-        <x-dynamic-component component="lucide-circle-chevron-down" class="w-5 h-5 text-foresty transition-transform duration-200" x-bind:class="isCollapsed ? '-rotate-90' : 'rotate-0'" />
-      </button>
-      <div class="p-1 bg-sage-soft rounded-md">
-        <x-dynamic-component :component="'lucide-heart-pulse'" class="h-4 w-4 text-forest" stroke-width="2.5" />
-      </div>
-      <span class="text-xs font-extrabold text-gray-500 uppercase tracking-widest flex items-center">
-        Grup Lencana
-      </span>
+<x-blocks.editor.wrapper :block-id="$blockId" :block="$block">
+  <x-slot:title>
+    <div
+      class="bg-sage-soft text-foresty flex h-5 w-5 items-center justify-center rounded-sm shadow-sm"
+    >
+      <x-dynamic-component
+        component="lucide-heart-pulse"
+        class="h-3.5 w-3.5"
+        stroke-width="2.5"
+      />
     </div>
-    <div class="flex items-center justify-end gap-2 flex-1 min-w-0">
-      <span x-show="isCollapsed" x-cloak class="bg-white border border-gray-200 shadow-sm text-gray-500 px-1.5 py-0.5 rounded-md text-[9px] font-bold tracking-normal"
-        x-text="($wire.get('content.{{ $blockId }}.data.badges') || []).length + ' Lencana'">
-      </span>
-      <span class="text-xs font-bold text-foresty uppercase bg-sage-soft px-1.5 py-0.5 rounded shadow-sm shrink-0">
-        {{ $code }}
-      </span>
-    </div>
-  </div>
+    Grup Lencana
+  </x-slot:title>
 
-  {{-- BODIES (Repeater Area) --}}
-  <div x-show="!isCollapsed" x-collapse x-cloak class="p-4 space-y-5 bg-white rounded-b-xl">
+  <x-slot:snippet>
+    <span
+      class="block w-full text-right text-xs font-medium text-gray-400 sm:text-left"
+    >
+      <span class="font-bold text-gray-500">{{ count($badges) }}</span> Lencana
+    </span>
+  </x-slot:snippet>
 
-    {{-- Pengaturan Tata Letak Blok --}}
-    <div class="flex items-center gap-4 pb-4 border-b border-gray-100">
-      <label class="text-[10px] font-bold text-gray-400 uppercase">Posisi Lencana:</label>
-      <div class="flex items-center gap-1.5 bg-gray-50 p-1 rounded-lg border border-gray-200 shadow-inner">
-        <button type="button" @click="localAlign = 'left'" class="px-3 py-1 text-xs font-bold rounded-md transition-all duration-300 flex items-center gap-1.5"
-          :class="localAlign === 'left' ? 'bg-white shadow text-foresty border border-gray-200/50' : 'text-gray-400 hover:text-foresty hover:bg-gray-200/50'">
-          <x-dynamic-component component="lucide-align-left" class="w-3.5 h-3.5" /> Kiri
-        </button>
-        <button type="button" @click="localAlign = 'center'" class="px-3 py-1 text-xs font-bold rounded-md transition-all duration-300 flex items-center gap-1.5"
-          :class="localAlign === 'center' ? 'bg-white shadow text-foresty border border-gray-200/50' : 'text-gray-400 hover:text-foresty hover:bg-gray-200/50'">
-          <x-dynamic-component component="lucide-align-center" class="w-3.5 h-3.5" /> Tengah
-        </button>
-        <button type="button" @click="localAlign = 'right'" class="px-3 py-1 text-xs font-bold rounded-md transition-all duration-300 flex items-center gap-1.5"
-          :class="localAlign === 'right' ? 'bg-white shadow text-foresty border border-gray-200/50' : 'text-gray-400 hover:text-foresty hover:bg-gray-200/50'">
-          <x-dynamic-component component="lucide-align-right" class="w-3.5 h-3.5" /> Kanan
-        </button>
+  <x-slot:settings>
+    <div
+      class="flex items-center gap-2"
+      x-data="{ localAlign: $wire.content?.['{{ $blockId }}']?.data?.align ?? 'left' }"
+    >
+      <span
+        class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
+        >Posisi:</span
+      >
+      <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner">
+        @foreach ([
+            ["left", "lucide-align-left"],
+            ["center", "lucide-align-center"],
+            ["right", "lucide-align-right"]
+          ]
+          as $opt)
+          <button
+            type="button"
+            @click="localAlign = '{{ $opt[0] }}';$wire.set('content.{{ $blockId }}.data.align', '{{$opt[0] }}')"
+            class="rounded p-1 transition-all outline-none"
+            :class="localAlign === '{{ $opt[0] }}' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
+          >
+            <x-dynamic-component
+              component="{{ $opt[1] }}"
+              class="h-3.5 w-3.5"
+            />
+          </button>
+        @endforeach
       </div>
     </div>
+  </x-slot:settings>
 
-    {{-- TAB NAVIGASI LENCANA --}}
+  <!-- ========================================== -->
+  <!-- TAB NAVIGASI & ISI LENCANA                 -->
+  <!-- ========================================== -->
+  <div
+    x-data="{ activeTab: 0 }"
+    @sync-active-tab-{{ strtolower($blockId) }}.window="activeTab = $event.detail"
+    class="flex flex-col"
+  >
     @if (count($badges) > 0)
-      <div class="flex flex-wrap gap-2">
+      <!-- TAB NAVIGASI -->
+      <div class="mb-4 flex flex-wrap gap-2 border-b border-gray-100 pb-3">
         @foreach ($badges as $index => $badge)
-          {{-- 🌟 PERBAIKAN: Dispatch sinkronisasi saat Tab ditekan --}}
-          <button type="button" @click="activeTab = {{ $index }}; $dispatch('sync-active-tab-{{ strtolower($blockId) }}', {{ $index }})"
+          <button
+            type="button"
+            @click="activeTab = {{ $index }};$dispatch('sync-active-tab-{{ strtolower($blockId) }}', {{$index }})"
             :class="activeTab === {{ $index }} ? 'bg-foresty text-white shadow-md border-transparent' : 'bg-white text-gray-500 hover:bg-gray-50 border-gray-200 hover:border-foresty/50'"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-all duration-300 flex items-center gap-2">
+            class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-bold transition-all outline-none"
+          >
+            <span
+              class="max-w-[100px] truncate"
+              x-text="$wire.content?.['{{ $blockId }}']?.data?.badges?.[{{ $index }}]?.label?.['{{ app()->getLocale() }}'] ?? 'Lencana {{ $index + 1 }}'"
+            ></span>
 
-            <span x-text="$wire.get('content.{{ $blockId }}.data.badges.{{ $index }}.label.{{ $code }}') || 'Lencana {{ $index + 1 }}'" class="max-w-[100px] truncate"></span>
-
-            {{-- 🌟 PERBAIKAN: Dispatch juga saat dihapus --}}
             <div
-              @click.stop="$wire.set('content.{{ $blockId }}.data.badges', $wire.get('content.{{ $blockId }}.data.badges').filter((_, i) => i !== {{ $index }})); activeTab = 0; $dispatch('sync-active-tab-{{ strtolower($blockId) }}', 0);"
-              class="p-0.5 rounded hover:bg-red-500 hover:text-white transition-colors ml-1" :class="activeTab === {{ $index }} ? 'text-white/60 hover:bg-white/20' : 'text-gray-400'">
-              <x-dynamic-component component="lucide-x" class="w-3 h-3" />
+              @click.stop="$wire.set('content.{{ $blockId }}.data.badges', ($wire.content['{{ $blockId }}'].data.badges).filter((_, i) => i !== {{$index }})); activeTab = 0; $dispatch('sync-active-tab-{{ strtolower($blockId) }}', 0);"
+              class="ml-1 rounded p-0.5 transition-colors hover:bg-red-500 hover:text-white"
+              :class="activeTab === {{ $index }} ? 'text-white/60 hover:bg-white/20' : 'text-gray-400'"
+            >
+              <x-dynamic-component component="lucide-x" class="h-3 w-3" />
             </div>
           </button>
         @endforeach
       </div>
-    @endif
 
-    {{-- AREA KONTEN TAB --}}
-    <div class="min-h-[180px]">
-      @foreach ($badges as $index => $badge)
-        <div x-show="activeTab === {{ $index }}" x-cloak wire:key="badge-tab-{{ $blockId }}-{{ $index }}" class="p-4 border border-gray-100 bg-gray-50 rounded-xl" x-data="{
-            localBg: $wire.entangle('content.{{ $blockId }}.data.badges.{{ $index }}.icon_bg').live,
-            localColor: $wire.entangle('content.{{ $blockId }}.data.badges.{{ $index }}.icon_color').live
-        }">
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {{-- Kolom Input Teks & URL --}}
-            <div class="space-y-4">
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold text-foresty uppercase">Label Lencana</label>
-                <input type="text" wire:model.live.debounce.300ms="content.{{ $blockId }}.data.badges.{{ $index }}.label.{{ $code }}"
-                  class="text-xs border-gray-200 focus:ring-foresty rounded-md py-1.5 bg-white shadow-sm transition-colors">
-              </div>
-              <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-bold text-foresty uppercase">Tautan (URL)</label>
-                <div class="flex items-center gap-1">
-                  <input type="text" wire:model.live="content.{{ $blockId }}.data.badges.{{ $index }}.url"
-                    class="w-full text-xs border-gray-200 focus:ring-foresty rounded-md py-1.5 bg-white shadow-sm transition-colors">
-                  <button type="button" @click="$dispatch('buka-modal-link', { target: 'content.{{ $blockId }}.data.badges.{{ $index }}.url' })"
-                    class="p-1.5 border border-gray-200 bg-white hover:bg-sage-soft text-gray-400 hover:text-foresty rounded-md shadow-sm transition-colors cursor-pointer shrink-0">
-                    <x-dynamic-component component="lucide-search" class="w-4 h-4" stroke-width="2.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {{-- Kolom Input Desain Ikon --}}
-            <div class="space-y-4 md:border-l border-gray-200 md:pl-6">
-
-              {{-- 🌟 PEMANGGILAN KOMPONEN ICON PICKER UNIVERSAL --}}
-              <x-editor.icon-picker label="Ikon Lencana" model="content.{{ $blockId }}.data.badges.{{ $index }}.icon" />
-
-              <div class="grid grid-cols-2 gap-4">
+      <!-- KONTEN TAB -->
+      <div class="min-h-[180px]">
+        @foreach ($badges as $index => $badge)
+          <div
+            x-show="activeTab === {{ $index }}"
+            x-cloak
+            wire:key="badge-tab-{{ $blockId }}-{{$index }}"
+            class="rounded-xl border border-gray-100 bg-gray-50/50 p-4 shadow-inner"
+          >
+            <!-- Global Setting (URL & Visual) -->
+            <div
+              class="mb-6 grid grid-cols-1 gap-6 border-b border-gray-200 pb-6 md:grid-cols-2"
+            >
+              <div class="flex flex-col gap-4">
+                <!-- Tautan -->
                 <div class="flex flex-col gap-1.5">
-                  <label class="text-[10px] font-bold text-foresty uppercase">Warna Latar</label>
-                  <div class="grid grid-cols-1 xl:grid-cols-3 gap-2">
+                  <label class="text-foresty text-[10px] font-bold uppercase"
+                    >Tautan (URL)</label
+                  >
+                  <div class="flex items-center gap-1">
+                    <input
+                      type="text"
+                      wire:model.live="content.{{ $blockId }}.data.badges.{{$index }}.url"
+                      class="focus:border-foresty focus:ring-foresty w-full rounded-md border-gray-200 bg-white py-1.5 text-xs shadow-sm transition-colors"
+                    />
+                    <button
+                      type="button"
+                      @click="$dispatch('buka-modal-link', { target: 'content.{{ $blockId }}.data.badges.{{$index }}.url' })"
+                      class="hover:bg-sage-soft hover:text-foresty shrink-0 cursor-pointer rounded-md border border-gray-200 bg-white p-1.5 text-gray-400 shadow-sm transition-colors"
+                    >
+                      <x-dynamic-component
+                        component="lucide-search"
+                        class="h-4 w-4"
+                        stroke-width="2.5"
+                      />
+                    </button>
+                  </div>
+                </div>
+                <!-- Pemanggil Komponen Icon Picker -->
+                <x-editor.icon-picker
+                  label="Ikon Lencana"
+                  model="content.{{ $blockId }}.data.badges.{{$index }}.icon"
+                />
+              </div>
+
+              <!-- Latar & Warna -->
+              <div
+                class="flex flex-col gap-4"
+                x-data="{ localBg: $wire.content?.['{{ $blockId }}']?.data?.badges?.[{{ $index }}]?.icon_bg ?? 'bg-misty', localColor: $wire.content?.['{{ $blockId }}']?.data?.badges?.[{{ $index }}]?.icon_color ?? '#064F3B' }"
+              >
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-foresty text-[10px] font-bold uppercase"
+                    >Warna Latar</label
+                  >
+                  <div class="grid grid-cols-3 gap-2">
                     @foreach ($bgList as $bg)
-                      <button type="button" @click="localBg = '{{ $bg['value'] }}'" class="flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-300 bg-white"
-                        :class="localBg === '{{ $bg['value'] }}' ? 'ring-2 ring-foresty ring-offset-1 border-transparent shadow-sm scale-105' : 'border-gray-200 hover:border-foresty/50 hover:bg-gray-50'">
-                        <span class="w-4 h-4 rounded-full {{ $bg['class'] }} mb-1 shadow-inner"></span>
-                        <span class="text-[9px] font-bold text-gray-700 leading-none">{{ $bg['label'] }}</span>
+                      <button
+                        type="button"
+                        @click="localBg = '{{ $bg['value'] }}'; $wire.set('content.{{$blockId }}.data.badges.{{ $index }}.icon_bg', '{{$bg['value'] }}')"
+                        class="flex flex-col items-center justify-center rounded-lg border bg-white p-2 transition-all duration-300 outline-none"
+                        :class="localBg === '{{ $bg['value'] }}' ? 'border-transparent ring-2 ring-foresty ring-offset-1 shadow-sm scale-105' : 'border-gray-200 hover:border-foresty/50 hover:bg-gray-50'"
+                      >
+                        <span
+                          class="mb-1 h-4 w-4 rounded-full shadow-inner {{ $bg['class'] }}"
+                        ></span>
+                        <span
+                          class="text-[9px] leading-none font-bold text-gray-700"
+                          >{{ $bg["label"] }}</span
+                        >
                       </button>
                     @endforeach
                   </div>
                 </div>
-
                 <div class="flex flex-col gap-1.5">
-                  <label class="text-[10px] font-bold text-foresty uppercase">Warna Ikon (Hex)</label>
-                  <div class="flex items-center gap-1.5 p-1 bg-white border border-gray-200 rounded-md shadow-sm focus-within:ring-1 focus-within:ring-foresty focus-within:border-foresty transition-all duration-300">
-                    <input type="color" x-model="localColor" class="w-7 h-7 rounded cursor-pointer border-0 p-0 bg-transparent shrink-0">
-                    <input type="text" x-model="localColor" class="w-full text-xs border-0 focus:ring-0 p-0 text-gray-700 bg-transparent uppercase font-mono" placeholder="#064F3B">
+                  <label class="text-foresty text-[10px] font-bold uppercase"
+                    >Warna Ikon (Hex)</label
+                  >
+                  <div
+                    class="focus-within:border-foresty focus-within:ring-foresty flex items-center gap-1.5 rounded-md border border-gray-200 bg-white p-1 shadow-sm transition-all duration-300 focus-within:ring-1"
+                  >
+                    <input
+                      type="color"
+                      x-model="localColor"
+                      @change="$wire.set('content.{{ $blockId }}.data.badges.{{$index }}.icon_color', localColor)"
+                      class="h-7 w-7 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
+                    />
+                    <input
+                      type="text"
+                      x-model="localColor"
+                      @change="$wire.set('content.{{ $blockId }}.data.badges.{{$index }}.icon_color', localColor)"
+                      class="w-full border-0 bg-transparent p-0 font-mono text-xs text-gray-700 uppercase focus:ring-0"
+                      placeholder="#064F3B"
+                    />
                   </div>
                 </div>
               </div>
+            </div>
 
+            <!-- Teks Label (Multi-Bahasa) -->
+            <div
+              class="grid gap-6"
+              :class="effectiveLayout === 'single'
+                ? 'grid-cols-1'
+                : splitLanguages.length >= 3
+                  ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                  : 'grid-cols-1 md:grid-cols-2'"
+            >
+              @foreach ($activeLocales as $lang)
+                <div
+                  wire:key="badge-label-{{ $blockId }}-{{ $index }}-{{$lang }}"
+                  x-show="effectiveLayout === 'single' ? singleActiveLang === '{{ $lang }}' : splitLanguages.includes('{{$lang }}')"
+                  x-cloak
+                  class="flex flex-col gap-1.5"
+                >
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="bg-sage-soft text-foresty rounded px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase shadow-sm"
+                      >{{ $lang }}</span
+                    >
+                    <span class="text-foresty text-[10px] font-bold uppercase"
+                      >Teks Label</span
+                    >
+                  </div>
+                  <input
+                    type="text"
+                    wire:model.live.debounce.300ms="content.{{ $blockId }}.data.badges.{{ $index }}.label.{{$lang }}"
+                    class="focus:border-foresty focus:ring-foresty rounded-md border-gray-200 bg-white py-1.5 text-xs shadow-sm transition-colors"
+                  />
+                </div>
+              @endforeach
             </div>
           </div>
-        </div>
-      @endforeach
+        @endforeach
+      </div>
+    @else
+      <div
+        class="mb-6 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 p-8 text-center"
+      >
+        <x-dynamic-component
+          component="lucide-tags"
+          class="mb-2 h-8 w-8 text-gray-300"
+        />
+        <p class="text-xs font-bold text-gray-400 uppercase">Belum ada lencana</p>
+      </div>
+    @endif
 
-      @if (count($badges) === 0)
-        <div class="p-8 border-2 border-dashed border-gray-200 rounded-xl text-center flex flex-col items-center justify-center bg-gray-50">
-          <x-dynamic-component component="lucide-tags" class="w-8 h-8 text-gray-300 mb-2" />
-          <p class="text-xs font-bold text-gray-400 uppercase">Belum ada lencana</p>
-          <p class="text-[10px] text-gray-400 mt-1">Tambahkan lencana untuk memperkaya deskripsi konten.</p>
-        </div>
-      @endif
-    </div>
+    <!-- TOMBOL TAMBAH -->
+    <button
+      type="button"
+      @click="
+        let arr = $wire.content?.['{{ $blockId }}']?.data?.badges ?? [];
+        arr.push({ label: { id: '', en: '' }, url: '#', icon: 'check-circle', icon_bg: 'bg-goldy-soft', icon_color: '#064F3B' });
+        $wire.set('content.{{$blockId }}.data.badges', arr).then(() => {
+            activeTab = arr.length - 1;
+            $dispatch('sync-active-tab-{{ strtolower($blockId) }}', activeTab);
+        });
+      "
+      class="hover:border-foresty hover:bg-sage-soft hover:text-foresty flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 py-3 text-xs font-bold tracking-widest text-gray-500 uppercase transition-colors outline-none"
+    >
+      <x-dynamic-component component="lucide-plus-square" class="h-4.5 w-4.5" />
+      Tambah Lencana
+    </button>
+  </div>
 
-    {{-- PRATINJAU GABUNGAN --}}
-    <div class="pt-5 border-t border-dashed border-gray-200">
-      <span class="block text-[10px] font-bold text-gray-400 uppercase mb-3">Pratinjau Grup Lencana:</span>
-      <div class="flex flex-wrap gap-3 transition-all duration-500 ease-out"
-        :class="{
-            'justify-start': localAlign === 'left',
-            'justify-center': localAlign === 'center',
-            'justify-end': localAlign === 'right'
-        }">
+  <!-- ========================================== -->
+  <!-- AREA PREVIEW BAWAH                         -->
+  <!-- ========================================== -->
+  <x-slot:preview>
+    <div
+      class="flex flex-col"
+      x-data="{ localAlign: $wire.content?.['{{ $blockId }}']?.data?.align ?? 'left' }"
+    >
+      <span
+        class="mb-4 block w-full border-b border-gray-200 pb-2 text-center text-[10px] font-bold tracking-widest text-gray-400 uppercase"
+        >Pratinjau Grup Lencana:</span
+      >
+      <div
+        class="flex flex-wrap gap-3 transition-all duration-500 ease-out"
+        :class="localAlign === 'center'
+          ? 'justify-center'
+          : localAlign === 'right'
+            ? 'justify-end'
+            : 'justify-start'"
+      >
         @foreach ($badges as $index => $badge)
-          <div x-data="{
-              label: $wire.entangle('content.{{ $blockId }}.data.badges.{{ $index }}.label.{{ $code }}').live,
-              bg: $wire.entangle('content.{{ $blockId }}.data.badges.{{ $index }}.icon_bg').live,
-              color: $wire.entangle('content.{{ $blockId }}.data.badges.{{ $index }}.icon_color').live
-          }"
-            class="inline-flex items-center gap-2.5 bg-white border border-foresty/15 rounded-full py-[9px] pr-[18px] pl-2.5 font-semibold text-sm text-foresty shadow-[0_10px_20px_-10px_rgba(6,45,35,0.2)] pointer-events-none transition-all duration-300">
-
-            <span class="w-[26px] h-[26px] rounded-full flex items-center justify-center shrink-0 transition-colors duration-300" :class="bg === 'bg-mist' ? 'bg-[#E9F1EB]' : (bg || 'bg-misty')">
-              <div :style="`color: ${color || '#064F3B'};`" class="w-[15px] h-[15px] transition-colors duration-300 flex items-center justify-center">
-                <x-dynamic-component :component="'lucide-' . ($badge['icon'] ?? 'check-circle')" stroke-width="2.5" class="w-full h-full" />
+          <div
+            class="border-foresty/15 text-foresty pointer-events-none inline-flex items-center gap-2.5 rounded-full border bg-white py-[9px] pr-[18px] pl-2.5 text-sm font-semibold shadow-[0_10px_20px_-10px_rgba(6,45,35,0.2)] transition-all duration-300"
+          >
+            <span
+              class="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full transition-colors duration-300"
+              :class="($wire.content?.['{{ $blockId }}']?.data?.badges?.[{{ $index }}]?.icon_bg ?? 'bg-misty') === 'bg-mist' ? 'bg-[#E9F1EB]' : ($wire.content?.['{{ $blockId }}']?.data?.badges?.[{{ $index }}]?.icon_bg ?? 'bg-misty')"
+            >
+              <div
+                :style="`color: ${$wire.content?.['{{ $blockId }}']?.data?.badges?.[{{ $index }}]?.icon_color ?? '#064F3B'};`"
+                class="flex h-[15px] w-[15px] items-center justify-center transition-colors duration-300"
+              >
+                <!-- 🌟 PERBAIKAN: Gunakan sintaks standar PHP untuk rendering komponen Blade di sisi server -->
+                <x-dynamic-component
+                  :component="'lucide-' . ($badge['icon'] ?? 'check-circle')"
+                  stroke-width="2.5"
+                  class="h-full w-full"
+                />
               </div>
             </span>
-            <span x-text="label || 'Ketik lencana...'"></span>
+            <span
+              x-text="$wire.content?.['{{ $blockId }}']?.data?.badges?.[{{ $index }}]?.label?.['{{ app()->getLocale() }}'] ?? 'Ketik lencana...'"
+            ></span>
           </div>
         @endforeach
       </div>
     </div>
-
-    {{-- Tombol Tambah --}}
-    <button type="button"
-      @click="
-        let arr = $wire.get('content.{{ $blockId }}.data.badges') || [];
-        arr.push({ label: { id: '', en: '' }, url: '#', icon: 'check-circle', icon_bg: 'bg-goldy-soft', icon_color: '#064F3B' });
-        $wire.set('content.{{ $blockId }}.data.badges', arr);
-        {{-- 🌟 PERBAIKAN: Dispatch saat menambah anak baru --}}
-        setTimeout(() => {
-            activeTab = arr.length - 1;
-            $dispatch('sync-active-tab-{{ strtolower($blockId) }}', activeTab);
-        }, 100);
-    "
-      class="w-full py-3 border-2 border-dashed border-gray-300 text-gray-500 rounded-xl hover:border-foresty hover:text-foresty transition-colors text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 bg-gray-50 hover:bg-sage-soft">
-      <x-dynamic-component component="lucide-plus-square" class="w-4.5 h-4.5" />
-      Tambah Lencana
-    </button>
-
-  </div>
-</div>
+  </x-slot:preview>
+</x-blocks.editor.wrapper>
