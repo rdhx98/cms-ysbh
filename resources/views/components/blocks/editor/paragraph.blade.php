@@ -31,46 +31,102 @@
   </x-slot:snippet>
 
   <x-slot:settings>
-    <div
-      x-show="isCollapsed"
-      x-cloak
-      class="min-w-0 flex-1 px-2 text-xs font-medium text-gray-400 sm:px-4"
-      {{-- 💡 Tooltip Dinamis Alpine.js (Tidak akan mengubah layout/tinggi sama sekali) --}}
-      {{-- :title="($wire.get('content.{{ $blockId }}.data.text.{{ $code }}') || '').replace(/<\/?[^>]+(>|$)/g, '').replace(/&nbsp;/g, ' ').trim() || 'Kosong...'" --}}
-    >
-      {{-- Jadikan span sebagai block dan berikan truncate untuk memotongnya menjadi 1 baris ketat --}}
-      <span
-        class="block w-full truncate text-right"
-        {{-- x-text="($wire.get('content.{{ $blockId }}.data.text.{{ $lang }}') || '').replace(/<\/?[^>]+(>|$)/g, '').replace(/&nbsp;/g, ' ').trim() || 'Kosong...'" --}}
+    <span class="text-xs font-bold tracking-wide text-gray-400 uppercase">
+      Margin bawah
+    </span>
+    {{-- kontrol margin --}}
+    <div class="flex flex-col gap-1.5">
+      <div
+        class="flex w-fit items-center justify-center rounded-md bg-gray-200 p-0.75 shadow-inner"
       >
-      </span>
-    </div>
-    <div class="flex items-center gap-2" @click.stop>
-      <div class="flex items-center rounded border border-gray-200 text-xs">
-        <span class="px-2 text-gray-400">Jarak Atas</span>
-        <select
-          wire:model="content.{{ $blockId }}.data.spacing.mt"
-          class="rounded-r border-0 bg-gray-50 py-0.5 text-xs focus:ring-0"
+        <!-- 1. Jarak 0 (Menempel Bawah) -->
+        <button
+          type="button"
+          title="0px (Menempel)"
+          @click="$wire.set('content.{{ $blockId }}.data.margin', 'mb-0')"
+          class="flex items-center justify-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
+          :class="($wire.content?.['{{ $blockId }}']?.data?.margin ?? 'mb-0') === 'mb-0' ? 'bg-forest text-goldy shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
         >
-          <option value="0px">0</option>
-          <option value="16px">Normal</option>
-          <option value="32px">Lebar</option>
-          <option value="64px">Sangat Lebar</option>
-        </select>
-      </div>
-      <div class="flex items-center rounded border border-gray-200 text-xs">
-        <span class="px-2 text-gray-400">Bawah</span>
-        <select
-          wire:model="content.{{ $blockId }}.data.spacing.mb"
-          class="rounded-r border-0 bg-gray-50 py-0.5 text-xs focus:ring-0"
+          {{-- Ikon Visual Margin Bawah 0 --}}
+          <div class="flex h-3.5 w-3.5 flex-col">
+            <div class="mb-0 w-full flex-1 rounded-[2px] bg-current"></div>
+            <div class="h-[2px] w-full rounded-full bg-gray-400/70"></div>
+          </div>
+          <span>Nihil</span>
+        </button>
+
+        <!-- 2. Jarak Kecil (mb-4 / 16px) -->
+        <button
+          type="button"
+          title="Kecil (16px)"
+          @click="$wire.set('content.{{ $blockId }}.data.margin', 'mb-4')"
+          class="flex items-center justify-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
+          :class="($wire.content?.['{{ $blockId }}']?.data?.margin ?? 'mb-4') === 'mb-4' ? 'bg-forest text-goldy shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
         >
-          <option value="0px">0</option>
-          <option value="16px">Normal</option>
-          <option value="32px">Lebar</option>
-          <option value="64px">Sangat Lebar</option>
-        </select>
+          {{-- Ikon Visual Margin Bawah Kecil --}}
+          <div class="flex h-3.5 w-3.5 flex-col">
+            <div
+              class="mb-[2px] w-full flex-1 rounded-[2px] bg-current opacity-90"
+            ></div>
+            <div class="h-[2px] w-full rounded-full bg-gray-400/70"></div>
+          </div>
+          <span>Kecil</span>
+        </button>
+
+        <!-- 3. Jarak Normal (mb-8 / 32px) - DEFAULT -->
+        <button
+          type="button"
+          title="Normal (32px)"
+          @click="$wire.set('content.{{ $blockId }}.data.margin', 'mb-8')"
+          class="flex items-center justify-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
+          :class="($wire.content?.['{{ $blockId }}']?.data?.margin ?? 'mb-8') === 'mb-8' ? 'bg-forest text-goldy shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
+        >
+          {{-- Ikon Visual Margin Bawah Normal --}}
+          <div class="flex h-3.5 w-3.5 flex-col">
+            <div
+              class="mb-1 w-full flex-1 rounded-[2px] bg-current opacity-90"
+            ></div>
+            <div class="h-[2px] w-full rounded-full bg-gray-400/70"></div>
+          </div>
+          <span>Normal</span>
+        </button>
+
+        <!-- 4. Jarak Lebar (mb-16 / 64px) -->
+        <button
+          type="button"
+          title="Lebar (64px)"
+          @click="$wire.set('content.{{ $blockId }}.data.margin', 'mb-16')"
+          class="flex items-center justify-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
+          :class="($wire.content?.['{{ $blockId }}']?.data?.margin ?? 'mb-16') === 'mb-16' ? 'bg-forest text-goldy shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
+        >
+          {{-- Ikon Visual Margin Bawah Lebar --}}
+          <div class="flex h-3.5 w-3.5 flex-col">
+            <div
+              class="mb-1.5 w-full flex-1 rounded-[2px] bg-current opacity-90"
+            ></div>
+            <div class="h-[2px] w-full rounded-full bg-gray-400/70"></div>
+          </div>
+          <span>Lebar</span>
+        </button>
+
+        <!-- 5. Jarak Sangat Lebar / Penuh (mb-24 / 96px) -->
+        <button
+          type="button"
+          title="Maksimal (96px)"
+          @click="$wire.set('content.{{ $blockId }}.data.margin', 'mb-24')"
+          class="flex items-center justify-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
+          :class="($wire.content?.['{{ $blockId }}']?.data?.margin ?? 'mb-24') === 'mb-24' ? 'bg-forest text-goldy shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
+        >
+          {{-- Ikon Visual Margin Bawah Sangat Lebar --}}
+          <div class="flex h-3.5 w-3.5 flex-col">
+            <div
+              class="mb-2 w-full flex-1 rounded-[2px] bg-current opacity-90"
+            ></div>
+            <div class="h-[2px] w-full rounded-full bg-gray-400/70"></div>
+          </div>
+          <span>Penuh</span>
+        </button>
       </div>
-      {{-- Anda bisa menduplikasi select di atas untuk pt (padding top) dan pb (padding bottom) jika diperlukan --}}
     </div>
   </x-slot:settings>
 

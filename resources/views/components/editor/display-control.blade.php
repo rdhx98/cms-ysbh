@@ -1,4 +1,4 @@
-@props (['activeLocales' => []])
+@props (["activeLocales" => []])
 
 <!-- Gunakan flex-nowrap agar tidak turun baris, dan overflow-x-auto sebagai pengaman di HP kecil -->
 <div
@@ -56,7 +56,13 @@
         class="focus:ring-foresty focus:border-foresty text-foresty h-6 rounded border-gray-300 bg-white py-0.5 pr-6 pl-2 text-xs font-bold shadow-sm"
       >
         @foreach ($activeLocales as $code)
-          <option value="{{ $code }}">{{ strtoupper($code) }}</option>
+          <option value="{{ $code }}">
+            {{
+              strtoupper(
+                $code,
+              )
+            }}
+          </option>
         @endforeach
       </select>
     </div>
@@ -100,7 +106,13 @@
         >
           <option value="">+ Tambah</option>
           @foreach ($activeLocales as $code)
-            <option value="{{ $code }}">{{ strtoupper($code) }}</option>
+            <option value="{{ $code }}">
+              {{
+                strtoupper(
+                  $code,
+                )
+              }}
+            </option>
           @endforeach
         </select>
       </div>
@@ -198,13 +210,13 @@
           class="flex items-center justify-center rounded-lg border shadow-sm transition-all select-none focus:outline-none"
         >
           <x-dynamic-component
-            x-show="allCollapsed"
+            x-show="!allCollapsed"
             :component="'lucide-list-chevrons-down-up'"
             class="h-4 w-4 shrink-0"
             stroke-width="2.5"
           />
           <x-dynamic-component
-            x-show="!allCollapsed"
+            x-show="allCollapsed"
             :component="'lucide-list-chevrons-up-down'"
             class="h-4 w-4 shrink-0"
             stroke-width="2.5"

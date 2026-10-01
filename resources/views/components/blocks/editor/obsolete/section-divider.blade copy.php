@@ -1,110 +1,172 @@
-@props ([
-  "blockId",
-  "block",
-  "activeLocales" => [],
-  "allContent" => [],
-])
+@props (["blockId", "block", "code"])
 
-<x-blocks.editor.wrapper :block-id="$blockId" :block="$block">
-  <x-slot:title>
-    <div
-      class="bg-sage-soft text-foresty flex h-5 w-5 items-center justify-center rounded-sm shadow-sm"
-    >
-      <x-dynamic-component
-        component="lucide-between-horizontal-start"
-        class="h-3.5 w-3.5"
-        stroke-width="2.5"
-      />
-    </div>
+<div
+  class="group/section rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200"
+  x-data="{
+    isCollapsed: false,
+    init() {
+        // 1. Saat dirender ulang, periksa apakah blok ini punya ingatan status
+        window.blockCollapseState = window.blockCollapseState || {};
+        if (window.blockCollapseState['{{ $blockId }}'] !== undefined) {
+            this.isCollapsed = window.blockCollapseState['{{ $blockId }}'];
+        }
 
-    Pemisah Seksi
-  </x-slot:title>
-
-  <x-slot:snippet>
-    <label class="text-xxs block font-semibold text-gray-500 uppercase"
-      >Blok di bawah batas ini akan dibungkus dengan gaya berikut:
-    </label>
-  </x-slot:snippet>
-
-  <x-slot:settings>
-    <div
-      x-show="isCollapsed"
-      x-transition.opacity.duration.300ms
-      x-cloak
-      class="flex items-center justify-center gap-1"
-    >
-      {{-- latar --}}
-      <div
-        class="flex shrink-0 items-center gap-1.5 sm:border-r sm:border-gray-200 sm:pr-3"
-        title="Warna Latar Seksi Ini"
+        // 2. Setiap kali status berubah, titipkan ingatannya ke memori peramban
+        this.$watch('isCollapsed', (value) => {
+            window.blockCollapseState['{{ $blockId }}'] = value;
+        });
+    }
+}"
+  @sync-collapse-{{ strtolower($blockId) }}.window="isCollapsed = $event.detail"
+  @toggle-collapse-all.window="isCollapsed = $event.detail"
+  @force-collapse-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = true; window.blockCollapseState['{{ $blockId }}'] = true; }"
+  @force-expand-children.window="if ($event.detail.includes('{{ $blockId }}')) { isCollapsed = false; window.blockCollapseState['{{ $blockId }}'] = false; }"
+>
+  <!-- Header -->
+  <div
+    class="flex cursor-pointer items-center justify-between bg-gray-100 p-2 transition-all duration-200 select-none group-hover:bg-white"
+    :class="isCollapsed
+      ? 'rounded-xl'
+      : 'rounded-t-xl border-b border-gray-200'"
+  >
+    {{-- HEADER KIRI --}}
+    <div class="flex items-center gap-2">
+      {{-- Label Identitas --}}
+      <div class="bg-sage-soft rounded-md p-1">
+        <x-dynamic-component
+          :component="'lucide-between-horizontal-start'"
+          class="text-forest h-4 w-4"
+          stroke-width="2.5"
+        />
+      </div>
+      <span
+        class="flex items-center text-xs font-extrabold tracking-widest text-gray-500 uppercase"
       >
-        <span
-          class="hidden text-[9px] font-extrabold tracking-wider text-gray-400 uppercase sm:block"
-        >
-          Latar
-        </span>
-        <!-- Bungkus Cincin (Ring) agar warna putih tetap terlihat -->
+        Pemisah Seksi
+      </span>
+    </div>
+    {{-- RIGHT HEADER --}}
+    {{-- Tambahkan flex-1 dan min-w-0 di sini agar ia berani mengambil sisa ruang tapi juga mau menyusut --}}
+    <div class="flex min-w-0 flex-1 items-center justify-end gap-2">
+      <div
+        x-show="isCollapsed"
+        x-transition.opacity.duration.300ms
+        x-cloak
+        class="flex items-center justify-center gap-1"
+      >
+        {{-- latar --}}
         <div
-          class="flex items-center justify-center rounded-full bg-white p-[3px] shadow-sm ring-1 ring-gray-400"
+          class="flex shrink-0 items-center gap-1.5 sm:border-r sm:border-gray-200 sm:pr-3"
+          title="Warna Latar Seksi Ini"
         >
+          <span
+            class="hidden text-[9px] font-extrabold tracking-wider text-gray-400 uppercase sm:block"
+          >
+            Latar
+          </span>
+          <!-- Bungkus Cincin (Ring) agar warna putih tetap terlihat -->
           <div
-            class="h-3.5 w-3.5 rounded-full border border-black/5 transition-colors duration-300"
-            {{-- Mengambil nilai warna background secara langsung dan reaktif dari Livewire --}}
-            x-bind:class="$wire.get('content.{{ $blockId }}.data.background') || 'bg-white'"
-          ></div>
+            class="flex items-center justify-center rounded-full bg-white p-[3px] shadow-sm ring-1 ring-gray-400"
+          >
+            <div
+              class="h-3.5 w-3.5 rounded-full border border-black/5 transition-colors duration-300"
+              {{-- Mengambil nilai warna background secara langsung dan reaktif dari Livewire --}}
+              x-bind:class="$wire.get('content.{{ $blockId }}.data.background') || 'bg-white'"
+            ></div>
+          </div>
+        </div>
+
+        <div class="h-3.5 w-px bg-gray-200"></div>
+
+        {{-- warna teks --}}
+        <div
+          title="Warna Teks Utama"
+          class="flex h-4 w-4 items-center justify-center rounded-[3px] border border-gray-200 transition-colors"
+          x-bind:class="$wire.get('content.{{ $blockId }}.data.text_color') === 'text-white' ? 'bg-white' : 'bg-gray-900'"
+        >
+          <span
+            class="font-serif text-[8px] leading-none font-bold"
+            x-bind:class="$wire.get('content.{{ $blockId }}.data.text_color') === 'text-white' ? 'text-gray-900' : 'text-white'"
+          >
+            Aa
+          </span>
+        </div>
+
+        <!-- Garis Pemisah Vertikal -->
+        <div class="h-3.5 w-px bg-gray-200"></div>
+
+        {{-- padding --}}
+        <div
+          title="Jarak Padding"
+          class="flex items-center justify-center text-gray-500"
+        >
+          <!-- Sempit (4 Baris) -->
+          <div
+            x-show="$wire.get('content.{{ $blockId }}.data.padding') === 'py-8 sm:py-12'"
+            x-cloak
+          >
+            <x-dynamic-component
+              component="lucide-rows-4"
+              class="h-3.5 w-3.5"
+            />
+          </div>
+          <!-- Sedang / Default (3 Baris) -->
+          <div
+            x-show="!$wire.get('content.{{ $blockId }}.data.padding') || $wire.get('content.{{ $blockId }}.data.padding') === 'py-16 sm:py-24'"
+            x-cloak
+          >
+            <x-dynamic-component
+              component="lucide-rows-3"
+              class="h-3.5 w-3.5"
+            />
+          </div>
+          <!-- Lebar (2 Baris) -->
+          <div
+            x-show="$wire.get('content.{{ $blockId }}.data.padding') === 'py-24 sm:py-[96px]'"
+            x-cloak
+          >
+            <x-dynamic-component
+              component="lucide-rows-2"
+              class="h-3.5 w-3.5"
+            />
+          </div>
         </div>
       </div>
 
-      <div class="h-3.5 w-px bg-gray-200"></div>
-
-      {{-- warna teks --}}
-      <div
-        title="Warna Teks Utama"
-        class="flex h-4 w-4 items-center justify-center rounded-[3px] border border-gray-200 transition-colors"
-        x-bind:class="$wire.get('content.{{ $blockId }}.data.text_color') === 'text-white' ? 'bg-white' : 'bg-gray-900'"
+      {{-- Indikator Bahasa --}}
+      <span
+        class="text-foresty bg-sage-soft shrink-0 rounded px-1.5 py-0.5 text-xs font-bold uppercase shadow-sm"
       >
-        <span
-          class="font-serif text-[8px] leading-none font-bold"
-          x-bind:class="$wire.get('content.{{ $blockId }}.data.text_color') === 'text-white' ? 'text-gray-900' : 'text-white'"
-        >
-          Aa
-        </span>
-      </div>
-
-      <!-- Garis Pemisah Vertikal -->
-      <div class="h-3.5 w-px bg-gray-200"></div>
-
-      {{-- padding --}}
-      <div
-        title="Jarak Padding"
-        class="flex items-center justify-center text-gray-500"
+        {{ $code }}
+      </span>
+      {{-- Tombol Collapse --}}
+      <button
+        type="button"
+        x-on:click="isCollapsed = !isCollapsed; $dispatch('sync-collapse-{{ strtolower($blockId) }}', isCollapsed)"
+        class="hover:bg-sage-soft text-foresty cursor-pointer rounded-full p-1 transition-all duration-200 focus:outline-none"
       >
-        <!-- Sempit (4 Baris) -->
-        <div
-          x-show="$wire.get('content.{{ $blockId }}.data.padding') === 'py-8 sm:py-12'"
-          x-cloak
-        >
-          <x-dynamic-component component="lucide-rows-4" class="h-3.5 w-3.5" />
-        </div>
-        <!-- Sedang / Default (3 Baris) -->
-        <div
-          x-show="!$wire.get('content.{{ $blockId }}.data.padding') || $wire.get('content.{{ $blockId }}.data.padding') === 'py-16 sm:py-24'"
-          x-cloak
-        >
-          <x-dynamic-component component="lucide-rows-3" class="h-3.5 w-3.5" />
-        </div>
-        <!-- Lebar (2 Baris) -->
-        <div
-          x-show="$wire.get('content.{{ $blockId }}.data.padding') === 'py-24 sm:py-[96px]'"
-          x-cloak
-        >
-          <x-dynamic-component component="lucide-rows-2" class="h-3.5 w-3.5" />
-        </div>
-      </div>
+        <x-dynamic-component
+          component="lucide-circle-chevron-down"
+          class="text-foresty h-5 w-5 transition-transform duration-200"
+          x-bind:class="isCollapsed ? '-rotate-90' : 'rotate-0'"
+        />
+      </button>
     </div>
-  </x-slot:settings>
+  </div>
+
   {{-- BODIES --}}
-  <div class="space-y-2 rounded-b-xl bg-white p-4">
+  <div
+    x-show="!isCollapsed"
+    x-collapse
+    x-cloak
+    class="space-y-2 rounded-b-xl bg-white p-4"
+  >
+    <div class="w-full border-b border-gray-200 pb-2">
+      <label class="text-xxs block font-semibold text-gray-500 uppercase"
+        >Blok di bawah batas ini akan dibungkus dengan gaya berikut:</label
+      >
+    </div>
+
     {{-- 🌟 WADAH RESPONSIF FLEX-WRAP: Berbaris sejajar, turun jika sempit --}}
     <div class="flex flex-wrap items-start gap-x-12 gap-y-3">
       {{-- 🎨 PILIHAN WARNA LATAR (Color Swatches) --}}
@@ -119,7 +181,6 @@
               ["value" => "bg-paper", "label" => "Paper", "colorClass" => "bg-paper"],
               ["value" => "bg-coral", "label" => "Koral", "colorClass" => "bg-coral"],
               ["value" => "bg-foresty", "label" => "Hutan", "colorClass" => "bg-foresty"],
-              ["value" => "bg-mist", "label" => "Kabut", "colorClass" => "bg-mist"],
               [
                 "value" => "bg-sage-soft",
                 "label" => "Ijo Sage",
@@ -142,7 +203,7 @@
               <div
                 class="w-6 h-6 rounded-md {{ $bg['colorClass'] }} border border-gray-200 shadow-sm 
                         peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-foresty 
-                        hover:scale-115 transition-all duration-200"
+                        group-hover:scale-110 transition-all duration-200"
               ></div>
 
               <span
@@ -288,4 +349,4 @@
       </div>
     </div>
   </div>
-</x-blocks.editor.wrapper>
+</div>

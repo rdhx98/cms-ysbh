@@ -633,6 +633,202 @@ new class extends Component {
       ->get();
   }
 
+  // ==========================================
+  // LOGIKA MANAJEMEN FOLDER (RENAME & DELETE)
+  // ==========================================
+
+  public function renameFolder($folderId, $newName)
+  {
+    $folder = MediaFolder::find($folderId);
+    $newName = trim($newName);
+
+    if ($folder && !empty($newName)) {
+      // Validasi panjang karakter (sama seperti saat createFolder)
+      if (strlen($newName) > 40) {
+        $this->notify(
+          __("Nama folder terlalu panjang (Maks. 40 karakter)."),
+          "error",
+        );
+        return;
+      }
+
+      $oldName = $folder->name;
+      $folder->update(["name" => $newName]);
+
+      $this->logActivity(
+        "updated",
+        $folder,
+        "Mengubah nama folder dari '{$oldName}' menjadi '{$newName}'",
+      );
+
+      $this->notify(__("Nama folder diubah!"), "success");
+    }
+  }
+
+  // public function deleteFolder($folderId)
+  // {
+  //   $folder = MediaFolder::find($folderId);
+
+  //   if (!$folder) {
+  //     return;
+  //   }
+
+  //   // 🌟 PENGAMANAN: Cek apakah folder memiliki subfolder atau file media
+  //   $hasSubfolders = $folder->children()->count() > 0;
+  //   $hasFiles = $folder->media()->count() > 0; // Pastikan model MediaFolder memiliki relasi media()
+
+  //   if ($hasSubfolders || $hasFiles) {
+  //     $this->notify(
+  //       __(
+  //         "Ditolak: Folder harus dikosongkan terlebih dahulu sebelum dihapus!",
+  //       ),
+  //       "error",
+  //     );
+  //     return;
+  //   }
+
+  //   $folderName = $folder->name;
+
+  //   $this->logActivity(
+  //     "deleted",
+  //     $folder,
+  //     "Menghapus direktori folder: {$folderName}",
+  //   );
+
+  //   $folder->delete();
+
+  //   // Jika folder yang sedang aktif (terbuka) dihapus dari sidebar,
+  //   // paksa pengguna kembali ke folder induknya (atau root)
+  //   if ($this->currentFolderId == $folderId) {
+  //     $this->currentFolderId = clone $folder->parent_id;
+  //   }
+
+  //   $this->notify(__("Folder '{$folderName}' berhasil dihapus."), "success");
+  //   $this->closeInfoPanel();
+  // }
+
+  // public function deleteFolder($folderId)
+  // {
+  //   $folder = MediaFolder::find($folderId);
+
+  //   if (!$folder) {
+  //     return;
+  //   }
+
+  //   // 🌟 PENGAMANAN: Cek apakah folder memiliki subfolder atau file media
+  //   $hasSubfolders = $folder->children()->count() > 0;
+  //   $hasFiles = $folder->media()->count() > 0;
+
+  //   if ($hasSubfolders || $hasFiles) {
+  //     $this->notify(
+  //       __(
+  //         "Ditolak: Folder harus dikosongkan terlebih dahulu sebelum dihapus!",
+  //       ),
+  //       "error",
+  //     );
+  //     return;
+  //   }
+
+  //   $folderName = $folder->name;
+  //   $parentId = $folder->parent_id; // 🌟 PERBAIKAN 1: Simpan ID Induk sebelum folder dihapus
+
+  //   $this->logActivity(
+  //     "deleted",
+  //     $folder,
+  //     "Menghapus direktori folder: {$folderName}",
+  //   );
+
+  //   $folder->delete();
+
+  //   // Jika folder yang sedang aktif (terbuka) dihapus dari sidebar atau grid
+  //   if ($this->currentFolderId == $folderId) {
+  //     $this->currentFolderId = $parentId; // 🌟 PERBAIKAN 2: Hilangkan kata 'clone'
+
+  //     // Beri tahu Alpine untuk memperbarui tampilan path/breadcrumb
+  //     $this->dispatch("folder-navigated", path: $this->activePathIds);
+  //   }
+
+  //   $this->notify(__("Folder '{$folderName}' berhasil dihapus."), "success");
+  //   $this->closeInfoPanel();
+  // }
+  public function deleteFolder($folderId)
+  {
+    // Muat folder beserta relasi children dan media untuk efisiensi
+    $folder = MediaFolder::with("children", "media")->find($folderId);
+
+    if (!$folder) {
+      return;
+    }
+
+    // 🌟 1. PENGAMANAN CERDAS: Pindai ke dasar folder
+    if ($this->folderTreeHasMedia($folder)) {
+      $this->notify(
+        __(
+          "Ditolak: Folder ini (atau subfolder di dalamnya) masih berisi file media!",
+        ),
+        "error",
+      );
+      return;
+    }
+
+    $folderName = $folder->name;
+    $parentId = $folder->parent_id;
+
+    $this->logActivity(
+      "deleted",
+      $folder,
+      "Menghapus direktori beserta subfolder kosong di dalamnya: {$folderName}",
+    );
+
+    // 🌟 2. EKSEKUSI: Hapus folder ini beserta seluruh anak cucunya
+    $this->deleteFolderTree($folder);
+
+    // Jika folder yang sedang aktif (terbuka) dihapus dari sidebar
+    if ($this->currentFolderId == $folderId) {
+      $this->currentFolderId = $parentId;
+      $this->dispatch("folder-navigated", path: $this->activePathIds);
+    }
+
+    $this->notify(
+      __("Folder '{$folderName}' beserta isinya berhasil dihapus."),
+      "success",
+    );
+    $this->closeInfoPanel();
+  }
+
+  /**
+   * Fungsi Rekursif: Mengecek apakah ada SATU SAJA media di dalam pohon folder ini.
+   */
+  protected function folderTreeHasMedia($folder)
+  {
+    // Cek apakah ada media di folder ini
+    if ($folder->media()->count() > 0) {
+      return true;
+    }
+
+    // Jika tidak ada, periksa semua subfoldernya ke bawah
+    foreach ($folder->children as $child) {
+      if ($this->folderTreeHasMedia($child)) {
+        return true; // Berhenti mencari jika menemukan minimal 1 media
+      }
+    }
+
+    return false; // Benar-benar kosong dari media
+  }
+
+  /**
+   * Fungsi Rekursif: Menghapus folder dari yang terdalam (anak) hingga terluar (induk).
+   * (Diperlukan jika database Anda tidak menggunakan mode 'cascade on delete')
+   */
+  protected function deleteFolderTree($folder)
+  {
+    foreach ($folder->children as $child) {
+      $this->deleteFolderTree($child);
+    }
+
+    $folder->delete();
+  }
+
   #[Computed]
   public function mediaItems()
   {

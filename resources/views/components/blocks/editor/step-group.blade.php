@@ -1,4 +1,4 @@
-@props ([ "blockId", "code", "block", "allContent", "activeLocales" => [] ])
+@props ([ "blockId", "block", "allContent", "activeLocales" => [] ])
 
 @php
   $data = $block["data"] ?? [];
@@ -139,11 +139,27 @@
   <!-- ========================================== -->
   <div
     class="relative ml-2 space-y-6 border-l-[3px] border-gray-200 pl-6 sm:ml-4 sm:pl-8"
+    x-sort
+    x-sort:config="{ animation: 150, handle: '.step-drag-handle', onEnd: (evt) => { let order = Array.from(evt.to.children).filter(el => el.hasAttribute('data-id')).map(el => el.getAttribute('data-id')); $wire.reorderChildBlocks('{{ $blockId }}', 'children', order); } }"
   >
     @foreach ($children as $index => $childId)
       @if (isset($allContent[$childId]))
         @php $childBlock = $allContent[$childId]; @endphp
-        <div class="group/step relative">
+        <div
+          class="group/step relative"
+          data-id="{{ $childId }}"
+          wire:key="step-{{ $childId }}"
+        >
+          <!-- Drag Handle -->
+          <div
+            class="step-drag-handle hover:text-foresty absolute top-3 -left-[54px] z-20 flex h-6 w-6 cursor-move items-center justify-center rounded-full bg-white text-gray-300 opacity-0 shadow-sm transition-opacity group-hover/step:opacity-100 sm:-left-[64px]"
+          >
+            <x-dynamic-component
+              component="lucide-grip-vertical"
+              class="h-3.5 w-3.5"
+            />
+          </div>
+
           <!-- Lingkaran Indikator -->
           <div
             class="group-hover/step:border-foresty group-hover/step:text-foresty absolute top-3 -left-[39px] z-10 flex h-7 w-7 items-center justify-center rounded-full border-[3px] border-gray-200 bg-white text-[11px] font-extrabold text-gray-400 shadow-sm transition-colors sm:-left-[49px] sm:h-8 sm:w-8"
@@ -165,28 +181,84 @@
           <div
             class="group-hover/step:border-foresty/50 rounded-xl border border-gray-200 bg-white p-1 shadow-sm transition-all group-hover/step:shadow-md"
           >
+            <!-- 🌟 KUNCI: Hapus :code="$code", berikan :active-locales="$activeLocales" -->
             <x-dynamic-component
               :component="'blocks.editor.' . str_replace('_', '-', $childBlock['type'])"
               :block-id="$childId"
-              :code="$code"
               :block="$childBlock"
               :all-content="$allContent"
               :active-locales="$activeLocales"
+              {{-- :context="'step-group'" --}}
+              :parent-id="$blockId"
+              :parent-zone="'children'"
             />
           </div>
         </div>
       @endif
     @endforeach
-
-    <div class="pt-2">
-      <button
-        type="button"
-        wire:click="addChildBlock('{{ $blockId }}', 'children', 'card-builder')"
-        class="hover:border-foresty hover:bg-sage-soft hover:text-foresty flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-xs font-bold tracking-wide text-gray-400 uppercase shadow-sm transition-all outline-none"
-      >
-        <x-dynamic-component component="lucide-plus-circle" class="h-4 w-4" />
-        Tambah Langkah Baru
-      </button>
-    </div>
   </div>
+
+  <div class="pt-6">
+    <button
+      type="button"
+      wire:click="addChildBlock('{{ $blockId }}', 'children', 'card-builder')"
+      class="hover:border-foresty hover:bg-sage-soft hover:text-foresty flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-xs font-bold tracking-wide text-gray-400 uppercase shadow-sm transition-all outline-none"
+    >
+      <x-dynamic-component component="lucide-plus-circle" class="h-4 w-4" />
+      Tambah Langkah Baru
+    </button>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- AREA PRATINJAU LANGSUNG (LIVE PREVIEW)     -->
+  <!-- ========================================== -->
+  @if (count($children) > 0)
+    <x-slot:preview>
+      <div class="flex flex-col items-center">
+        <span
+          class="mb-5 block w-full border-b border-gray-200 pb-2 text-center text-[10px] font-bold tracking-widest text-gray-400 uppercase"
+          >Pratinjau Langkah (Timeline)</span
+        >
+
+        <div
+          class="grid w-full gap-6"
+          :class="effectiveLayout === 'single'
+            ? 'grid-cols-1'
+            : splitLanguages.length >= 3
+              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+              : 'grid-cols-1 md:grid-cols-2'"
+        >
+          @foreach ($activeLocales as $lang)
+            <div
+              wire:key="step-preview-{{ $blockId }}-{{ $lang }}"
+              x-show="effectiveLayout === 'single' ? singleActiveLang === '{{ $lang }}' : splitLanguages.includes('{{ $lang }}')"
+              x-cloak
+              class="flex flex-col items-center"
+            >
+              <div class="flex w-full items-center justify-start">
+                <span
+                  class="bg-sage-soft text-foresty mb-3 rounded px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase shadow-sm"
+                  >{{ $lang }}
+                </span>
+              </div>
+
+              <div
+                class="pointer-events-none w-full rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+              >
+                <!-- Gunakan komponen render Anda (Pastikan Anda memiliki komponen render untuk steps-group) -->
+                @include ("components.blocks.render.step-group",
+                  [
+                    "data" => $data,
+                    "lang" => $lang,
+                    "isPreview" => true,
+                    "children" => $children,
+                    "allContent" => $allContent
+                  ])
+              </div>
+            </div>
+          @endforeach
+        </div>
+      </div>
+    </x-slot:preview>
+  @endif
 </x-blocks.editor.wrapper>

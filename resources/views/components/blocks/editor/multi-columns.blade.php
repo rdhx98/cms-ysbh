@@ -115,19 +115,13 @@
   <div
     x-data="{
          activeTab: 'col_1_zone',
-         
          init() {
-            this.$watch(
-                () => $wire.content?.['{{ $blockId }}']?.data?.col_count,
-                (value) => {
-                    if (value === undefined || value === null) return;
-                    let maxTab = parseInt(value);
-                    let currentTabNum = parseInt(this.activeTab.replace('col_', '').replace('_zone', ''));
-                    if (currentTabNum > maxTab) {
-                        this.activeTab = 'col_1_zone';
-                    }
-                }
-            );
+            this.$watch(() => $wire.content?.['{{ $blockId }}']?.data?.col_count, (value) => {
+                if (value === undefined || value === null) return;
+                let maxTab = parseInt(value);
+                let currentTabNum = parseInt(this.activeTab.replace('col_', '').replace('_zone', ''));
+                if (currentTabNum > maxTab) { this.activeTab = 'col_1_zone'; }
+            });
          },
          updateZoneOrder(evt, zone) {
             let order = Array.from(evt.to.children).map(el => el.getAttribute('data-id')).filter(Boolean);
@@ -414,12 +408,11 @@
                     </button>
                   </div>
 
-                  <!-- Render Komponen Editor Internal -->
+                  <!-- 🌟 KUNCI PERBAIKAN: Meneruskan $activeLocales tanpa $code statis -->
                   <div class="p-0">
                     <x-dynamic-component
                       :component="'blocks.editor.' . str_replace('_', '-', $childBlock['type'])"
                       :block-id="$childId"
-                      :code="$code"
                       :block="$childBlock"
                       :all-content="$allContent"
                       :active-locales="$activeLocales"
@@ -446,7 +439,6 @@
                 Tambah Blok ke Kolom {{ $i }}
               </button>
 
-              <!-- Pop-up Daftar Komponen -->
               <div
                 x-show="openDropdown"
                 x-cloak

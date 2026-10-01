@@ -550,7 +550,7 @@ new class extends Component {
       <!-- ALPINE SORTABLE CONTAINER -->
       <div
         x-sort="handleSort"
-        class="flex flex-col gap-6"
+        class="flex flex-col"
         x-sort:config="{
           animation: 200,
           handle: '.drag-handle',

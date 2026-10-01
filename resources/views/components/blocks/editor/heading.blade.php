@@ -32,7 +32,7 @@
   </x-slot:snippet>
 
   <!-- 🌟 INJEKSI PENGATURAN KE HEADER KANAN (Gabung jadi satu!) -->
-  <x-slot:settings>
+  {{-- <x-slot:settings>
     <span
       class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
       >Level:</span
@@ -45,6 +45,44 @@
       <option value="h2">H2</option>
       <option value="h3">H3</option>
     </select>
+  </x-slot:settings> --}}
+  <x-slot:settings>
+    <span class="text-xs font-semibold tracking-wider text-gray-400 uppercase">
+      Level:
+    </span>
+
+    <!-- 🌟 BUNGKUSAN GRUP TOMBOL (Segmented Control) -->
+    <div class="flex items-center rounded-md bg-gray-200 p-0.5 shadow-inner">
+      <!-- Tombol H1 -->
+      <button
+        type="button"
+        @click="$wire.set('content.{{ $blockId }}.data.level', 'h1')"
+        class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
+        :class="($wire.content?.['{{ $blockId }}']?.data?.level ?? 'h2') === 'h1' ? 'bg-forest text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
+      >
+        H1
+      </button>
+
+      <!-- Tombol H2 (Diasumsikan sebagai Default/Bawaan) -->
+      <button
+        type="button"
+        @click="$wire.set('content.{{ $blockId }}.data.level', 'h2')"
+        class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
+        :class="($wire.content?.['{{ $blockId }}']?.data?.level ?? 'h2') === 'h2' ? 'bg-forest text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
+      >
+        H2
+      </button>
+
+      <!-- Tombol H3 -->
+      <button
+        type="button"
+        @click="$wire.set('content.{{ $blockId }}.data.level', 'h3')"
+        class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
+        :class="($wire.content?.['{{ $blockId }}']?.data?.level ?? 'h2') === 'h3' ? 'bg-forest text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
+      >
+        H3
+      </button>
+    </div>
   </x-slot:settings>
 
   <!-- 🌟 AREA INPUT MULTI-BAHASA -->

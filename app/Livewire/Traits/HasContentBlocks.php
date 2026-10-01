@@ -132,6 +132,38 @@ trait HasContentBlocks
         }
     }
 
+    public function duplicateNestedBlock(String $parentId, String $zone, String $childId)
+    {
+        // 1. Pastikan parent dan child benar-benar ada di memori
+        if (isset($this->content[$parentId]) && isset($this->content[$childId])) {
+            
+            // 2. Buat ID unik baru dan salin data anak
+            $newId = 'blk_' . uniqid();
+            $duplicatedBlock = $this->content[$childId];
+            $duplicatedBlock['id'] = $newId;
+
+            // 3. Simpan kloningan blok tersebut ke daftar konten global
+            $this->content[$newId] = $duplicatedBlock;
+
+            // 4. Ambil array zona milik parent (misal: 'children' atau 'col_1_zone')
+            $zoneArray = $this->content[$parentId]['data'][$zone] ?? [];
+            
+            // Cari posisi indeks blok asli yang sedang diduplikat
+            $index = array_search($childId, $zoneArray);
+
+            if ($index !== false) {
+                // Sisipkan ID baru tepat di bawah blok asli
+                array_splice($zoneArray, $index + 1, 0, [$newId]);
+            } else {
+                // Fallback (jaga-jaga): taruh di urutan paling bawah
+                $zoneArray[] = $newId;
+            }
+
+            // 5. Kembalikan array yang sudah disisipi kloningan ke data parent
+            $this->content[$parentId]['data'][$zone] = $zoneArray;
+        }
+    }
+
     public function updateBlockOrder(Array $orderedIds = []) {
         if (is_string($orderedIds)) {
             $orderedIds = json_decode($orderedIds, true) ?? [];
@@ -165,7 +197,8 @@ trait HasContentBlocks
                 'text' => $emptyLocales,
                 'level' => 'h2'],
             'paragraph'  => [
-                'text' => $emptyLocales
+                'text' => $emptyLocales,
+                'margin' => 'mb-8',
                 ],
             'image'      => ['url' => ''],
             'media_text' => ['image_url' => '', 'image_position' => 'left', 'text' => $emptyLocales],
@@ -196,7 +229,7 @@ trait HasContentBlocks
               'col_6_zone' => [],
             ],
             'section_divider' => [
-                'background' => 'bg-white',
+                'background' => 'bg-paper',
                 'text_color' => 'text-gray-900',
                 'padding'    => 'py-16 sm:py-24',
             ],
@@ -207,8 +240,8 @@ trait HasContentBlocks
             // ],
 						'card-builder' => [
                 'grid' => [
-                    'cols' => 3,
-                    'margin_bottom' => 'mb-8'
+                    'cols' => 1, // Default: 1 kolom
+                    'margin_bottom' => 'mb-0'
                 ],
                 'cards' => []
             ],
@@ -586,7 +619,19 @@ public function updateColumnWidth(string $blockId, int $cardIndex, string $colum
         }
     }
 }
-
+public function updateColumnAlignment(string $blockId, int $cardIndex, string $columnId, string $alignment)
+{
+    $columns = $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] ?? [];
+    
+    foreach ($columns as &$col) {
+        if ($col['id'] === $columnId) {
+            $col['align'] = $alignment;
+            break;
+        }
+    }
+    
+    $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] = $columns;
+}
 // ================= Elemen di dalam kolom =================
 // Catatan: default 'data' di bawah ini MINIMAL dengan sengaja - saya belum
 // melihat seluruh field yang dipakai editor elemen teks/ikon Anda saat ini.

@@ -1,4 +1,4 @@
-@props (["blockId", "block",])
+@props (["blockId", "block", "isNested" => false])
 
 <div
   id="block-wrapper-{{ $blockId }}"
@@ -62,19 +62,21 @@ toggleFullscreen() {
     >
       <!-- KIRI: Drag Handle & Identitas Blok (Bisa dikustomisasi via Slot) -->
       <div class="flex items-center gap-3">
-        <button
-          type="button"
-          class="drag-handle hover:text-foresty cursor-grab text-gray-400 transition-colors outline-none"
-          title="Geser Blok"
-        >
-          <x-dynamic-component
-            component="lucide-grip-vertical"
-            class="h-5 w-5"
-          />
-        </button>
+        @if (!$isNested)
+          <button
+            type="button"
+            class="drag-handle hover:text-foresty cursor-grab text-gray-400 transition-colors outline-none"
+            title="Geser Blok"
+          >
+            <x-dynamic-component
+              component="lucide-grip-vertical"
+              class="h-5 w-5"
+            />
+          </button>
+        @endif
 
         <div
-          class="text-xxs flex items-center gap-3 font-extrabold tracking-widest text-gray-500 uppercase"
+          class="flex items-center gap-3 text-xs font-extrabold tracking-widest text-gray-500 uppercase"
         >
           @if (isset($title))
             {{ $title }}
@@ -157,20 +159,36 @@ toggleFullscreen() {
         </div>
 
         <!-- Garis Pemisah Kecil -->
-        <div class="hidden h-4 w-px bg-gray-300 sm:block"></div>
+        <div
+          x-show="!isFullscreen"
+          x-cloak
+          class="hidden h-4 w-px bg-gray-300 sm:block"
+        ></div>
 
-        <!-- Tombol Duplikat -->
-        <button
-          wire:click="duplicateBlock('{{ $blockId }}')"
-          type="button"
-          class="hover:bg-sage-soft hover:text-foresty rounded p-1.5 text-gray-500 transition-colors outline-none"
-          title="Gandakan Blok"
-        >
-          <x-dynamic-component component="lucide-copy" class="h-4 w-4" />
-        </button>
+        @if ($isNested && $parentId && $parentZone)
+          <!-- Jika Bersarang: Panggil fungsi duplikat khusus anak -->
+          <button
+            type="button"
+            wire:click="duplicateNestedBlock('{{ $parentId }}', '{{ $parentZone }}', '{{ $blockId }}')"
+            title="Duplikat Langkah Ini"
+          >
+            <x-dynamic-component component="lucide-copy" class="h-4 w-4" />
+          </button>
+        @else
+          <!-- Jika Jalur Utama: Panggil fungsi duplikat normal -->
+          <button
+            type="button"
+            wire:click="duplicateBlock('{{ $blockId }}')"
+            title="Duplikat Blok"
+          >
+            <x-dynamic-component component="lucide-copy" class="h-4 w-4" />
+          </button>
+        @endif
 
         <!-- Tombol Hapus -->
         <button
+          x-show="!isFullscreen"
+          x-cloak
           wire:click="removeBlock('{{ $blockId }}')"
           type="button"
           wire:confirm="Hapus blok ini beserta isinya?"
@@ -179,82 +197,83 @@ toggleFullscreen() {
         >
           <x-dynamic-component component="lucide-trash-2" class="h-4 w-4" />
         </button>
-        <!-- 🌟 TOMBOL FULLSCREEN (FOKUS) -->
-        <button
-          type="button"
-          x-on:click="toggleFullscreen()"
-          class="rounded p-1 transition-colors outline-none"
-          x-bind:class="
-            isFullscreen
-              ? 'bg-foresty text-white hover:bg-forest'
-              : 'text-gray-400 hover:bg-foresty hover:text-white'
-          "
-          title="Mode Fokus (Layar Penuh)"
-        >
-          <x-dynamic-component
-            component="lucide-maximize"
-            x-show="!isFullscreen"
-            class="h-4 w-4"
-          />
-          <x-dynamic-component
-            component="lucide-minimize"
-            x-show="isFullscreen"
-            x-cloak
-            class="h-4 w-4"
-          />
-        </button>
+
+        @if (!$isNested)
+          <!-- 🌟 TOMBOL FULLSCREEN (FOKUS) -->
+          <button
+            type="button"
+            x-on:click="toggleFullscreen()"
+            class="rounded p-1 transition-colors outline-none"
+            x-bind:class="
+              isFullscreen
+                ? 'bg-sage-soft text-forest hover:bg-sage-soft'
+                : 'hover:bg-sage-soft text-foresty'
+            "
+            title="Mode Fokus (Layar Penuh)"
+          >
+            <x-dynamic-component
+              component="lucide-maximize"
+              x-show="!isFullscreen"
+              class="h-4 w-4"
+            />
+            <x-dynamic-component
+              component="lucide-minimize"
+              x-show="isFullscreen"
+              x-cloak
+              class="h-4 w-4"
+            />
+          </button>
+        @endif
+
         <!-- Tombol collapse runtuh -->
         <button
+          x-show="!isFullscreen"
+          x-cloak
           type="button"
           x-on:click="isCollapsed = !isCollapsed"
-          class="hover:bg-sage-soft text-foresty cursor-pointer rounded-full p-1 transition-all duration-200 focus:outline-none"
+          class="hover:bg-sage-soft text-foresty cursor-pointer rounded-md p-1 transition-all duration-200 focus:outline-none"
         >
-          <x-dynamic-component
-            component="lucide-circle-chevron-down"
-            class="text-foresty h-4 w-4 transition-transform duration-200"
-            x-bind:class="isCollapsed ? '-rotate-90' : 'rotate-0'"
-          />
+          <div class="relative flex h-4 w-4 items-center justify-center">
+            <!-- Ikon 1: Muncul saat TERTUTUP (isCollapsed = true) -->
+            <div
+              x-show="!isCollapsed"
+              x-transition:enter="transition duration-300 transform ease-out"
+              x-transition:enter-start="opacity-0 -rotate-180 scale-50"
+              x-transition:enter-end="opacity-100 rotate-0 scale-100"
+              x-transition:leave="transition duration-200 transform ease-in absolute"
+              x-transition:leave-start="opacity-100 rotate-0 scale-100"
+              x-transition:leave-end="opacity-0 rotate-180 scale-50"
+              class="text-foresty absolute inset-0"
+              x-cloak
+            >
+              <x-dynamic-component
+                component="lucide-list-chevrons-down-up"
+                class="h-4 w-4"
+              />
+            </div>
+
+            <!-- Ikon 2: Muncul saat TERBUKA (isCollapsed = false) -->
+            <div
+              x-show="isCollapsed"
+              x-transition:enter="transition duration-300 transform ease-out"
+              x-transition:enter-start="opacity-0 rotate-180 scale-50"
+              x-transition:enter-end="opacity-100 rotate-0 scale-100"
+              x-transition:leave="transition duration-200 transform ease-in absolute"
+              x-transition:leave-start="opacity-100 rotate-0 scale-100"
+              x-transition:leave-end="opacity-0 -rotate-180 scale-50"
+              class="text-foresty absolute inset-0"
+              x-cloak
+            >
+              <x-dynamic-component
+                component="lucide-list-chevrons-up-down"
+                class="h-4 w-4"
+              />
+            </div>
+          </div>
         </button>
       </div>
     </div>
 
-    <!-- OLD AREA KONTEN UTAMA -->
-    {{-- <div x-show="!isCollapsed" x-collapse x-cloak class="flex flex-col p-4">
-      {{ $slot }}
-    </div> --}}
-
-    <!-- AREA KONTEN (Tengah & Bawah) -->
-    {{-- <div
-      x-show="!isCollapsed"
-      x-collapse
-      x-cloak
-      class="flex h-full min-h-0 flex-col overflow-hidden"
-      x-bind:class="isFullscreen ? 'flex-1' : ''"
-    >
-      <!-- TENGAN: AREA EDITOR (Bisa di-scroll saat fullscreen) -->
-      <div
-        class="flex flex-col"
-        x-bind:class="
-          isFullscreen ? 'flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8' : 'p-4'
-        "
-      >
-        {{ $slot }}
-      </div>
-
-      <!-- 🌟 BAWAH: AREA PREVIEW (Permanen di Bawah saat Fullscreen) -->
-      @if (isset($preview))
-        <div
-          x-show="isFullscreen"
-          x-cloak
-          x-transition:enter="transition ease-out duration-300"
-          x-transition:enter-start="translate-y-full opacity-0"
-          x-transition:enter-end="translate-y-0 opacity-100"
-          class="z-40 shrink-0 border-t border-gray-200 bg-white p-4 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]"
-        >
-          {{ $preview }}
-        </div>
-      @endif
-    </div> --}}
     <!-- AREA KONTEN (Tengah & Bawah) -->
     <div
       x-show="!isCollapsed"
