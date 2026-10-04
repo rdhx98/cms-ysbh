@@ -200,6 +200,7 @@ document.addEventListener('alpine:init', () => {
         splitLanguages: initialSplit,
         allLocalesCount: localesCount,
         allCollapsed: false,
+        isMinimapOpen:true,
 
 				// 🌟 1. Gunakan windowWidth sebagai pemicu reaktivitas
 				windowWidth: window.innerWidth,

@@ -1,7 +1,7 @@
 @props (["block", "data", "lang", "allContent" => []])
 
 @php
-  $margin = $data["margin"] ?? "mb-2"; // Default margin bawah 2 (mb-2)
+  $margin = $data["margin_bottom"] ?? "mb-2"; // Default margin bawah 2 (mb-2)
 @endphp
 <div
   id="{{ $block['anchor'] ?? '' }}"

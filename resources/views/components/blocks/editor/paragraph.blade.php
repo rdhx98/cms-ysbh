@@ -30,11 +30,11 @@
     ></span>
   </x-slot:snippet>
 
-  <x-slot:settings>
+  {{-- <x-slot:settings>
     <span class="text-xs font-bold tracking-wide text-gray-400 uppercase">
       Margin bawah
     </span>
-    {{-- kontrol margin --}}
+    {{-- kontrol margin --}
     <div class="flex flex-col gap-1.5">
       <div
         class="flex w-fit items-center justify-center rounded-md bg-gray-200 p-0.75 shadow-inner"
@@ -47,7 +47,7 @@
           class="flex items-center justify-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
           :class="($wire.content?.['{{ $blockId }}']?.data?.margin ?? 'mb-0') === 'mb-0' ? 'bg-forest text-goldy shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
         >
-          {{-- Ikon Visual Margin Bawah 0 --}}
+          {{-- Ikon Visual Margin Bawah 0 --}
           <div class="flex h-3.5 w-3.5 flex-col">
             <div class="mb-0 w-full flex-1 rounded-[2px] bg-current"></div>
             <div class="h-[2px] w-full rounded-full bg-gray-400/70"></div>
@@ -63,7 +63,7 @@
           class="flex items-center justify-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
           :class="($wire.content?.['{{ $blockId }}']?.data?.margin ?? 'mb-4') === 'mb-4' ? 'bg-forest text-goldy shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
         >
-          {{-- Ikon Visual Margin Bawah Kecil --}}
+          {{-- Ikon Visual Margin Bawah Kecil --}
           <div class="flex h-3.5 w-3.5 flex-col">
             <div
               class="mb-[2px] w-full flex-1 rounded-[2px] bg-current opacity-90"
@@ -81,7 +81,7 @@
           class="flex items-center justify-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
           :class="($wire.content?.['{{ $blockId }}']?.data?.margin ?? 'mb-8') === 'mb-8' ? 'bg-forest text-goldy shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
         >
-          {{-- Ikon Visual Margin Bawah Normal --}}
+          {{-- Ikon Visual Margin Bawah Normal --}
           <div class="flex h-3.5 w-3.5 flex-col">
             <div
               class="mb-1 w-full flex-1 rounded-[2px] bg-current opacity-90"
@@ -99,7 +99,7 @@
           class="flex items-center justify-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
           :class="($wire.content?.['{{ $blockId }}']?.data?.margin ?? 'mb-16') === 'mb-16' ? 'bg-forest text-goldy shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
         >
-          {{-- Ikon Visual Margin Bawah Lebar --}}
+          {{-- Ikon Visual Margin Bawah Lebar --}
           <div class="flex h-3.5 w-3.5 flex-col">
             <div
               class="mb-1.5 w-full flex-1 rounded-[2px] bg-current opacity-90"
@@ -117,7 +117,7 @@
           class="flex items-center justify-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none"
           :class="($wire.content?.['{{ $blockId }}']?.data?.margin ?? 'mb-24') === 'mb-24' ? 'bg-forest text-goldy shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'"
         >
-          {{-- Ikon Visual Margin Bawah Sangat Lebar --}}
+          {{-- Ikon Visual Margin Bawah Sangat Lebar --}
           <div class="flex h-3.5 w-3.5 flex-col">
             <div
               class="mb-2 w-full flex-1 rounded-[2px] bg-current opacity-90"
@@ -128,7 +128,72 @@
         </button>
       </div>
     </div>
-  </x-slot:settings>
+  </x-slot:settings> --}}
+
+  <!-- CONTROLS -->
+  <div
+    class="m-2 flex flex-wrap items-start justify-start gap-4 rounded-lg border border-gray-100 bg-gray-50/50 p-3 shadow-inner"
+  >
+    <!-- PADDING CONTROL -->
+    <div
+      class="flex flex-col gap-1.5"
+      x-data="{ localMargin: $wire.entangle('content.{{ $blockId }}.data.margin_bottom').live || 'mb-4' }"
+      {{-- $wire.set('content.{{ $blockId }}.data.margin', 'mb-0') --}}
+    >
+      <label class="text-xxs font-bold text-gray-700 uppercase"
+        >Jarak Bawah</label
+      >
+      <div
+        class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
+      >
+        @php
+          // Mapping ukuran miniatur ikon (dalam pixel) murni untuk visualisasi.
+          // Menjamin ikon tidak hilang/tergencet karena melebihi tinggi kotak h-4 (16px).
+          $miniMargins = [
+            "mb-0" => "0px",
+            "mb-4" => "2px",
+            "mb-8" => "4px",
+            "mb-16" => "6px",
+            "mb-24" => "8px",
+          ];
+        @endphp
+
+        @foreach ($marginBottom as $margin)
+          <button
+            type="button"
+            x-on:click="localMargin = '{{ $margin['value'] }}'"
+            class="group flex items-center gap-1 rounded px-1.5 py-1 transition-all outline-none"
+            x-bind:class="localMargin === '{{ $margin['value'] }}' ? 'bg-white shadow-sm text-forst' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'"
+            title="{{ $margin['name'] ?? $margin['label'] }}"
+          >
+            <!-- Representasi Visual Margin -->
+            <div class="flex h-3 w-3 flex-col justify-end">
+              <div
+                class="w-full flex-1 rounded-[1px] opacity-80 transition-all"
+                x-bind:class="localMargin === '{{ $margin['value'] }}' ? 'bg-forest' : 'bg-gray-400/70'"
+                {{-- 🌟 Solusi: Gunakan inline style agar tidak terkena Purge Tailwind --}}
+                style="margin-bottom: {{ $miniMargins[$margin['value']] ?? '4px' }};"
+              ></div>
+              <div
+                class="h-[2px] w-full rounded-full transition-colors"
+                x-bind:class="localMargin === '{{ $margin['value'] }}' ? 'bg-forest' : 'bg-gray-400/70'"
+              ></div>
+            </div>
+
+            <!-- Label Teks -->
+            <span
+              x-bind:class="localMargin === '{{ $margin['value'] }}' ? 'text-forest' : 'text-gray-400/70'"
+              class="text-xxs font-bold uppercase"
+              >{{
+                $margin["name"] ??
+                  $margin["label"]
+              }}</span
+            >
+          </button>
+        @endforeach
+      </div>
+    </div>
+  </div>
 
   <div
     x-bind:class="{

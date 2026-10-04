@@ -195,12 +195,29 @@ trait HasContentBlocks
         return match($type) {
             'heading'    => [
                 'text' => $emptyLocales,
-                'level' => 'h2'],
+                'level' => 'h2',
+                'margin_bottom' => 'mb-8',],
             'paragraph'  => [
                 'text' => $emptyLocales,
-                'margin' => 'mb-8',
+                'margin_bottom' => 'mb-8',
                 ],
-            'image'      => ['url' => ''],
+            'eyebrow' => [
+                'text'   => $emptyLocales,
+                'icon'   => 'newspaper', // Sesuai fallback di: data?.icon ?? 'newspaper'
+                'color'  => '#E42326',   // Sesuai fallback di: data?.color ?? '#e05a47'
+                'margin_bottom' => 'mb-4',      // Sesuai fallback di: data?.margin_bottom ?? 'mb-8'
+            ],
+            'image'      => [
+              'url' => '',
+              'margin_bottom' => 'mb-4 md:mb-6',
+              'caption'       => $emptyLocales,  // 🌟 Mendukung terjemahan multi-bahasa
+              'width'         => 'w-full',       // Default menyesuaikan lebar kontainer induk
+              'align'         => 'mx-auto',      // Rata tengah
+              'radius'        => 'rounded-xl',   // Sudut melengkung halus
+              'max_height'    => 'max-h-none',   // Tanpa batasan tinggi bawaan
+              'object_fit'    => 'object-cover',
+              'space_y'       => 'gap-3',
+            ],
             'media_text' => ['image_url' => '', 'image_position' => 'left', 'text' => $emptyLocales],
             // 'columns'    => [
             //     'col_left'  => $emptyLocales,
@@ -454,29 +471,7 @@ trait HasContentBlocks
         $this->content[$parentId]['data'][$zone] = $newOrderIds;
     }
 
-    // Fungsi-fungsi manipulasi blok lainnya ditaruh di sini...
-
-		// ==========================================
-    // LOGIKA KHUSUS CARD BUILDER
-    // ==========================================
-
-    // OLD
-    // public function addCardItem(String $blockId, String $blueprint)
-    // {
-    //     $newCard = [
-    //         'id' => uniqid('card_'),
-    //         'blueprint' => $blueprint,
-    //         'container' => [
-    //             'bg' => 'bg-white', 'padding' => 'p-5', 'border' => 'border border-gray-200', 'radius' => 'rounded-[18px]', 'shadow' => 'shadow-sm', 'hover' => 'hover:-translate-y-1', 'url' => ''
-    //         ],
-    //         'slots' => $blueprint === 'stack' ? ['main' => []] : ['left' => [], 'middle' => [], 'right' => []],
-    //     ];
-
-    //     if (!isset($this->content[$blockId]['data']['cards'])) {
-    //         $this->content[$blockId]['data']['cards'] = [];
-    //     }
-    //     $this->content[$blockId]['data']['cards'][] = $newCard;
-    // }
+    
 
     public function removeCardItem(String $blockId, int $index)
     {
@@ -509,6 +504,48 @@ trait HasContentBlocks
         if (isset($this->content[$blockId]['data']['cards'][$cardIndex]['slots'][$slotName][$elIndex])) {
             unset($this->content[$blockId]['data']['cards'][$cardIndex]['slots'][$slotName][$elIndex]);
             $this->content[$blockId]['data']['cards'][$cardIndex]['slots'][$slotName] = array_values($this->content[$blockId]['data']['cards'][$cardIndex]['slots'][$slotName]);
+        }
+    }
+    public function moveCardColumn($blockId, $cardIndex, $colIndex, $direction)
+    {
+        $columns = $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] ?? [];
+        if (empty($columns)) return;
+
+        // Tentukan target indeks (Kiri = kurangi 1, Kanan = tambah 1)
+        $targetIndex = $direction === 'left' ? $colIndex - 1 : $colIndex + 1;
+
+        // Cegah error jika melewati batas (out of bounds)
+        if ($targetIndex >= 0 && $targetIndex < count($columns)) {
+            // Lakukan penukaran (Swap)
+            $temp = $columns[$colIndex];
+            $columns[$colIndex] = $columns[$targetIndex];
+            $columns[$targetIndex] = $temp;
+
+            // Simpan kembali ke array utama
+            $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'] = $columns;
+        }
+    }
+
+    // ==========================================================
+    // FUNGSI GESER ELEMEN (Naik / Turun)
+    // ==========================================================
+    public function moveCardElement($blockId, $cardIndex, $colIndex, $elIndex, $direction)
+    {
+        $elements = $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'][$colIndex]['children'] ?? [];
+        if (empty($elements)) return;
+
+        // Tentukan target indeks (Atas = kurangi 1, Bawah = tambah 1)
+        $targetIndex = $direction === 'up' ? $elIndex - 1 : $elIndex + 1;
+
+        // Cegah error jika melewati batas
+        if ($targetIndex >= 0 && $targetIndex < count($elements)) {
+            // Lakukan penukaran (Swap)
+            $temp = $elements[$elIndex];
+            $elements[$elIndex] = $elements[$targetIndex];
+            $elements[$targetIndex] = $temp;
+
+            // Simpan kembali ke array utama
+            $this->content[$blockId]['data']['cards'][$cardIndex]['layout']['children'][$colIndex]['children'] = $elements;
         }
     }
 
@@ -557,6 +594,29 @@ trait HasContentBlocks
     ];
 }
 
+// Fungsi-fungsi manipulasi blok lainnya ditaruh di sini...
+
+		// ==========================================
+    // LOGIKA KHUSUS CARD BUILDER
+    // ==========================================
+
+    // OLD
+    // public function addCardItem(String $blockId, String $blueprint)
+    // {
+    //     $newCard = [
+    //         'id' => uniqid('card_'),
+    //         'blueprint' => $blueprint,
+    //         'container' => [
+    //             'bg' => 'bg-white', 'padding' => 'p-5', 'border' => 'border border-gray-200', 'radius' => 'rounded-[18px]', 'shadow' => 'shadow-sm', 'hover' => 'hover:-translate-y-1', 'url' => ''
+    //         ],
+    //         'slots' => $blueprint === 'stack' ? ['main' => []] : ['left' => [], 'middle' => [], 'right' => []],
+    //     ];
+
+    //     if (!isset($this->content[$blockId]['data']['cards'])) {
+    //         $this->content[$blockId]['data']['cards'] = [];
+    //     }
+    //     $this->content[$blockId]['data']['cards'][] = $newCard;
+    // }
 /** Ganti addCardItem() lama dengan versi ini - parameter kedua sekarang
  *  nama preset ('stack' | 'icon-text' | 'document'), bukan blueprint. */
 public function addCardItem(string $blockId, string $preset = 'stack')
@@ -569,14 +629,14 @@ public function addCardItem(string $blockId, string $preset = 'stack')
         'layout' => $layout,
         'container' => [
             'bg' => 'bg-white',
-            'padding' => 'p-4',
+            'padding' => 'p-2 md:p-4',
             'border_width' => 'border-0',
-            'border_style' => 'border-colid',
-            'border_color' => 'border-gray-200',
+            'border_style' => 'border-solid',
+            'border_color' => 'border-forest',
             'radius' => 'rounded-[14px]',
             'shadow' => 'shadow-sm',
             'hover' => 'hover:-translate-y-1',
-            'align_y' => 'items-start',
+            'align_y' => 'items-center',
             'url' => ''
         ],
     ];
@@ -587,6 +647,42 @@ public function addCardItem(string $blockId, string $preset = 'stack')
     }
     $this->content[$blockId]['data']['cards'][] = $newCard;
 }
+
+public function duplicateCardItem(string $blockId, int $cardIndex)
+    {
+        // 1. Ambil array kartu saat ini
+        $cards = $this->content[$blockId]['data']['cards'] ?? [];
+        if (!isset($cards[$cardIndex])) return;
+
+        // 2. Salin data kartu yang dipilih
+        $duplicatedCard = $cards[$cardIndex];
+
+        // 3. RE-GENERATE ID UNIK (WAJIB DILAKUKAN)
+        // a. Ganti ID Kartu
+        $duplicatedCard['id'] = uniqid('card_');
+
+        // b. Ganti ID Kolom dan ID Elemen di dalamnya
+        if (isset($duplicatedCard['layout']['children'])) {
+            foreach ($duplicatedCard['layout']['children'] as &$column) {
+                // Beri ID baru untuk kolom
+                $column['id'] = uniqid('col_');
+
+                // Beri ID baru untuk setiap elemen di dalam kolom
+                if (isset($column['children'])) {
+                    foreach ($column['children'] as &$element) {
+                        $element['id'] = uniqid('el_');
+                    }
+                }
+            }
+        }
+
+        // 4. Sisipkan kartu hasil salinan tepat di sebelah kanan kartu aslinya
+        array_splice($cards, $cardIndex + 1, 0, [$duplicatedCard]);
+        $this->content[$blockId]['data']['cards'] = $cards;
+
+        // 5. Otomatis pindah fokus (tab) ke kartu yang baru saja digandakan
+        $this->dispatch('sync-card-' . strtolower($blockId), card: $cardIndex + 1);
+    }
 
 // ================= Kolom =================
 

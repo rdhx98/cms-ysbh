@@ -144,7 +144,7 @@
                   @endif
 
                   {{-- 3. RENDER FOTO PROFIL --}}
-                @elseif ($type === "profile_photo")
+                  {{-- @elseif ($type === "profile_photo")
                   @php
                     // Teks Alt menggunakan multi-lang, URL tidak
                     $imgUrl = $content["url"] ?? "";
@@ -164,7 +164,45 @@
                         class="object-cover aspect-square shadow-sm {{ $imgSize }} {{ $imgRadius }} {{ $imgBorder }} {{ $imgBorderColor }}"
                       />
                     </div>
-                  @endif
+                  @endif --}}
+                @elseif ($type === "profile_photo" || $type === "initials")
+                  @php
+                    // Konten
+                    $imgUrl = $content["url"] ?? "";
+                    $imgAlt = $content["alt"][$lang] ?? ($content["alt"]["id"] ?? "");
+                    $initials = $content["text"] ?? "";
+
+                    // Gaya Global (Berbagi antara Foto & Inisial)
+                    $avatarSize = $style["size"] ?? "w-16 h-16 md:w-20 md:h-20"; // Bisa berisi font-size juga (misal: text-xl)
+                    $avatarRadius = $style["radius"] ?? "rounded-full";
+                    $avatarBorder = $style["border"] ?? "border-0";
+                    $avatarBorderColor = $style["border_color"] ?? "border-transparent";
+
+                    // Gaya Khusus Inisial
+                    $avatarBgColor = $style["bg_color"] ?? "bg-emerald-700";
+                    $avatarTextColor = $style["text_color"] ?? "text-white";
+                  @endphp
+
+                  <div class="mb-3 shrink-0">
+                    @if ($type === "profile_photo" && $imgUrl)
+                      {{-- A. Tampilan Foto Profil --}}
+                      <img
+                        src="{{ $imgUrl }}"
+                        alt="{{ $imgAlt }}"
+                        class="object-cover aspect-square shadow-sm {{ $avatarSize }} {{ $avatarRadius }} {{ $avatarBorder }} {{ $avatarBorderColor }}"
+                      />
+                    @elseif ($type === "initials" || (!empty($initials) && !$imgUrl))
+                      {{-- B. Tampilan Inisial Nama --}}
+                      <div
+                        class="flex aspect-square items-center justify-center font-bold uppercase tracking-wide shadow-sm {{ $avatarSize }} {{ $avatarRadius }} {{ $avatarBgColor }} {{ $avatarTextColor }} {{ $avatarBorder }} {{ $avatarBorderColor }}"
+                      >
+                        {{
+                          $initials ?:
+                            "AB"
+                        }}
+                      </div>
+                    @endif
+                  </div>
 
                   {{-- 4. RENDER TOMBOL AKSI --}}
                 @elseif ($type === "button")

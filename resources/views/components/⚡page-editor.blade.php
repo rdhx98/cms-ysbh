@@ -4,6 +4,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 
 use App\Models\Page;
+use App\Models\Post;
 
 use Illuminate\Support\Str;
 
@@ -318,6 +319,68 @@ new class extends Component {
 
     $this->dispatch("open-preview-panel", url: $previewUrl);
   }
+  public function searchInternalPages($keyword)
+  {
+    if (empty(trim($keyword))) {
+      return [];
+    }
+
+    $keyword = strtolower(trim($keyword));
+    $locales = config("app.supported_locales", ["id", "en"]);
+
+    // ==========================================
+    // 1. PENCARIAN DI MODEL PAGE
+    // ==========================================
+    $pages = Page::where(function ($query) use ($keyword, $locales) {
+      foreach ($locales as $locale) {
+        // Mencari ke dalam properti JSON berdasarkan bahasa
+        // (Menggunakan strtolower untuk memastikan case-insensitive)
+        $query->orWhereRaw(
+          "LOWER(JSON_UNQUOTE(JSON_EXTRACT(title, '$.\"$locale\"'))) LIKE ?",
+          ["%" . $keyword . "%"],
+        );
+      }
+    })
+      ->orderBy("created_at", "desc")
+      ->limit(5)
+      ->get()
+      ->map(function ($page) {
+        return [
+          // $page->title otomatis menggunakan bahasa yang sedang aktif berkat Spatie Translatable
+          "title" => "📄 " . $page->title,
+          // 🌟 MENGGUNAKAN PSEUDO-URL yang cocok dengan Regex getParsedContentAttribute Anda
+          "url" => "internal://page/" . $page->slug,
+        ];
+      });
+
+    // ==========================================
+    // 2. PENCARIAN DI MODEL POST (ARTIKEL)
+    // ==========================================
+    $posts = Post::where(function ($query) use ($keyword, $locales) {
+      foreach ($locales as $locale) {
+        $query->orWhereRaw(
+          "LOWER(JSON_UNQUOTE(JSON_EXTRACT(title, '$.\"$locale\"'))) LIKE ?",
+          ["%" . $keyword . "%"],
+        );
+      }
+    })
+      ->orderBy("created_at", "desc")
+      ->limit(5)
+      ->get()
+      ->map(function ($post) {
+        return [
+          "title" => "📝 " . $post->title,
+          // 🌟 MENGGUNAKAN PSEUDO-URL article
+          "url" => "internal://article/" . $post->slug,
+        ];
+      });
+
+    // ==========================================
+    // 3. GABUNGKAN & KEMBALIKAN KE ALPINE.JS
+    // ==========================================
+    // Menggabungkan Collection Pages dan Posts, lalu mengubahnya menjadi Array murni
+    return $pages->merge($posts)->toArray();
+  }
 };
 ?>
 
@@ -330,7 +393,8 @@ new class extends Component {
 </x-slot:title>
 
 <div
-  class="box-border flex h-[calc(100vh-4rem)] flex-col overflow-x-hidden rounded-md bg-linear-to-b from-white via-gray-50 to-gray-100 p-2"
+  class="box-border flex h-[calc(100vh-5rem)] min-h-0 w-full flex-1 scrollbar-thin flex-col overflow-x-hidden rounded-md"
+  {{-- class="box-border flex h-[calc(100vh-5rem)] flex-col overflow-x-hidden rounded-md" --}}
   x-data='pageEditor(
         @json($activeLocales),
         @json(array_slice($activeLocales, 0, 2)),
@@ -348,6 +412,27 @@ new class extends Component {
     }, 100);
   "
 >
+  @php
+    $iconsList = collect(config("cms.lucide", []))->sort()->values()->all();
+    $marginBottom = config("cms.design.margin_bottom", []);
+  @endphp
+
+  <svg style="display: none">
+    @foreach ($iconsList as $icon)
+      <symbol
+        id="icon-{{ $icon }}"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        {{-- Ambil path bawaan Lucide atau biarkan component merendernya sekali di sini --}}
+        <x-dynamic-component :component="'lucide-' . $icon" />
+      </symbol>
+    @endforeach
+  </svg>
   <!-- 🌟 HEADER UTAMA (DITELEPORTASI KE NAVBAR) -->
   <template x-if="windowWidth >= 1366">
     <template x-teleport="#editor-toolbar-portal">
@@ -379,343 +464,352 @@ new class extends Component {
     </div>
   @endif
 
-  <!-- AREA KONTEN UTAMA -->
-  <div
-    id="main-editor-scroll-area"
-    class="relative min-h-0 flex-1 scrollbar-gutter-stable space-y-8 overflow-x-hidden overflow-y-auto px-4 pt-0 pb-24"
-    {{-- class="relative min-h-0 flex-1 scrollbar-gutter-stable space-y-8 overflow-x-hidden overflow-y-auto px-4 pt-6 pb-24" --}}
-    x-data="{
-      scrollPos: 0,
-      init() {
-        Livewire.hook('commit', ({ succeed }) => {
-          // 1. Catat posisi sebelum update
-          this.scrollPos = this.$el.scrollTop;
+  <!-- WRAPPER UTAMA -->
+  <div class="flex min-h-0 w-full flex-1 overflow-hidden">
+    <!-- AREA KONTEN UTAMA -->
+    <div
+      id="main-editor-scroll-area"
+      class="relative min-h-0 flex-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent scrollbar-gutter-stable space-y-8 overflow-x-hidden overflow-y-auto rounded-md bg-linear-to-b from-white via-gray-50 to-gray-100 px-4 pt-0 pb-24"
+      {{--bg-linear-to-b from-white via-gray-50 to-gray-100 --}}
+      x-data="{
+        scrollPos: 0,
+        init() {
+          Livewire.hook('commit', ({ succeed }) => {
+            // 1. Catat posisi sebelum update
+            this.scrollPos = this.$el.scrollTop;
 
-          succeed(() => {
-            // 2. Selalu paksa kembali ke posisi semula (mencegah lemparan ke atas)
-            requestAnimationFrame(() => {
-              this.$el.scrollTop = this.scrollPos;
+            succeed(() => {
+              // 2. Selalu paksa kembali ke posisi semula (mencegah lemparan ke atas)
+              requestAnimationFrame(() => {
+                this.$el.scrollTop = this.scrollPos;
+              });
             });
           });
-        });
-      },
-    }"
-  >
-    <!-- ==========================================
-    RUANGAN 1: METADATA (Hanya Tampil di Tab Meta)
-    ========================================== -->
-    <div x-show="editorTab === 'meta'" x-cloak class="space-y-8">
-      <div class="flex items-center justify-between pt-2">
-        <h2 class="text-xl font-bold text-gray-800">Metadata Halaman</h2>
-        <select
-          wire:model="status"
-          class="rounded-md border-gray-300 text-sm font-medium shadow-sm"
-        >
-          <option value="offline">Offline</option>
-          <option value="online">Online</option>
-        </select>
-      </div>
-      <div
-        x-bind:class="{
-          'grid grid-cols-1': effectiveLayout === 'single',
-          'grid grid-cols-1 md:grid-cols-2':
-            effectiveLayout === 'split' && splitLanguages.length === 2,
-          'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3':
-            effectiveLayout === 'split' && splitLanguages.length === 3,
-          'grid grid-cols-1':
-            effectiveLayout === 'split' && splitLanguages.length === 1,
-        }"
-        class="gap-6"
-      >
-        @foreach ($activeLocales as $code)
-          <div
-            {{-- x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))" --}}
-            x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
-            class="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+        },
+      }"
+    >
+      <!--  RUANGAN 1: METADATA (Hanya Tampil di Tab Meta) -->
+      <div x-show="editorTab === 'meta'" x-cloak class="space-y-8">
+        <div class="flex items-center justify-between pt-2">
+          <h2 class="text-xl font-bold text-gray-800">Metadata Halaman</h2>
+          <select
+            wire:model="status"
+            class="rounded-md border-gray-300 text-sm font-medium shadow-sm"
           >
-            <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-sm font-bold text-gray-700">
-                Metadata ({{ strtoupper($code) }})
-              </h3>
-              <span
-                class="text-foresty rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold"
-                >{{
-                  strtoupper(
-                    $code,
-                  )
-                }}</span
-              >
-            </div>
-            <div class="space-y-3">
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600"
-                  >Judul Halaman <span class="text-red-500">*</span></label
-                >
-                <input
-                  type="text"
-                  wire:model="page_title.{{ $code }}"
-                  placeholder="Contoh: Layanan Kesehatan Ibu dan Anak"
-                  class="text-md w-full rounded-md border-gray-300 p-2 shadow-sm"
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600"
-                  >Slug URL</label
-                >
-                <input
-                  type="text"
-                  wire:model="slug.{{ $code }}"
-                  placeholder="Contoh: layanan-kesehatan-ibu-dan-anak"
-                  class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600"
-                  >Judul Meta</label
-                >
-                <input
-                  type="text"
-                  wire:model="meta_title.{{ $code }}"
-                  placeholder="Contoh: Layanan Kesehatan Ibu & Anak Terpadu | YSBH"
-                  class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600"
-                  >Deskripsi Meta</label
-                >
-                <textarea
-                  row="6"
-                  wire:model="meta_description.{{ $code }}"
-                  placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
-                  class="text-md min-h-36 w-full resize-none rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
-                ></textarea>
-              </div>
-            </div>
-          </div>
-        @endforeach
-      </div>
-      <div
-        class="mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-      >
-        <label
-          class="mb-3 block text-xs font-extrabold tracking-widest text-gray-500 uppercase"
-        >
-          Navigasi Daftar Isi (TOC)
-        </label>
-
-        <div
-          class="flex w-full items-center rounded-md bg-gray-100 p-1 shadow-inner"
-        >
-          <!-- Opsi Sembunyikan -->
-          <button
-            type="button"
-            wire:click="$set('settings.toc_position', 'hidden')"
-            class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'hidden' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
-          >
-            Sembunyi
-          </button>
-
-          <!-- Opsi Kiri -->
-          <button
-            type="button"
-            wire:click="$set('settings.toc_position', 'left')"
-            class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'left' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
-          >
-            Di Kiri
-          </button>
-
-          <!-- Opsi Kanan -->
-          <button
-            type="button"
-            wire:click="$set('settings.toc_position', 'right')"
-            class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'right' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
-          >
-            Di Kanan
-          </button>
+            <option value="offline">Offline</option>
+            <option value="online">Online</option>
+          </select>
         </div>
-        <p class="mt-2 text-[10px] text-gray-400">Daftar isi akan memindai blok Judul (Heading) secara otomatis. Hanya tampil di layar komputer (Desktop).</p>
+        <div
+          x-bind:class="{
+            'grid grid-cols-1': effectiveLayout === 'single',
+            'grid grid-cols-1 md:grid-cols-2':
+              effectiveLayout === 'split' && splitLanguages.length === 2,
+            'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3':
+              effectiveLayout === 'split' && splitLanguages.length === 3,
+            'grid grid-cols-1':
+              effectiveLayout === 'split' && splitLanguages.length === 1,
+          }"
+          class="gap-6"
+        >
+          @foreach ($activeLocales as $code)
+            <div
+              {{-- x-show="(layoutMode === 'single' && singleActiveLang === '{{ $code }}') || (layoutMode === 'split' && splitLanguages.includes('{{ $code }}'))" --}}
+              x-show="(effectiveLayout === 'single' && singleActiveLang === '{{ $code }}') || (effectiveLayout === 'split' && splitLanguages.includes('{{ $code }}'))"
+              class="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+            >
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-gray-700">
+                  Metadata ({{ strtoupper($code) }})
+                </h3>
+                <span
+                  class="text-foresty rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold"
+                  >{{
+                    strtoupper(
+                      $code,
+                    )
+                  }}</span
+                >
+              </div>
+              <div class="space-y-3">
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-600"
+                    >Judul Halaman <span class="text-red-500">*</span></label
+                  >
+                  <input
+                    type="text"
+                    wire:model="page_title.{{ $code }}"
+                    placeholder="Contoh: Layanan Kesehatan Ibu dan Anak"
+                    class="text-md w-full rounded-md border-gray-300 p-2 shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-600"
+                    >Slug URL</label
+                  >
+                  <input
+                    type="text"
+                    wire:model="slug.{{ $code }}"
+                    placeholder="Contoh: layanan-kesehatan-ibu-dan-anak"
+                    class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-600"
+                    >Judul Meta</label
+                  >
+                  <input
+                    type="text"
+                    wire:model="meta_title.{{ $code }}"
+                    placeholder="Contoh: Layanan Kesehatan Ibu & Anak Terpadu | YSBH"
+                    class="text-md w-full rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-600"
+                    >Deskripsi Meta</label
+                  >
+                  <textarea
+                    row="6"
+                    wire:model="meta_description.{{ $code }}"
+                    placeholder="{{ $code === 'id' ? 'Tulis ringkasan menarik untuk hasil pencarian Google (maks. 160 karakter)...' : 'Write a brief summary for Google search results (max. 160 characters)...' }}"
+                    class="text-md min-h-36 w-full resize-none rounded-md border-gray-300 bg-gray-50 p-2 text-gray-500 shadow-sm"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          @endforeach
+        </div>
+        <div
+          class="mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+        >
+          <label
+            class="mb-3 block text-xs font-extrabold tracking-widest text-gray-500 uppercase"
+          >
+            Navigasi Daftar Isi (TOC)
+          </label>
+
+          <div
+            class="flex w-full items-center rounded-md bg-gray-100 p-1 shadow-inner"
+          >
+            <!-- Opsi Sembunyikan -->
+            <button
+              type="button"
+              wire:click="$set('settings.toc_position', 'hidden')"
+              class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'hidden' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
+            >
+              Sembunyi
+            </button>
+
+            <!-- Opsi Kiri -->
+            <button
+              type="button"
+              wire:click="$set('settings.toc_position', 'left')"
+              class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'left' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
+            >
+              Di Kiri
+            </button>
+
+            <!-- Opsi Kanan -->
+            <button
+              type="button"
+              wire:click="$set('settings.toc_position', 'right')"
+              class="flex-1 rounded py-1.5 text-xs font-bold transition-all outline-none {{ ($settings['toc_position'] ?? 'right') === 'right' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
+            >
+              Di Kanan
+            </button>
+          </div>
+          <p class="mt-2 text-[10px] text-gray-400">Daftar isi akan memindai blok Judul (Heading) secara otomatis. Hanya tampil di layar komputer (Desktop).</p>
+        </div>
+      </div>
+
+      <!-- RUANGAN 2: EDITOR KONTEN (Hanya Tampil di Tab Konten) -->
+      <div x-show="editorTab === 'content'" x-cloak class="space-y-8">
+        <!-- KONTROL STATUS KONTEN -->
+        <div class="sticky top-0 z-30 flex items-center justify-between pt-2">
+          <h2 class="text-xl font-bold text-gray-800">Konten Halaman</h2>
+        </div>
+
+        <!-- ALPINE SORTABLE CONTAINER -->
+        <div
+          x-sort="handleSort"
+          class="flex flex-col"
+          x-sort:config="{
+            animation: 200,
+            handle: '.drag-handle',
+            ghostClass: 'opacity-50',
+            dragClass: 'shadow-2xl',
+          }"
+        >
+          @foreach ($blockOrder as $blockId)
+            @php $block = $content[$blockId] ?? null; @endphp
+            @if ($block)
+              <x-dynamic-component
+                :component="'blocks.editor.' . str_replace('_', '-', $block['type'])"
+                :block-id="$blockId"
+                :block="$block"
+                :all-content="$content"
+                :active-locales="$activeLocales"
+                :icons-list="$iconsList"
+                :margin-bottom="$marginBottom"
+              />
+            @endif
+          @endforeach
+        </div>
       </div>
     </div>
 
-    <!-- ==========================================
-    RUANGAN 2: EDITOR KONTEN (Hanya Tampil di Tab Konten)
-    ========================================== -->
-    <div x-show="editorTab === 'content'" x-cloak class="space-y-8">
-      <!-- KONTROL STATUS KONTEN -->
-      <div class="flex items-center justify-between pt-2">
-        <h2 class="text-xl font-bold text-gray-800">Konten Halaman</h2>
+    <!-- MINIMAP -->
+    <div
+      x-show="windowWidth >= 1366 && editorTab === 'content' && isMinimapOpen"
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0 translate-x-10"
+      x-transition:enter-end="opacity-100 translate-x-0"
+      x-cloak
+      x-data="{
+        activeBlockId: null,
+        visibleBlocks: new Set(),
+        observer: null,
+
+        initMinimap() {
+          const rootArea = document.getElementById('main-editor-scroll-area');
+          if (!rootArea) return;
+
+          // ATURAN 1 & 2: Zona deteksi di 15% hingga 40% layar (dari atas), Threshold 0
+          const options = {
+            root: rootArea,
+            rootMargin: '-15% 0px -60% 0px',
+            threshold: 0,
+          };
+
+          this.observer = new IntersectionObserver((entries) => {
+            let hasChanges = false;
+            entries.forEach((entry) => {
+              const id = entry.target.id.replace('block-wrapper-', '');
+              if (entry.isIntersecting) {
+                this.visibleBlocks.add(id);
+                hasChanges = true;
+              } else {
+                if (this.visibleBlocks.has(id)) {
+                  this.visibleBlocks.delete(id);
+                  hasChanges = true;
+                }
+              }
+            });
+
+            if (hasChanges) this.calculateActiveBlock();
+          }, options);
+
+          this.observeBlocks();
+
+          // Pasang ulang observer setiap kali ada blok ditambah/dihapus oleh Livewire
+          Livewire.hook('commit', ({ succeed }) => {
+            succeed(() => {
+              setTimeout(() => this.observeBlocks(), 150);
+            });
+          });
+        },
+
+        observeBlocks() {
+          if (!this.observer) return;
+          this.observer.disconnect();
+          this.visibleBlocks.clear();
+
+          // Ambil semua elemen pembungkus blok yang ada di DOM saat ini
+          document
+            .querySelectorAll('[id^=\'block-wrapper-\']')
+            .forEach((el) => {
+              this.observer.observe(el);
+            });
+        },
+
+        calculateActiveBlock() {
+          if (this.visibleBlocks.size === 0) return;
+
+          // ATURAN 3: Jika ada 2 blok masuk radar, selalu pilih blok yang urutannya paling atas di DOM
+          const domBlocks = document.querySelectorAll(
+            '[id^=\'block-wrapper-\']',
+          );
+          for (let el of domBlocks) {
+            const id = el.id.replace('block-wrapper-', '');
+            if (this.visibleBlocks.has(id)) {
+              this.activeBlockId = id;
+              break;
+            }
+          }
+        },
+      }"
+      x-init="initMinimap()"
+      {{-- class="w-64 shrink-0 overflow-y-auto border-l border-gray-200 bg-gray-50/50 p-4 scrollbar-thin pb-24" --}}
+      class="ml-2 w-38 shrink-0 scrollbar-thin overflow-y-auto rounded-t-md border-l border-gray-200 bg-linear-to-b from-white via-gray-50 to-gray-100 px-4 pt-2 pb-24"
+      style="display: none"
+    >
+      <div class="sticky top-0 z-10 mb-2 bg-gray-50/50 backdrop-blur-sm">
+        <span
+          class="text-xxs font-extrabold tracking-widest text-gray-500 uppercase"
+        >
+          Minimap
+        </span>
+        {{-- <p class="mt-1 text-[10px] text-gray-400">Lompat cepat ke blok.</p> --}}
       </div>
 
-      <!-- ALPINE SORTABLE CONTAINER -->
-      <div
-        x-sort="handleSort"
-        class="flex flex-col"
-        x-sort:config="{
-          animation: 200,
-          handle: '.drag-handle',
-          ghostClass: 'opacity-50',
-          dragClass: 'shadow-2xl',
-        }"
-      >
-        @foreach ($blockOrder as $blockId)
-          @php $block = $content[$blockId] ?? null; @endphp
-          @if ($block)
-            <x-dynamic-component
-              :component="'blocks.editor.' . str_replace('_', '-', $block['type'])"
-              :block-id="$blockId"
-              :block="$block"
-              :all-content="$content"
-              :active-locales="$activeLocales"
-            />
-            <!-- ========================================================= -->
-            <!-- 🌟 ARSITEKTUR BARU: PEMBUNGKUS BLOK (Single Render) 🌟 -->
-            <!-- ========================================================= -->
-            {{-- <div
-              id="block-wrapper-{{ $blockId }}"
-              wire:key="block-{{ $blockId }}"
-              x-sort:item="'{{ $blockId }}'"
-              x-data="{ showAnchorSetting: false }"
-              class="group relative mb-6 flex w-full flex-col rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200"
+      <div class="flex flex-col justify-start gap-2">
+        @forelse ($blockOrder as $index => $bId)
+          @php
+            $bType = $content[$bId]["type"] ?? "unknown";
+            $bName = str_replace(["_", "-"], " ", $bType);
+          @endphp
+
+          <button
+            type="button"
+            wire:key="minimap-btn-{{ $bId }}"
+            x-on:click="
+              let el = document.getElementById('block-wrapper-{{ $bId }}');
+              if(el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                el.classList.add('ring-2', 'ring-foresty', 'ring-offset-2');
+                setTimeout(() => el.classList.remove('ring-2', 'ring-foresty', 'ring-offset-2'), 1500);
+              }
+            "
+            x-bind:class="activeBlockId === '{{ $bId }}' ? 
+            'border-foresty bg-sage-soft shadow-sm scale-110' : 
+            'border-gray-200 bg-white hover:border-foresty hover:bg-sage-soft hover:scale-110'"
+            class="group ml-2 flex w-full origin-right items-center gap-3 rounded-md border text-left transition-all outline-none"
+          >
+            <span
+              x-bind:class="activeBlockId === '{{ $bId }}' ? 
+              'bg-foresty text-gray-100 shadow-sm' : 
+              'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-foresty'"
+              class="text-xxs flex h-5 w-5 shrink-0 items-center justify-center rounded-md font-bold transition-colors"
             >
-              <!-- 1. HEADER GLOBAL BLOK (Permanen & Sticky di Atas) -->
-              <div
-                class="sticky top-0 z-30 flex items-center justify-between rounded-t-xl border-b border-gray-200 bg-gray-50/95 px-4 py-2 shadow-[0_4px_10px_rgba(0,0,0,0.03)] backdrop-blur-md transition-all"
-              >
-                <!-- Kiri: Drag Handle & Nama Blok -->
-                <div class="flex items-center gap-3">
-                  <button
-                    type="button"
-                    class="drag-handle hover:text-foresty cursor-grab text-gray-400 transition-colors outline-none"
-                    title="Geser Blok"
-                  >
-                    <x-dynamic-component
-                      component="lucide-grip-vertical"
-                      class="h-5 w-5"
-                    />
-                  </button>
-                  <span
-                    class="text-[11px] font-extrabold tracking-widest text-gray-500 uppercase"
-                  >
-                    {{
-                      str_replace(
-                        ["_", "-"],
-                        " ",
-                        $block["type"],
-                      )
-                    }}
-                  </span>
-                </div>
+              {{ $index + 1 }}
+            </span>
+            <span
+              x-bind:class="activeBlockId === '{{ $bId }}' ? 'text-foresty' : 'text-gray-700 group-hover:text-foresty'"
+              class="text-xxs truncate font-bold capitalize transition-colors"
+            >
+              {{ $bName }}
+            </span>
+          </button>
 
-                <!-- Kanan: Anchor, Duplikat, Hapus -->
-                <div class="flex items-center gap-1.5">
-                  <!-- Pengaturan Anchor -->
-                  <div
-                    x-on:click.outside="showAnchorSetting = false"
-                    class="relative"
-                  >
-                    <button
-                      x-on:click="showAnchorSetting = !showAnchorSetting"
-                      type="button"
-                      class="rounded p-1.5 transition-colors outline-none"
-                      x-bind:class="
-                        showAnchorSetting
-                          ? 'bg-foresty text-white'
-                          : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'
-                      "
-                      title="Pengaturan Tautan (Anchor)"
-                    >
-                      <x-dynamic-component
-                        component="lucide-link"
-                        class="h-4 w-4"
-                      />
-                    </button>
-
-                    <!-- Popup Anchor -->
-                    <div
-                      x-show="showAnchorSetting"
-                      x-cloak
-                      x-transition
-                      style="display: none"
-                      class="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-4 shadow-xl"
-                    >
-                      <label
-                        class="text-foresty mb-1 block text-xs font-bold uppercase"
-                        >ID Tautan (Anchor)</label
-                      >
-                      <p class="mb-3 text-[10px] leading-tight text-gray-500">Melompat ke blok ini (Contoh: <span class="text-coral font-mono">tentang-kami</span>).</p>
-
-                      <input
-                        type="text"
-                        wire:model.live.debounce.500ms="content.{{ $blockId }}.anchor"
-                        @input="
-                          $event.target.value = $event.target.value
-                            .toLowerCase()
-                            .replace(/\s+/g, '-')
-                            .replace(/[^a-z0-9-]/g, '')
-                        "
-                        placeholder="nama-anchor"
-                        class="focus:ring-foresty focus:border-foresty w-full rounded-lg border border-gray-300 p-2 text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- Garis Pemisah -->
-                  <div class="mx-1 h-4 w-px bg-gray-300"></div>
-
-                  <!-- Tombol Duplikat -->
-                  <button
-                    wire:click="duplicateBlock('{{ $blockId }}')"
-                    type="button"
-                    class="hover:bg-sage-soft hover:text-foresty rounded p-1.5 text-gray-500 transition-colors outline-none"
-                    title="Gandakan Blok"
-                  >
-                    <x-dynamic-component
-                      component="lucide-copy"
-                      class="h-4 w-4"
-                    />
-                  </button>
-
-                  <!-- Tombol Hapus -->
-                  <button
-                    wire:click="removeBlock('{{ $blockId }}')"
-                    type="button"
-                    wire:confirm="Hapus blok ini beserta isinya?"
-                    class="rounded p-1.5 text-red-400 transition-colors outline-none hover:bg-red-50 hover:text-red-600"
-                    title="Hapus Blok"
-                  >
-                    <x-dynamic-component
-                      component="lucide-trash-2"
-                      class="h-4 w-4"
-                    />
-                  </button>
-                </div>
-              </div>
-
-              <!-- 2. KONTEN BLOK UTAMA (Hanya Dirender 1 Kali!) -->
-              <div class="flex flex-col p-0">
-                <x-dynamic-component
-                  :component="'blocks.editor.' . str_replace('_', '-', $block['type'])"
-                  :block-id="$blockId"
-                  :block="$block"
-                  :all-content="$content"
-                  :active-locales="$activeLocales"
-                  :code="app()->getLocale()"
-                />
-              </div>
-            </div> --}}
-            <!-- Akhir block-wrapper baru -->
-          @endif
-        @endforeach
+        @empty
+          <div
+            class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 p-4 text-center"
+          >
+            <span class="text-xxs font-bold text-gray-400">Belum ada blok</span>
+          </div>
+        @endforelse
       </div>
     </div>
   </div>
-  <!-- AREA KONTEN UTAMA -->
 
   <!-- AREA TOMBOL TAMBAH BLOK BERDASARKAN KATEGORI -->
   <div
-    class="z-20 -mx-2 -mb-2 flex shrink-0 flex-wrap items-center justify-center gap-6 border-t border-gray-200 bg-white p-2 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]"
+    class="z-20 flex shrink-0 flex-wrap items-center justify-center gap-6 border-t border-gray-200 bg-white px-4 py-3 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]"
   >
+    <!-- <div
+    class="z-20 -mx-2 -mb-2 flex shrink-0 flex-wrap items-center justify-center gap-6 border-t border-gray-200 bg-white p-2 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]"
+  > -->
     <!-- KELOMPOK MIKRO (KONTEN UTAMA) -->
     <div class="flex items-center gap-2 border-r border-gray-200 pr-6">
       <span class="text-[10px] font-bold text-gray-400 uppercase">Konten:</span>
@@ -811,184 +905,6 @@ new class extends Component {
         icon="between-horizontal-start"
         label="Section Divider"
       />
-    </div>
-
-    <!-- KELOMPOK TEMPLATE (JIKA ADA) -->
-    {{-- <div class="flex items-center gap-2">
-      <span class="text-[10px] font-bold text-gray-400 uppercase">Template:</span>
-      {{-- Contoh tombol yang memuat sekumpulan blok sekaligus --}
-      <button type="button" wire:click="loadTemplate('landing_page_standard')" class="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition">
-        ✨ Muat Template Standar
-      </button>
-    </div> --}}
-  </div>
-
-  <!-- 🌟 MODAL PENCARIAN TAUTAN SUPER (Anchor & Halaman Internal) -->
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm"
-    x-cloak
-    x-data="{
-      open: false,
-      searchQuery: '',
-      selectedText: '',
-      targetWireModel: null, // Menyimpan alamat input Livewire jika dipanggil dari Lencana/Tombol
-
-      // Fungsi untuk mengindeks semua Anchor yang ada di halaman ini secara real-time
-      get inPageAnchors() {
-        let anchors = [];
-        let contentData = $wire.get('content') || {};
-        for (let key in contentData) {
-          if (
-            contentData[key].anchor &&
-            contentData[key].anchor.trim() !== ''
-          ) {
-            anchors.push({
-              id: contentData[key].anchor,
-              type: contentData[key].type,
-            });
-          }
-        }
-        return anchors;
-      },
-
-      // Fungsi pamungkas untuk mengirim URL ke pemanggilnya
-      applyUrl(url) {
-        if (this.targetWireModel) {
-          // Jika dipanggil dari komponen Livewire (seperti Badge/Button)
-          $wire.set(this.targetWireModel, url);
-        } else {
-          // Jika dipanggil dari Tiptap
-          window.dispatchEvent(
-            new CustomEvent('insert-link-to-active-editor', {
-              detail: { url: url, text: this.selectedText },
-            }),
-          );
-        }
-        this.open = false;
-        this.searchQuery = '';
-        this.targetWireModel = null;
-      },
-    }"
-    {{-- Listener untuk menangkap perintah buka modal --}}
-    @buka-modal-link.window="
-      open = true;
-      selectedText = $event.detail.text || '';
-      targetWireModel = $event.detail.target || null;
-      searchQuery = '';
-    "
-    x-show="open"
-  >
-    <div
-      x-on:click.outside="open = false"
-      class="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-0 shadow-xl"
-    >
-      {{-- Header & Input Pencarian --}}
-      <div class="shrink-0 border-b border-gray-100 bg-gray-50/50 p-5">
-        <h3 class="mb-3 text-lg font-bold text-gray-800">Sisipkan Tautan</h3>
-        <div class="relative">
-          <x-dynamic-component
-            component="lucide-search"
-            class="absolute top-2.5 left-3 h-4 w-4 text-gray-400"
-          />
-          <input
-            type="text"
-            x-model="searchQuery"
-            placeholder="Cari halaman atau rekatkan URL eksternal (https://)..."
-            class="focus:ring-foresty focus:border-foresty w-full rounded-lg border border-gray-300 py-2 pr-3 pl-9 text-sm shadow-sm"
-          />
-        </div>
-      </div>
-
-      {{-- Area Daftar (Bisa di-scroll) --}}
-      <div class="flex-1 space-y-6 overflow-y-auto p-5">
-        {{-- 🌟 SEGMEN 1: ANCHOR DI HALAMAN INI --}}
-        <div x-show="inPageAnchors.length > 0 && searchQuery === ''">
-          <span
-            class="mb-2 block text-[10px] font-bold tracking-widest text-gray-400 uppercase"
-            >Melompat ke Titik di Halaman Ini</span
-          >
-          <div class="grid grid-cols-2 gap-2">
-            <template x-for="anchor in inPageAnchors" :key="anchor.id">
-              <button
-                type="button"
-                x-on:click="applyUrl('#' + anchor.id)"
-                class="hover:border-foresty hover:bg-sage-soft group flex items-center gap-2 rounded-lg border border-gray-200 p-2 text-left transition-colors"
-              >
-                <div
-                  class="group-hover:text-foresty rounded-md bg-gray-100 p-1.5 text-gray-500 transition-colors group-hover:bg-white"
-                >
-                  <x-dynamic-component
-                    component="lucide-hash"
-                    class="h-3.5 w-3.5"
-                  />
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p
-                    class="truncate text-xs font-bold text-gray-700"
-                    x-text="anchor.id"
-                  ></p>
-                  <p
-                    class="truncate text-[10px] text-gray-400 capitalize"
-                    x-text="'Blok: ' + anchor.type"
-                  ></p>
-                </div>
-              </button>
-            </template>
-          </div>
-        </div>
-
-        {{-- 🌟 SEGMEN 2: PENCARIAN HALAMAN INTERNAL CMS --}}
-        <div>
-          <span
-            class="mb-2 block text-[10px] font-bold tracking-widest text-gray-400 uppercase"
-            >Halaman Website</span
-          >
-          <div
-            class="min-h-[100px] rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm text-gray-500"
-          >
-            <p class="py-4 text-center">Ketik di kolom pencarian untuk melacak halaman...</p>
-            {{-- Nanti logika pencarian halaman Livewire Anda masukkan di sini --}}
-          </div>
-        </div>
-
-        {{-- 🌟 SEGMEN 3: URL EKSTERNAL KUSTOM --}}
-        <div
-          x-show="
-            searchQuery !== '' &&
-            (searchQuery.startsWith('http') ||
-              searchQuery.startsWith('mailto:') ||
-              searchQuery.startsWith('tel:'))
-          "
-        >
-          <button
-            type="button"
-            x-on:click="applyUrl(searchQuery)"
-            class="border-foresty bg-sage-soft flex w-full items-center justify-between rounded-lg border p-3 text-left transition-colors hover:bg-[#c2ded3]"
-          >
-            <div>
-              <p class="text-foresty text-xs font-bold">Gunakan Tautan Eksternal Ini</p>
-              <p class="text-foresty truncate text-sm" x-text="searchQuery"></p>
-            </div>
-            <x-dynamic-component
-              component="lucide-external-link"
-              class="text-foresty h-4 w-4"
-            />
-          </button>
-        </div>
-      </div>
-
-      {{-- Footer Tutup --}}
-      <div
-        class="flex shrink-0 justify-end border-t border-gray-100 bg-gray-50 p-4"
-      >
-        <button
-          type="button"
-          x-on:click="open = false"
-          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-bold text-gray-700 transition-colors hover:bg-gray-100"
-        >
-          Batal
-        </button>
-      </div>
     </div>
   </div>
 
@@ -1183,4 +1099,5 @@ new class extends Component {
       </div>
     </div>
   </div>
+  <x-editor.modal-link-finder />
 </div>

@@ -1,23 +1,36 @@
-@props(['block', 'data', 'lang', 'allContent' => []])
+@props (["block", "data", "lang", "allContent" => []])
 
 @php
-  $level = $data['level'] ?? 'h2';
-  $ariaLevel = str_replace('h', '', $level);
+  $level = $data["level"] ?? "h2";
+  $ariaLevel = str_replace("h", "", $level);
+  $marginBottom = $data["margin_bottom"] ?? "mb-4";
 
   // 🌟 KUNCI PARITY: Gabungkan pengaturan level Anda dengan $defaultClasses dari editor
   $baseClasses = match ($level) {
-      'h1' => "font-['Fraunces',serif] text-[clamp(2.5rem,_4vw,_3.5rem)] font-extrabold text-[#064f3b]",
-      // h2 disamakan persis dengan $defaultClasses di wrapper editor Anda
-      'h2' => "font-['Fraunces',serif] text-[clamp(1.8rem,_3vw,_2.5rem)] font-semibold text-[#064f3b]",
+    "h1"
+      => "font-['Fraunces',serif] text-[clamp(2.5rem,_4vw,_3.5rem)] font-extrabold text-[#064f3b]",
+    // h2 disamakan persis dengan $defaultClasses di wrapper editor Anda
+    "h2"
+      => "font-['Fraunces',serif] text-[clamp(1.8rem,_3vw,_2.5rem)] font-semibold text-[#064f3b]",
 
-      'h3' => "font-['Fraunces',serif] text-xl md:text-2xl font-semibold text-[#064f3b]",
+    "h3"
+      => "font-['Fraunces',serif] text-xl md:text-2xl font-semibold text-[#064f3b]",
 
-      default => "font-['Fraunces',serif] text-[clamp(1.8rem,_3vw,_2.5rem)] font-semibold text-[#064f3b]",
+    default
+      => "font-['Fraunces',serif] text-[clamp(1.8rem,_3vw,_2.5rem)] font-semibold text-[#064f3b]",
   };
 @endphp
 
-<div id="{{ $block['anchor'] ?? '' }}" role="heading" aria-level="{{ $ariaLevel }}" class="tiptap-content {{ $baseClasses }} mb-3 reveal animate-scroll-reveal [&>p]:m-0">
-  {!! $data['text'][$lang] ?? '' !!}
+<div
+  id="{{ $block['anchor'] ?? '' }}"
+  role="heading"
+  aria-level="{{ $ariaLevel }}"
+  class="tiptap-content {{ $baseClasses }} {{ $marginBottom }} reveal animate-scroll-reveal [&>p]:m-0"
+>
+  {!!
+    $data["text"][$lang] ??
+      ""
+  !!}
 </div>
 
 {{-- @php

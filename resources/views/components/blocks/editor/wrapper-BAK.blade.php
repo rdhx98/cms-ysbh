@@ -277,33 +277,20 @@ toggleFullscreen() {
       </div>
     </div>
 
+    <!-- AREA KONTEN (Tengah & Bawah) -->
     <div
       x-show="!isCollapsed"
       x-collapse
       x-cloak
-      x-transition.opacity.duration.300ms
       class="flex h-full min-h-0 flex-col overflow-hidden rounded-b-xl bg-white"
       x-bind:class="isFullscreen ? 'flex-1' : ''"
     >
-      @if (isset($controls))
-        <div class="px-2 pt-2">{{ $controls }}</div>
-      @endif
-
-      @php
-        $editorHeight = isset($controls)
-          ? "max-h-[40vh] md:max-h-[45vh]" // Lebih pendek karena ruang atas dipakai kontrol
-          : "max-h-[55vh] md:max-h-[60vh]"; // Bisa lebih panjang karena tidak ada kontrol
-      @endphp
-      <!-- TENGAH: AREA EDITOR (Sekarang bisa di-scroll secara normal) -->
+      <!-- TENGAH: AREA EDITOR (Bisa di-scroll saat fullscreen) -->
       <div
-        {{-- 🌟 1. Tambahkan overflow-y-auto dan scrollbar-thin border-coral border border-dashed --}}
-        class="mx-2 mt-0 mb-2 flex scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent scrollbar-gutter-stable flex-col gap-4 overflow-y-auto rounded-b-xl border-x border-b border-gray-400 transition-all duration-300"
+        class="flex flex-col gap-4 transition-all duration-300"
         x-bind:class="
-          isFullscreen 
-            ? 'flex-1' 
-            : '{{ $editorHeight }} max-h-[45vh] md:max-h-[50vh]' 
-            "
-        {{-- 🌟 2. Batasi tinggi maksimal (misal 60% dari tinggi layar) --}}
+          isFullscreen ? 'flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8' : 'p-4'
+        "
       >
         {{ $slot }}
       </div>
@@ -311,8 +298,7 @@ toggleFullscreen() {
       <!-- 🌟 BAWAH: AREA PREVIEW (Selalu Tampil!) -->
       @if (isset($preview))
         <div
-          {{-- Area ini akan otomatis "lengket" di bawah editor yang bisa di-scroll --}}
-          class="shrink-0 border-t border-gray-100 bg-gray-50/50 p-2 transition-all duration-300"
+          class="shrink-0 border-t border-gray-100 bg-gray-50/50 p-4 transition-all duration-300"
           x-bind:class="
             isFullscreen
               ? 'bg-white shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-40'

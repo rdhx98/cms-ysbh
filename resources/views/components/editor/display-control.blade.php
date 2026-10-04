@@ -223,43 +223,38 @@
           />
           <span
             x-show="windowWidth >= 768"
-            class="ml-1.5 truncate text-xs font-bold"
+            class="text-xxs ml-1.5 truncate font-bold uppercase"
             x-text="allCollapsed ? 'Buka Semua Blok' : 'Tutup Semua Blok'"
           ></span>
         </button>
       </div>
-      {{-- <button
+      <button
         x-on:click="
-          editorTab = 'content';
-          allCollapsed = !allCollapsed;
-          $dispatch('toggle-collapse-all', allCollapsed);
+          isMinimapOpen = !isMinimapOpen;
+          $dispatch('toggle-minimap', isMinimapOpen);
         "
-        :class="[
-          allCollapsed
-            ? 'bg-white text-foresty shadow-sm font-bold border-foresty'
-            : 'text-gray-500 hover:text-gray-700 border-gray-200 bg-white',
-          windowWidth < 768 ? 'p-1.5' : 'px-3 py-1.5',
-        ]"
-        class="flex cursor-pointer items-center justify-center rounded-lg border shadow-sm transition-all select-none hover:bg-gray-50 focus:outline-none disabled:opacity-50"
+        x-bind:class="isMinimapOpen ? 'border-forest' : 'border-gray-200'"
+        class="flex items-center justify-center rounded-lg border p-1.5 shadow-sm transition-all select-none focus:outline-none"
+        title="Minimap"
       >
         <x-dynamic-component
-          x-show="allCollapsed"
-          :component="'lucide-list-chevrons-down-up'"
+          x-show="!isMinimapOpen"
+          :component="'lucide-panel-right-open'"
           class="h-4 w-4 shrink-0"
           stroke-width="2.5"
         />
         <x-dynamic-component
-          x-show="!allCollapsed"
-          :component="'lucide-list-chevrons-up-down'"
+          x-show="isMinimapOpen"
+          :component="'lucide-panel-right-close'"
           class="h-4 w-4 shrink-0"
           stroke-width="2.5"
         />
         <span
           x-show="windowWidth >= 768"
-          class="ml-1.5 truncate text-xs font-bold"
-          x-text="allCollapsed ? 'Buka Semua Blok' : 'Tutup Semua Blok'"
-        ></span>
-      </button> --}}
+          class="text-xxs ml-1.5 font-bold uppercase"
+          >Minimap
+        </span>
+      </button>
 
       <!-- Pratinjau -->
       <button
@@ -274,7 +269,9 @@
           class="h-4 w-4"
           stroke-width="2.5"
         />
-        <span x-show="windowWidth >= 768" class="ml-1.5 text-xs font-bold"
+        <span
+          x-show="windowWidth >= 768"
+          class="text-xxs ml-1.5 font-bold uppercase"
           >Pratinjau</span
         >
       </button>

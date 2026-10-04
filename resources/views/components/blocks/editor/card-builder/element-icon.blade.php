@@ -4,12 +4,12 @@
   $iconSize = $style["size"] ?? "w-10 h-10 md:w-12 md:h-12";
   $iconRadius = $style["radius"] ?? "rounded-[14px]";
 @endphp
-<div class="mb-2 flex items-center justify-between">
+{{-- <div class="mb-2 flex items-center justify-between">
   <span
     class="bg-foresty rounded px-2 py-0.5 text-[10px] font-extrabold tracking-widest text-white uppercase"
     >Ikon</span
   >
-</div>
+</div> --}}
 
 <!-- OPSI IKON BAWAAN -->
 <div
@@ -20,9 +20,12 @@
     class="relative flex flex-col gap-1.5"
     x-data="{ openPicker: false, search: '' }"
   >
-    <span class="text-xxs font-bold tracking-wide text-gray-400 uppercase"
-      >Ikon</span
+    <label
+      {{-- class="text-xxs font-bold tracking-wide text-gray-700 uppercase" --}}
+      class="text-xxs bg-foresty w-fit rounded px-2 py-0.5 font-bold text-white uppercase"
+      >Ikon</label
     >
+
     <button
       type="button"
       x-on:click="openPicker = true"
@@ -106,7 +109,7 @@
   </div>
   <!-- Copy seluruh isi elemen opsi gaya ikon di sini sama persis seperti aslinya -->
   <div class="flex flex-col gap-1.5">
-    <span class="text-xxs font-bold tracking-wide text-gray-400 uppercase"
+    <span class="text-xxs rounded py-0.5 font-bold text-gray-700 uppercase"
       >Latar Ikon</span
     >
     <div
@@ -145,7 +148,7 @@
     </div>
   </div>
   <div class="flex flex-col gap-1.5">
-    <span class="text-xxs font-bold tracking-wide text-gray-400 uppercase"
+    <span class="text-xxs rounded py-0.5 font-bold text-gray-700 uppercase"
       >Warna Ikon</span
     >
     <div
@@ -171,7 +174,7 @@
     </div>
   </div>
   <div class="flex flex-col gap-1.5">
-    <span class="text-xxs font-bold tracking-wide text-gray-400 uppercase"
+    <span class="text-xxs rounded py-0.5 font-bold text-gray-700 uppercase"
       >Ukuran</span
     >
     <div
@@ -206,7 +209,7 @@
     </div>
   </div>
   <div class="flex flex-col gap-1.5">
-    <span class="text-xxs font-bold tracking-wide text-gray-400 uppercase"
+    <span class="text-xxs rounded py-0.5 font-bold text-gray-700 uppercase"
       >Sudut Ikon</span
     >
     <div
