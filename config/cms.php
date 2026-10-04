@@ -81,10 +81,10 @@ return [
         // 3. Sudut Kotak (Border Radius)
         'border_radiuses' => [
             ['name' => 'Siku', 'preview'=>'rounded-tl-none','value' => 'rounded-none'],
-            // ['name' => 'Agak Bulat', 'preview'=>'rounded-','value' => 'rounded-md'],
-            // ['name' => 'Sangat Bulat', 'preview'=>'rounded-','value' => 'rounded-lg'],
             ['name' => 'Agak Bulat', 'preview'=>'rounded-tl-md','value' => 'rounded-[14px]'],
             ['name' => 'Sangat Bulat', 'preview'=>'rounded-tl-[14px]','value' => 'rounded-[28px]'],
+            // ['name' => 'Agak Bulat', 'preview'=>'rounded-','value' => 'rounded-md'],
+            // ['name' => 'Sangat Bulat', 'preview'=>'rounded-','value' => 'rounded-lg'],
         ],
 
         // 4. Perataan Vertikal (Vertical Alignment / Flex Items)
@@ -135,6 +135,13 @@ return [
         //     ['name' => 'full', 'value' => 'mb-24'],
         // ],
         'margin_bottom' => [
+            ['value' => 'mb-0',           'label' => 'tight',   'icon_mb' => 'mb-0',  'title' => 'tight',   'preview' => '0px'],
+            ['value' => 'mb-4 md:mb-6',   'label' => 'small',   'icon_mb' => 'mb-4',  'title' => 'Small',   'preview' => '2px'],
+            ['value' => 'mb-8 md:mb-10',  'label' => 'normal',  'icon_mb' => 'mb-6',  'title' => 'normal',  'preview' => '4px'],
+            ['value' => 'mb-12 md:mb-16', 'label' => 'wide',    'icon_mb' => 'mb-16', 'title' => 'wide',    'preview' => '6px'],
+            ['value' => 'mb-16 md:mb-24', 'label' => 'full',    'icon_mb' => 'mb-24', 'title' => 'full',    'preview' => '8px'],
+        ],
+        'margin_bottom_BAK' => [
             ['value' => 'mb-0',  'label' => 'tight',  'icon_mb' => 'mb-0',      'title' => 'tight'],
             ['value' => 'mb-4',  'label' => 'small',  'icon_mb' => 'mb-4',  'title' => 'Small'],
             ['value' => 'mb-8',  'label' => 'normal', 'icon_mb' => 'mb-6',      'title' => 'normal'],

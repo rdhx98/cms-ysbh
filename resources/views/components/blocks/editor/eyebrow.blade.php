@@ -248,59 +248,6 @@
       </div>
     </div>
 
-    <!-- margin bottom control -->
-    {{-- <div
-      class="flex flex-col"
-      x-data="{ localMargin: $wire.entangle('content.{{ $blockId }}.data.margin_bottom').live || 'mb-8' }"
-    >
-      <label class="mb-2 block text-xs font-semibold text-gray-500 uppercase"
-        >Jarak Bawah</label
-      >
-      <div
-        class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
-      >
-        @php
-          // Mapping ukuran miniatur ikon (dalam pixel) murni untuk visualisasi.
-          // Menjamin ikon tidak hilang/tergencet karena melebihi tinggi kotak h-4 (16px).
-          $miniMargins = [
-            "mb-0" => "0px",
-            "mb-4" => "2px",
-            "mb-8" => "4px",
-            "mb-16" => "6px",
-            "mb-24" => "8px",
-          ];
-        @endphp
-
-        @foreach ($marginBottom as $margin)
-          <button
-            type="button"
-            x-on:click="localMargin = '{{ $margin['value'] }}'"
-            class="group flex flex-col items-center gap-0.75 rounded px-1.5 py-1 transition-all outline-none"
-            :class="localMargin === '{{ $margin['value'] }}' ? 'bg-white shadow-sm text-foresty' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'"
-            title="{{ $margin['name'] ?? $margin['label'] }}"
-          >
-            <!-- Representasi Visual Margin -->
-            <div class="flex h-3 w-3 flex-col justify-end">
-              <div
-                class="w-full flex-1 rounded-[1px] bg-current opacity-80 transition-all"
-                <!-- 🌟 Solusi: Gunakan inline style agar tidak terkena Purge Tailwind -->
-                style="margin-bottom: {{ $miniMargins[$margin['value']] ?? '4px' }};"
-              ></div>
-              <div
-                class="h-[2px] w-full rounded-full transition-colors"
-                :class="localMargin === '{{ $margin['value'] }}' ? 'bg-foresty/50' : 'bg-gray-400/70'"
-              ></div>
-            </div>
-
-            <!-- Label Teks -->
-            <span class="text-xxs font-bold uppercase">{{
-              $margin["name"] ??
-                $margin["label"]
-            }}</span>
-          </button>
-        @endforeach
-      </div>
-    </div> --}}
     <!-- MARGIN CONTROL -->
     <div
       class="flex flex-col gap-1.5"
@@ -312,18 +259,6 @@
       <div
         class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
       >
-        @php
-          // Mapping ukuran miniatur ikon (dalam pixel) murni untuk visualisasi.
-          // Menjamin ikon tidak hilang/tergencet karena melebihi tinggi kotak h-4 (16px).
-          $miniMargins = [
-            "mb-0" => "0px",
-            "mb-4" => "2px",
-            "mb-8" => "4px",
-            "mb-16" => "6px",
-            "mb-24" => "8px",
-          ];
-        @endphp
-
         @foreach ($marginBottom as $margin)
           <button
             type="button"
@@ -338,7 +273,7 @@
                 class="w-full flex-1 rounded-[1px] opacity-80 transition-all"
                 x-bind:class="localMargin === '{{ $margin['value'] }}' ? 'bg-forest' : 'bg-gray-400/70'"
                 {{-- 🌟 Solusi: Gunakan inline style agar tidak terkena Purge Tailwind --}}
-                style="margin-bottom: {{ $miniMargins[$margin['value']] ?? '4px' }};"
+                style="margin-bottom: {{ $margin['preview'] }};"
               ></div>
               <div
                 class="h-[2px] w-full rounded-full transition-colors"

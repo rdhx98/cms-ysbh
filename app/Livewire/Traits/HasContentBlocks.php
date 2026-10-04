@@ -196,16 +196,16 @@ trait HasContentBlocks
             'heading'    => [
                 'text' => $emptyLocales,
                 'level' => 'h2',
-                'margin_bottom' => 'mb-8',],
+                'margin_bottom' => 'mb-4 md:mb-6',],
             'paragraph'  => [
                 'text' => $emptyLocales,
-                'margin_bottom' => 'mb-8',
+                'margin_bottom' => 'mb-4 md:mb-6',
                 ],
             'eyebrow' => [
                 'text'   => $emptyLocales,
                 'icon'   => 'newspaper', // Sesuai fallback di: data?.icon ?? 'newspaper'
                 'color'  => '#E42326',   // Sesuai fallback di: data?.color ?? '#e05a47'
-                'margin_bottom' => 'mb-4',      // Sesuai fallback di: data?.margin_bottom ?? 'mb-8'
+                'margin_bottom' => 'mb-4 md:mb-6',      // Sesuai fallback di: data?.margin_bottom ?? 'mb-8'
             ],
             'image'      => [
               'url' => '',
@@ -213,7 +213,7 @@ trait HasContentBlocks
               'caption'       => $emptyLocales,  // 🌟 Mendukung terjemahan multi-bahasa
               'width'         => 'w-full',       // Default menyesuaikan lebar kontainer induk
               'align'         => 'mx-auto',      // Rata tengah
-              'radius'        => 'rounded-xl',   // Sudut melengkung halus
+              'radius'        => 'rounded-none',   // Sudut melengkung halus
               'max_height'    => 'max-h-none',   // Tanpa batasan tinggi bawaan
               'object_fit'    => 'object-cover',
               'space_y'       => 'gap-3',
@@ -258,7 +258,7 @@ trait HasContentBlocks
 						'card-builder' => [
                 'grid' => [
                     'cols' => 1, // Default: 1 kolom
-                    'margin_bottom' => 'mb-0'
+                    'margin_bottom' => 'mb-4 md:mb-6'
                 ],
                 'cards' => []
             ],

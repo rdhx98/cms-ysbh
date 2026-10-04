@@ -71,36 +71,36 @@
         rounded-xl (Normal)
 
         rounded-3xl (Sangat Melengkung)
-          ============================================================================================
-          Rekomendasi Nilai untuk UI Builder Admin
-              Untuk melengkapi fitur di atas, Anda bisa menambahkan opsi dropdown atau button group di antar muka penulis Anda dengan nilai berikut:
+        ============================================================================================
+        Rekomendasi Nilai untuk UI Builder Admin
+        Untuk melengkapi fitur di atas, Anda bisa menambahkan opsi dropdown atau button group di antar muka penulis Anda dengan nilai berikut:
 
-              1. Lebar Gambar (width)
+        1. Lebar Gambar (width)
 
-              max-w-4xl : Lebar Artikel (Standar)
+        max-w-4xl : Lebar Artikel (Standar)
 
-              w-full : Lebar Kontainer (Mentok di batas max-w-7xl)
+        w-full : Lebar Kontainer (Mentok di batas max-w-7xl)
 
-              w-screen : Layar Penuh (Banner Baru)
+        w-screen : Layar Penuh (Banner Baru)
 
-              2. Batasan Tinggi (Height Limit) - Sangat Berguna untuk Banner
+        2. Batasan Tinggi (Height Limit) - Sangat Berguna untuk Banner
 
-              max-h-none : Asli (Tidak Dibatasi)
+        max-h-none : Asli (Tidak Dibatasi)
 
-              max-h-[50vh] : Setengah Layar
+        max-h-[50vh] : Setengah Layar
 
-              max-h-[70vh] : 70% Layar
+        max-h-[70vh] : 70% Layar
 
-              max-h-96 : Kotak Pendek (sekitar 384px)
+        max-h-96 : Kotak Pendek (sekitar 384px)
 
-              3. Perilaku Gambar (object_fit)
+        3. Perilaku Gambar (object_fit)
 
-              object-cover : Penuhi Kotak (Dipotong Otomatis) — Wajib digunakan jika Anda mengaktifkan Batasan Tinggi agar gambar tidak gepeng.
+        object-cover : Penuhi Kotak (Dipotong Otomatis) — Wajib digunakan jika Anda mengaktifkan Batasan Tinggi agar gambar tidak gepeng.
 
-              object-contain : Muat Utuh — Akan ada ruang kosong jika rasio gambar dan layar berbeda.
+        object-contain : Muat Utuh — Akan ada ruang kosong jika rasio gambar dan layar berbeda.
 
-              object-fill : Tarik/Gepengkan (Sangat tidak disarankan, namun kadang diminta klien).
-      */
+        object-fill : Tarik/Gepengkan (Sangat tidak disarankan, namun kadang diminta klien).
+    */
 @endphp
 
 @props (["block", "data", "lang", "allContent" => []])

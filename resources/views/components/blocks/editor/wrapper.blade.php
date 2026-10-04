@@ -297,7 +297,7 @@ toggleFullscreen() {
       <!-- TENGAH: AREA EDITOR (Sekarang bisa di-scroll secara normal) -->
       <div
         {{-- 🌟 1. Tambahkan overflow-y-auto dan scrollbar-thin border-coral border border-dashed --}}
-        class="mx-2 mt-0 mb-2 flex scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent scrollbar-gutter-stable flex-col gap-4 overflow-y-auto rounded-b-xl border-x border-b border-gray-400 transition-all duration-300"
+        class="mx-2 mt-0 mb-2 flex scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent scrollbar-gutter-both flex-col gap-4 overflow-y-auto rounded-b-xl border-x border-b border-gray-400 transition-all duration-300"
         x-bind:class="
           isFullscreen 
             ? 'flex-1' 

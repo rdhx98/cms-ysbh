@@ -210,72 +210,28 @@ new #[Layout("layouts.landing.dynamic-preview")] class extends Component {
           Gunakan '2xl:flex' agar TOC hanya muncul di layar 1536px ke atas (cukup ruang untuk Konten + TOC).
         -->
       <div
-        x-data="{
-          isTocHidden: false,
-          checkOverlap() {
-            const toc = $refs.tocCard;
-            if (!toc) return;
-
-            const tocRect = toc.getBoundingClientRect();
-
-            // Cari elemen dengan atribut data-banner-block
-            const blocks = document.querySelectorAll('[data-banner-block]');
-            let overlap = false;
-
-            for (let i = 0; i < blocks.length; i++) {
-              const rect = blocks[i].getBoundingClientRect();
-
-              // Logika Tabrakan: TOC dan Gambar bersentuhan di Sumbu Y
-              if (
-                rect.top < tocRect.bottom + 50 &&
-                rect.bottom > tocRect.top - 50
-              ) {
-                overlap = true;
-                break;
-              }
-            }
-
-            this.isTocHidden = overlap;
-          },
-        }"
-        x-init="setTimeout(() => checkOverlap(), 300)"
-        {{-- 🌟 PERBAIKAN EVENT LISTENER: Gunakan bawaan Alpine yang mendukung modifier "capture" --}}
-        @scroll.window.capture.passive="checkOverlap()"
-        @resize.window.capture.passive="checkOverlap()"
-        class="pointer-events-none fixed inset-0 z-50 hidden 2xl:block"
+        class="pointer-events-none fixed inset-0 z-50 hidden justify-center 2xl:flex"
       >
         <!-- Kontainer patokan: Sama lebarnya dengan max-w-7xl konten utama -->
-        <div class="relative mx-auto h-full w-full max-w-7xl">
+        <div class="relative h-full w-full max-w-7xl">
           @if ($tocPosition === "left")
-            <!-- TOC DARI KIRI -->
+            <!-- TOC DARI KIRI: Mendorong tepat ke luar batas kiri max-w-7xl -->
             <div
               class="pointer-events-auto absolute top-32 right-full mr-8 w-64 transition-all duration-500"
             >
               <div
-                x-ref="tocCard"
-                class="scrollbar-hide max-h-[75vh] overflow-y-auto rounded-2xl border border-white/60 bg-white/40 p-5 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out"
-                x-bind:class="
-                  isTocHidden
-                    ? 'opacity-0 -translate-x-8 pointer-events-none'
-                    : 'opacity-100 translate-x-0'
-                "
+                class="scrollbar-hide max-h-[75vh] overflow-y-auto rounded-2xl border border-white/60 bg-white/40 p-5 shadow-2xl backdrop-blur-xl"
               >
                 <x-table-of-contents :items="$tocItems" />
               </div>
             </div>
           @else
-            <!-- TOC DARI KANAN -->
+            <!-- TOC DARI KANAN: Mendorong tepat ke luar batas kanan max-w-7xl -->
             <div
               class="pointer-events-auto absolute top-32 left-full ml-8 w-64 transition-all duration-500"
             >
               <div
-                x-ref="tocCard"
-                class="scrollbar-hide max-h-[75vh] overflow-y-auto rounded-2xl border border-white/60 bg-white/40 p-5 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out"
-                x-bind:class="
-                  isTocHidden
-                    ? 'opacity-0 translate-x-8 pointer-events-none'
-                    : 'opacity-100 translate-x-0'
-                "
+                class="scrollbar-hide max-h-[75vh] overflow-y-auto rounded-2xl border border-white/60 bg-white/40 p-5 shadow-2xl backdrop-blur-xl"
               >
                 <x-table-of-contents :items="$tocItems" />
               </div>
@@ -341,12 +297,6 @@ new #[Layout("layouts.landing.dynamic-preview")] class extends Component {
             @endphp
 
             <div
-              {{
-                $isFullScreen
-                  ? "data-banner-block"
-                  : ""
-              }}
-              @if ($isFullScreen) data-banner-block="true" @endif
               id="{{ !empty($block['anchor']) ? $block['anchor'] : $blockId }}"
               x-data="{ shown: false }"
               x-init="setTimeout(() => (shown = true), 100)"

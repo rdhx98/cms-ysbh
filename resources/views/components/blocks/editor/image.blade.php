@@ -7,21 +7,94 @@
 
 @php
   $imageUrl = $block["data"]["url"] ?? "";
-
-  // Konfigurasi Pilihan Padding & Ukuran
-  $paddingTopOpts = [
-    ["label" => "0", "value" => "pt-0"],
-    ["label" => "S", "value" => "pt-4"],
-    ["label" => "M", "value" => "pt-8"],
-    ["label" => "L", "value" => "pt-16"],
-    ["label" => "XL", "value" => "pt-24"],
+  $imageWidth = [
+    [
+      "label" => "standard",
+      "value" => "max-w-4xl",
+      "preview" => "w-1/2 rounded-[1px]",
+    ],
+    ["label" => "full", "value" => "w-full", "preview" => "w-5/6 rounded-[1px]"],
+    ["label" => "banner", "value" => "w-screen", "preview" => "w-full"],
+    // [''=>''],
   ];
-  $paddingBottomOpts = [
-    ["label" => "0", "value" => "pb-0"],
-    ["label" => "S", "value" => "pb-4"],
-    ["label" => "M", "value" => "pb-8"],
-    ["label" => "L", "value" => "pb-16"],
-    ["label" => "XL", "value" => "pb-24"],
+  $imageMaxHeight = [
+    [
+      "label" => "original",
+      "value" => "max-h-none",
+      "preview" => "h-full", // Memenuhi ruang vertikal secara penuh
+    ],
+    [
+      "label" => "compact",
+      "value" => "max-h-96",
+      "preview" => "h-[35%]", // Paling pendek, merepresentasikan tinggi statis 384px
+    ],
+    [
+      "label" => "medium",
+      "value" => "max-h-[50vh]",
+      "preview" => "h-1/2", // Persis setengah layar
+    ],
+    [
+      "label" => "tall",
+      "value" => "max-h-[70vh]",
+      "preview" => "h-[70%]", // Terlihat menyisakan 30% ruang kosong
+    ],
+  ];
+  $imageFit = [
+    [
+      "label" => "Cover",
+      "value" => "object-cover",
+      // Lingkaran besar melebihi kotak (akan terpotong tepi kotak)
+      "preview" => "h-6 w-6 shrink-0 rounded-full",
+      "desc" => "Memenuhi layar, gambar dipotong jika rasio berbeda.",
+    ],
+    [
+      "label" => "Contain",
+      "value" => "object-contain",
+      // Lingkaran kecil yang muat aman di dalam kotak
+      "preview" => "h-3 w-3 shrink-0 rounded-full",
+      "desc" => "Tampil utuh, menyisakan ruang kosong (letterbox).",
+    ],
+    [
+      "label" => "Fill",
+      "value" => "object-fill",
+      // Dipaksa memenuhi kotak (berubah menjadi elips gepeng)
+      "preview" => "h-full w-full rounded-[50%]",
+      "desc" => "Ditarik paksa untuk memenuhi kotak (bisa gepeng).",
+    ],
+  ];
+  $captionGaps = [
+    [
+      "label" => "Tight",
+      "value" => "gap-1",
+      "preview" => "gap-[1px]", // Jarak sangat tipis di miniatur
+    ],
+    [
+      "label" => "Normal",
+      "value" => "gap-2",
+      "preview" => "gap-[3px]", // Jarak sedang
+    ],
+    [
+      "label" => "Wide",
+      "value" => "gap-3",
+      "preview" => "gap-[6px]", // Jarak lega
+    ],
+  ];
+  $imageAlignment = [
+    [
+      "label" => "Kiri",
+      "value" => "mr-auto",
+      "icon" => "align-left", // Ikon rata kiri
+    ],
+    [
+      "label" => "Tengah",
+      "value" => "mx-auto",
+      "icon" => "align-center", // Ikon rata tengah
+    ],
+    [
+      "label" => "Kanan",
+      "value" => "ml-auto",
+      "icon" => "align-right", // Ikon rata kanan
+    ],
   ];
   $sizeOpts = [
     ["label" => "Kecil", "value" => "sm"],
@@ -63,6 +136,329 @@
 
   {{-- SLOT AREA --}}
   <div class="m-2 flex flex-col gap-4">
+    {{-- CARD BUILDER CONTROL ? --}}
+    <div
+      class="flex flex-wrap items-start gap-4 rounded-xl border border-gray-100 bg-gray-50/80 p-4 shadow-inner"
+    >
+      <!-- MARGIN CONTROL -->
+      <div
+        class="flex flex-col gap-1.5"
+        x-data="{ localMargin: $wire.entangle('content.{{ $blockId }}.data.margin_bottom').live || 'mb-4 md:mb-6' }"
+      >
+        <label class="text-xxs font-bold text-gray-700 uppercase"
+          >Margin Bawah</label
+        >
+        <div
+          class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
+        >
+          @foreach ($marginBottom as $margin)
+            <button
+              type="button"
+              x-on:click="localMargin = '{{ $margin['value'] }}'"
+              class="group text-xxs flex items-center gap-1 rounded px-1.5 py-1 font-bold transition-all outline-none"
+              {{-- class="group flex items-center gap-1 rounded px-1.5 py-1 transition-all outline-none" --}}
+              x-bind:class="localMargin === '{{ $margin['value'] }}' ? 'bg-white shadow-sm text-forst' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'"
+              title="{{ $margin['name'] ?? $margin['label'] }}"
+            >
+              <!-- Representasi Visual Margin -->
+              <div class="flex h-4 w-4 flex-col justify-end">
+                <div
+                  class="w-full flex-1 rounded-[1px] opacity-80 transition-all"
+                  x-bind:class="localMargin === '{{ $margin['value'] }}' ? 'bg-forest' : 'bg-gray-400/70'"
+                  {{-- 🌟 Solusi: Gunakan inline style agar tidak terkena Purge Tailwind --}}
+                  style="margin-bottom: {{ $margin['preview'] }};"
+                ></div>
+                <div
+                  class="h-[2px] w-full rounded-full transition-colors"
+                  x-bind:class="localMargin === '{{ $margin['value'] }}' ? 'bg-forest' : 'bg-gray-400/70'"
+                ></div>
+              </div>
+
+              <!-- Label Teks -->
+              <span
+                x-bind:class="localMargin === '{{ $margin['value'] }}' ? 'text-forest' : 'text-gray-400/70'"
+                class="text-xxs font-bold uppercase"
+                >{{
+                  $margin["name"] ??
+                    $margin["label"]
+                }}</span
+              >
+            </button>
+          @endforeach
+        </div>
+      </div>
+
+      <!-- WIDTH IMAGE -->
+      <div
+        class="flex flex-col gap-1.5"
+        x-data="{ localWidth: $wire.entangle('content.{{ $blockId }}.data.width').live || 'w-full' }"
+      >
+        <label class="text-xxs font-bold text-gray-700 uppercase"
+          >Lebar gambar</label
+        >
+        <div
+          class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
+        >
+          @foreach ($imageWidth as $item)
+            <button
+              type="button"
+              x-on:click="localWidth = '{{ $item['value'] }}'"
+              class="group text-xxs flex items-center gap-1 rounded px-1.5 py-1 font-bold transition-all outline-none"
+              x-bind:class="localWidth === '{{ $item['value'] }}' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+              title="Lebar: {{ $item['label'] }}"
+            >
+              <!-- 🌟 Representasi Visual Lebar -->
+              {{-- Kotak luar: Anggap ini sebagai layar monitor / browser --}}
+              <div
+                class="flex h-4 w-6 items-center justify-center overflow-hidden rounded-[3px] border border-current"
+              >
+                {{-- Kotak dalam: Anggap ini gambar, lebarnya diatur dinamis oleh $item['preview'] --}}
+                <div
+                  class="h-2.5 transition-all duration-300 {{ $item['preview'] }}"
+                  x-bind:class="localWidth === '{{ $item['value'] }}' ? 'bg-foresty' : 'bg-current opacity-40 group-hover:opacity-70'"
+                ></div>
+              </div>
+
+              <!-- Label -->
+              <span
+                class="text-xxs font-bold tracking-tight uppercase"
+                >{{ $item["label"] }}</span
+              >
+            </button>
+          @endforeach
+        </div>
+      </div>
+
+      <!-- MAX HEIGHT -->
+      <div
+        class="flex flex-col gap-1.5"
+        x-data="{ localHeight: $wire.entangle('content.{{ $blockId }}.data.max_height').live || 'max-h-none' }"
+      >
+        <label class="text-xxs font-bold text-gray-700 uppercase"
+          >Tinggi Maksimal</label
+        >
+        <div
+          class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
+        >
+          @foreach ($imageMaxHeight as $item)
+            <button
+              type="button"
+              x-on:click="localHeight = '{{ $item['value'] }}'"
+              class="group text-xxs flex items-center gap-1 rounded px-1.5 py-1 font-bold transition-all outline-none"
+              x-bind:class="localHeight === '{{ $item['value'] }}' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+              title="Tinggi: {{ $item['label'] }}"
+            >
+              <!-- 🌟 Representasi Visual Tinggi (Vertical) -->
+              {{-- Kotak luar: Proporsi meninggi (h-5 w-3.5) seperti layar HP --}}
+              <div
+                class="flex h-4 w-2.5 items-center justify-center overflow-hidden rounded-[2px] border border-current"
+              >
+                {{-- Kotak dalam: Tingginya diatur dinamis oleh $item['preview'] --}}
+                <div
+                  class="w-full rounded-[1px] transition-all duration-300 {{ $item['preview'] }}"
+                  x-bind:class="localHeight === '{{ $item['value'] }}' ? 'bg-foresty' : 'bg-current opacity-40 group-hover:opacity-70'"
+                ></div>
+              </div>
+
+              <!-- Label -->
+              <span
+                class="text-xxs font-bold tracking-tight uppercase"
+                >{{ $item["label"] }}</span
+              >
+            </button>
+          @endforeach
+        </div>
+      </div>
+
+      <!--IMAGE FIT-->
+      <div
+        class="flex flex-col gap-1.5"
+        x-data="{ localFit: $wire.entangle('content.{{ $blockId }}.data.object_fit').live || 'object-cover' }"
+      >
+        <span class="text-xxs font-bold text-gray-700 uppercase"
+          >Perilaku Gambar</span
+        >
+
+        <div
+          class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
+        >
+          @foreach ($imageFit as $item)
+            <button
+              type="button"
+              x-on:click="localFit = '{{ $item['value'] }}'"
+              class="group text-xxs flex items-center gap-1 rounded px-1.5 py-1 font-bold transition-all outline-none"
+              x-bind:class="localFit === '{{ $item['value'] }}' ? 'bg-white text-forest shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+              title="{{ $item['label'] }}"
+            >
+              <!-- 🌟 Representasi Visual Kotak Letterbox -->
+              {{-- Outer Frame: Diberi background abu-abu transparan agar ruang kosong (Contain) terlihat jelas --}}
+              <div
+                class="relative flex h-4 w-6 items-center justify-center overflow-hidden rounded-[2px] border transition-colors duration-300"
+                x-bind:class="localFit === '{{ $item['value'] }}' ? 'border-forest bg-gray-100' : 'border-current bg-gray-300/30'"
+              >
+                @if ($item["value"] === "object-cover")
+                  <!-- COVER: Memenuhi seluruh ruang tanpa sisa -->
+                  <div
+                    class="h-full w-full transition-colors duration-300"
+                    x-bind:class="localFit === '{{ $item['value'] }}' ? 'bg-forest' : 'bg-current opacity-40 group-hover:opacity-70'"
+                  ></div>
+
+                @elseif ($item["value"] === "object-contain")
+                  <!-- CONTAIN: Berada di tengah (Pillarbox), menyisakan background abu-abu frame -->
+                  <div
+                    class="h-full w-2.5 transition-colors duration-300"
+                    x-bind:class="localFit === '{{ $item['value'] }}' ? 'bg-forest' : 'bg-current opacity-40 group-hover:opacity-70'"
+                  ></div>
+
+                @elseif ($item["value"] === "object-fill")
+                  <!-- FILL: Memenuhi ruang, ditambah panah Horizontal Stretch -->
+                  <div
+                    class="flex h-full w-full items-center justify-center transition-colors duration-300"
+                    x-bind:class="localFit === '{{ $item['value'] }}' ? 'bg-forest' : 'bg-current opacity-40 group-hover:opacity-70'"
+                  >
+                    <!-- Ikon panah (Stretch) murni SVG agar presisi ukurannya -->
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="h-2.5 w-2.5"
+                      x-bind:class="localFit === '{{ $item['value'] }}' ? 'text-white' : 'text-paper'"
+                    >
+                      <path d="M5 12h14"></path>
+                      <path d="m9 8-4 4 4 4"></path>
+                      <path d="m15 8 4 4-4 4"></path>
+                    </svg>
+                  </div>
+                @endif
+              </div>
+
+              <!-- Label Teks -->
+              <span
+                class="text-xxs font-bold tracking-tight uppercase"
+                >{{ $item["label"] }}</span
+              >
+            </button>
+          @endforeach
+        </div>
+      </div>
+
+      <!--CAPTION GAP -->
+      <div
+        class="flex flex-col gap-1.5"
+        x-data="{ localCaptionGap: $wire.entangle('content.{{ $blockId }}.data.space_y').live || 'gap-3' }"
+        {{-- x-data="{ localCaptionGap: $wire.entangle('{{ $basePath }}.space_y').live || 'gap-3' }" --}}
+      >
+        <span class="text-xxs font-bold text-gray-700 uppercase"
+          >Jarak dengan Caption</span
+        >
+
+        <div
+          class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
+        >
+          @foreach ($captionGaps as $item)
+            <button
+              type="button"
+              x-on:click="localCaptionGap = '{{ $item['value'] }}'"
+              class="group text-xxs flex items-center gap-1 rounded px-1.5 py-1 font-bold transition-all outline-none"
+              x-bind:class="localCaptionGap === '{{ $item['value'] }}' ? 'bg-white text-forest shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+              title="Jarak: {{ $item['label'] }}"
+            >
+              <!-- 🌟 Representasi Visual Gambar & Teks -->
+              {{-- Pembungkus flex-col, kelas gap-nya diambil dinamis dari $item['preview'] --}}
+              <div
+                class="flex flex-col items-center justify-center h-4 w-4 {{ $item['preview'] }}"
+              >
+                {{-- Elemen Atas (Simulasi Gambar) --}}
+                <div
+                  class="h-2.5 w-full rounded-[1px] transition-colors duration-300"
+                  x-bind:class="localCaptionGap === '{{ $item['value'] }}' ? 'bg-forest' : 'bg-current opacity-40 group-hover:opacity-70'"
+                ></div>
+
+                {{-- Elemen Bawah (Simulasi Teks Caption) --}}
+                <div
+                  class="h-[1.5px] w-2/3 rounded-full transition-colors duration-300"
+                  x-bind:class="localCaptionGap === '{{ $item['value'] }}' ? 'bg-forest opacity-80' : 'bg-current opacity-30 group-hover:opacity-60'"
+                ></div>
+              </div>
+
+              <!-- Label Teks -->
+              <span
+                class="text-xxs font-bold tracking-tight uppercase"
+                >{{ $item["label"] }}</span
+              >
+            </button>
+          @endforeach
+        </div>
+      </div>
+
+      <!-- IMAGE ALIGNMENT  -->
+      <div
+        class="flex flex-col gap-1.5"
+        x-data="{ localAlignment: $wire.entangle('content.{{ $blockId }}.data.align').live || 'mx-auto' }"
+      >
+        <span class="text-xxs font-bold text-gray-700 uppercase"
+          >Perataan gambar</span
+        >
+
+        <div
+          class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
+        >
+          @foreach ($imageAlignment as $item)
+            <button
+              type="button"
+              x-on:click="localAlignment = '{{ $item['value'] }}'"
+              class="group text-xxs flex items-center gap-1 rounded px-1.5 py-1 font-bold transition-all outline-none"
+              x-bind:class="localAlignment === '{{ $item['value'] }}' ? 'bg-white text-forest shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+              title="Jarak: {{ $item['label'] }}"
+            >
+              <!-- 🌟 Ikon Lucide Alignment Standar -->
+              <x-dynamic-component
+                :component="'lucide-' . $item['icon']"
+                class="h-4 w-4 transition-colors duration-300"
+                x-bind:class="localAlignment === '{{ $item['value'] }}' ? 'text-forest' : 'text-gray-400 group-hover:text-gray-600'"
+                stroke-width="2.5"
+              />
+              <!-- Label Teks -->
+              {{-- <span
+                class="text-xxs font-bold tracking-tight uppercase"
+                >{{ $item["label"] }}</span 
+                >
+                --}}
+            </button>
+          @endforeach
+        </div>
+      </div>
+      <!-- RADIUS  -->
+      <div
+        class="flex flex-col gap-1.5"
+        x-data="{ localRadius: $wire.entangle('content.{{ $blockId }}.data.radius').live || 'rounded-none' }"
+      >
+        <span class="text-xxs font-bold text-gray-700 uppercase"
+          >Raidus sudut</span
+        >
+
+        <div
+          class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
+        >
+          @foreach ($borderRadius as $item)
+            <button
+              type="button"
+              x-on:click="localRadius = '{{ $item['value'] }}'"
+              class="group text-xxs flex items-center gap-1 rounded px-1.5 py-1 font-bold transition-all outline-none"
+              x-bind:class="localRadius === '{{ $item['value'] }}' ? 'bg-white text-forest shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+              title="{{ $item['name'] }}"
+            >
+              <div
+                class="border-forest h-3.5 w-3.5  border-t-2 border-l-2 {{ $item['preview'] }}"
+              ></div>
+            </button>
+          @endforeach
+        </div>
+      </div>
+    </div>
     <!-- ========================================== -->
     <!-- 3. PENGATURAN GLOBAL (Padding & Ukuran)    -->
     <!-- ========================================== -->
@@ -70,7 +466,7 @@
       class="flex flex-col gap-4 rounded-xl border border-gray-100 bg-gray-50/80 p-4 shadow-inner lg:flex-row lg:items-center lg:justify-between"
     >
       <!-- PENGATURAN PADDING -->
-      <div class="flex flex-wrap items-center gap-4">
+      {{-- <div class="flex flex-wrap items-center gap-4">
         <div class="flex items-center gap-2">
           <x-dynamic-component
             component="lucide-move-vertical"
@@ -127,13 +523,13 @@
             </div>
           </div>
         </div>
-      </div>
+      </div> --}}
 
       <!-- Garis Pemisah untuk Mobile -->
-      <div class="h-px w-full bg-gray-200 lg:hidden"></div>
+      {{-- <div class="h-px w-full bg-gray-200 lg:hidden"></div> --}}
 
       <!-- PENGATURAN UKURAN -->
-      <div
+      {{-- <div
         class="flex items-center gap-3 lg:border-l lg:border-gray-200 lg:pl-4"
       >
         <div class="flex items-center gap-1.5">
@@ -160,7 +556,7 @@
             </button>
           @endforeach
         </div>
-      </div>
+      </div> --}}
     </div>
 
     <!-- ========================================== -->

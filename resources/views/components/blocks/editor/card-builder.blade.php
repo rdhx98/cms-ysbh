@@ -4,13 +4,14 @@
   "activeLocales" => [],
   "context" => null,
   "parentId" => null,
-  "parentZone" => null
+  "parentZone" => null,
+  "marginBottom" => [],
 ])
 
 @php
   // $iconsList = config("icons.lucide", []);
   $borderStyles = config("cms.design.border_styles", []);
-  $borderRadius = config("cms.design.border_radiuses", []);
+  // $borderRadius = config("cms.design.border_radiuses", []);
   $cardPadding = config("cms.design.card_paddings", []);
   $cardBgColors = config("cms.design.card_bg_colors", []);
   $cardBorderColors = config("cms.design.card_border_colors", []);
@@ -163,18 +164,6 @@
                   <div
                     class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
                   >
-                    @php
-                      // Mapping ukuran miniatur ikon (dalam pixel) murni untuk visualisasi.
-                      // Menjamin ikon tidak hilang/tergencet karena melebihi tinggi kotak h-4 (16px).
-                      $miniMargins = [
-                        "mb-0" => "0px",
-                        "mb-4" => "2px",
-                        "mb-8" => "4px",
-                        "mb-16" => "6px",
-                        "mb-24" => "8px",
-                      ];
-                    @endphp
-
                     @foreach ($marginBottom as $margin)
                       <button
                         type="button"
@@ -189,7 +178,7 @@
                             class="w-full flex-1 rounded-[1px] opacity-80 transition-all"
                             x-bind:class="localMargin === '{{ $margin['value'] }}' ? 'bg-forest' : 'bg-gray-400/70'"
                             {{-- 🌟 Solusi: Gunakan inline style agar tidak terkena Purge Tailwind --}}
-                            style="margin-bottom: {{ $miniMargins[$margin['value']] ?? '4px' }};"
+                            style="margin-bottom: {{ $margin['preview'] }};"
                           ></div>
                           <div
                             class="h-[2px] w-full rounded-full transition-colors"

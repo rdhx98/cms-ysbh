@@ -415,6 +415,7 @@ new class extends Component {
   @php
     $iconsList = collect(config("cms.lucide", []))->sort()->values()->all();
     $marginBottom = config("cms.design.margin_bottom", []);
+    $designTemplate = config("cms.design", []);
   @endphp
 
   <svg style="display: none">
@@ -651,7 +652,8 @@ new class extends Component {
                 :all-content="$content"
                 :active-locales="$activeLocales"
                 :icons-list="$iconsList"
-                :margin-bottom="$marginBottom"
+                :margin-bottom="$designTemplate['margin_bottom']"
+                :border-radius="$designTemplate['border_radiuses']"
               />
             @endif
           @endforeach
