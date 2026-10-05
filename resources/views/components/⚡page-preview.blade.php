@@ -205,7 +205,7 @@ new #[Layout("layouts.landing.dynamic-preview")] class extends Component {
     {{-- 🌟 WIDGET KACA DENGAN ALIGNMENT LUAR MAX-W-7XL 🌟 --}}
     {{-- ================================================================ --}}
     @if (count($tocItems) > 0 && $tocPosition !== "hidden")
-      <!-- 
+      <!--
           Pembungkus 'fixed inset-0' membuat area ini kebal overflow dan tidak mengubah Navbar.
           Gunakan '2xl:flex' agar TOC hanya muncul di layar 1536px ke atas (cukup ruang untuk Konten + TOC).
         -->

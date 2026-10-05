@@ -1,5 +1,12 @@
 @php
   $columns = $card["layout"]["children"] ?? [];
+  $elementTitles = [
+    "text" => "Teks",
+    "icon" => "Ikon",
+    "accordion" => "Akordion",
+    "profile_photo" => "Foto Profil",
+    "initials" => "Inisial Nama",
+  ];
 @endphp
 
 {{-- pt-4 --}}
@@ -165,6 +172,7 @@
                   $type = $el["elementType"] ?? "text";
                   $style = $el["data"]["style"] ?? [];
                   $content = $el["data"]["content"] ?? [];
+                  $displayTitle = $elementTitles[$type] ?? ucwords(str_replace("_", " ", $type));
                 @endphp
 
                 <div
@@ -178,7 +186,7 @@
                     >
                       {{
                         ucwords(
-                          str_replace("_", " ", $type),
+                          str_replace("_", " ", $displayTitle),
                         )
                       }}
                     </span>

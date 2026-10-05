@@ -7,8 +7,11 @@
 
 @php
   $colorsList = config("cms.design.bg_colors", []);
-  // $iconsList = config("cms.lucide", []);
-  // $marginsList = config("cms.design.margin_bottom", []);
+  $paddingOptions=[
+    ['label'=>'tight','value'=> 'py-8 sm:py-12', 'preview'=> 'lucide-rows-4'],
+    ['label'=>'normal','value'=> 'py-16 sm:py-24', 'preview'=> 'lucide-rows-3'],
+    ['label'=>'wide','value'=> 'py-24 sm:py-[96px]', 'preview'=> 'lucide-rows-2'],
+  ]
 @endphp
 
 <x-blocks.editor.wrapper :block-id="$blockId" :block="$block">
@@ -126,14 +129,14 @@
               type="button"
               x-on:click="$wire.set('content.{{ $blockId }}.data.background', '{{ $color['value'] }}')"
               class="border border-gray-200 hover:ring-forest {{ $color['value'] }} h-6 w-6 rounded-md shadow-sm transition-all duration-300 hover:scale-110 hover:shadow-md hover:ring-2 focus:outline-none"
-              x-bind:class="($wire.content['{{ $blockId }}']?.data?.background ?? 'bg-paper').toLowerCase() === '{{ strtolower($color['value']) }}' ? 
+              x-bind:class="($wire.content['{{ $blockId }}']?.data?.background ?? 'bg-paper').toLowerCase() === '{{ strtolower($color['value']) }}' ?
           'ring-2 ring-forest ring-offset-2 scale-110' : 'ring-1 hover:ring-offset-1 ring-gray-200/50'"
             ></button>
 
             <!-- 2. Ubah 'group-hover' menjadi 'group-hover/btn' -->
             <span
               class="text-xxs absolute top-full mt-2 font-bold whitespace-nowrap text-gray-700 uppercase transition-all duration-300"
-              x-bind:class="($wire.content['{{ $blockId }}']?.data?.background ?? 'bg-paper').toLowerCase() === '{{ strtolower($color['value']) }}' ? 
+              x-bind:class="($wire.content['{{ $blockId }}']?.data?.background ?? 'bg-paper').toLowerCase() === '{{ strtolower($color['value']) }}' ?
           'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 -translate-y-1 group-hover/btn:opacity-100 group-hover/btn:translate-y-0'"
             >
               {{ $color["name"] }}
@@ -155,7 +158,7 @@
             type="button"
             x-on:click="$wire.set('content.{{ $blockId }}.data.text_color', 'text-charcoal')"
             class="hover:ring-forest flex h-6 w-6 items-center justify-center rounded-md border border-gray-200 bg-white text-white shadow-sm transition-all duration-300 hover:scale-110 hover:shadow-md hover:ring-2 focus:outline-none"
-            x-bind:class="($wire.content['{{ $blockId }}']?.data?.text_color ?? 'text-charcoal').toLowerCase() === 'text-charcoal' ? 
+            x-bind:class="($wire.content['{{ $blockId }}']?.data?.text_color ?? 'text-charcoal').toLowerCase() === 'text-charcoal' ?
           'ring-2 ring-forest ring-offset-2 scale-110' : 'ring-1 hover:ring-offset-1 ring-gray-200/50'"
           >
             <span class="text-charcoal font-serif text-sm font-bold">Aa</span>
@@ -164,7 +167,7 @@
           <!-- 2. Ubah 'group-hover' menjadi 'group-hover/btn' -->
           <span
             class="text-xxs absolute top-full mt-2 font-bold whitespace-nowrap text-gray-700 uppercase transition-all duration-300"
-            x-bind:class="($wire.content['{{ $blockId }}']?.data?.text_color ?? 'text-charcoal').toLowerCase() === 'text-charcoal' ? 
+            x-bind:class="($wire.content['{{ $blockId }}']?.data?.text_color ?? 'text-charcoal').toLowerCase() === 'text-charcoal' ?
           'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 -translate-y-1 group-hover/btn:opacity-100 group-hover/btn:translate-y-0'"
           >
             Gelap
@@ -176,7 +179,7 @@
             type="button"
             x-on:click="$wire.set('content.{{ $blockId }}.data.text_color', 'text-white')"
             class="hover:ring-forest bg-charcoal flex h-6 w-6 items-center justify-center rounded-md border border-gray-200 text-white shadow-sm transition-all duration-300 hover:scale-110 hover:shadow-md hover:ring-2 focus:outline-none"
-            x-bind:class="($wire.content['{{ $blockId }}']?.data?.text_color ?? 'text-charcoal').toLowerCase() === 'text-white' ? 
+            x-bind:class="($wire.content['{{ $blockId }}']?.data?.text_color ?? 'text-charcoal').toLowerCase() === 'text-white' ?
           'ring-2 ring-forest ring-offset-2 scale-110' : 'ring-1 hover:ring-offset-1 ring-gray-200/50'"
           >
             <span class="font-serif text-sm font-bold text-white">Aa</span>
@@ -185,7 +188,7 @@
           <!-- 2. Ubah 'group-hover' menjadi 'group-hover/btn' -->
           <span
             class="text-xxs absolute top-full mt-2 font-bold whitespace-nowrap text-gray-700 uppercase transition-all duration-300"
-            x-bind:class="($wire.content['{{ $blockId }}']?.data?.text_color ?? 'text-charcoal').toLowerCase() === 'text-white' ? 
+            x-bind:class="($wire.content['{{ $blockId }}']?.data?.text_color ?? 'text-charcoal').toLowerCase() === 'text-white' ?
           'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 -translate-y-1 group-hover/btn:opacity-100 group-hover/btn:translate-y-0'"
           >
             Gelap
@@ -194,254 +197,48 @@
       </div>
     </div>
 
-    <!-- PADDINGS -->
-    <div class="flex flex-col gap-1.5">
-      <label class="text-xxs font-bold text-gray-700 uppercase">
-        Jarak Luar (Padding)
-      </label>
 
+    <!-- MARGIN CONTROL -->
       <div
-        class="inline-flex w-fit items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-100/80 p-0.75 shadow-inner"
+        class="flex flex-col gap-1.5"
+        {{-- x-data="{ localPadding: $wire.entangle('content.{{ $blockId }}.data.padding').live || 'py-16 sm:py-24' }" --}}
+        x-data="{ localPadding: @entangle('content.'.$blockId.'.data.padding').live }"
       >
-        {{-- Opsi 1: Sempit --}}
-        <label class="group relative cursor-pointer">
-          <input
-            type="radio"
-            wire:model.live="content.{{ $blockId }}.data.padding"
-            value="py-8 sm:py-12"
-            class="peer sr-only"
-          />
-          <div
-            class="peer-checked:text-foresty text-xxs flex items-center gap-1 rounded-sm px-1 py-0.75 font-bold text-gray-400 transition-all duration-200 peer-checked:bg-white peer-checked:shadow-sm hover:text-gray-600"
-          >
-            <x-dynamic-component
-              component="lucide-rows-4"
-              class="h-4 w-4 transition-transform group-hover:scale-110"
-            />
-            Tight
-          </div>
-        </label>
-
-        {{-- Opsi 2: Sedang --}}
-        <label class="group relative cursor-pointer">
-          <input
-            type="radio"
-            wire:model.live="content.{{ $blockId }}.data.padding"
-            value="py-16 sm:py-24"
-            class="peer sr-only"
-          />
-          <div
-            class="peer-checked:text-foresty text-xxs flex items-center gap-1 rounded-sm px-1 py-0.75 font-bold text-gray-400 transition-all duration-200 peer-checked:bg-white peer-checked:shadow-sm hover:text-gray-600"
-          >
-            <x-dynamic-component
-              component="lucide-rows-3"
-              class="h-4 w-4 transition-transform group-hover:scale-110"
-            />
-            Normal
-          </div>
-        </label>
-
-        {{-- Opsi 3: Lebar --}}
-        <label class="group relative cursor-pointer">
-          <input
-            type="radio"
-            wire:model.live="content.{{ $blockId }}.data.padding"
-            value="py-24 sm:py-[96px]"
-            class="peer sr-only"
-          />
-          <div
-            class="peer-checked:text-foresty text-xxs flex items-center gap-1 rounded-sm px-1 py-0.75 font-bold text-gray-400 transition-all duration-200 peer-checked:bg-white peer-checked:shadow-sm hover:text-gray-600"
-          >
-            <x-dynamic-component
-              component="lucide-rows-2"
-              class="h-4 w-4 transition-transform group-hover:scale-110"
-            />
-            Wide
-          </div>
-        </label>
-      </div>
-    </div>
-  </div>
-
-  {{-- BODIES --}}
-  {{-- <div class="space-y-2 rounded-b-xl bg-white p-4">
-    {{-- 🌟 WADAH RESPONSIF FLEX-WRAP: Berbaris sejajar, turun jika sempit --}
-    <div class="flex flex-wrap items-start gap-x-12 gap-y-3">
-      {{-- 🎨 PILIHAN WARNA LATAR (Color Swatches) --}
-      <div class="flex flex-col gap-1.5">
-        <label class="text-foresty text-xs font-bold uppercase"
-          >Warna Latar</label
+      {{-- content.{{ $blockId }}.data.padding --}}
+        <label class="text-xxs font-bold text-gray-700 uppercase"
+          >Padding atas & bawah</label
         >
-        <div class="mt-1 flex flex-wrap gap-4">
-          @php
-            $bgOptions = [
-              ["value" => "bg-white", "label" => "Putih", "colorClass" => "bg-white"],
-              ["value" => "bg-paper", "label" => "Paper", "colorClass" => "bg-paper"],
-              ["value" => "bg-coral", "label" => "Koral", "colorClass" => "bg-coral"],
-              ["value" => "bg-foresty", "label" => "Hutan", "colorClass" => "bg-foresty"],
-              ["value" => "bg-mist", "label" => "Kabut", "colorClass" => "bg-mist"],
-              [
-                "value" => "bg-sage-soft",
-                "label" => "Ijo Sage",
-                "colorClass" => "bg-sage-soft",
-              ],
-            ];
-          @endphp
-
-          @foreach ($bgOptions as $bg)
-            <label
-              class="group flex cursor-pointer flex-col items-center gap-1.5"
+        <div
+          class="flex w-fit transform items-center gap-1 rounded-md bg-gray-200 p-0.75 shadow-inner transition-all duration-300"
+        >
+          @foreach ($paddingOptions as $item)
+            <button
+              type="button"
+              x-on:click="localPadding = '{{ $item['value'] }}'"
+              class="group text-xxs flex items-center gap-1 rounded px-1.5 py-1 font-bold transition-all outline-none"
+              {{-- class="group flex items-center gap-1 rounded px-1.5 py-1 transition-all outline-none" --}}
+              x-bind:class="(localPadding || 'py-16 sm:py-24') === '{{ $item['value'] }}' ? 'bg-white shadow-sm text-forest' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'"
+              title="{{ $item['name'] ?? $item['label'] }}"
             >
-              <input
-                type="radio"
-                wire:model.live="content.{{ $blockId }}.data.background"
-                value="{{ $bg['value'] }}"
-                class="peer sr-only"
-              />
+            <x-dynamic-component
+              component="{{ $item['preview'] ?? 'lucide-rows-4' }}"
+              class="h-4 w-4 transition-transform group-hover:scale-110"
+            />
 
-              <div
-                class="w-6 h-6 rounded-md {{ $bg['colorClass'] }} border border-gray-200 shadow-sm 
-                        peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-foresty 
-                        hover:scale-115 transition-all duration-200"
-              ></div>
-
+              <!-- Label Teks -->
               <span
-                class="peer-checked:text-foresty text-[10px] font-medium text-gray-500 transition-colors peer-checked:font-bold"
+                x-bind:class="(localPadding || 'py-16 sm:py-24') === '{{ $item['value'] }}' ? 'text-forest' : 'text-gray-400/70'"
+                class="text-xxs font-bold uppercase"
+                >{{
+                  $item["name"] ??
+                    $item["label"]
+                }}</span
               >
-                {{ $bg["label"] }}
-              </span>
-            </label>
+            </button>
           @endforeach
         </div>
       </div>
-
-      {{-- 📝 PILIHAN WARNA TEKS UTAMA (Typography Swatches) --}
-      <div class="flex flex-col gap-1.5">
-        <label class="text-foresty text-xs font-bold uppercase"
-          >Warna Teks Utama</label
-        >
-        <div class="mt-1 flex flex-wrap gap-4">
-          {{-- Opsi Teks Gelap --}
-  <label class="group flex cursor-pointer flex-col items-center gap-1.5">
-    <input
-      type="radio"
-      wire:model.live="content.{{ $blockId }}.data.text_color"
-      value="text-gray-900"
-      class="peer sr-only"
-    />
-    <div
-      class="peer-checked:ring-foresty flex h-6 w-6 items-center justify-center rounded-md border border-gray-200 bg-gray-900 shadow-sm transition-all duration-200 group-hover:scale-110 peer-checked:ring-2 peer-checked:ring-offset-2"
-    >
-      <span class="font-serif text-sm font-bold text-white">Aa</span>
-    </div>
-    <span
-      class="peer-checked:text-foresty text-[10px] font-medium text-gray-500 peer-checked:font-bold"
-      >Gelap</span
-    >
-  </label>
-
-  {{-- Opsi Teks Terang --}
-  <label class="group flex cursor-pointer flex-col items-center gap-1.5">
-    <input
-      type="radio"
-      wire:model.live="content.{{ $blockId }}.data.text_color"
-      value="text-white"
-      class="peer sr-only"
-    />
-    <div
-      class="peer-checked:ring-foresty flex h-6 w-6 items-center justify-center rounded-md border border-gray-200 bg-white shadow-sm transition-all duration-200 group-hover:scale-110 peer-checked:ring-2 peer-checked:ring-offset-2"
-    >
-      <span class="font-serif text-sm font-bold text-gray-900">Aa</span>
-    </div>
-    <span
-      class="peer-checked:text-foresty text-[10px] font-medium text-gray-500 peer-checked:font-bold"
-      >Terang</span
-    >
-  </label>
-  </div>
   </div>
 
-  {{-- 📏 Pilihan Padding --}}
-  {{-- <div class="flex flex-col gap-1 border-gray-100">
-        <label class="text-foresty text-xs font-bold uppercase"
-          >Jarak Luar (Padding)</label
-        >
-        <select
-          wire:model.live="content.{{ $blockId }}.data.padding"
-          class="text-foresty focus:ring-foresty max-w-[250px] rounded border-gray-200 bg-white py-1.5 text-xs shadow-sm"
-        >
-          <option value="py-8 sm:py-12">Sempit (Compact)</option>
-          <option value="py-16 sm:py-24">Sedang (Standar)</option>
-          <option value="py-24 sm:py-[96px]">Lebar (Spacious)</option>
-        </select>
-      </div> --}}
-  {{-- 📏 Pilihan Padding (Segmented Control) --}
-      <div class="flex flex-col gap-2">
-        <label class="text-foresty text-xs font-bold uppercase">
-          Jarak Luar (Padding)
-        </label>
 
-        <div
-          class="inline-flex w-fit items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-100/80 p-0.5 shadow-inner"
-        >
-          {{-- Opsi 1: Sempit --}
-          <label class="group relative cursor-pointer">
-            <input
-              type="radio"
-              wire:model.live="content.{{ $blockId }}.data.padding"
-              value="py-8 sm:py-12"
-              class="peer sr-only"
-            />
-            <div
-              class="peer-checked:text-foresty text-xxs flex items-center gap-1.5 rounded-md px-3 py-1.5 font-bold text-gray-400 transition-all duration-200 peer-checked:bg-white peer-checked:shadow-sm hover:text-gray-600"
-            >
-              <x-dynamic-component
-                component="lucide-rows-4"
-                class="h-4 w-4 transition-transform group-hover:scale-110"
-              />
-              SEMPIT
-            </div>
-          </label>
-
-          {{-- Opsi 2: Sedang --}
-          <label class="group relative cursor-pointer">
-            <input
-              type="radio"
-              wire:model.live="content.{{ $blockId }}.data.padding"
-              value="py-16 sm:py-24"
-              class="peer sr-only"
-            />
-            <div
-              class="peer-checked:text-foresty text-xxs flex items-center gap-1.5 rounded-md px-3 py-1.5 font-bold text-gray-400 transition-all duration-200 peer-checked:bg-white peer-checked:shadow-sm hover:text-gray-600"
-            >
-              <x-dynamic-component
-                component="lucide-rows-3"
-                class="h-4 w-4 transition-transform group-hover:scale-110"
-              />
-              SEDANG
-            </div>
-          </label>
-
-          {{-- Opsi 3: Lebar --}
-          <label class="group relative cursor-pointer">
-            <input
-              type="radio"
-              wire:model.live="content.{{ $blockId }}.data.padding"
-              value="py-24 sm:py-[96px]"
-              class="peer sr-only"
-            />
-            <div
-              class="peer-checked:text-foresty text-xxs flex items-center gap-1.5 rounded-md px-3 py-1.5 font-bold text-gray-400 transition-all duration-200 peer-checked:bg-white peer-checked:shadow-sm hover:text-gray-600"
-            >
-              <x-dynamic-component
-                component="lucide-rows-2"
-                class="h-4 w-4 transition-transform group-hover:scale-110"
-              />
-              LEBAR
-            </div>
-          </label>
-        </div>
-      </div>
-    </div>
-  </div> --}}
 </x-blocks.editor.wrapper>

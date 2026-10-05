@@ -424,7 +424,7 @@
               <!-- Label Teks -->
               {{-- <span
                 class="text-xxs font-bold tracking-tight uppercase"
-                >{{ $item["label"] }}</span 
+                >{{ $item["label"] }}</span
                 >
                 --}}
             </button>
@@ -598,7 +598,7 @@
           </label>
           <input
             type="text"
-            wire:model.live.debounce.500ms="content.{{ $blockId }}.data.alt"
+            wire:model.live.debounce.500ms="content.{{ $blockId }}.data.alt_text"
             placeholder="Mendeskripsikan isi gambar..."
             class="focus:border-foresty focus:ring-foresty w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-600 shadow-sm transition-colors"
           />

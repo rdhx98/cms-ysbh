@@ -63,16 +63,21 @@ new class extends Component {
   {
     $mediaId = $data["id"];
     $url = $data["url"];
-
-    // basePath adalah path array JSON. Contoh: 'content.block_1.data'
+    $altText = $data["alt_text"] ?? "";
     $basePath = $data["componentId"];
 
-    // Buang teks awalan 'content.' agar sesuai dengan struktur $this->content di Livewire
     $cleanPath = preg_replace("/^content\./", "", $basePath);
 
-    // Secara ajaib, helper data_set akan menembus array sedalam apa pun
     data_set($this->content, $cleanPath . ".url", $url);
     data_set($this->content, $cleanPath . ".media_id", $mediaId);
+    data_set($this->content, $cleanPath . ".alt_text", $altText);
+
+    // 🌟 TAMBAHKAN BARIS INI: Kirim sinyal paksa ke tampilan UI (Alpine.js)
+    $this->dispatch(
+      "update-block-alt",
+      componentId: $basePath,
+      altText: $altText,
+    );
   }
 
   protected function messages()
@@ -243,12 +248,23 @@ new class extends Component {
     }
 
     // 6. BUAT BLOK DEFAULT JIKA EDITOR KOSONG TOTAL
-    if (empty($this->content)) {
+    // if (empty($this->content)) {
+    //   $id = "blk_" . uniqid();
+    //   $this->content[$id] = [
+    //     "id" => $id,
+    //     "type" => "heading",
+    //     "data" => ["text" => array_fill_keys($this->activeLocales, "")],
+    //   ];
+    //   $this->blockOrder = [$id];
+    // }
+    // 6. BUAT BLOK DEFAULT JIKA HALAMAN BARU (Patuh penuh pada HasContentBlocks)
+    if (!$this->isEditMode && empty($this->content)) {
       $id = "blk_" . uniqid();
       $this->content[$id] = [
         "id" => $id,
         "type" => "heading",
-        "data" => ["text" => array_fill_keys($this->activeLocales, "")],
+        // 🌟 Ambil langsung dari sumber kebenaran tunggal (Single Source of Truth)
+        "data" => $this->getDefaultDataForType("heading"),
       ];
       $this->blockOrder = [$id];
     }
@@ -773,14 +789,14 @@ new class extends Component {
                 setTimeout(() => el.classList.remove('ring-2', 'ring-foresty', 'ring-offset-2'), 1500);
               }
             "
-            x-bind:class="activeBlockId === '{{ $bId }}' ? 
-            'border-foresty bg-sage-soft shadow-sm scale-110' : 
+            x-bind:class="activeBlockId === '{{ $bId }}' ?
+            'border-foresty bg-sage-soft shadow-sm scale-110' :
             'border-gray-200 bg-white hover:border-foresty hover:bg-sage-soft hover:scale-110'"
             class="group ml-2 flex w-full origin-right items-center gap-3 rounded-md border text-left transition-all outline-none"
           >
             <span
-              x-bind:class="activeBlockId === '{{ $bId }}' ? 
-              'bg-foresty text-gray-100 shadow-sm' : 
+              x-bind:class="activeBlockId === '{{ $bId }}' ?
+              'bg-foresty text-gray-100 shadow-sm' :
               'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-foresty'"
               class="text-xxs flex h-5 w-5 shrink-0 items-center justify-center rounded-md font-bold transition-colors"
             >

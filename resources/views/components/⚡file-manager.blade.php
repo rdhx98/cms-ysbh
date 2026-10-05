@@ -69,9 +69,12 @@ new class extends Component {
 
   public function selectMedia($mediaId, $mediaUrl)
   {
+    $media = Media::find($mediaId);
+    $altText = $media ? $media->alt_text : '';
     $this->dispatch($this->targetEvent, [
       "id" => $mediaId,
       "url" => $mediaUrl,
+      "alt_text" => $altText,
       "componentId" => $this->targetComponentId,
     ]);
     $this->dispatch("hide-file-manager-modal");
@@ -1684,21 +1687,7 @@ new class extends Component {
                         />
                       @endif
 
-                      <!-- Lapisan Tombol (Khusus Modal) -->
                       {{-- @if ($isModal)
-                        <div
-                          class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100"
-                        >
-                          <button
-                            type="button"
-                            wire:click.stop="selectMedia({{ $media->id }}, '{{ $media->url() }}')"
-                            class="bg-foresty cursor-pointer rounded-lg px-4 py-2 text-xxs font-bold text-white shadow-md transition-colors outline-none hover:bg-emerald-700"
-                          >
-                            Gunakan Berkas
-                          </button>
-                        </div>
-                      @endif --}}
-                      @if ($isModal)
                         <!-- 🌟 PERBAIKAN: Gunakan hidden md:flex agar tombol ini Lenyap di HP -->
                         <div
                           class="absolute inset-0 hidden items-center justify-center bg-black/40 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 md:flex"
@@ -1711,7 +1700,7 @@ new class extends Component {
                             Pilih Berkas
                           </button>
                         </div>
-                      @endif
+                      @endif --}}
                     </div>
 
                     <!-- Detail Nama & Ukuran -->
@@ -1985,342 +1974,6 @@ new class extends Component {
           x-cloak
         ></div>
 
-        <!-- Panel Info: Laci di Bawah (Mobile) & Kolom Statis di Kanan (PC) -->
-        {{-- <div
-          x-show="isInfoOpen"
-          class="absolute inset-x-0 bottom-0 z-[70] flex h-[85vh] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl md:relative md:inset-auto md:z-auto md:h-auto md:shrink-0 md:rounded-none md:border-l md:border-gray-200"
-          x-transition:enter="transition-all ease-out duration-300"
-          x-transition:enter-start="translate-y-full md:translate-y-0 md:w-0 md:opacity-0"
-          x-transition:enter-end="translate-y-0 md:w-80 md:opacity-100"
-          x-transition:leave="transition-all ease-in duration-200"
-          x-transition:leave-start="translate-y-0 md:w-80 md:opacity-100"
-          x-transition:leave-end="translate-y-full md:translate-y-0 md:w-0 md:opacity-0"
-          x-cloak
-        >
-          @if ($this->selectedDetails)
-            <!-- Pembungkus Lebar Tetap agar konten tidak menyusut jelek saat dianimasikan -->
-            <div class="flex h-full w-full flex-col md:w-80">
-              <!-- 🌟 PERBAIKAN 3: KONDISI FILE JAMAK (MULTIPLE) DIKEMBALIKAN -->
-              @if ($this->selectedDetails["type"] === "multiple")
-                <div
-                  class="flex flex-1 flex-col items-center justify-center p-6 text-center"
-                >
-                  <button
-                    type="button"
-                    x-on:click="
-                      isInfoOpen = false;
-                      setTimeout(() => {
-                        $wire.closeInfoPanel();
-                      }, 300);
-                    "
-                    class="absolute top-4 right-4 z-10 cursor-pointer rounded-full bg-gray-100 p-1.5 text-gray-500 shadow-sm outline-none hover:text-gray-800"
-                  >
-                    <x-dynamic-component component="lucide-x" class="h-5 w-5" />
-                  </button>
-
-                  <div class="relative mb-6 h-24 w-24">
-                    <div
-                      class="bg-sage-soft absolute inset-0 scale-105 -rotate-6 rounded-2xl opacity-50"
-                    ></div>
-                    <div
-                      class="absolute inset-0 scale-95 rotate-3 rounded-2xl bg-emerald-100 opacity-75"
-                    ></div>
-                    <div
-                      class="bg-foresty absolute inset-0 flex items-center justify-center rounded-2xl shadow-lg"
-                    >
-                      <span class="text-3xl font-black text-white">{{
-                        $this->selectedDetails[
-                          "count"
-                        ]
-                      }}</span>
-                    </div>
-                  </div>
-                  <h2 class="mb-2 text-xl font-bold text-gray-800">
-                    Item Dipilih
-                  </h2>
-                  <p class="mb-8 text-sm text-gray-500">Pilih aksi massal untuk file-file ini.</p>
-
-                  <div class="mt-auto w-full space-y-3">
-                    <button
-                      type="button"
-                      wire:click="openMovePanel"
-                      class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
-                    >
-                      <x-dynamic-component
-                        component="lucide-folder-symlink"
-                        class="h-4 w-4"
-                      />
-                      Pindahkan Semua
-                    </button>
-                    <button
-                      type="button"
-                      wire:click="bulkDelete"
-                      wire:confirm="Hapus {{ $this->selectedDetails['count'] }} file secara permanen?"
-                      class="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
-                    >
-                      <x-dynamic-component
-                        component="lucide-trash-2"
-                        class="h-4 w-4"
-                      />
-                      Hapus Semua
-                    </button>
-                  </div>
-                </div>
-
-                <!-- 🌟 KONDISI FILE TUNGGAL & FOLDER -->
-              @else
-                <!-- HEADER PREVIEW -->
-                <div
-                  class="relative flex shrink-0 items-center justify-center border-b border-gray-200 bg-gray-50 p-4"
-                >
-                  <button
-                    type="button"
-                    x-on:click="
-                      isInfoOpen = false;
-                      setTimeout(() => {
-                        $wire.closeInfoPanel();
-                      }, 300);
-                    "
-                    class="absolute top-4 right-4 z-10 cursor-pointer rounded-full bg-white/80 p-1.5 text-gray-500 shadow-sm backdrop-blur-sm outline-none hover:text-gray-800"
-                  >
-                    <x-dynamic-component component="lucide-x" class="h-5 w-5" />
-                  </button>
-
-                  @if ($this->selectedDetails["type"] === "media" &&
-                    $this->selectedDetails["is_image"])
-                    <img
-                      src="{{ $this->selectedDetails['url'] }}"
-                      class="h-48 w-full rounded-xl object-cover shadow-sm"
-                      alt="Preview"
-                    />
-                  @elseif ($this->selectedDetails["type"] === "folder")
-                    <x-dynamic-component
-                      component="lucide-folder"
-                      class="text-foresty/40 my-8 h-24 w-24"
-                    />
-                  @else
-                    <x-dynamic-component
-                      component="lucide-file-text"
-                      class="my-8 h-24 w-24 text-gray-400"
-                    />
-                  @endif
-                </div>
-
-                <!-- DETAIL METADATA -->
-                <div class="flex-1 scrollbar-thin overflow-y-auto p-5">
-                  <h2
-                    class="mb-1 text-xl leading-tight font-bold break-words text-gray-800"
-                  >
-                    {{
-                      $this->selectedDetails[
-                        "name"
-                      ]
-                    }}
-                  </h2>
-                  <p class="mb-4 text-xs font-semibold text-gray-400">{{
-                    $this->selectedDetails[
-                      "path"
-                    ]
-                  }}</p>
-
-                  <!-- Status Badge -->
-                  <div
-                    class="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1"
-                  >
-                    <div
-                      class="h-2 w-2 rounded-full {{ $this->selectedDetails['is_used'] ? 'bg-orange-500' : 'bg-foresty' }}"
-                    ></div>
-                    <span
-                      class="text-[11px] font-bold {{ $this->selectedDetails['is_used'] ? 'text-orange-700' : 'text-foresty' }}"
-                    >
-                      {{
-                        $this->selectedDetails["is_used"]
-                          ? "Terpakai"
-                          : "Belum dipakai"
-                      }}
-                    </span>
-                  </div>
-
-                  <!-- Input Alt Text -->
-                  @if ($this->selectedDetails["type"] === "media" &&
-                    $this->selectedDetails["is_image"])
-                    <div class="mb-6">
-                      <label
-                        class="mb-2 flex items-center gap-2 text-[10px] font-bold tracking-widest text-gray-500"
-                      >
-                        <x-dynamic-component
-                          component="lucide-image"
-                          class="h-3 w-3"
-                        />
-                        TEKS ALTERNATIF (ALT TEXT)
-                      </label>
-                      <input
-                        type="text"
-                        wire:model.blur="activeAltText"
-                        placeholder="Deskripsikan gambar ini..."
-                        class="focus:border-foresty focus:ring-foresty w-full rounded-lg border-orange-200 bg-orange-50/30 p-3 text-sm shadow-sm"
-                      />
-                      @if (empty($this->activeAltText))
-                        <p class="mt-1.5 text-[10px] font-bold text-orange-600">Belum diisi — pembaca layar & mesin pencari tidak akan memahami gambar ini.</p>
-                      @endif
-                    </div>
-                  @endif
-
-                  <!-- Grid Metadata Tabel -->
-                  <div class="mb-6 space-y-3">
-                    <div
-                      class="flex justify-between border-b border-gray-100 py-2"
-                    >
-                      <span class="text-sm font-semibold text-gray-500"
-                        >Ukuran</span
-                      >
-                      <span class="text-sm font-bold text-gray-800">{{
-                        $this->selectedDetails[
-                          "size"
-                        ]
-                      }}</span>
-                    </div>
-                    @if ($this->selectedDetails["type"] === "media")
-                      <div
-                        class="flex justify-between border-b border-gray-100 py-2"
-                      >
-                        <span class="text-sm font-semibold text-gray-500"
-                          >Dimensi</span
-                        >
-                        <span class="text-sm font-bold text-gray-800">{{
-                          $this->selectedDetails[
-                            "dimensions"
-                          ]
-                        }}</span>
-                      </div>
-                    @endif
-                    <div
-                      class="flex justify-between border-b border-gray-100 py-2"
-                    >
-                      <span class="text-sm font-semibold text-gray-500"
-                        >Diunggah</span
-                      >
-                      <span class="text-sm font-bold text-gray-800">{{
-                        $this->selectedDetails[
-                          "created_at"
-                        ]
-                      }}</span>
-                    </div>
-                    <div
-                      class="flex justify-between border-b border-gray-100 py-2"
-                    >
-                      <span class="text-sm font-semibold text-gray-500"
-                        >Oleh</span
-                      >
-                      <span class="text-sm font-bold text-gray-800">{{
-                        $this->selectedDetails[
-                          "uploader"
-                        ]
-                      }}</span>
-                    </div>
-                    @if ($this->selectedDetails["type"] === "folder")
-                      <div
-                        class="flex justify-between border-b border-gray-100 py-2"
-                      >
-                        <span class="text-sm font-semibold text-gray-500"
-                          >Isi Folder</span
-                        >
-                        <span class="text-sm font-bold text-gray-800">{{
-                          $this->selectedDetails[
-                            "count"
-                          ]
-                        }}</span>
-                      </div>
-                    @endif
-                  </div>
-
-                  <!-- Usage Tracker -->
-                  <div class="mb-6">
-                    <h3
-                      class="mb-2 text-[10px] font-bold tracking-widest text-gray-500"
-                    >
-                      DIGUNAKAN DI
-                    </h3>
-                    <p class="text-xs text-gray-400 italic">
-                      {{
-                        $this->selectedDetails["is_used"]
-                          ? "Digunakan pada artikel/halaman."
-                          : "Belum dipakai di halaman mana pun."
-                      }}
-                    </p>
-                  </div>
-
-                  <!-- Tombol Aksi -->
-                  <div class="mt-auto space-y-2">
-                    @if ($this->selectedDetails["type"] === "media")
-                      <!-- 🌟 TOMBOL GUNAKAN (Khusus Mode Modal) -->
-                      @if ($isModal)
-                        <button
-                          type="button"
-                          wire:click="selectMedia({{ $this->selectedDetails['id'] }}, '{{ $this->selectedDetails['url'] }}')"
-                          class="bg-foresty flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-md transition-colors outline-none hover:bg-emerald-800"
-                        >
-                          <x-dynamic-component
-                            component="lucide-check-circle"
-                            class="h-4 w-4"
-                          />
-                          Gunakan Berkas Ini
-                        </button>
-                        <div class="my-3 border-t border-gray-100"></div>
-                      @endif
-
-                      <a
-                        href="{{ $this->selectedDetails['url'] }}"
-                        download
-                        class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors"
-                      >
-                        <x-dynamic-component
-                          component="lucide-download"
-                          class="h-4 w-4"
-                        />
-                        Unduh
-                      </a>
-                      <button
-                        type="button"
-                        @click="navigator.clipboard.writeText('{{ $this->selectedDetails['url'] }}'); $wire.notify('Tautan disalin!', 'success')"
-                        class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
-                      >
-                        <x-dynamic-component
-                          component="lucide-link"
-                          class="h-4 w-4"
-                        />
-                        Salin Tautan
-                      </button>
-                      <button
-                        type="button"
-                        @click="let n = prompt('Ganti nama file:', '{{ addslashes($this->selectedDetails['name']) }}'); if(n) { $wire.renameMedia({{ $this->selectedDetails['id'] }}, n); }"
-                        class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
-                      >
-                        <x-dynamic-component
-                          component="lucide-pencil"
-                          class="h-4 w-4"
-                        />
-                        Ganti Nama
-                      </button>
-                    @endif
-                    <button
-                      type="button"
-                      wire:click="deleteMedia({{ $this->selectedDetails['id'] }})"
-                      wire:confirm="Hapus item ini secara permanen?"
-                      class="mt-4 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
-                    >
-                      <x-dynamic-component
-                        component="lucide-trash-2"
-                        class="h-4 w-4"
-                      />
-                      Pindah ke Sampah
-                    </button>
-                  </div>
-                </div>
-              @endif
-            </div>
-          @endif
-        </div> --}}
         <div
           class="absolute inset-x-0 bottom-0 z-[70] flex h-[85vh] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl transition-transform duration-300 ease-in-out md:relative md:inset-auto md:z-auto md:h-auto md:w-80 md:shrink-0 md:translate-y-0 md:rounded-none md:border-l md:border-gray-200 md:transition-none"
           x-bind:class="isInfoOpen ? 'translate-y-0' : 'translate-y-full'"
@@ -2504,10 +2157,26 @@ new class extends Component {
                       }}
                     </span>
                   </div>
+                  @if ($this->selectedDetails["type"] === "media")
+                      @if ($isModal)
+                        <button
+                          type="button"
+                          wire:click="selectMedia({{ $this->selectedDetails['id'] }}, '{{ $this->selectedDetails['url'] }}')"
+                          class="bg-foresty border border-white hover:border-aurum flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-md transition-colors outline-none hover:text-aurum"
+                        >
+                          <x-dynamic-component
+                            component="lucide-check-circle"
+                            class="h-4 w-4"
+                          />
+                          Gunakan Berkas Ini
+                        </button>
+                        <div class="my-3 border-t border-gray-100"></div>
+                      @endif
+                      @endif
 
                   @if ($this->selectedDetails["type"] === "media" &&
                     $this->selectedDetails["is_image"])
-                    <div class="mb-6">
+                    {{-- <div class="mb-6">
                       <label
                         class="mb-2 flex items-center gap-2 text-[10px] font-bold tracking-widest text-gray-500"
                       >
@@ -2526,7 +2195,60 @@ new class extends Component {
                       @if (empty($this->activeAltText))
                         <p class="mt-1.5 text-[10px] font-bold text-orange-600">Belum diisi — pembaca layar & mesin pencari tidak akan memahami gambar ini.</p>
                       @endif
-                    </div>
+                    </div> --}}
+                    <div
+    class="mb-6 rounded-xl border p-4 transition-all duration-300"
+    x-data
+    x-bind:class="$wire.activeAltText === '' ? 'border-orange-200 bg-orange-50/50' : 'border-gray-200 bg-gray-50'"
+  >
+    <div class="mb-3 flex items-center justify-between">
+      <label
+        class="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase transition-colors"
+        x-bind:class="$wire.activeAltText === '' ? 'text-orange-600' : 'text-gray-500'"
+      >
+        <x-dynamic-component component="lucide-image" class="h-3 w-3" />
+        Teks Alternatif (Alt)
+      </label>
+
+      <!-- Indikator Menyimpan (Livewire) -->
+      <div wire:loading wire:target="activeAltText" class="flex items-center gap-1 text-[10px] font-bold text-gray-500">
+        <x-dynamic-component component="lucide-loader-2" class="h-3 w-3 animate-spin" />
+        Menyimpan...
+      </div>
+
+      <!-- Indikator Selesai/Tersimpan -->
+      <div wire:loading.remove wire:target="activeAltText">
+        <span
+          x-show="$wire.activeAltText !== ''"
+          class="flex items-center gap-1 text-[10px] font-bold text-foresty"
+          style="display: none;"
+        >
+          <x-dynamic-component component="lucide-check-circle" class="h-3 w-3" />
+          Tersimpan
+        </span>
+      </div>
+    </div>
+
+    <textarea
+      wire:model.blur="activeAltText"
+      rows="2"
+      placeholder="Contoh: 'Tiga relawan membagikan buku di pedalaman desa...'"
+      class="w-full resize-none rounded-lg border bg-white p-3 text-xs shadow-sm transition-all focus:outline-none focus:ring-2"
+      x-bind:class="$wire.activeAltText === '' ? 'border-orange-300 focus:border-orange-400 focus:ring-orange-200 text-orange-900 placeholder-orange-300/80' : 'border-gray-300 focus:border-foresty focus:ring-foresty/20 text-gray-700'"
+    ></textarea>
+
+    <p
+      class="mt-2 text-[10px] leading-relaxed transition-colors"
+      x-bind:class="$wire.activeAltText === '' ? 'text-orange-600 font-semibold' : 'text-gray-400'"
+    >
+      <span x-show="$wire.activeAltText === ''">
+        ⚠️ <strong>Wajib untuk SEO:</strong> Gambar tanpa Alt Text tidak bisa dibaca oleh Google dan menurunkan skor halaman.
+      </span>
+      <span x-show="$wire.activeAltText !== ''" style="display: none;">
+        Sempurna! Mesin pencari dan pembaca layar (tunanetra) sekarang dapat memahami isi gambar ini.
+      </span>
+    </p>
+  </div>
                   @endif
 
                   <div class="mb-6 space-y-3">
@@ -2614,7 +2336,7 @@ new class extends Component {
                   <!-- Tombol Aksi -->
                   <div class="mt-auto space-y-2">
                     @if ($this->selectedDetails["type"] === "media")
-                      @if ($isModal)
+                      {{-- @if ($isModal)
                         <button
                           type="button"
                           wire:click="selectMedia({{ $this->selectedDetails['id'] }}, '{{ $this->selectedDetails['url'] }}')"
@@ -2627,7 +2349,7 @@ new class extends Component {
                           Gunakan Berkas Ini
                         </button>
                         <div class="my-3 border-t border-gray-100"></div>
-                      @endif
+                      @endif --}}
 
                       <a
                         href="{{ $this->selectedDetails['url'] }}"

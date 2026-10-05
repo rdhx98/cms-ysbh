@@ -128,8 +128,9 @@
             <div
               class="flex flex-col flex-wrap items-center justify-start gap-y-2 rounded-lg border border-gray-100 bg-gray-50/50 p-3 shadow-inner md:flex-row md:flex-nowrap md:items-end md:justify-between md:gap-x-6"
             >
-              {{-- CARD BUILDER CONTROL ? --}}
+              <!-- CARD BUILDER CONTROL ? -->
               <div class="flex items-start gap-2">
+                {{-- <div class="flex shrink-0 items-start gap-2"> --}}
                 <!-- GRID CONTROL -->
                 <div
                   class="flex flex-col gap-1.5"
@@ -201,69 +202,39 @@
                 </div>
               </div>
 
-              {{-- TAB CARD NAVIGATION --}}
+              {{-- TAB CARD NAVIGATION md:flex-1--}}
               <div
-                class="flex w-full min-w-0 items-end gap-2 md:w-auto md:flex-1 md:justify-end"
+                class="flex w-full min-w-0 flex-1 items-end gap-2 md:justify-end"
+                x-data
               >
-                {{-- 🌟 WADAH SCROLL DENGAN ALPINE JS --}}
+                {{-- WADAH SCROLL DENGAN ALPINE JS --}}
                 <div
-                  class="relative flex min-w-0 flex-1 items-center md:max-w-[400px] md:flex-none lg:max-w-[600px]"
-                  x-data="{
-                    canScrollLeft: false,
-                    canScrollRight: false,
-                    checkScroll() {
-                      let el = this.$refs.tabContainer;
-                      if (!el) return;
-                      // Cek apakah bisa geser kiri (posisi > 2px)
-                      this.canScrollLeft = el.scrollLeft > 2;
-                      // Cek apakah bisa geser kanan (total scroll + lebar terlihat < lebar total)
-                      this.canScrollRight =
-                        Math.ceil(el.scrollLeft + el.clientWidth) <
-                        el.scrollWidth - 2;
-                    },
-                  }"
-                  x-init="
-                    $nextTick(() => checkScroll());
-                    // Pantau perubahan ukuran layar
-                    window.addEventListener('resize', () => checkScroll());
-                    // Pantau penambahan/pengurangan tab oleh Livewire
-                    let observer = new MutationObserver(() => checkScroll());
-                    observer.observe($refs.tabContainer, {
-                      childList: true,
-                      subtree: true,
-                    });
-                  "
+                  class="flex min-w-0 flex-1 items-center gap-1.5 md:max-w-md lg:max-w-lg"
                 >
-                  <!-- 🌟 TOMBOL PANAH KIRI -->
-                  <div
-                    x-show="canScrollLeft"
-                    x-transition.opacity.duration.300ms
-                    x-cloak
-                    class="absolute top-0 bottom-0 left-0 z-10 flex items-center bg-linear-to-r from-gray-50 via-gray-50/90 to-transparent pr-6 pl-1"
+                  <!-- 🌟 TOMBOL PANAH KIRI (Selalu Tampil) -->
+                  <button
+                    type="button"
+                    x-on:click="
+                      $refs.tabContainer.scrollBy({
+                        left: -200,
+                        behavior: 'smooth',
+                      })
+                    "
+                    class="hover:text-foresty flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md bg-gray-100 text-gray-500 transition-colors outline-none hover:bg-gray-200"
+                    title="Geser Kiri"
                   >
-                    <button
-                      type="button"
-                      x-on:click="
-                        $refs.tabContainer.scrollBy({
-                          left: -200,
-                          behavior: 'smooth',
-                        })
-                      "
-                      class="hover:text-foresty flex h-6 w-6 items-center justify-center rounded-full bg-white text-gray-600 shadow-md ring-1 ring-gray-200 transition-transform hover:scale-110"
-                    >
-                      <x-dynamic-component
-                        component="lucide-chevron-left"
-                        class="h-3.5 w-3.5"
-                        stroke-width="3"
-                      />
-                    </button>
-                  </div>
+                    <x-dynamic-component
+                      component="lucide-chevron-left"
+                      class="h-4 w-4"
+                      stroke-width="3"
+                    />
+                  </button>
 
-                  {{-- NAVIGASI TAB KARTU --}}
+                  <!-- NAVIGASI TAB KARTU -->
                   <div
                     x-ref="tabContainer"
-                    @scroll.debounce.50ms="checkScroll"
-                    class="no-scrollbar flex flex-1 gap-2 overflow-x-auto scroll-smooth"
+                    {{-- @scroll.debounce.50ms="checkScroll" --}}
+                    class="no-scrollbar flex flex-1 justify-end gap-2 overflow-x-auto scroll-smooth"
                   >
                     @foreach ($cards as $index => $card)
                       <div
@@ -284,8 +255,8 @@
                         <button
                           type="button"
                           wire:click="duplicateCardItem('{{ $blockId }}', {{ $index }})"
-                          class="rounded p-0.5 transition-colors outline-none hover:bg-blue-500 hover:text-white"
-                          x-bind:class="activeCard === {{ $index }} ? 'text-gray-200 hover:text-white' : 'text-gray-400 hover:text-white'"
+                          class="hover:bg-aurum hover:text-forest rounded p-0.5 transition-colors outline-none"
+                          x-bind:class="activeCard === {{ $index }} ? 'text-gray-200 ' : 'text-gray-400'"
                           title="Gandakan Kartu"
                         >
                           <x-dynamic-component
@@ -311,31 +282,24 @@
                       </div>
                     @endforeach
                   </div>
-
-                  <!-- 🌟 TOMBOL PANAH KANAN -->
-                  <div
-                    x-show="canScrollRight"
-                    x-transition.opacity.duration.300ms
-                    x-cloak
-                    class="absolute top-0 right-0 bottom-0 z-10 flex items-center bg-linear-to-l from-gray-50 via-gray-50/90 to-transparent pr-1 pl-6"
+                  <!-- 🌟 TOMBOL PANAH KANAN (Selalu Tampil) -->
+                  <button
+                    type="button"
+                    x-on:click="
+                      $refs.tabContainer.scrollBy({
+                        left: 200,
+                        behavior: 'smooth',
+                      })
+                    "
+                    class="hover:text-foresty flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md bg-gray-100 text-gray-500 transition-colors outline-none hover:bg-gray-200"
+                    title="Geser Kanan"
                   >
-                    <button
-                      type="button"
-                      x-on:click="
-                        $refs.tabContainer.scrollBy({
-                          left: 200,
-                          behavior: 'smooth',
-                        })
-                      "
-                      class="hover:text-foresty flex h-6 w-6 items-center justify-center rounded-full bg-white text-gray-600 shadow-md ring-1 ring-gray-200 transition-transform hover:scale-110"
-                    >
-                      <x-dynamic-component
-                        component="lucide-chevron-right"
-                        class="h-3.5 w-3.5"
-                        stroke-width="3"
-                      />
-                    </button>
-                  </div>
+                    <x-dynamic-component
+                      component="lucide-chevron-right"
+                      class="h-4 w-4"
+                      stroke-width="3"
+                    />
+                  </button>
                 </div>
 
                 <!-- TOMBOL MENU TAMBAH -->
@@ -383,13 +347,41 @@
             <!-- CONTROLS CARD CONTAINER -->
             <!-- ========================================== -->
             <div
+              x-data="{ isCardControllCollapsed: true }"
               x-show="activeCard === {{ $cIndex }}"
               x-cloak
               @sync-card-{{ strtolower($blockId) }}.window="if ($event.detail !== undefined) { activeCard = $event.detail.card; }"
               wire:key="card-settings-{{ $blockId }}-{{$cIndex }}"
-              class="rounded-t-xl border-x border-t border-gray-400 px-2 pt-2 pb-4"
+              class="bg-forest border-forest transform-gpu rounded-t-xl border-x border-t p-2 transition-all"
             >
-              <div class="rounded-lg border border-gray-100 p-3 shadow-inner">
+              <div
+                x-bind:class="isCardControllCollapsed ? '' : 'mb-2'"
+                class="flex items-center justify-end gap-2"
+              >
+                <span
+                  class="text-xxs text-aurum font-extrabold tracking-widest uppercase"
+                  >Card Control</span
+                >
+                <button
+                  type="button"
+                  class="bg-aurum text-forest flex items-center justify-center rounded-md p-2"
+                  x-on:click="
+                    isCardControllCollapsed = !isCardControllCollapsed
+                  "
+                >
+                  <x-dynamic-component
+                    component="lucide-sliders-horizontal"
+                    class="h-3.5 w-3.5 opacity-80"
+                    stroke-width="2.5"
+                  />
+                </button>
+              </div>
+              <div
+                x-show="!isCardControllCollapsed"
+                x-collapse
+                x-cloak
+                class="rounded-lg border border-gray-200 bg-white p-3 shadow-inner"
+              >
                 @php
                   $cBg = $card["container"]["bg"] ?? "bg-white";
                   $cBorderWidth = $card["container"]["border_width"] ?? "border-0";
@@ -403,72 +395,33 @@
 
                 <!-- CONTROLS-->
                 <div class="flex flex-wrap gap-5">
-                  {{-- Latar Belakang --}}
-                  {{-- <div class="flex flex-col gap-1.5">
-                    <span class="text-xxs font-bold text-gray-700 uppercase"
-                      >Latar Kartu</span
-                    >
-                    <div
-                      class="flex w-fit items-center rounded-md bg-gray-200 p-0.5 shadow-inner"
-                    >
-                      <button
-                        type="button"
-                        title="Putih"
-                        x-on:click="$wire.set('{{$basePath }}.bg', 'bg-white')"
-                        class="rounded p-1.5 transition-all outline-none {{ $cBg === 'bg-white' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}"
-                      >
-                        <div
-                          class="h-4 w-4 rounded-full border border-gray-300 bg-white"
-                        ></div>
-                      </button>
-                      <button
-                        type="button"
-                        title="Mist"
-                        x-on:click="$wire.set('{{$basePath }}.bg', 'bg-mist')"
-                        class="rounded p-1.5 transition-all outline-none {{ $cBg === 'bg-mist' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}"
-                      >
-                        <div
-                          class="h-4 w-4 rounded-full border border-gray-200 bg-gray-100"
-                        ></div>
-                      </button>
-                      <button
-                        type="button"
-                        title="Foresty"
-                        x-on:click="$wire.set('{{$basePath }}.bg', 'bg-foresty text-white')"
-                        class="rounded p-1.5 transition-all outline-none {{ $cBg === 'bg-foresty text-white' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}"
-                      >
-                        <div class="bg-foresty h-4 w-4 rounded-full"></div>
-                      </button>
-                    </div>
-                  </div> --}}
-
                   {{-- BG COLOR --}}
-                  <div class="flex flex-col gap-1.5">
+                  <div
+                    class="flex flex-col gap-1.5"
+                    x-data="{ localCardBgColor: $wire.entangle('{{ $basePath }}.bg').live || 'bg-forest' }"
+                  >
                     <label class="text-xxs font-bold text-gray-700 uppercase"
                       >Latar Kartu</label
                     >
                     <div class="flex flex-wrap gap-3 pb-6">
                       @foreach ($cardBgColors as $color)
-                        <!-- 1. Gunakan 'group/btn' alih-alih 'group' biasa -->
                         <div
                           class="group/btn relative flex flex-col items-center"
                         >
-                          {{-- wire:model.live="content.{{ $blockId }}.data.background" --}}
                           <button
                             type="button"
-                            {{-- $wire.set('{{$basePath }}.bg', 'bg-white') --}}
-                            x-on:click="$wire.set('{{ $basePath }}.bg}}', '{{ $color['value'] }}')"
+                            x-on:click="localCardBgColor = '{{ $color['value'] }}'"
                             class="border border-gray-200 hover:ring-forest {{ $color['value'] }} h-6 w-6 rounded-md shadow-sm transition-all duration-300 hover:scale-110 hover:shadow-md hover:ring-2 focus:outline-none"
-                            x-bind:class="($wire.get('{{ $basePath }}')?.bg ?? 'bg-paper').toLowerCase() === 
-                            '{{ strtolower($color['value']) }}' ? 
+                            x-bind:class="localCardBgColor ===
+                            '{{ strtolower($color['value']) }}' ?
                             'ring-2 ring-forest ring-offset-2 scale-110' : 'ring-1 hover:ring-offset-1 ring-gray-200/50'"
                           ></button>
 
                           <!-- 2. Ubah 'group-hover' menjadi 'group-hover/btn' -->
                           <span
                             class="text-xxs absolute top-full mt-2 font-bold whitespace-nowrap text-gray-700 uppercase transition-all duration-300"
-                            x-bind:class="($wire.get('{{ $basePath }}')?.bg ?? 'bg-paper').toLowerCase() === 
-                            '{{ strtolower($color['value']) }}' ? 
+                            x-bind:class="localCardBgColor ===
+                            '{{ strtolower($color['value']) }}' ?
                             'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 -translate-y-1 group-hover/btn:opacity-100 group-hover/btn:translate-y-0'"
                           >
                             {{ $color["name"] }}
@@ -495,7 +448,7 @@
                         <button
                           type="button"
                           x-on:click="$wire.set('{{$basePath }}.border_width', '{{ $bw['value'] }}')"
-                          class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBorderWidth === $bw['value'] ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
+                          class="rounded px-1 py-1 text-[10px] font-bold transition-all outline-none {{ $cBorderWidth === $bw['value'] ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
                         >
                           {{ $bw["label"] }}
                         </button>
@@ -514,8 +467,8 @@
                       @foreach ($borderStyles as $borderStyle)
                         <button
                           type="button"
-                          x-on:click="$wire.set('{{$basePath }}.border_style', {{ $borderStyle['value'] }})"
-                          class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBorderStyle === $borderStyle['value'] ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
+                          x-on:click="$wire.set('{{$basePath }}.border_style', '{{ $borderStyle['value'] }}')"
+                          class="rounded px-1.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBorderStyle === $borderStyle['value'] ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
                         >
                           <div
                             class="border-forest h-4 w-4 rounded-sm border-2 {{ $borderStyle['value'] }}"
@@ -526,70 +479,24 @@
                     </div>
                   </div>
 
-                  {{-- Border Color --}}
-                  {{-- <div class="flex flex-col gap-1.5">
-                    <span
-                      class="text-[9px] font-bold tracking-wide text-gray-400 uppercase"
-                      >Warna Tepian</span
-                    >
-                    <div
-                      class="flex w-fit items-center rounded-md bg-gray-200 p-0.5 shadow-inner"
-                    >
-                      <button
-                        type="button"
-                        x-on:click="$wire.set('{{$basePath }}.border_color', 'border-transparent')"
-                        class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBorderColor === 'border-gray-200' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
-                      >
-                        Abu-abu
-                      </button>
-                      <button
-                        type="button"
-                        x-on:click="$wire.set('{{$basePath }}.border_color', 'border-foresty')"
-                        class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cBorderColor === 'border-foresty' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
-                      >
-                        Foresty
-                      </button>
-                    </div>
-                  </div> --}}
-
                   {{-- BORDER COLOR --}}
-                  <div class="flex flex-col gap-1.5">
+                  <div
+                    class="flex flex-col gap-1.5"
+                    x-data="{ localCardBorderColor: $wire.entangle('{{ $basePath }}.border_color').live || 'border-coral' }"
+                  >
                     <label class="text-xxs font-bold text-gray-700 uppercase"
                       >Warna Tepian</label
                     >
                     <div class="flex flex-wrap gap-3 pb-6">
-                      <!--  x-on:/click="$wire.set('{/{$basePath }}.border_color', 'border-transparent')"-->
-                      {{-- <div
-                        class="group/btn relative flex flex-col items-center"
-                      >
-                      <!-- $wire.set('{{$basePath }}.bg', 'bg-white') -->
-                        <button
-                          type="button"
-                          x-on:click="$wire.set('{{ $basePath }}.border_color}}', '{{ $color['value'] }}')"
-                          class="border border-gray-200 hover:ring-forest {{ $color['preview'] }} h-6 w-6 rounded-md shadow-sm transition-all duration-300 hover:scale-110 hover:shadow-md hover:ring-2 focus:outline-none"
-                          x-bind:class="
-                          ($wire.get('{{ $basePath }}')?.border_color ?? 'bg-paper').toLowerCase() ===  '{{ strtolower($color['value']) }}' ?  'ring-2 ring-forest ring-offset-2 scale-110' : 'ring-1 hover:ring-offset-1 ring-gray-200/50'"
-                        ></button>
-
-                        <!-- 2. Ubah 'group-hover' menjadi 'group-hover/btn' -->
-                        <span
-                          class="text-xxs absolute top-full mt-2 font-bold whitespace-nowrap text-gray-700 uppercase transition-all duration-300"
-                          x-bind:class="($wire.get('{{ $basePath }}')?.border_color ?? 'bg-paper').toLowerCase() === 
-                          '{{ strtolower($color['value']) }}' ? 
-                          'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 -translate-y-1 group-hover/btn:opacity-100 group-hover/btn:translate-y-0'"
-                        >
-                          {{ $color["name"] }/}
-                        </span>
-                      </div> --}}
                       @foreach ($cardBorderColors as $color)
                         <div
                           class="group/btn relative flex flex-col items-center"
                         >
                           <button
                             type="button"
-                            x-on:click="$wire.set('{{ $basePath }}.border_color', '{{ $color['value'] }}')"
+                            x-on:click="localCardBorderColor = '{{ $color['value'] }}'"
                             class="flex items-center justify-center border border-gray-200 hover:ring-forest {{ $color['preview'] ?? $color['value'] }} h-6 w-6 rounded-md shadow-sm transition-all duration-300 hover:scale-110 hover:shadow-md hover:ring-2 focus:outline-none"
-                            x-bind:class="($wire.get('{{ $basePath }}')?.border_color ?? 'border-transparent').toLowerCase() === '{{ strtolower($color['value']) }}' ? 'ring-2 ring-forest ring-offset-2 scale-110' : 'ring-1 hover:ring-offset-1 ring-gray-200/50'"
+                            x-bind:class="localCardBorderColor === '{{ strtolower($color['value']) }}' ? 'ring-2 ring-forest ring-offset-2 scale-110' : 'ring-1 hover:ring-offset-1 ring-gray-200/50'"
                           >
                             {{-- 🌟 MUNCULKAN IKON BAN JIKA VALUE ADALAH TRANSPARANT --}}
                             @if (str_contains( strtolower($color["value"]), "border-transparent" ))
@@ -607,7 +514,7 @@
                           <!-- Label Hover -->
                           <span
                             class="text-xxs absolute top-full mt-2 font-bold whitespace-nowrap text-gray-700 uppercase transition-all duration-300"
-                            x-bind:class="($wire.get('{{ $basePath }}')?.border_color ?? 'border-transparent').toLowerCase() === '{{ strtolower($color['value']) }}' ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 -translate-y-1 group-hover/btn:opacity-100 group-hover/btn:translate-y-0'"
+                            x-bind:class="localCardBorderColor === '{{ strtolower($color['value']) }}' ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 -translate-y-1 group-hover/btn:opacity-100 group-hover/btn:translate-y-0'"
                           >
                             {{ $color["name"] }}
                           </span>
@@ -628,7 +535,7 @@
                         <button
                           type="button"
                           x-on:click="$wire.set('{{$basePath }}.radius', '{{ $item['value'] }}')"
-                          class="rounded px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cRadius === $item['value'] ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
+                          class="rounded px-1.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cRadius === $item['value'] ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
                           title="{{ $item["name"] }}"
                         >
                           <div
@@ -642,7 +549,7 @@
                   {{-- Padding --}}
                   <div class="flex flex-col gap-1.5">
                     <span class="text-xxs font-bold text-gray-700 uppercase"
-                      >Sudut & Padding</span
+                      >Padding</span
                     >
                     <div
                       class="flex w-fit items-center rounded-md bg-gray-200 p-0.5 shadow-inner"
@@ -651,7 +558,7 @@
                         <button
                           type="button"
                           x-on:click="$wire.set('{{$basePath }}.padding', '{{ $item['value'] }}')"
-                          class="rounded flex gap-2 px-2.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cPad === $item['value'] ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
+                          class="rounded flex gap-2 px-1.5 py-1 text-[10px] font-bold transition-all outline-none {{ $cPad === $item['value'] ? 'bg-white text-foresty shadow-sm' : 'text-gray-500 hover:text-gray-700' }}"
                         >
                           <!-- 🌟 Representasi Visual Padding -->
                           <div
@@ -666,7 +573,10 @@
                           </div>
 
                           <!-- Teks Keterangan (Kecil, Sedang, Besar) -->
-                          <span>{{ $item["name"] }}</span>
+                          <span
+                            class="text-xxs text-gray-700 uppercase"
+                            >{{ $item["name"] }}</span
+                          >
                         </button>
                       @endforeach
                     </div>
@@ -762,7 +672,7 @@
                         type="button"
                         {{-- 🌟 KUNCI: Kirim event dengan detail 'target' berisi alamat array Livewire --}}
                         x-on:click="$dispatch('buka-modal-link', { target: 'content.{{ $blockId }}.data.cards.{{$cIndex }}.container.url' })"
-                        class="focus:border-foresty focus:ring-foresty tezt-xxs text-forest flex h-7 w-fit items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white p-1.5 px-3 py-2 text-sm shadow-sm transition-colors hover:bg-gray-50"
+                        class="focus:border-foresty focus:ring-foresty text-xxs text-forest flex h-7 w-fit items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white p-1.5 px-3 py-2 text-sm shadow-sm transition-colors hover:bg-gray-50"
                       >
                         <span
                           x-text="$wire.content['{{ $blockId }}'].data?.cards?.['{{$cIndex }}'].container?.url || 'Pilih Tautan...'"
@@ -783,6 +693,7 @@
 
       <!-- AREA RENDER LAYOUT KARTU BERSARANG -->
       <div class="">
+        <!-- card controls bisa disini -->
         @foreach ($cards as $cIndex => $card)
           <div
             x-show="activeCard === {{ $cIndex }}"
@@ -872,20 +783,20 @@
               </div>
               <style
                 x-html="
-                  '.preview-atomic-{{ $blockId }}-{{ $lang }} > .grid { ' + 
-                  (previewMode === 'focus' 
-                      ? 'grid-template-columns: 1fr !important; max-width: 380px; margin: 0 auto;' 
-                      : 'grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important; width: 100%;') + 
-                  ' } ' + 
-                  (previewMode === 'focus' 
-                      ? '.preview-atomic-{{ $blockId }}-{{ $lang }} > .grid > *:not(:nth-child(' + (Number(activeCard) + 1) + ')) { display: none !important; }' 
+                  '.preview-atomic-{{ $blockId }}-{{ $lang }} > .grid { ' +
+                  (previewMode === 'focus'
+                      ? 'grid-template-columns: 1fr !important; max-width: 380px; margin: 0 auto;'
+                      : 'grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important; width: 100%;') +
+                  ' } ' +
+                  (previewMode === 'focus'
+                      ? '.preview-atomic-{{ $blockId }}-{{ $lang }} > .grid > *:not(:nth-child(' + (Number(activeCard) + 1) + ')) { display: none !important; }'
                       : '')
                 "
               ></style>
 
               <div
                 class="preview-atomic-{{ $blockId }}-{{$lang }} w-full pointer-events-none border border-dashed border-forest p-2 bg-gray-200"
-                style="zoom: 0.75"
+                {{-- style="zoom: 0.75" --}}
               >
                 @include ("components.blocks.render.card-builder",
                   ["data" => $data, "lang" => $lang, "isPreview" => true])

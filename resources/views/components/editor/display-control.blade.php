@@ -229,6 +229,7 @@
         </button>
       </div>
       <button
+      x-show="windowWidth >= 1366"
         x-on:click="
           isMinimapOpen = !isMinimapOpen;
           $dispatch('toggle-minimap', isMinimapOpen);

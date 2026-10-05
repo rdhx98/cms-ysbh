@@ -23,18 +23,18 @@ return new class extends Migration
         });
         Schema::create('media', function (Blueprint $table) {
             $table->id();
- 
+
             $table->foreignId('folder_id')
                 ->nullable()
                 ->constrained('media_folders')
                 ->nullOnDelete();
- 
+
             // 'disk' disimpan eksplisit (bukan hardcode 'public') supaya
             // gampang pindah ke disk S3-compatible (mis. Cloudflare R2)
             // nanti tanpa migrasi ulang skema kalau butuh, tanpa mengubah
             // baris yang sudah ada.
             $table->string('disk')->default('public');
- 
+
             // Nama file di disk SELALU di-generate (UUID/random), tidak
             // pernah dipakai nama asli dari pengguna — mencegah tabrakan
             // nama dan celah path traversal. Nama asli tetap disimpan
@@ -43,18 +43,19 @@ return new class extends Migration
             $table->string('original_name');
             $table->string('mime_type');
             $table->unsignedBigInteger('size'); // dalam bytes
- 
+
             // Nullable: dokumen (PDF) tidak punya dimensi
             $table->unsignedInteger('width')->nullable();
+            $table->string('alt_text')->nullable()->comment('Teks alternatif untuk SEO & Aksesibilitas');
             $table->unsignedInteger('height')->nullable();
- 
+
             $table->foreignId('uploaded_by')
                 ->nullable()
                 ->constrained('users')
                 ->nullOnDelete();
- 
+
             $table->timestamps();
- 
+
             $table->index('folder_id');
         });
          Schema::create('media_usages', function (Blueprint $table) {
@@ -62,7 +63,7 @@ return new class extends Migration
             $table->foreignId('media_id')->constrained('media')->cascadeOnDelete();
             $table->morphs('usable'); // usable_type, usable_id
             $table->timestamps();
- 
+
             // Satu media cuma boleh tercatat SEKALI per konten yang sama —
             // sync() di trait bergantung pada constraint ini supaya tidak
             // ada baris dobel tiap kali Halaman disimpan ulang.
