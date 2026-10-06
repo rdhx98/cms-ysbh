@@ -6,17 +6,19 @@
   "parentId" => null,
   "parentZone" => null,
   "marginBottom" => [],
+  "iconList" => [],
 ])
 
 @php
   // $iconsList = config("icons.lucide", []);
   $borderStyles = config("cms.design.border_styles", []);
-  // $borderRadius = config("cms.design.border_radiuses", []);
+  $borderRadius = config("cms.design.border_radiuses", []);
   $cardPadding = config("cms.design.card_paddings", []);
   $cardBgColors = config("cms.design.card_bg_colors", []);
   $cardBorderColors = config("cms.design.card_border_colors", []);
   $data = $block["data"] ?? [];
   $cards = $data["cards"] ?? [];
+  $iconsList = collect(config("cms.lucide", []))->sort()->values()->all();
   // $isNested = $context !== null;
   $isNested = $parentId !== null || $context !== null;
 @endphp

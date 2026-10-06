@@ -227,8 +227,9 @@
         >
           <div
             class="h-4 w-4 rounded-full border border-gray-300 bg-gray-200 shadow-sm"
-          ></div></button
-        ><button
+          ></div>
+        </button>
+        <button
           type="button"
           title="Sage"
           x-on:click="$wire.set('{{ $elPath }}.data.style.pill_bg', 'bg-sage-soft')"
@@ -282,14 +283,23 @@
         x-on:click="$wire.set('{{ $elPath }}.data.style.color', 'text-foresty')"
         class="rounded p-1.5 outline-none transition-all {{ $textColor === 'text-foresty' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}"
       >
-        <div class="bg-foresty h-4 w-4 rounded-full shadow-sm"></div></button
-      ><button
+        <div class="bg-foresty h-4 w-4 rounded-full shadow-sm"></div>
+      </button>
+      <button
         type="button"
         title="Coral"
         x-on:click="$wire.set('{{ $elPath }}.data.style.color', 'text-coral')"
         class="rounded p-1.5 outline-none transition-all {{ $textColor === 'text-coral' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}"
       >
         <div class="bg-coral h-4 w-4 rounded-full shadow-sm"></div>
+      </button>
+      <button
+        type="button"
+        title="Aurum"
+        x-on:click="$wire.set('{{ $elPath }}.data.style.color', 'text-aurum')"
+        class="rounded p-1.5 outline-none transition-all {{ $textColor === 'text-aurum' ? 'bg-white shadow-sm ring-1 ring-gray-200' : 'hover:bg-gray-200' }}"
+      >
+        <div class="bg-aurum h-4 w-4 rounded-full shadow-sm"></div>
       </button>
     </div>
   </div>

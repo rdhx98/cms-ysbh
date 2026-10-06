@@ -102,6 +102,8 @@
     ["label" => "Besar", "value" => "lg"],
     ["label" => "Penuh", "value" => "full"],
   ];
+  $marginBottom = config("cms.design.margin_bottom");
+  $borderRadius = config("cms.design.border_radiuses");
 @endphp
 
 <x-blocks.editor.wrapper :block-id="$blockId" :block="$block">

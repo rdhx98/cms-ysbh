@@ -250,6 +250,9 @@ return [
             ["label" => "normal", "value" => "normal-case"],
         ],
     ],
+    "lucidebak" => [
+        "activity",
+    ],
     "lucide" => [
         "activity",
         "circle",

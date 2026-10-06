@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Spatie\Activitylog\Support\activity;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 use App\Models\Navigation;
 use Illuminate\Support\Facades\View;
@@ -70,6 +71,12 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('navLinks', $navLinks);
         });
+
+        Relation::morphMap([
+          'page'    => \App\Models\Page::class,
+          'post'    => \App\Models\Post::class,
+          'snippet' => \App\Models\Snippet::class,
+        ]);
     }
 
     /**

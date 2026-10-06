@@ -19,3 +19,6 @@ Alpine.plugin(sort);
 // import './tiptap/tiptap-editor.js';
 import './mikro-tiptap.js';
 import './visual-fx.js';
+
+import { registerEditor } from './editor'
+document.addEventListener('alpine:init', () => registerEditor(window.Alpine))

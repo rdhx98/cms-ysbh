@@ -1,4 +1,10 @@
-@props ([ "blockId", "block", "allContent", "activeLocales" => [] ])
+@props ([
+  "blockId",
+  "block",
+  "allContent",
+  "iconList" => [],
+  "activeLocales" => []
+])
 
 @php
   $data = $block["data"] ?? [];
@@ -6,6 +12,7 @@
 
   $orientation = $data["orientation"] ?? "vertical";
   $gap = $data["gap"] ?? "gap-8";
+  $iconsList = collect(config("cms.lucide", []))->sort()->values()->all();
 @endphp
 
 <x-blocks.editor.wrapper :block-id="$blockId" :block="$block">
@@ -213,7 +220,7 @@
   <!-- AREA PRATINJAU LANGSUNG (LIVE PREVIEW)     -->
   <!-- ========================================== -->
   @if (count($children) > 0)
-    <x-slot:preview>
+    {{-- <x-slot:preview>
       <div class="flex flex-col items-center">
         <span
           class="mb-5 block w-full border-b border-gray-200 pb-2 text-center text-[10px] font-bold tracking-widest text-gray-400 uppercase"
@@ -259,6 +266,6 @@
           @endforeach
         </div>
       </div>
-    </x-slot:preview>
+    </x-slot:preview> --}}
   @endif
 </x-blocks.editor.wrapper>

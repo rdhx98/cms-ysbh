@@ -68,6 +68,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
+// routes/web.php — builder di samping editor lama. Awalan "v2." ditoleransi ContentType::fromRouteName().
+// Setelah cutover: hapus awalan ->name('v2.') dan ->prefix('v2'), dan hapus rute editor lama.
+ 
+// Route::middleware(['auth'])->prefix('v2')->name('v2.')->group(function () {
+//     Route::livewire('/page/create',        'content.builder')->name('page.create');
+//     Route::livewire('/page/edit/{page:id}', 'content.builder')->name('page.edit');
+ 
+//     Route::livewire('/article/write',        'content.builder')->name('article.write');
+//     Route::livewire('/article/edit/{post:id}', 'content.builder')->name('article.edit');
+ 
+//     Route::livewire('/snippet/create',            'content.builder')->name('snippet.create');
+//     Route::livewire('/snippet/edit/{snippet:id}', 'content.builder')->name('snippet.edit');
+// });
+Route::middleware(['auth'])->prefix('v2')->name('v2.')->group(function () {
+    Route::livewire('/page/create',         'content.builder')->name('page.create');
+    Route::livewire('/page/edit/{page:id}', 'content.builder')->name('page.edit');
+ 
+    Route::livewire('/article/write',          'content.builder')->name('article.write');
+    Route::livewire('/article/edit/{post:id}', 'content.builder')->name('article.edit');
+ 
+    Route::livewire('/snippet/make',              'content.builder')->name('snippet.create');
+    Route::livewire('/snippet/edit/{snippet:id}', 'content.builder')->name('snippet.edit');
+});
+
 Route::get('/language/{locale}', function ($locale) {
     // Daftar bahasa yang diizinkan (mencegah error jika user manipulasi URL)
     if (! in_array($locale, ['en', 'id'])) {

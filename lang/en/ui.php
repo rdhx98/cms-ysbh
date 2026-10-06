@@ -1,6 +1,26 @@
 <?php
 
 return [
+  // 'title' => [
+  //       'page'    => ['create' => 'Buat Halaman',  'edit' => 'Ubah Halaman: :title'],
+  //       'article' => ['create' => 'Tulis Artikel', 'edit' => 'Ubah Artikel: :title'],
+  //       'snippet' => ['create' => 'Buat Snippet',  'edit' => 'Ubah Snippet: :title'],
+  //   ],
+  //   'header' => [
+  //       'page'    => ['create' => 'Halaman Baru',  'edit' => 'Edit Halaman'],
+  //       'article' => ['create' => 'Artikel Baru',  'edit' => 'Edit Artikel'],
+  //       'snippet' => ['create' => 'Snippet Baru',  'edit' => 'Edit Snippet'],
+  //   ],
+  'title' => [
+        'page'    => ['create' => 'Create Page',  'edit' => 'Change Page: :title'],
+        'article' => ['create' => 'Write Article', 'edit' => 'Correct Article: :title'],
+        'snippet' => ['create' => 'Make Snippet',  'edit' => 'Edit Snippet: :title'],
+    ],
+    'header' => [
+        'page'    => ['create' => 'Create Page',  'edit' => 'Change Page'],
+        'article' => ['create' => 'Write Artikel',  'edit' => 'Correct Article'],
+        'snippet' => ['create' => 'Make Snippet',  'edit' => 'Edit Snippet'],
+    ],
     'word' => 'word',
     'button' => [
         'save' => 'Save',

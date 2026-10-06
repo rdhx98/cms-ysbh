@@ -63,7 +63,7 @@ return new class extends Migration
             $table->json('meta_title')->nullable();
             $table->json('meta_description')->nullable();
             $table->enum('status', ['online', 'offline'])->default('offline');
-            // $table->timestamp('published_at')->nullable();
+            $table->timestamp('published_at')->nullable();
             $table->timestamps();
         });
 

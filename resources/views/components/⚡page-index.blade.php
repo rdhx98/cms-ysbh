@@ -179,7 +179,8 @@ new class extends Component {
             }}
           </a>
           <a
-            href="{{ route('page.create') }}"
+            {{-- href="{{ route('page.create') }}" --}}
+            href="{{ route('v2.page.create') }}"
             wire:navigate
             class="group hover:bg-foresty hover:text-goldy inline-flex cursor-pointer items-center gap-2 overflow-hidden rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-600 shadow-sm transition-colors"
           >
@@ -416,7 +417,9 @@ new class extends Component {
 
                       <a
                         wire:navigate
-                        href="{{ route('page.edit', ['pageSlug' => $slugCantik]) }}"
+                        {{-- href="{{ route('page.edit', ['pageSlug' => $slugCantik]) }}" --}}
+                        {{-- href="{{ route('v2.page.edit', ['page' => $slugCantik]) }}" --}}
+                        href="{{ route('v2.page.edit', $page->id) }}"
                         class="group bg-forest/90 dark:bg-forest/80 hover:bg-forest/70 relative flex cursor-pointer items-center justify-center rounded-md p-1.5 text-white transition-colors"
                       >
                         <flux:icon

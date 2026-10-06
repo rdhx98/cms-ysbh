@@ -1,69 +1,30 @@
+{{-- <x-editor.icon-picker> — tombol pemicu. Daftar ikon: <x-editor.icon-picker-modal /> (sekali per halaman). path ATAU rel. --}}
 @props([
-    'model', // Wajib: Alamat properti Livewire, cth: 'content.blk_123.data.icon'
-    'label' => 'Ikon Lucide', // Opsional
+  'path' => null,
+  'rel' => null,
+  'label' => 'Ikon',
+  'placeholder' => 'PILIH IKON...',
+  'default' => '',
+  'live' => null,
+  'prefix' => 'icon-',
 ])
 
 @php
-  $iconsList = config('icons.lucide');
+  $isLive = $live ?? ! config('cms.editor.defer_style_sync', false);
 @endphp
 
-<div class="flex flex-col gap-1.5" x-data="{
-    openPicker: false,
-    searchQuery: '',
-    {{-- 🌟 Mengikat data langsung ke properti model yang dilempar dari luar --}}
-    localIcon: $wire.entangle('{{ $model }}').live
-}">
+<div x-data="wireField(@js($path), @js($rel), @js($default), @js($isLive))" {{ $attributes->class('relative flex flex-col gap-1.5') }}>
+  <label class="text-xxs bg-foresty w-fit rounded px-2 py-0.5 font-bold text-white uppercase">{{ $label }}</label>
 
-  <label class="text-[10px] font-bold text-foresty uppercase">{{ $label }}</label>
-
-  <div class="relative">
-    {{-- Tombol Pemicu Picker --}}
-    <button type="button" @click="openPicker = !openPicker"
-      class="w-full flex items-center justify-between bg-white border border-gray-200 rounded-md py-1.5 px-3 text-xs shadow-sm hover:border-foresty focus:outline-none transition-all duration-200">
-
-      <div class="flex items-center gap-2 truncate">
-        <span class="w-4 h-4 shrink-0 flex items-center justify-center text-foresty">
-          {{-- Render Ikon Terpilih --}}
-          @foreach ($iconsList as $icon)
-            <span x-show="localIcon === '{{ $icon }}'" x-cloak style="display: none;">
-              <x-dynamic-component :component="'lucide-' . $icon" class="w-4 h-4" stroke-width="2.5" />
-            </span>
-          @endforeach
-          {{-- Jika Kosong (Fallback) --}}
-          <span x-show="!localIcon" x-cloak>
-            <x-dynamic-component component="lucide-check-circle" class="w-4 h-4 text-gray-400" stroke-width="2.5" />
-          </span>
-        </span>
-        <span class="truncate uppercase font-mono text-[10px] text-gray-600" x-text="localIcon || 'Pilih Ikon'"></span>
-      </div>
-
-      <x-dynamic-component component="lucide-chevron-down" class="w-3.5 h-3.5 text-gray-400 shrink-0" />
-    </button>
-
-    {{-- Pop-up Daftar Ikon --}}
-    <div x-show="openPicker" @click.outside="openPicker = false" x-cloak style="display: none;" class="absolute left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl p-2.5 z-50 flex flex-col gap-2">
-
-      {{-- Input Pencarian --}}
-      <div class="relative">
-        <x-dynamic-component component="lucide-search" class="w-3.5 h-3.5 absolute left-2.5 top-2 text-gray-400" />
-        <input type="text" x-model="searchQuery" placeholder="Cari ikon..."
-          class="w-full text-xs border border-gray-200 rounded-lg pl-8 pr-2 py-1.5 focus:ring-foresty focus:border-foresty shadow-sm transition-colors" />
-      </div>
-
-      {{-- Grid Ikon --}}
-      <div class="grid grid-cols-5 gap-1.5 max-h-48 overflow-y-auto p-1 scrollbar-thin">
-        @foreach ($iconsList as $icon)
-          <button type="button" x-show="'{{ $icon }}'.includes(searchQuery.toLowerCase())" @click="localIcon = '{{ $icon }}'; openPicker = false; searchQuery = ''"
-            class="p-2 rounded-lg flex items-center justify-center transition-all duration-200"
-            :class="localIcon === '{{ $icon }}' ? 'bg-sage-soft text-foresty border border-foresty shadow-sm scale-105' : 'bg-gray-50 text-gray-500 border border-transparent hover:border-foresty/50 hover:text-foresty'"
-            title="{{ $icon }}">
-            <span class="w-4 h-4 flex items-center justify-center">
-              <x-dynamic-component :component="'lucide-' . $icon" class="w-4 h-4 shrink-0" stroke-width="2" />
-            </span>
-          </button>
-        @endforeach
-      </div>
-
-    </div>
-  </div>
+  <button
+    type="button"
+    x-on:click="p && $dispatch('open-icon-picker', { path: p, live: live })"
+    class="hover:border-foresty flex w-full items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs shadow-sm transition-colors focus:outline-none"
+  >
+    <span class="flex items-center gap-2 truncate">
+      <svg class="text-foresty h-4 w-4 shrink-0" stroke-width="2.5"><use x-bind:href="'#{{ $prefix }}' + (v || 'box')"></use></svg>
+      <span class="truncate font-mono text-[11px] font-bold text-gray-700 uppercase" x-text="v || @js($placeholder)"></span>
+    </span>
+    <svg class="h-4 w-4 shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+  </button>
 </div>

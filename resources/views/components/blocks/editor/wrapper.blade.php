@@ -1,4 +1,4 @@
-@props (["blockId", "block", "isNested" => false])
+@props ([ "blockId", "block", "iconList" => [], "isNested" => false ])
 
 <div
   id="block-wrapper-{{ $blockId }}"

@@ -7,6 +7,7 @@
     "profile_photo" => "Foto Profil",
     "initials" => "Inisial Nama",
   ];
+  $iconsList = collect(config("cms.lucide", []))->sort()->values()->all();
 @endphp
 
 {{-- pt-4 --}}
