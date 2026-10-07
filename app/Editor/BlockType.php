@@ -14,6 +14,8 @@ final class BlockType
         public readonly string $icon,
         public readonly string $kind,
         public readonly array $fields,
+        /** Nilai bawaan data blok baru (boleh memuat "@id"/"@locales", lihat Defaults). Kosong = pakai bawaan trait. */
+        public readonly array $defaults = [],
     ) {
     }
 

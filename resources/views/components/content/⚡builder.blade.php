@@ -4,10 +4,14 @@ use App\Content\ContentDocument;
 use App\Content\ContentRules;
 use App\Content\ContentType;
 use App\Content\ContentWriter;
+use App\Content\LocaleMap;
+use App\Content\Names;
 use App\Livewire\Traits\HasContentBlocks;
 use App\Livewire\Traits\ManagesBlockStructure;
+use App\Livewire\Traits\SearchesLinkTargets;
 use App\Livewire\Traits\WithNotifications;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -28,6 +32,7 @@ new class extends Component {
   use WithNotifications;
   use HasContentBlocks;
   use ManagesBlockStructure;
+  use SearchesLinkTargets;
 
   /** Jenis konten. Ditentukan SEKALI di mount() dari nama rute; request update Livewire tidak punya rute aslinya. */
   #[Locked]
@@ -52,8 +57,13 @@ new class extends Component {
   public array $settings = [];
   public ?string $status = null;
 
-  // Khusus artikel (pemilih kategori belum ada di UI: butuh model Category)
+  // Khusus artikel. tags = larik campuran: angka = ID tag lama, teks = nama tag baru (lihat TagResolver)
   public ?int $category_id = null;
+  public array $tags = [];
+
+  /** true bila isi dokumen BARU dibentuk dari HTML lama (artikel editor lama) dan belum pernah disimpan sebagai blok. */
+  #[Locked]
+  public bool $importedLegacy = false;
 
   // Khusus snippet (ContentType::usesKey()). Tak dipakai untuk halaman/artikel.
   public string $key = "";
@@ -117,18 +127,31 @@ new class extends Component {
     return $class::query()->findOrFail($param);
   }
 
+  /**
+   * Nilai MENTAH kolom dari database. Jangan memakai $record->toArray()/atribut ber-cast: pada kolom lama yang berisi
+   * string (editor artikel lama: HTML polos) cast array menghasilkan null, dan menyimpan dokumen kosong itu MENGHAPUS isinya.
+   */
+  private function raw(string $column): mixed
+  {
+    return $this->record->exists
+      ? $this->record->getRawOriginal($column)
+      : null;
+  }
+
   private function fillFromRecord(ContentType $type): void
   {
-    $data = $this->record->exists ? $this->record->toArray() : [];
-
-    $this->titles = $this->localeMap($data["title"] ?? null);
+    $this->titles = LocaleMap::from($this->raw("title"), $this->activeLocales);
     if ($type->usesSlug()) {
-      $this->slug = $this->localeMap($data["slug"] ?? null);
+      $this->slug = LocaleMap::from($this->raw("slug"), $this->activeLocales);
     }
     if ($type->usesMeta()) {
-      $this->meta_title = $this->localeMap($data["meta_title"] ?? null);
-      $this->meta_description = $this->localeMap(
-        $data["meta_description"] ?? null,
+      $this->meta_title = LocaleMap::from(
+        $this->raw("meta_title"),
+        $this->activeLocales,
+      );
+      $this->meta_description = LocaleMap::from(
+        $this->raw("meta_description"),
+        $this->activeLocales,
       );
     }
     if ($type->usesKey()) {
@@ -138,17 +161,29 @@ new class extends Component {
       $this->sort_order = (int) ($this->record->sort_order ?? 0);
     }
     $this->status = $this->record->status ?: $type->defaultStatus();
+
     if ($type === ContentType::Article) {
       $this->category_id = $this->record->category_id
         ? (int) $this->record->category_id
         : null;
+      $this->tags = $this->record->exists
+        ? $this->record
+          ->tags()
+          ->pluck("tags.id")
+          ->map(fn($id) => (int) $id)
+          ->all()
+        : [];
     }
 
-    // Satu-satunya pembaca `content` (menggantikan ±70 baris di mount() lama dan salinannya di page-preview)
-    $doc = ContentDocument::fromRaw($data["content"] ?? null);
+    // Satu-satunya pembaca `content`. HTML lama (artikel) diimpor sebagai satu blok Paragraf, bukan dibuang.
+    $doc = ContentDocument::fromRaw(
+      $this->raw("content"),
+      $this->activeLocales,
+    );
     $this->content = $doc->blocks;
     $this->blockOrder = $doc->order;
     $this->settings = $doc->settings;
+    $this->importedLegacy = $doc->imported;
 
     // Konten baru: mulai dengan satu Judul, memakai satu-satunya sumber nilai bawaan
     if (!$this->record->exists && empty($this->content)) {
@@ -162,19 +197,66 @@ new class extends Component {
     }
   }
 
-  /** Peta bahasa -> teks; tahan terhadap string JSON / null / bahasa yang belum terisi. */
-  private function localeMap(mixed $value): array
+  /** Admin/editor boleh menerbitkan; penulis biasa hanya draf dan mengajukan tinjauan (sama seperti editor artikel lama). */
+  private function canPublish(): bool
   {
-    if (is_string($value)) {
-      $value = json_decode($value, true);
-    }
-    $value = is_array($value) ? $value : [];
+    $user = auth()->user();
 
-    $out = [];
-    foreach ($this->activeLocales as $locale) {
-      $out[$locale] = (string) ($value[$locale] ?? "");
+    return $user &&
+      method_exists($user, "hasRole") &&
+      $user->hasRole(["admin", "editor"]);
+  }
+
+  /** Status yang BOLEH dipilih pengguna ini (label), dipakai panel Halaman. */
+  #[Computed]
+  public function statusOptions(): array
+  {
+    $type = $this->contentType;
+    $allowed = $type->statusesFor($this->canPublish(), $this->record?->status);
+
+    return array_intersect_key($type->statusLabels(), array_flip($allowed));
+  }
+
+  /** id => nama. Category.name ber-cast array ({"id": "…", "en": "…"}), jadi diubah ke teks sesuai bahasa aktif. */
+  #[Computed]
+  public function categoryOptions(): array
+  {
+    if ($this->contentType !== ContentType::Article) {
+      return [];
     }
+
+    $locale = app()->getLocale();
+    $out = [];
+    foreach (\App\Models\Category::query()->get() as $category) {
+      $out[(int) $category->id] =
+        Names::of($category->name, $locale) ?: "#" . $category->id;
+    }
+    asort($out, SORT_NATURAL | SORT_FLAG_CASE);
+
     return $out;
+  }
+
+  /** [{id, name}] untuk saran tag; nama dalam bahasa aktif (Tag.name juga ber-cast array). */
+  #[Computed]
+  public function tagOptions(): array
+  {
+    if ($this->contentType !== ContentType::Article) {
+      return [];
+    }
+
+    $locale = app()->getLocale();
+
+    return \App\Models\Tag::query()
+      ->get()
+      ->map(
+        fn($t) => [
+          "id" => (int) $t->id,
+          "name" => Names::of($t->name, $locale) ?: "#" . $t->id,
+        ],
+      )
+      ->sortBy("name", SORT_NATURAL | SORT_FLAG_CASE)
+      ->values()
+      ->all();
   }
 
   // ------------------------------------------------------------------ judul halaman (<title>)
@@ -224,6 +306,8 @@ new class extends Component {
       $this->contentType,
       $this->activeLocales,
       $this->record?->getKey(),
+      $this->canPublish(),
+      $this->record?->status,
     );
   }
 
@@ -245,6 +329,7 @@ new class extends Component {
     }
 
     ContentWriter::fill($this->record, $type, [
+      "locales" => $this->activeLocales,
       "titles" => $this->titles,
       "slug" => $this->slug,
       "meta_title" => $this->meta_title,
@@ -258,11 +343,36 @@ new class extends Component {
       "is_closing" => $this->is_closing,
       "sort_order" => $this->sort_order,
       "category_id" => $this->category_id,
+      "tags" => $this->tags,
       "user_id" => auth()->id(),
     ]);
 
     $wasNew = !$this->record->exists;
-    $this->record->save();
+
+    try {
+      $this->record->save();
+    } catch (UniqueConstraintViolationException $e) {
+      // Jaring pengaman untuk indeks unik yang tidak kita periksa sendiri (mis. unik pada seluruh kolom JSON judul/slug)
+      $this->addError(
+        "titles." . ($this->activeLocales[0] ?? "id"),
+        "Judul atau slug ini sudah dipakai konten lain.",
+      );
+      $this->js("Alpine.store('editor').tab = 'page'");
+
+      return;
+    }
+
+    // Tag baru dibuat dan relasi disinkron SETELAH record punya id; state memakai ID-nya sejak sekarang
+    $tagIds = ContentWriter::syncRelations(
+      $this->record,
+      $type,
+      ["tags" => $this->tags],
+      $this->activeLocales,
+    );
+    if ($tagIds !== null) {
+      $this->tags = $tagIds;
+    }
+    $this->importedLegacy = false;
 
     // Editor lama memakai ui.notification.page_saved; jenis lain memakai pola yang sama bila kuncinya ada.
     $notice = "ui.notification." . $this->type . "_saved";
@@ -351,13 +461,18 @@ new class extends Component {
 
 {{-- x-effect: judul tab mengikuti ketikan (slot di atas hanya dievaluasi saat halaman dirender penuh). --}}
 <div
-  x-data
-  x-init="$store.editor.clear()"
+  x-data="fitViewport"
+  x-init="
+    $store.editor.clear();
+    fit();
+  "
+  x-on:resize.window.debounce.100ms="fit()"
+  x-bind:style="h ? 'height:' + h + 'px' : ''"
   x-effect="
     const t = (($wire.titles || {})[@js(app()->getLocale())] || '').trim()
     document.title = (t || @js($this->pageTitle)) + ' — ' + @js(config('app.name'))
   "
-  class="flex h-dvh flex-col"
+  class="flex h-dvh min-h-0 flex-col overflow-hidden bg-white"
 >
   {{-- ======= HEADER (atas-tengah) ======= --}}
   <header class="flex items-center gap-3 border-b px-4 py-2">
@@ -389,6 +504,17 @@ new class extends Component {
           <li>{{ $message }}</li>
         @endforeach
       </ul>
+    </div>
+  @endif
+
+  {{-- Isi lama (HTML dari editor artikel lama) diimpor sebagai satu blok Paragraf. --}}
+  @if ($importedLegacy)
+    <div
+      role="status"
+      class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800"
+    >
+      <p class="font-bold">Isi lama diimpor sebagai satu blok Paragraf.</p>
+      <p>Periksa hasilnya. Isi baru berformat blok baru tersimpan setelah Anda menekan Simpan; sebelum itu data lama di database tidak berubah.</p>
     </div>
   @endif
 
@@ -440,6 +566,9 @@ new class extends Component {
             :type="$type"
             :locales="$activeLocales"
             :is-new="!$record?->exists"
+            :statuses="$this->statusOptions"
+            :categories="$this->categoryOptions"
+            :tags="$this->tagOptions"
           />
         </div>
         <div x-show="$store.editor.tab === 'block'" x-cloak>

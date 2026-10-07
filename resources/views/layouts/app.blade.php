@@ -1,31 +1,37 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    @include('partials.head')
+  @include ("partials.head")
 </head>
 <body
-    class="bg-misty font-sans antialiased overflow-x-hidden"
-    x-init="console.log('✅ Alpine.js Berhasil Dimuat dan Aktif dari app layout!')"
+  class="bg-misty overflow-x-hidden font-sans antialiased"
+  x-init="
+    console.log('✅ Alpine.js Berhasil Dimuat dan Aktif dari app layout!')
+  "
+>
+  <div
+    class="flex h-dvh w-full flex-col md:flex-row"
+    x-data="{
+      isExpanded: Alpine.$persist(true),
+      userMenuExpand: false,
+      isAuditOpen: false,
+    }"
+  >
+    <x-layouts::app.sidebar />
+    <main
+      class="flex min-w-0 flex-1 flex-col space-y-2 p-[0.5rem_0.5rem_0.5rem_0.5rem] md:p-[0.5rem_0.5rem_0.5rem_0rem]"
     >
-    <div class="flex flex-col md:flex-row h-dvh w-full"
-      x-data="{ 
-        isExpanded: Alpine.$persist(true), 
-        userMenuExpand: false, 
-        isAuditOpen: false }" >
+      <x-layouts::app.header :header="$header ?? ''" :title="$title ?? ''" />
+      {{ $slot }}
+    </main>
+  </div>
 
-        <x-layouts::app.sidebar />
-        <main class="flex-1 min-w-0 flex flex-col md:p-[0.5rem_0.5rem_0.5rem_0rem] p-[0.5rem_0.5rem_0.5rem_0.5rem] space-y-2">
-            <x-layouts::app.header :header="$header ?? '' " :title="$title ?? '' " />
-            {{ $slot }}
-        </main>
-    </div>
+  {{-- @livewireScripts --}}
+  <x-layouts::app.floating-notifications mobileTop="top-16" />
+  <x-editor.icon-sprite />
 
-    {{-- @livewireScripts --}}
-    <x-layouts::app.floating-notifications mobileTop="top-16" />
-    
-    @unless(request()->routeIs('files.index') || request()->is('*files*'))
-      <livewire:file-manager :forceModal="true" />
-    @endunless
-    
+  @unless (request()->routeIs("files.index") || request()->is("*files*"))
+    <livewire:file-manager :forceModal="true" />
+  @endunless
 </body>
 </html>

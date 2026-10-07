@@ -9,6 +9,7 @@
 @props([
   'path' => null,
   'rel' => null,
+  'relExpr' => null,
   'label' => null,
   'locales' => ['id', 'en'],
   'multi' => false,
@@ -19,7 +20,7 @@
   $isLive = $live ?? ! config('cms.editor.defer_style_sync', false);
 @endphp
 
-<div x-data="wireField(@js($path), @js($rel), null, @js($isLive))" {{ $attributes->class('flex flex-col gap-1.5') }}>
+<div x-data="wireField(@js($path), {!! \App\Editor\Rel::js($rel, $relExpr ?? null) !!}, null, @js($isLive))" {{ $attributes->class('flex flex-col gap-1.5') }}>
   @if ($label)
     <span class="text-xxs font-bold text-gray-700 uppercase">{{ $label }}</span>
   @endif

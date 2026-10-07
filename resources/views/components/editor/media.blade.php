@@ -1,7 +1,8 @@
 {{-- <x-editor.media> — tombol File Manager. path/rel menunjuk ke objek konten ({url, media_id, alt_text}). --}}
-@props(['path' => null, 'rel' => null, 'label' => 'Jelajahi File Manager', 'accept' => 'image'])
+@props(['path' => null, 'rel' => null,
+  'relExpr' => null, 'label' => 'Jelajahi File Manager', 'accept' => 'image'])
 
-<div x-data="wireField(@js($path), @js($rel), null, true)" {{ $attributes }}>
+<div x-data="wireField(@js($path), {!! \App\Editor\Rel::js($rel, $relExpr ?? null) !!}, null, true)" {{ $attributes }}>
   <button
     type="button"
     x-on:click="p && $dispatch('openFileManager', { targetEvent: 'mediaSelected', targetComponentId: p, allowedFileType: @js($accept) })"

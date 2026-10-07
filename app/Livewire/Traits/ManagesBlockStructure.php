@@ -3,6 +3,8 @@
 namespace App\Livewire\Traits;
 
 use App\Editor\BlockPalette;
+use App\Editor\BlockRegistry;
+use App\Editor\Defaults;
 use Illuminate\Support\Str;
 
 /**
@@ -83,9 +85,15 @@ trait ManagesBlockStructure
 
         // getDefaultDataForType() memakai kunci "section_divider" (garis bawah) sedangkan tipe di editor memakai
         // "section-divider": tanpa ini blok pemisah seksi baru tersimpan dengan data kosong (temuan audit #1).
-        $data = $this->getDefaultDataForType($type);
-        if ($data === []) {
-            $data = $this->getDefaultDataForType(str_replace('-', '_', $type));
+        // Tipe yang punya nilai bawaan di REGISTRI (mis. tombol) memakainya; tipe lama memakai bawaan trait.
+        $definition = BlockRegistry::block($type);
+        if ($definition && $definition->defaults) {
+            $data = Defaults::materialize($definition->defaults, $this->activeLocales ?: ['id', 'en']);
+        } else {
+            $data = $this->getDefaultDataForType($type);
+            if ($data === []) {
+                $data = $this->getDefaultDataForType(str_replace('-', '_', $type));
+            }
         }
 
         $this->content[$id] = ['id' => $id, 'type' => $type, 'data' => $data];

@@ -8,7 +8,6 @@ use App\Http\Controllers\EditorImageUploadController;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Redirect;
 
-
 // Route::view('/', 'welcome')->name('home');
 // 1. Logika untuk Halaman Utama "/" CMS
 // Route::get('/', function () {
@@ -18,91 +17,93 @@ use Illuminate\Support\Facades\Redirect;
 //     return redirect()->route('login');
 // });
 // Auth Route (Hanya bisa diakses jika belum login / Guest)
-Route::middleware(['guest'])->group(function () {
-    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
-    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+Route::middleware(["guest"])->group(function () {
+    Route::get("/login", [AuthenticatedSessionController::class, "create"])->name("login");
+    Route::post("/login", [AuthenticatedSessionController::class, "store"])->name("login.store");
 
     // --- RUTE REGISTER CMS (Pindahan dari domain utama) ---
-    Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
-    Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
-
+    Route::get("/register", [RegisteredUserController::class, "create"])->name("register");
+    Route::post("/register", [RegisteredUserController::class, "store"])->name("register.store");
 });
 
-
-Route::get('/', function () {
-
-    return redirect('/login');
+Route::get("/", function () {
+    return redirect("/login");
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(["auth", "verified"])->group(function () {
+    Route::livewire("/dashboard", "dashboard")->name("dashboard");
 
-    Route::livewire('/dashboard', 'dashboard')->name('dashboard');
+    Route::livewire("/article", "article-index")->name("article.index");
+    Route::livewire("/article/write", "article-editor")->name("article.write");
+    Route::livewire("/article/edit/{category}/{post:slug}", "article-editor")->name("article.edit");
+    Route::livewire("/article/preview/{category}/{post:slug}", "article-preview")->name("article.preview");
 
-    Route::livewire('/article', 'article-index')->name('article.index');
-    Route::livewire('/article/write', 'article-editor')->name('article.write');
-    Route::livewire('/article/edit/{category}/{post:slug}', 'article-editor')->name('article.edit');
-    Route::livewire('/article/preview/{category}/{post:slug}', 'article-preview')->name('article.preview');
+    Route::post("/editor/upload-image", [EditorImageUploadController::class, "store"])->name("editor.upload-image");
+    Route::livewire("/files", "file-manager")->name("files.index");
 
-    Route::post('/editor/upload-image', [EditorImageUploadController::class, 'store'])->name('editor.upload-image');
-    Route::livewire('/files', 'file-manager')->name('files.index');
-
-    Route::livewire('/page', 'page-index')->name('page.index');
-    Route::livewire('/page/create', 'page-editor')->name('page.create');
-    Route::livewire('/page/edit/{pageSlug}', 'page-editor')->name('page.edit');
+    Route::livewire("/page", "page-index")->name("page.index");
+    Route::livewire("/page/create", "page-editor")->name("page.create");
+    Route::livewire("/page/edit/{pageSlug}", "page-editor")->name("page.edit");
     // Route::livewire('/page/edit/{page:slug}', 'page-editor')->name('page.edit');
-    Route::livewire('/page/preview/{pageSlug}', 'page-preview')->name('page.preview');
+    Route::livewire("/page/preview/{pageSlug}", "page-preview")->name("page.preview");
 
     // Route::livewire('/page/preview/{page:slug}', 'page-preview')->name('page.preview');
 
-    Route::livewire('/page/menu-builder', 'menu-builder')->name('page.menu-builder');
-    Route::livewire('/block', 'block-index')->name('block.index');
+    Route::livewire("/page/menu-builder", "menu-builder")->name("page.menu-builder");
+    Route::livewire("/snippet", "block-index")->name("snippet.index");
 
     // Route::livewire('/user/edit/{user:handle}', 'user-edit')->name('user.edit');
-    Route::livewire('/user', 'user-index')->name('user.index');
-    Route::livewire('/user/create', 'user-detail')->name('user.create');
-    Route::livewire('/user/detail/{user:handle}', 'user-detail')->name('user.detail');
+    Route::livewire("/user", "user-index")->name("user.index");
+    Route::livewire("/user/create", "user-detail")->name("user.create");
+    Route::livewire("/user/detail/{user:handle}", "user-detail")->name("user.detail");
 
-    Route::livewire('/preferences', 'settings-manager')->name('settings.manager');
+    Route::livewire("/preferences", "settings-manager")->name("settings.manager");
 
-    Route::livewire('/documentation', 'json-viewer')->name('documentation');
-
+    Route::livewire("/documentation", "json-viewer")->name("documentation");
 });
 
 // routes/web.php — builder di samping editor lama. Awalan "v2." ditoleransi ContentType::fromRouteName().
 // Setelah cutover: hapus awalan ->name('v2.') dan ->prefix('v2'), dan hapus rute editor lama.
- 
+
 // Route::middleware(['auth'])->prefix('v2')->name('v2.')->group(function () {
 //     Route::livewire('/page/create',        'content.builder')->name('page.create');
 //     Route::livewire('/page/edit/{page:id}', 'content.builder')->name('page.edit');
- 
+
 //     Route::livewire('/article/write',        'content.builder')->name('article.write');
 //     Route::livewire('/article/edit/{post:id}', 'content.builder')->name('article.edit');
- 
+
 //     Route::livewire('/snippet/create',            'content.builder')->name('snippet.create');
 //     Route::livewire('/snippet/edit/{snippet:id}', 'content.builder')->name('snippet.edit');
 // });
-Route::middleware(['auth'])->prefix('v2')->name('v2.')->group(function () {
-    Route::livewire('/page/create',         'content.builder')->name('page.create');
-    Route::livewire('/page/edit/{page:id}', 'content.builder')->name('page.edit');
- 
-    Route::livewire('/article/write',          'content.builder')->name('article.write');
-    Route::livewire('/article/edit/{post:id}', 'content.builder')->name('article.edit');
- 
-    Route::livewire('/snippet/make',              'content.builder')->name('snippet.create');
-    Route::livewire('/snippet/edit/{snippet:id}', 'content.builder')->name('snippet.edit');
-});
+Route::middleware(["auth"])
+    ->prefix("v2")
+    ->name("v2.")
+    ->group(function () {
+        Route::livewire("/page", "page-index")->name("page.index");
 
-Route::get('/language/{locale}', function ($locale) {
+        Route::livewire("/page/create", "content.builder")->name("page.create");
+        Route::livewire("/page/edit/{page:id}", "content.builder")->name("page.edit");
+
+        Route::livewire("/article", "article-index")->name("article.index");
+        Route::livewire("/article/write", "content.builder")->name("article.write");
+        Route::livewire("/article/edit/{post:id}", "content.builder")->name("article.edit");
+
+        Route::livewire("/snippet", "block-index")->name("snippet.index");
+        Route::livewire("/snippet/make", "content.builder")->name("snippet.create");
+        Route::livewire("/snippet/edit/{snippet:id}", "content.builder")->name("snippet.edit");
+    });
+
+Route::get("/language/{locale}", function ($locale) {
     // Daftar bahasa yang diizinkan (mencegah error jika user manipulasi URL)
-    if (! in_array($locale, ['en', 'id'])) {
+    if (!in_array($locale, ["en", "id"])) {
         abort(400);
     }
 
     // Simpan ke session
-    Session::put('locale', $locale);
+    Session::put("locale", $locale);
 
     // Kembalikan user ke halaman sebelumnya
     return Redirect::back();
-})->name('language.switch');
+})->name("language.switch");
 
-require __DIR__.'/settings.php';
+require __DIR__ . "/settings.php";

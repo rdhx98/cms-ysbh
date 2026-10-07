@@ -115,6 +115,28 @@ enum ContentType: string
         };
     }
 
+    /**
+     * Status yang boleh DIPILIH pengguna. Artikel: penulis biasa hanya draft dan review (mengajukan tinjauan); admin/editor semuanya.
+     * Status artikel saat ini tetap sah, supaya menyimpan tanpa mengubah status tidak ditolak.
+     * (Editor lama: penulis hanya bisa menyimpan draf dan mengajukan tinjauan; hapus hanya untuk draft/rejected.)
+     *
+     * @return string[]
+     */
+    public function statusesFor(bool $canPublish, ?string $current = null): array
+    {
+        $all = $this->statuses();
+        if ($this !== self::Article || $canPublish) {
+            return $all;
+        }
+
+        $allowed = ['draft', 'review'];
+        if ($current !== null && in_array($current, $all, true) && !in_array($current, $allowed, true)) {
+            $allowed[] = $current;
+        }
+
+        return $allowed;
+    }
+
     /** Label status untuk UI. */
     public function statusLabels(): array
     {

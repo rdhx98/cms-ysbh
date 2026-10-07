@@ -8,14 +8,13 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class MediaUsage extends Model
 {
-    //
     protected $fillable = ['media_id', 'usable_type', 'usable_id'];
- 
+
     public function media(): BelongsTo
     {
         return $this->belongsTo(Media::class);
     }
- 
+
     /** Model konten yang memakai media ini — Page, Post, atau apa pun
      *  yang memakai trait SyncsMediaUsage. */
     public function usable(): MorphTo

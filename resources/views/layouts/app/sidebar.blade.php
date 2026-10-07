@@ -4,10 +4,10 @@
       // fixed top-0 left-0 z-50 -translate-x-full h-screen md:h-[calc(100vh-1rem)]
       // md:relative md:translate-x-0
       "class" => '
-            fixed top-0 left-0 z-50 -translate-x-full h-screen md:h-[calc(100vh-1rem)]
-            md:sticky md:top-2 md:translate-x-0
+                                fixed top-0 left-0 z-50 -translate-x-full h-screen md:h-[calc(100vh-1rem)]
+                                md:sticky md:top-2 md:translate-x-0
 
-            transform-gpu transition-all duration-300 ease-in-out overflow-x-hidden flex flex-col items-start bg-white text-white p-1 md:mx-1.5  md:my-2 md:rounded-lg max-h-dvh md:border-0 border-r-2 border-forest',
+                                transform-gpu transition-all duration-300 ease-in-out overflow-x-hidden flex flex-col items-start bg-white text-white p-1 md:mx-1.5  md:my-2 md:rounded-lg max-h-dvh md:border-0 border-r-2 border-forest',
     ])
   }}
   {{-- :class="isExpanded ? 'w-64' : 'w-20'" --}}
@@ -77,8 +77,8 @@
       }} </x-layouts.app.sidebar-link>
 
       <x-layouts::app.sidebar-link
-        route="{{ route('article.index') }}"
-        :active="request()->routeIs('article.*')"
+        route="{{ route('v2.article.index') }}"
+        :active="request()->routeIs(['article.*', 'v2.article.*'])"
         icon="scroll"
         activeIcon="scroll-text"
       >
@@ -90,7 +90,7 @@
 
         {{-- <x-layouts::app.sidebar-link route="{{ route('page.index') }}" :active="request()->routeIs('page.*')"  icon="book-open" activeIcon="book-open-text" iconSize="5">  {{ __('ui.nav.page') }}  </x-layouts.app.sidebar-link> --}}
         <x-layouts::app.sidebar-link
-          route="{{ route('page.index') }}"
+          route="{{ route('v2.page.index') }}"
           :active="request()->routeIs('v2.page.*')"
           icon="book-open"
           activeIcon="book-open-text"
@@ -101,29 +101,37 @@
               "ui.nav.page",
             )
           }} </x-layouts.app.sidebar-link>
-
           <x-layouts::app.sidebar-link
-            route="{{ route('files.index') }}"
-            :active="request()->routeIs('files.*')"
-            icon="folder"
-            activeIcon="folder-open"
+            route="{{ route('v2.snippet.index') }}"
+            :active="request()->routeIs('v2.snippet.*')"
+            icon="puzzle"
+            activeIcon="book-open-text"
             iconSize="5"
           >
-            Files
-            </x-layouts.app.sidebar-link>
+            Snippets</x-layouts.app.sidebar-link>
 
             <x-layouts::app.sidebar-link
-              route="{{ route('user.index') }}"
-              :active="request()->routeIs('user.*')"
-              icon="user-round"
-              activeIcon="users-round"
+              route="{{ route('files.index') }}"
+              :active="request()->routeIs('files.*')"
+              icon="folder"
+              activeIcon="folder-open"
               iconSize="5"
             >
-              {{
-                __(
-                  "ui.nav.user",
-                )
-              }} </x-layouts.app.sidebar-link>
+              Files
+              </x-layouts.app.sidebar-link>
+
+              <x-layouts::app.sidebar-link
+                route="{{ route('user.index') }}"
+                :active="request()->routeIs('user.*')"
+                icon="user-round"
+                activeIcon="users-round"
+                iconSize="5"
+              >
+                {{
+                  __(
+                    "ui.nav.user",
+                  )
+                }} </x-layouts.app.sidebar-link>
   </nav>
   {{-- <div class="border-t-2 border-forest my-2"></div> --}}
   <div class="flex-1 grow"></div>

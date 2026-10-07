@@ -8,6 +8,7 @@
 @props([
   'path' => null,
   'rel' => null,
+  'relExpr' => null,
   'options' => [],
   'label' => null,
   'default' => null,
@@ -20,7 +21,7 @@
   $items = \App\Editor\Options::normalize($options);
 @endphp
 
-<div x-data="wireField(@js($path), @js($rel), @js($default), @js($isLive))" {{ $attributes->class('flex flex-col gap-1.5') }}>
+<div x-data="wireField(@js($path), {!! \App\Editor\Rel::js($rel, $relExpr ?? null) !!}, @js($default), @js($isLive))" {{ $attributes->class('flex flex-col gap-1.5') }}>
   @if ($label)
     <span class="text-xxs font-bold text-gray-700 uppercase">{{ $label }}</span>
   @endif

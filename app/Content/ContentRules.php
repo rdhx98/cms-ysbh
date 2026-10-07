@@ -2,6 +2,7 @@
 
 namespace App\Content;
 
+use App\Content\Rules\UniqueLocaleValue;
 use Illuminate\Validation\Rule;
 
 /**
@@ -11,25 +12,31 @@ use Illuminate\Validation\Rule;
 final class ContentRules
 {
     /**
-     * @param string[]    $locales
-     * @param int|string|null $recordId  id record yang sedang diedit (diabaikan oleh aturan unik), null = baru
+     * @param string[]        $locales
+     * @param int|string|null $recordId   id record yang sedang diedit (diabaikan oleh aturan unik), null = baru
+     * @param bool            $canPublish pengguna boleh menerbitkan (admin/editor); penulis biasa dibatasi di sisi SERVER
+     * @param string|null     $currentStatus status yang tersimpan saat ini (tetap sah)
      */
-    public static function for(ContentType $type, array $locales, int|string|null $recordId = null): array
+    public static function for(ContentType $type, array $locales, int|string|null $recordId = null, bool $canPublish = true, ?string $currentStatus = null): array
     {
         $rules = [
-            'status' => $type->statusRule(),
+            'status' => 'required|in:' . implode(',', $type->statusesFor($canPublish, $currentStatus)),
             'content' => 'array',
         ];
 
         foreach (array_values($locales) as $i => $locale) {
             // Judul halaman/artikel wajib di semua bahasa (sama seperti editor lama); judul snippet hanya label admin
-            $rules["titles.{$locale}"] = ($type->usesSlug() || $i === 0 ? 'required' : 'nullable') . '|string|max:255';
+            $rules["titles.{$locale}"] = [($type->usesSlug() || $i === 0 ? 'required' : 'nullable'), 'string', 'max:255'];
+            // posts.title punya indeks unik di database: judul kembar harus ditolak di sini, bukan berakhir sebagai galat SQL 500
+            if ($type === ContentType::Article) {
+                $rules["titles.{$locale}"][] = new UniqueLocaleValue($type->table(), 'title', $locale, $recordId);
+            }
 
             if ($type->usesSlug()) {
                 $rules["slug.{$locale}"] = [
                     'required', 'string', 'max:255', 'regex:' . Slug::PATTERN,
-                    // slug unik PER BAHASA: kolom JSON, jadi "slug->id", "slug->en"
-                    Rule::unique($type->table(), "slug->{$locale}")->ignore($recordId),
+                    // slug unik PER BAHASA pada kolom JSON; tahan terhadap baris lama berisi slug polos (bukan JSON)
+                    new UniqueLocaleValue($type->table(), 'slug', $locale, $recordId),
                 ];
             }
             if ($type->usesMeta()) {
@@ -47,6 +54,13 @@ final class ContentRules
 
         if ($type === ContentType::Article) {
             $rules['category_id'] = 'required|integer|exists:categories,id';
+            // Sama dengan editor lama: minimal satu tag. Isian: integer = ID tag lama, string = nama tag baru.
+            $rules['tags'] = 'required|array|min:1';
+            $rules['tags.*'] = ['required', function ($attribute, $value, $fail) {
+                if (!is_int($value) && !(is_string($value) && trim($value) !== '' && mb_strlen(trim($value)) <= 60)) {
+                    $fail('Tag tidak valid (maksimal 60 karakter).');
+                }
+            }];
         }
 
         return $rules;
@@ -55,7 +69,7 @@ final class ContentRules
     /** Nama ramah untuk pesan galat ("Slug (ID) wajib diisi", bukan "slug.id wajib diisi"). */
     public static function attributes(ContentType $type, array $locales): array
     {
-        $names = ['status' => 'Status', 'key' => 'Kunci', 'description' => 'Deskripsi', 'sort_order' => 'Urutan', 'category_id' => 'Kategori'];
+        $names = ['status' => 'Status', 'key' => 'Kunci', 'description' => 'Deskripsi', 'sort_order' => 'Urutan', 'category_id' => 'Kategori', 'tags' => 'Tag', 'tags.*' => 'Tag'];
         $title = $type->usesKey() ? 'Nama' : 'Judul';
 
         foreach ($locales as $locale) {

@@ -21,6 +21,7 @@ final class BlockPalette
         'paragraph'       => ['Paragraf', 'align-left', 'Konten', true],
         'eyebrow'         => ['Eyebrow', 'crosshair', 'Konten', true],
         'image'           => ['Gambar', 'image-plus', 'Konten', true],
+        'button-builder'  => ['Tombol', 'mouse-pointer-click', 'Konten', true],
         'card-builder'    => ['Kartu Builder', 'playing-cards-fan', 'Konten', true],
         'step-group'      => ['Grup Langkah', 'list-ordered', 'Layout', true],
         'multi-columns'   => ['Kolom', 'columns-4', 'Layout', true],
@@ -28,7 +29,7 @@ final class BlockPalette
     ];
 
     /** Tipe yang boleh berada di dalam kolom. (card-builder ditambahkan: dua kolom kartu adalah pemakaian yang wajar.) */
-    private const COLUMN_CHILDREN = ['heading', 'paragraph', 'eyebrow', 'image', 'card-builder'];
+    private const COLUMN_CHILDREN = ['heading', 'paragraph', 'eyebrow', 'image', 'button-builder', 'card-builder'];
 
     /** Isi step-group: HANYA card-builder, satu per langkah (dari blade step-group: "Tambah Langkah Baru"). */
     private const STEP_CHILDREN = ['card-builder'];

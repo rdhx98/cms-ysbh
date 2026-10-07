@@ -15,13 +15,30 @@ final class ContentDocument
         public readonly array $blocks = [],
         public readonly array $order = [],
         public readonly array $settings = self::DEFAULT_SETTINGS,
+        /** true bila dokumen ini DIBENTUK dari isi lama (HTML) dan belum pernah disimpan sebagai blok */
+        public readonly bool $imported = false,
     ) {
     }
 
-    /** Menerima array, string JSON, JSON di dalam JSON, format lama, atau sampah (-> dokumen kosong). */
-    public static function fromRaw(mixed $raw): self
+    /**
+     * Menerima array, string JSON, JSON di dalam JSON, format blok lama, HTML lama dari editor artikel, atau sampah.
+     *
+     * HTML lama (artikel yang dibuat editor lama: satu string HTML, atau {"id": "<p>…", "en": "…"}) DIIMPOR sebagai satu
+     * blok Paragraf, supaya membuka artikel lama di builder tidak menghasilkan dokumen kosong yang lalu menimpa isinya.
+     *
+     * @param string[] $locales bahasa aktif; yang pertama = bahasa utama untuk HTML satu bahasa
+     */
+    public static function fromRaw(mixed $raw, array $locales = ['id', 'en']): self
     {
-        $raw = self::decode($raw);
+        $raw = LocaleMap::decode($raw);
+
+        // Teks/HTML polos (kolom lama bertipe string)
+        if (is_string($raw)) {
+            return trim($raw) === '' ? self::make([], [], []) : self::importHtml([($locales[0] ?? 'id') => $raw], $locales);
+        }
+        if (!is_array($raw)) {
+            return self::make([], [], []);
+        }
 
         // Format sekarang
         if (isset($raw['blocks'], $raw['order']) && is_array($raw['blocks']) && is_array($raw['order'])) {
@@ -37,7 +54,13 @@ final class ContentDocument
             return self::make($blocks, $raw['order'], $settings);
         }
 
-        // Format lama: { "id": [blok...] } / { "en": [blok...] } / daftar blok langsung
+        // HTML per bahasa: {"id": "<p>…", "en": "<p>…"}
+        if (self::isLocaleTextMap($raw)) {
+            $texts = array_filter($raw, fn ($v) => is_string($v) && trim($v) !== '');
+            return $texts === [] ? self::make([], [], []) : self::importHtml($texts, $locales);
+        }
+
+        // Format blok lama: { "id": [blok...] } / { "en": [blok...] } / daftar blok langsung
         foreach (['id', 'en'] as $locale) {
             if (isset($raw[$locale]) && is_array($raw[$locale]) && isset($raw[$locale][0]['type'])) {
                 $raw = $raw[$locale];
@@ -57,6 +80,35 @@ final class ContentDocument
         }
 
         return self::make($blocks, $order, []);
+    }
+
+    /** {kode-bahasa: teks}: kunci seperti "id", "en", "pt-BR"; nilai string/null; bukan daftar. */
+    private static function isLocaleTextMap(array $raw): bool
+    {
+        if ($raw === [] || array_is_list($raw)) {
+            return false;
+        }
+        foreach ($raw as $key => $value) {
+            if (!is_string($key) || !preg_match('/^[a-z]{2}(?:-[A-Za-z]{2})?$/', $key) || !(is_string($value) || $value === null)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** @param array<string,string> $texts bahasa => HTML */
+    private static function importHtml(array $texts, array $locales): self
+    {
+        $text = array_fill_keys($locales, '');
+        foreach ($texts as $locale => $html) {
+            $text[$locale] = (string) $html; // bahasa di luar $locales ikut dibawa, supaya tidak ada yang hilang
+        }
+
+        $id = 'blk_' . substr(bin2hex(random_bytes(6)), 0, 8);
+        $block = ['id' => $id, 'type' => 'paragraph', 'data' => ['text' => $text, 'margin_bottom' => 'mb-4 md:mb-6']];
+
+        return new self([$id => $block], [$id], self::DEFAULT_SETTINGS, imported: true);
     }
 
     public function toArray(): array
@@ -167,15 +219,5 @@ final class ContentDocument
         $order = array_values(array_filter($order, fn ($id) => is_string($id) && isset($blocks[$id])));
 
         return new self($blocks, $order, $settings + self::DEFAULT_SETTINGS);
-    }
-
-    private static function decode(mixed $raw): array
-    {
-        // `content` pernah tersimpan sebagai string JSON di dalam JSON, jadi dibuka berulang (maks 3x)
-        for ($i = 0; $i < 3 && is_string($raw); $i++) {
-            $raw = json_decode($raw, true);
-        }
-
-        return is_array($raw) ? $raw : [];
     }
 }

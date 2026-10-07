@@ -591,7 +591,13 @@ new class extends Component {
                 >
                   <td class="px-4 py-3.5 text-sm">
                     <div class="font-medium text-zinc-900 dark:text-white">
-                      {{ $article->title }}
+                      {{-- {{ $article->title }} --}}
+                      {{
+                        is_array($article->title)
+                          ? $article->title[app()->getLocale()] ??
+                            ($article->title["id"] ?? (current($article->title) ?? "Tanpa Judul"))
+                          : $article->title
+                      }}
                     </div>
                     <div class="text-xs text-zinc-500 dark:text-zinc-400">
                       {{
@@ -630,10 +636,17 @@ new class extends Component {
                                         <!-- {/{ \Carbon\Carbon::parse($article->created_at)->format('d/m/y') }} -->
                                     </td> --}}
                   <td class="px-4 py-3.5 text-sm">
-                    {{
+                    {{-- {{
                       $article->category
                         ->name
+                    }} --}}
+                    {{
+                      is_array($article->category->name)
+                        ? $article->category->name[app()->getLocale()] ??
+                          ($article->category->name["id"] ?? current($article->category->name))
+                        : $article->category->name ?? "-"
                     }}
+                  </td>
                   </td>
                   <td class="px-4 py-3.5 text-sm">
                     <span
@@ -652,7 +665,7 @@ new class extends Component {
                       <a
                         wire:navigate
                         {{-- href="{{ route('article.edit', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" --}}
-                        href="{{ route('article.edit',  $article->id) }}"
+                        href="{{ route('v2.article.edit',  $article->id) }}"
                         class="group bg-forest/90 dark:bg-forest/80 hover:bg-forest/70 relative flex cursor-pointer items-center justify-center rounded-md p-1.5 text-white transition-colors"
                       >
                         <flux:icon
@@ -673,7 +686,8 @@ new class extends Component {
 
                       <a
                         wire:navigate
-                        href="{{ route('article.preview', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}"
+                        href="#to-do"
+                        {{-- href="{{ route('article.preview', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" --}}
                         class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
                       >
                         <flux:icon

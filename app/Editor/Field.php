@@ -39,9 +39,26 @@ final class Field
         return new self('select', $key, $label, $options, $default, $when, $extra);
     }
 
-    public static function icon(string $key, string $label, string $default = 'box'): self
+    public static function icon(string $key, string $label, string $default = 'box', bool $clearable = false): self
     {
-        return new self('icon', $key, $label, [], $default);
+        return new self('icon', $key, $label, [], $default, null, ['clearable' => $clearable]);
+    }
+
+    /**
+     * Daftar item berulang (tombol, pertanyaan FAQ, ...). $fields = kontrol per item (key RELATIF terhadap item),
+     * $itemDefaults = nilai satu item baru ("@id" = ID baru, "@locales" = peta bahasa kosong).
+     *
+     * @param Field[] $fields
+     */
+    public static function repeater(string $key, string $label, array $fields, array $itemDefaults, int $max = 12, string $itemLabel = 'Item'): self
+    {
+        return new self('repeater', $key, $label, [], null, null, ['fields' => $fields, 'defaults' => $itemDefaults, 'max' => $max, 'itemLabel' => $itemLabel]);
+    }
+
+    /** Tautan: jenis (halaman, artikel, berkas, URL, telepon, surel, anchor) + tujuannya. Nilai: {kind, ref, ref_label, media_id, url, new_tab}. */
+    public static function link(string $key, string $label): self
+    {
+        return new self('link', $key, $label);
     }
 
     /** Teks per bahasa: key menunjuk ke objek {id, en}. */

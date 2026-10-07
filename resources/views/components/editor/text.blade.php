@@ -2,6 +2,7 @@
 @props([
   'path' => null,
   'rel' => null,
+  'relExpr' => null,
   'label' => null,
   'placeholder' => '',
   'maxlength' => null,
@@ -17,7 +18,7 @@
   $input = 'focus:border-foresty focus:ring-foresty w-full rounded-lg border-gray-200 p-2 text-xs shadow-sm ' . ($upper ? 'uppercase' : '');
 @endphp
 
-<div x-data="wireField(@js($path), @js($rel), null, @js($isLive))" {{ $attributes->class('flex flex-col gap-1.5') }}>
+<div x-data="wireField(@js($path), {!! \App\Editor\Rel::js($rel, $relExpr ?? null) !!}, null, @js($isLive))" {{ $attributes->class('flex flex-col gap-1.5') }}>
   @if ($label)
     <label class="text-xxs font-bold text-gray-700 uppercase">{{ $label }}</label>
   @endif
@@ -40,7 +41,7 @@
       x-bind:value="vAt('')"
       x-on:input="
         @if ($slug) $event.target.value = $event.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); @endif
-        typeAt('', $event.target.value)
+        typeAt('', @if ($type === 'number') $event.target.value === '' ? 0 : Number($event.target.value) @else $event.target.value @endif)
       "
       class="{{ $input }}"
     />

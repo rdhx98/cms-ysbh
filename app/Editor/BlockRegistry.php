@@ -127,6 +127,41 @@ final class BlockRegistry
                 Field::segmented('data.gap', 'Jarak', ['gap-4' => 'Rapat', 'gap-8' => 'Sedang', 'gap-12' => 'Renggang', 'gap-16' => 'Jauh'], 'gap-8'),
             ]),
 
+            // Tombol / ajakan bertindak. Tautan internal memakai ID (bukan slug) supaya mengganti slug tidak mematahkan tombol.
+            new BlockType('button-builder', 'Tombol', 'mouse-pointer-click', 'block', [
+                Field::repeater('data.buttons', 'Tombol', [
+                    Field::i18n('label', 'Teks Tombol'),
+                    Field::link('link', 'Tautan'),
+                    Field::toggle('link.new_tab', 'Buka di tab baru'),
+                    Field::segmented('variant', 'Gaya', ['solid' => 'Isi', 'outline' => 'Garis', 'ghost' => 'Teks'], 'solid'),
+                    Field::segmented('color', 'Warna', [
+                        self::dot('foresty', 'Foresty', 'bg-foresty'),
+                        self::dot('coral', 'Coral', 'bg-coral'),
+                        self::dot('aurum', 'Aurum', 'bg-aurum'),
+                        self::dot('charcoal', 'Charcoal', 'bg-charcoal'),
+                    ], 'foresty'),
+                    Field::segmented('size', 'Ukuran', ['sm' => 'S', 'md' => 'M', 'lg' => 'L'], 'md'),
+                    Field::icon('icon', 'Ikon (opsional)', '', true),
+                    Field::segmented('icon_position', 'Posisi ikon', ['left' => 'Kiri', 'right' => 'Kanan'], 'left', ['icon', true]),
+                ], [
+                    'id' => '@id',
+                    'label' => '@locales', // kosong: tombol tanpa teks tidak dirender di halaman publik (tidak ada isi palsu)
+                    'link' => ['kind' => 'url', 'ref' => '', 'ref_label' => '', 'media_id' => null, 'url' => '', 'new_tab' => false],
+                    'variant' => 'solid', 'color' => 'foresty', 'size' => 'md', 'icon' => '', 'icon_position' => 'left',
+                ], 12, 'tombol'),
+                Field::segmented('data.align', 'Perataan', ['left' => 'Kiri', 'center' => 'Tengah', 'right' => 'Kanan'], 'left'),
+                Field::toggle('data.stack_mobile', 'Tumpuk ke bawah di layar kecil'),
+            ], defaults: [
+                'align' => 'left',
+                'stack_mobile' => true,
+                'buttons' => [[
+                    'id' => '@id',
+                    'label' => '@locales',
+                    'link' => ['kind' => 'url', 'ref' => '', 'ref_label' => '', 'media_id' => null, 'url' => '', 'new_tab' => false],
+                    'variant' => 'solid', 'color' => 'foresty', 'size' => 'md', 'icon' => '', 'icon_position' => 'left',
+                ]],
+            ]),
+
             // ========================= ELEMEN KARTU =========================
             new BlockType('text', 'Teks', 'square-dashed-text', 'element', [
                 Field::i18n('data.content', 'Teks', multi: true, rows: 2),

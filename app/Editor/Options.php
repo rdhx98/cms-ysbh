@@ -11,13 +11,20 @@ namespace App\Editor;
  */
 final class Options
 {
+    /** Kunci yang menandakan sebuah larik adalah DEFINISI opsi (bukan peta bahasa). */
+    private const OPTION_KEYS = ['value', 'label', 'name', 'title', 'icon', 'html', 'dot', 'dot_ring', 'slash', 'square', 'shape', 'preview', 'is_transparent'];
+
     public static function normalize(array $options): array
     {
         $items = [];
         $isList = array_is_list($options);
 
         foreach ($options as $key => $opt) {
-            if (is_array($opt)) {
+            // Larik tanpa satu pun kunci definisi opsi adalah PETA BAHASA ({"id": "Kesehatan", "en": "Health"}), mis. nama
+            // kategori ber-cast array: itu label, bukan definisi. Tanpa ini labelnya hilang dan yang tampil hanya id.
+            if (is_array($opt) && array_intersect(self::OPTION_KEYS, array_keys($opt)) === []) {
+                $items[] = ['value' => $key, 'label' => \App\Content\Names::of($opt, function_exists('app') ? app()->getLocale() : null)];
+            } elseif (is_array($opt)) {
                 $items[] = $opt + ['value' => $key];
             } elseif ($isList) {
                 $items[] = ['value' => $opt, 'label' => $opt];

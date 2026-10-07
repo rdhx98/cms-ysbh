@@ -6,12 +6,14 @@
 @props([
   'path' => null,
   'rel' => null,
+  'relExpr' => null,
   'label' => null,
   'locales' => ['id', 'en'],
   'multi' => false,
   'rows' => 3,
   'placeholder' => 'Ketik di sini...',
   'live' => null,
+  'slug' => false, // kolom slug: spasi/simbol jadi '-' saat mengetik
   'counter' => null, // batas anjuran karakter (mis. 160 untuk deskripsi SEO); hanya penunjuk, bukan pembatas
 ])
 
@@ -19,7 +21,7 @@
   $isLive = $live ?? ! config('cms.editor.defer_style_sync', false);
 @endphp
 
-<div x-data="wireField(@js($path), @js($rel), null, @js($isLive))" {{ $attributes->class('flex flex-col gap-1.5') }}>
+<div x-data="wireField(@js($path), {!! \App\Editor\Rel::js($rel, $relExpr ?? null) !!}, null, @js($isLive))" {{ $attributes->class('flex flex-col gap-1.5') }}>
   @if ($label)
     <span class="text-xxs font-bold text-gray-700 uppercase">{{ $label }}</span>
   @endif
@@ -40,7 +42,14 @@
           type="text"
           placeholder="{{ $placeholder }}"
           x-bind:value="vAt(@js($lang))"
-          x-on:input="typeAt(@js($lang), $event.target.value)"
+          @if ($slug)
+            x-on:input="slugLive(@js($lang), $event.target)"
+            x-on:blur="slugFinal(@js($lang), $event.target)"
+            autocapitalize="off"
+            spellcheck="false"
+          @else
+            x-on:input="typeAt(@js($lang), $event.target.value)"
+          @endif
           class="focus:border-foresty focus:ring-foresty w-full rounded-lg border-gray-200 px-2 pt-5 pb-1.5 text-sm shadow-sm transition-colors"
         />
       @endif
