@@ -21,4 +21,6 @@ import './mikro-tiptap.js';
 import './visual-fx.js';
 
 import { registerEditor } from './editor'
-document.addEventListener('alpine:init', () => registerEditor(window.Alpine))
+import { registerCanvas } from './canvas'
+// document.addEventListener('alpine:init', () => registerEditor(window.Alpine))
+document.addEventListener('alpine:init', () => { registerEditor(window.Alpine); registerCanvas(window.Alpine) })

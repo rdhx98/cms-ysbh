@@ -19,68 +19,12 @@ final class BlockSanitizer
                 continue;
             }
             $type = str_replace('_', '-', strtolower((string) ($block['type'] ?? '')));
-            $data = is_array($block['data'] ?? null) ? $block['data'] : [];
-            $clean = self::forType($type, $data, $locales);
-            if ($clean !== $data || $type === 'button-builder') {
-                $blocks[$id]['data'] = $clean;
+            if ($type === 'button-builder') {
+                $blocks[$id]['data'] = self::buttonBuilder(is_array($block['data'] ?? null) ? $block['data'] : [], $locales);
             }
         }
 
         return $blocks;
-    }
-
-    /**
-     * Pembersih untuk SATU jenis blok: Tombol (bawaan) atau modul di app/Editor/Blocks. Jenis lain dikembalikan apa adanya.
-     * Komponen tampilan publik memanggil ini lagi (jaring kedua).
-     */
-    public static function forType(string $type, array $data, array $locales = ['id', 'en']): array
-    {
-        $type = str_replace('_', '-', strtolower($type));
-        if ($type === 'button-builder') {
-            return self::buttonBuilder($data, $locales);
-        }
-        if (class_exists(\App\Editor\Modules::class) && ($module = \App\Editor\Modules::for($type))) {
-            return $module::sanitize($data, $locales);
-        }
-
-        return $data;
-    }
-
-    /** ID item daftar berulang: dipertahankan bila sah, jika tidak dibuat baru. */
-    public static function itemId(mixed $id): string
-    {
-        return is_string($id) && preg_match('/^[A-Za-z0-9_-]{1,40}$/D', $id)
-            ? $id
-            : 'itm_' . substr(bin2hex(random_bytes(5)), 0, 8);
-    }
-
-    /** Teks SATU baris per bahasa, TANPA membuang tag: dicetak lewat {{ }}, sehingga "usia <5 tahun" tidak terpotong. */
-    public static function singleLines(mixed $value, array $locales, int $max): array
-    {
-        $value = is_array($value) ? $value : [];
-        $out = [];
-        foreach ($locales as $l) {
-            $s = is_scalar($value[$l] ?? null) ? (string) $value[$l] : '';
-            $out[$l] = mb_substr(trim(preg_replace('/[\s\x00-\x1f]+/u', ' ', $s) ?? ''), 0, $max);
-        }
-
-        return $out;
-    }
-
-    /** Teks BANYAK baris per bahasa (baris baru dipertahankan, maksimal dua berurutan), TANPA membuang tag. */
-    public static function multiLines(mixed $value, array $locales, int $max): array
-    {
-        $value = is_array($value) ? $value : [];
-        $out = [];
-        foreach ($locales as $l) {
-            $s = is_scalar($value[$l] ?? null) ? (string) $value[$l] : '';
-            $s = str_replace(["\r\n", "\r"], "\n", $s);
-            $s = preg_replace('/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/', '', $s) ?? '';
-            $s = preg_replace('/\n{3,}/', "\n\n", trim($s)) ?? '';
-            $out[$l] = mb_substr($s, 0, $max);
-        }
-
-        return $out;
     }
 
     public static function buttonBuilder(array $data, array $locales = ['id', 'en']): array

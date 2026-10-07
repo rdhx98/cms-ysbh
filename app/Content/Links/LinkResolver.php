@@ -104,7 +104,7 @@ final class LinkResolver
     {
         $a = ltrim(trim($value), '#');
 
-        return $a !== '' && preg_match('/^[A-Za-z][A-Za-z0-9_-]{0,79}$/', $a) ? $a : null;
+        return $a !== '' && preg_match('/^[A-Za-z][A-Za-z0-9_-]{0,79}$/D', $a) ? $a : null;
     }
 
     public static function positiveInt(mixed $value): int

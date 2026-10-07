@@ -12,7 +12,7 @@ final class JsonSql
     /** Ungkapan yang membaca satu bahasa dari $column; mengikat SATU parameter, yaitu path(). Nama kolom hanya huruf kecil dan garis bawah. */
     public static function locale(string $driver, string $column): string
     {
-        if (!preg_match('/^[a-z_]+$/', $column)) {
+        if (!preg_match('/^[a-z_]+$/D', $column)) {
             throw new \InvalidArgumentException("Nama kolom tidak sah: {$column}");
         }
 

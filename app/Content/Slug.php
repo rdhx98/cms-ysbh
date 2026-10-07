@@ -8,7 +8,8 @@ namespace App\Content;
  */
 final class Slug
 {
-    public const PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/';
+    // D: '$' hanya cocok di AKHIR teks (tanpa D, "slug\n" dengan baris baru di ujung lolos)
+    public const PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/D';
 
     /** Huruf beraksen Latin yang lazim di nama/istilah Indonesia dan Inggris. */
     private const MAP = [

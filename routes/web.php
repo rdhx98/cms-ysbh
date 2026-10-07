@@ -91,6 +91,9 @@ Route::middleware(["auth"])
         Route::livewire("/snippet", "block-index")->name("snippet.index");
         Route::livewire("/snippet/make", "content.builder")->name("snippet.create");
         Route::livewire("/snippet/edit/{snippet:id}", "content.builder")->name("snippet.edit");
+
+        Route::livewire('/preview/{token}', 'content.canvas-frame')->name('preview.frame');
+        Route::livewire('/preview/{type}/{id}', 'content.record-preview')->name('preview.record')->whereIn('type', ['page', 'article', 'snippet'])->whereNumber('id');
     });
 
 Route::get("/language/{locale}", function ($locale) {

@@ -393,7 +393,7 @@ export function registerEditor(Alpine) {
     // Judul baris item: teks dalam bahasa halaman (atau bahasa mana pun yang terisi) + jenis tautan
     summary(item) {
       const loc = document.documentElement.lang || 'id'
-      const label = item && item.label
+      const label = item && (item.label ?? item.question ?? item.title ?? item.name) // kunci teks utama item: tombol=label, FAQ=question
       const text = typeof label === 'string' ? label : label && (label[loc] || Object.values(label).find((x) => typeof x === 'string' && x.trim()))
       const kinds = { page: 'halaman', article: 'artikel', file: 'berkas', url: 'URL', tel: 'telepon', mailto: 'surel', anchor: 'anchor' }
       const kind = item && item.link && kinds[item.link.kind]

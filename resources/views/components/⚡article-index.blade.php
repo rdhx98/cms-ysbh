@@ -686,7 +686,8 @@ new class extends Component {
 
                       <a
                         wire:navigate
-                        href="#to-do"
+                        href="{{ 
+                          route('v2.preview.record', ['type' => 'article', 'id'=> $article->id]) }}"
                         {{-- href="{{ route('article.preview', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" --}}
                         class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
                       >

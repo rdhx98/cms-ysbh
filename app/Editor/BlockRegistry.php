@@ -268,6 +268,13 @@ final class BlockRegistry
         foreach ($defs as $def) {
             $all[$def->panelKey()] = $def;
         }
+
+        // Blok modul (app/Editor/Blocks/*Block.php): ditambahkan otomatis; tidak boleh menimpa tipe bawaan.
+        foreach (class_exists(Modules::class) ? Modules::all() : [] as $module) {
+            $def = $module::definition();
+            $all[$def->panelKey()] ??= $def;
+        }
+
         return $all;
     }
 }

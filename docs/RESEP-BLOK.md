@@ -19,3 +19,6 @@ Urutan yang sama dipakai untuk Akordion, Daftar unduhan, Callout, Video, dst. Ti
 | path kontrol berbasis indeks + penulisan tertunda | nilai lama menimpa item lain / item hantu | `typeAt` kini membaca nilai **saat menembak** dan membatalkan bila path hilang |
 | `{...objek}` untuk memperluas data Alpine | getter berubah menjadi nilai beku | `Object.defineProperties(..., getOwnPropertyDescriptors(...))` (`extend`) |
 | memercayai `url` dari browser untuk berkas | tautan sisipan | hanya `media_id`, URL dari model `Media` |
+| regex validasi berjangkar `$` tanpa modifier `D` | baris baru di ujung (`"abc\n"`) **lolos** | selalu `/…$/D` untuk token, slug, kunci, id |
+| memanggil komponen render yang belum ada (`x-dynamic-component`) | seluruh halaman publik jatuh karena SATU blok | `x-content.sections` memeriksa `view()->exists(...)` dan melewati/menandai blok itu |
+

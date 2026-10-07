@@ -89,7 +89,7 @@ final class ContentDocument
             return false;
         }
         foreach ($raw as $key => $value) {
-            if (!is_string($key) || !preg_match('/^[a-z]{2}(?:-[A-Za-z]{2})?$/', $key) || !(is_string($value) || $value === null)) {
+            if (!is_string($key) || !preg_match('/^[a-z]{2}(?:-[A-Za-z]{2})?$/D', $key) || !(is_string($value) || $value === null)) {
                 return false;
             }
         }
@@ -119,7 +119,7 @@ final class ContentDocument
     // ------------------------------------------------------------------ referensi ke snippet
 
     /** Pola kunci snippet yang sah: huruf kecil, angka, tanda hubung (mis. "hubungi-kami"). */
-    public const KEY_PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/';
+    public const KEY_PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/D';
 
     /**
      * ID blok yang benar-benar tersambung ke halaman: dari `order`, lalu turun lewat zona anak

@@ -6,8 +6,10 @@ use App\Content\ContentType;
 use App\Content\ContentWriter;
 use App\Content\LocaleMap;
 use App\Content\Names;
+use App\Content\PreviewStore;
 use App\Livewire\Traits\HasContentBlocks;
 use App\Livewire\Traits\ManagesBlockStructure;
+use App\Livewire\Traits\SearchesInternalPages;
 use App\Livewire\Traits\SearchesLinkTargets;
 use App\Livewire\Traits\WithNotifications;
 use Illuminate\Database\Eloquent\Model;
@@ -17,9 +19,9 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Renderless;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-
 /**
  * content.builder — satu editor untuk Page, Article (Post), dan Snippet.
  *
@@ -32,7 +34,8 @@ new class extends Component {
   use WithNotifications;
   use HasContentBlocks;
   use ManagesBlockStructure;
-  use SearchesLinkTargets;
+  use SearchesInternalPages; // searchInternalPages(): tautan di dalam teks berformat (Tiptap)
+  use SearchesLinkTargets; // searchLinkTargets(): pemilih tautan blok Tombol
 
   /** Jenis konten. Ditentukan SEKALI di mount() dari nama rute; request update Livewire tidak punya rute aslinya. */
   #[Locked]
@@ -451,6 +454,80 @@ new class extends Component {
 
   // TODO (Fase E): salin dari page-editor lama -> searchInternalPages() (pindahkan ke trait), saveAndPreview()
   //   (ganti: pratinjau tidak boleh menimpa record yang online — lihat MIGRASI.md).
+  /**
+   * Menitipkan isi yang BELUM disimpan di cache dan mengembalikan token untuk bingkai kanvas (lihat PreviewStore). Tidak menyentuh record
+   * (menggantikan saveAndPreview() lama yang menyimpan dulu). #[Renderless]: tidak merender ulang builder, hanya mengirim data.
+   * Mengembalikan ['error' => ...] (bukan melempar) supaya kanvas menampilkan pesan, bukan modal galat Livewire.
+   *
+   * @return array{token?:string,rev?:int,error?:string}
+   */
+  #[Renderless]
+  public function publishPreview(?string $token = null): array
+  {
+    if (!auth()->check()) {
+      return ["error" => "Sesi berakhir. Muat ulang halaman."];
+    }
+
+    try {
+      return PreviewStore::make()->publish(
+        $this->type,
+        auth()->id(),
+        $token,
+        $this->content,
+        $this->blockOrder,
+        $this->settings,
+        $this->activeLocales,
+        $this->titles,
+      );
+    } catch (\LengthException $e) {
+      return ["error" => $e->getMessage()];
+    }
+  }
+
+  /**
+   * Alamat pratinjau versi TERSIMPAN (dari database) untuk record ini. Kosong bila record belum pernah disimpan atau rutenya belum dipasang.
+   * Beda dengan kanvas: kanvas menampilkan isi yang belum disimpan; ini menampilkan yang sudah tersimpan.
+   */
+  #[Computed]
+  public function savedPreviewUrl(): string
+  {
+    if (!$this->record?->exists) {
+      return "";
+    }
+
+    $segments = explode(".", $this->routeName);
+    $at = array_search($this->type, $segments, true);
+    $prefix = $at ? implode(".", array_slice($segments, 0, $at)) . "." : "";
+
+    foreach ([$prefix . "preview.record", "preview.record"] as $name) {
+      if (Route::has($name)) {
+        return route($name, [
+          "type" => $this->type,
+          "id" => $this->record->getKey(),
+        ]);
+      }
+    }
+
+    return "";
+  }
+
+  /** Alamat bingkai kanvas dengan penanda __TOKEN__ (diisi di browser). Kosong bila rute pratinjau belum dipasang. */
+  #[Computed]
+  public function previewFrameUrl(): string
+  {
+    // awalan rute saat ini ("v2." pada "v2.page.create") dipertahankan, lalu cadangan tanpa awalan
+    $segments = explode(".", $this->routeName);
+    $at = array_search($this->type, $segments, true);
+    $prefix = $at ? implode(".", array_slice($segments, 0, $at)) . "." : "";
+
+    foreach ([$prefix . "preview.frame", "preview.frame"] as $name) {
+      if (Route::has($name)) {
+        return route($name, ["token" => "__TOKEN__"]);
+      }
+    }
+
+    return "";
+  }
 };
 ?>
 
@@ -472,7 +549,7 @@ new class extends Component {
     const t = (($wire.titles || {})[@js(app()->getLocale())] || '').trim()
     document.title = (t || @js($this->pageTitle)) + ' — ' + @js(config('app.name'))
   "
-  class="flex h-dvh min-h-0 flex-col overflow-hidden bg-white"
+  class="flex h-dvh min-h-0 flex-col overflow-hidden rounded-xl bg-white"
 >
   {{-- ======= HEADER (atas-tengah) ======= --}}
   <header class="flex items-center gap-3 border-b px-4 py-2">
@@ -483,6 +560,7 @@ new class extends Component {
       {{ $this->headerLabel }}
     </h1>
     {{-- TODO: tab bahasa (Tunggal/Ganda) -> $store.editor.lang, tab Metadata/Konten, Pratinjau, Minimap --}}
+    <x-editor.lang-tabs :locales="$activeLocales" />
     <button
       type="button"
       wire:click="save"
@@ -525,7 +603,12 @@ new class extends Component {
     </div>
 
     {{-- ======= TENGAH: kanvas + pratinjau (Fase 2) ======= --}}
-    <section class="overflow-y-auto p-4">Kanvas</section>
+    {{-- <section class="overflow-y-auto p-4">Kanvas</section> --}}
+    <x-content.canvas
+      :frame-url="$this->previewFrameUrl"
+      :saved-url="$this->savedPreviewUrl"
+      :locales="$activeLocales"
+    />
 
     {{-- ======= KANAN: tab "Halaman" (judul, slug, status, SEO) dan "Blok" (properti yang difokus) ======= --}}
     <aside class="flex min-h-0 flex-col border-l">

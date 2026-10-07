@@ -29,3 +29,18 @@ Dasar: `_article-editor_blade.php` dan `_article-index_blade.php` (editor dan da
 | tanggal dibuat dapat diubah | ❌ belum |
 | penulis lebih dari satu (`authors`) | ❌ belum; `user_id` = pengguna yang membuat, tidak tertimpa saat orang lain menyimpan |
 | pratinjau artikel (`article.preview`) | ❌ belum |
+
+## Halaman publik artikel: dua baris yang HARUS diubah (rilis 3)
+Dari `article-preview` yang Anda kirim: isi dicetak dengan `{!! $article->content !!}` dan judul dengan `{!! $article->title !!}`. `Post` Anda menyimpan keduanya sebagai JSON (cast `array`), jadi **keduanya menghasilkan "Array to string conversion"**, terlepas dari builder. Perbaikannya sama untuk `article-preview` dan halaman artikel publik (`article.show`):
+
+```blade
+{{-- judul --}}
+{{ \App\Content\Names::of($article->getRawOriginal('title'), app()->getLocale()) }}
+
+{{-- isi: blok dari builder ATAU HTML lama --}}
+<x-content.body :raw="$article->getRawOriginal('content')" :lang="app()->getLocale()" />
+```
+`<x-content.body>` membaca nilai mentah dan memilih sendiri: dokumen blok dirender sebagai seksi; HTML lama diimpor sebagai satu blok Paragraf dan dicetak apa adanya. Sampai dua baris ini diubah, **jangan menerbitkan artikel dari builder**.
+
+Catatan terkait: `Post` memakai `#[Translatable]` tetapi tidak memakai trait `HasTranslations`, sehingga `$article->title` dan `$article->slug` mengembalikan larik. Rute `article.show` yang mencari `where('slug', $slug)` juga tidak akan cocok dengan slug JSON. Itu bagian tahap artikel berikutnya; kirimkan `article.show` bila Anda ingin saya yang mengerjakannya.
+

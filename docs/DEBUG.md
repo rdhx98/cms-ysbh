@@ -133,6 +133,23 @@ Sudah teruji di lab: kontrol, urutan, pemilih tautan, keamanan, dan tampilan. Ya
 - [ ] Halaman publik: tombol tampil dengan warna/gaya yang dipilih. Tombol tanpa teks atau dengan tujuan offline **tidak** tampil. *(Bila blok tidak tampil sama sekali, periksa cara `page-preview` memanggil komponen render; lihat `docs/BLOK-TOMBOL.md`, bagian "Yang perlu diperhatikan".)*
 - [ ] Ikon: pilih satu, "Posisi ikon" muncul; "Hapus ikon" mengosongkannya.
 
+## 6c. Kanvas (di aplikasi sungguhan)
+Sudah teruji di lab: pengelompokan seksi (3000 dokumen dibandingkan dengan logika asli), render, dan protokol pesan di browser. Yang **hanya** bisa dipastikan di Livewire dan layout Anda:
+
+- [ ] Panel tengah menampilkan pratinjau (bukan petunjuk "Rute pratinjau belum dipasang"). Bila petunjuk itu muncul: rute `preview.frame` belum ada di grup `v2`.
+- [ ] Status di bilah kanvas: "Memperbarui…" lalu "● Terkini". Di tab Network, **satu** permintaan `publishPreview` per jeda mengetik (bukan satu per huruf), dan responsnya **kecil** (hanya token).
+- [ ] Isi bingkai tampil dengan gaya situs (font, warna, TOC). Bila tampil polos/tanpa gaya, `layouts.landing.dynamic-preview` tidak memuat CSS yang sama; kirim berkas layout itu.
+- [ ] Bingkai kosong/putih atau pesan "refused to connect": ada header `X-Frame-Options`/`frame-ancestors` yang melarang iframe. Untuk rute ini harus `SAMEORIGIN`.
+- [ ] Ketik di kolom judul blok: pratinjau ikut berubah ±1 detik kemudian **tanpa berkedip dan tanpa melompat ke atas** (render ulang lewat `$wire.$refresh()`).
+- [ ] Klik sebuah blok di pratinjau: blok itu terpilih di outline, tab pindah ke *Blok*, panel properti terbuka. Klik tautan/tombol di dalam pratinjau **tidak** berpindah halaman.
+- [ ] Pilih blok dari outline: pratinjau menggulir ke blok itu dan memberinya garis hijau.
+- [ ] Tombol EN/ID ("Lihat sebagai") mengganti bahasa pratinjau; tab header **ID** membuat pratinjau ikut ID; **Ganda** tidak mengubahnya.
+- [ ] Ikon desktop/tablet/ponsel: lebar berubah; di lebar ponsel menu situs berubah menjadi versi ponsel (titik putus Tailwind ikut).
+- [ ] Ikon ↗: tab baru terbuka dengan halaman yang sama dan tautan berfungsi.
+- [ ] Buka halaman yang **sudah online**, ubah isinya di builder **tanpa menyimpan**: halaman publik asli **tidak berubah** (hanya pratinjau).
+- [ ] Buka alamat bingkai (`/v2/preview/<token>`) dari akun lain atau tanpa masuk: 404 / pengalihan masuk.
+- [ ] Cache: `CACHE_STORE` (di `.env`) tidak boleh `array`; `file` atau `database` cukup. Bila pratinjau selalu "kedaluwarsa", periksa itu dan izin tulis `storage/framework/cache`.
+
 ## 7. Pesan galat → penyebab
 | Pesan | Penyebab |
 |---|---|

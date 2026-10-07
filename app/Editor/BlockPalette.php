@@ -16,7 +16,7 @@ final class BlockPalette
      * Urutan = urutan di menu. Grup lama (tombol, lencana, statistik, kartu, testimoni) sengaja ditiadakan:
      * kartu dibuat lewat card-builder. Blok lama bertipe itu yang sudah ada di halaman tetap terbaca (label dari nama tipe).
      */
-    private const TYPES = [
+    private const BUILTIN = [
         'heading'         => ['Judul', 'heading-1', 'Konten', true],
         'paragraph'       => ['Paragraf', 'align-left', 'Konten', true],
         'eyebrow'         => ['Eyebrow', 'crosshair', 'Konten', true],
@@ -29,12 +29,54 @@ final class BlockPalette
     ];
 
     /** Tipe yang boleh berada di dalam kolom. (card-builder ditambahkan: dua kolom kartu adalah pemakaian yang wajar.) */
-    private const COLUMN_CHILDREN = ['heading', 'paragraph', 'eyebrow', 'image', 'button-builder', 'card-builder'];
+    private const BUILTIN_COLUMN_CHILDREN = ['heading', 'paragraph', 'eyebrow', 'image', 'button-builder', 'card-builder'];
 
     /** Isi step-group: HANYA card-builder, satu per langkah (dari blade step-group: "Tambah Langkah Baru"). */
     private const STEP_CHILDREN = ['card-builder'];
 
     public const MAX_COLUMNS = 6;
+
+    /** @var array<string, array{0:string,1:string,2:string,3:bool}>|null bawaan + modul (app/Editor/Blocks) */
+    private static ?array $types = null;
+    /** @var string[]|null */
+    private static ?array $columnChildren = null;
+
+    /** Tipe bawaan, lalu tipe dari modul (muncul di akhir grupnya). */
+    private static function types(): array
+    {
+        if (self::$types !== null) {
+            return self::$types;
+        }
+        $types = self::BUILTIN;
+        foreach (class_exists(Modules::class) ? Modules::all() : [] as $module) {
+            $def = $module::definition();
+            $place = $module::placement();
+            $types[BlockRegistry::canonical($def->type)] ??= [$def->label, $def->icon, $place['group'] ?? 'Konten', (bool) ($place['root'] ?? true)];
+        }
+
+        return self::$types = $types;
+    }
+
+    private static function columnChildren(): array
+    {
+        if (self::$columnChildren !== null) {
+            return self::$columnChildren;
+        }
+        $children = self::BUILTIN_COLUMN_CHILDREN;
+        foreach (class_exists(Modules::class) ? Modules::all() : [] as $type => $module) {
+            if (!empty($module::placement()['columns'])) {
+                $children[] = $type;
+            }
+        }
+
+        return self::$columnChildren = array_values(array_unique($children));
+    }
+
+    /** Untuk pengujian: lupakan hasil penemuan modul. */
+    public static function reset(): void
+    {
+        self::$types = self::$columnChildren = null;
+    }
 
     public static function canonical(?string $type): string
     {
@@ -43,37 +85,37 @@ final class BlockPalette
 
     public static function has(string $type): bool
     {
-        return isset(self::TYPES[self::canonical($type)]);
+        return isset(self::types()[self::canonical($type)]);
     }
 
     public static function label(string $type): string
     {
         $type = self::canonical($type);
-        return self::TYPES[$type][0] ?? ucfirst(str_replace('-', ' ', $type));
+        return self::types()[$type][0] ?? ucfirst(str_replace('-', ' ', $type));
     }
 
     public static function icon(string $type): string
     {
-        return self::TYPES[self::canonical($type)][1] ?? 'box';
+        return self::types()[self::canonical($type)][1] ?? 'box';
     }
 
     /** Semua nama ikon yang dipakai palet (sprite harus memuatnya). */
     public static function icons(): array
     {
-        return array_values(array_unique(array_column(self::TYPES, 1)));
+        return array_values(array_unique(array_column(self::types(), 1)));
     }
 
     /** @return list<array{type:string,label:string,icon:string,group:string}> */
     public static function rootTypes(): array
     {
-        return self::describe(array_keys(array_filter(self::TYPES, fn ($t) => $t[3])));
+        return self::describe(array_keys(array_filter(self::types(), fn ($t) => $t[3])));
     }
 
     /** @return list<array{type:string,label:string,icon:string,group:string}> tipe yang boleh menjadi anak kontainer */
     public static function childTypes(string $containerType): array
     {
         return self::describe(match (self::canonical($containerType)) {
-            'multi-columns' => self::COLUMN_CHILDREN,
+            'multi-columns' => self::columnChildren(),
             'step-group' => self::STEP_CHILDREN,
             default => [],
         });
@@ -128,9 +170,9 @@ final class BlockPalette
     {
         return array_map(fn (string $type) => [
             'type' => $type,
-            'label' => self::TYPES[$type][0],
-            'icon' => self::TYPES[$type][1],
-            'group' => self::TYPES[$type][2],
+            'label' => self::types()[$type][0],
+            'icon' => self::types()[$type][1],
+            'group' => self::types()[$type][2],
         ], array_values($types));
     }
 }
