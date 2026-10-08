@@ -1,0 +1,137 @@
+@import 'tailwindcss';
+
+@source '../views';
+/* Kelas Tailwind di berkas PHP kit (peta gaya blok: app/Content/Blocks/*Style.php) harus ikut dipindai. */
+@source '../../app';
+/* config/cms.php menyimpan daftar kelas Tailwind (design: warna, jarak, dst.) yang dipakai renderer blok. */
+@source '../../config';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+/* PLUS JAKARTA SANS */
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-BoldItalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* FRAUNCES */
+@font-face {
+    font-family: 'Fraunces';
+    src: url('../../public/fonts/fraunces/Fraunces_72pt-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Fraunces';
+    src: url('../../public/fonts/fraunces/Fraunces_72pt-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Fraunces';
+    src: url('../../public/fonts/fraunces/Fraunces_72pt-SemiBold.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Fraunces';
+    src: url('../../public/fonts/fraunces/Fraunces_72pt-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Fraunces';
+    src: url('../../public/fonts/fraunces/Fraunces_72pt-BlackItalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap;
+}
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    /* is --font-display */
+    --font-fraunces: 'Fraunces', sans-serif;
+    /* --font-body */
+    --font-jakarta: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+     /* Warna Yayasan Sinar Bhakti Husada */
+     /* CLAUDE */
+    --color-foresty:#064F3B;
+    --color-foresty-dark:#043328;
+    --color-foresty-tint:#0E6A4F;
+    --color-goldy:#EBCC26;
+    --color-goldy-soft:#F7EBAF;
+    --color-coral:#E42326;
+    --color-coral-dark:#BE1417;
+    --color-paper:#FBF7EA;
+    --color-paper-dim:#F3ECD6;
+    --color-ink:#12241C;
+    --color-ink-soft:#4B5D53;
+    --color-mist:#E9F1EB;
+    /* --color-line:'rgba(6, 79, 59, 0.14)'; */
+    --color-line:rgba(6, 79, 59, 0.14);
+
+    /* GEMINI */
+    --color-sage-soft: #D2E7DF;
+    --color-pale-yellow: #FFF2B2;
+    --color-coral-muted: #FAD2D2;
+    --color-forest: #073324;
+    --color-terracotta: #C85A32; /* FIX: Diisi agar compiler tidak macet */
+    --color-aurum: #E5C423;
+    --color-charcoal: #1f2937; /* dipakai pilihan warna blok kit (Akordion, Unduhan, ...) */
+}
+/* 1. Definisikan keyframes terlebih dahulu */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 2. Buat class untuk masing-masing animasi */
+.animate-spin-slow {
+  animation: spin 90s linear infinite;
+}
+
+.animate-spin-slower {
+  animation: spin 120s linear infinite;
+}
+
+/* Elemen x-cloak disembunyikan sampai Alpine siap (menu mobile dan nav lengket di header memakainya). */
+[x-cloak] {
+  display: none !important;
+}

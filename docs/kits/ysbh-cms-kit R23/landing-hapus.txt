@@ -1,0 +1,18 @@
+# Berkas yang DIHAPUS dari proyek landing oleh tools/pasang-landing.php (dicadangkan dulu ke storage/pasang-cadangan/<tanggal-jam>/).
+# Hanya jalur di resources/views/pages/ dan public/robots.txt yang diterima pemasang; selain itu ditolak.
+# Rilis 23: seluruh isi situs berasal dari CMS (Page, Post, Snippet). Halaman Blade prototipe di bawah ini tidak lagi dirutekan.
+# Yang TIDAK dihapus: layout, header, footer, komponen x-cards.*, dan aset Anda.
+resources/views/pages/landing.blade.php
+resources/views/pages/about.blade.php
+resources/views/pages/contact-page.blade.php
+resources/views/pages/credibility.blade.php
+resources/views/pages/transparancy.blade.php
+resources/views/pages/impact.blade.php
+resources/views/pages/programs/index.blade.php
+resources/views/pages/programs/program-malaria.blade.php
+resources/views/pages/programs/program-imunisasi.blade.php
+resources/views/pages/programs/program-kia.blade.php
+resources/views/pages/programs/program-tbc.blade.php
+resources/views/pages/programs/program-hiv.blade.php
+# Berkas statis ini menutupi rute dinamis /robots.txt (alamat peta situs mengikuti APP_URL), jadi harus tidak ada.
+public/robots.txt

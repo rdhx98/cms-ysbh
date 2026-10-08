@@ -1,0 +1,340 @@
+--- a/app/Livewire/Traits/HasContentBlocks.php
++++ b/app/Livewire/Traits/HasContentBlocks.php
+@@ -74,101 +74,249 @@
+     //     }
+     // }
+ 
++    /**
++     * Hapus sebuah blok BESERTA seluruh turunannya, lalu bersihkan ID-nya dari
++     * urutan root dan dari zona induk mana pun. Dipakai juga untuk anak
++     * (Multi Column, Step Group) karena tombol hapus di wrapper memanggil ini.
++     */
+     public function removeBlock(string $blockId)
+     {
+-        // 1. Hapus dari gudang data utama
+-        unset($this->content[$blockId]);
++        $this->deleteBlockTree($blockId);
++    }
+ 
+-        // 2. Bersihkan dari urutan terluar (Root)
+-        $this->blockOrder = array_values(array_filter($this->blockOrder, fn($id) => $id !== $blockId));
++    public function removeNestedBlock(string $parentId, string $zone, string $childId)
++    {
++        // Sabuk pengaman: pastikan ID keluar dari zona yang dimaksud, walau
++        // nama zonanya di luar konvensi (children / *_zone).
++        if (isset($this->content[$parentId]["data"][$zone]) && is_array($this->content[$parentId]["data"][$zone])) {
++            $this->content[$parentId]["data"][$zone] = array_values(
++                array_diff($this->content[$parentId]["data"][$zone], [$childId]),
++            );
++        }
+ 
+-        // 3. 🌟 PEMBERSIHAN MENDALAM: Hapus ID hantu dari dalam SEMUA kolom/zona
+-        foreach ($this->content as $parentId => $blockData) {
+-            // Bersihkan zona kiri jika ada
+-            if (isset($blockData["data"]["left_zone"])) {
+-                $this->content[$parentId]["data"]["left_zone"] = array_values(
+-                    array_filter($blockData["data"]["left_zone"], fn($id) => $id !== $blockId),
+-                );
++        // Hapus anak + seluruh turunannya (bukan hanya baris anak itu sendiri).
++        $this->deleteBlockTree($childId);
++    }
++
++    public function duplicateBlock(string $id)
++    {
++        if (!isset($this->content[$id])) {
++            return;
++        }
++
++        // Salin DALAM: anak ikut digandakan dengan ID baru, tidak berbagi ID
++        // dengan blok asli.
++        $newId = $this->cloneBlockTree($id);
++
++        // Sisipkan tepat di bawah blok aslinya.
++        $index = array_search($id, $this->blockOrder, true);
++        if ($index !== false) {
++            array_splice($this->blockOrder, $index + 1, 0, [$newId]);
++            return;
++        }
++
++        // Blok asli bukan blok root: letakkan di zona induknya, bukan di root.
++        if ($parent = $this->findParentZone($id)) {
++            [$parentId, $zone] = $parent;
++            $this->insertAfterInZone($parentId, $zone, $id, $newId);
++            return;
++        }
++
++        $this->blockOrder[] = $newId;
++    }
++
++    public function duplicateNestedBlock(string $parentId, string $zone, string $childId)
++    {
++        if (!isset($this->content[$parentId]) || !isset($this->content[$childId])) {
++            return;
++        }
++
++        // Salin DALAM (anak dari anak ikut digandakan dengan ID baru).
++        $newId = $this->cloneBlockTree($childId);
++
++        $this->insertAfterInZone($parentId, $zone, $childId, $newId);
++    }
++
++    // ==========================================================
++    // POHON BLOK: salin dalam, hapus berantai, isi default aman
++    // ==========================================================
++
++    /** Kunci data yang isinya DAFTAR ID blok anak (bukan nilai biasa). */
++    protected function isZoneKey(string|int $key): bool
++    {
++        $key = (string) $key;
++        return $key === "children" || str_ends_with($key, "_zone");
++    }
++
++    /** ID anak langsung sebuah blok, dari semua zonanya. */
++    protected function childIdsOf(string $blockId): array
++    {
++        $ids = [];
++        foreach ($this->content[$blockId]["data"] ?? [] as $key => $value) {
++            if ($this->isZoneKey($key) && is_array($value)) {
++                foreach ($value as $childId) {
++                    if (is_string($childId)) {
++                        $ids[] = $childId;
++                    }
++                }
+             }
+-            // Bersihkan zona kanan jika ada
+-            if (isset($blockData["data"]["right_zone"])) {
+-                $this->content[$parentId]["data"]["right_zone"] = array_values(
+-                    array_filter($blockData["data"]["right_zone"], fn($id) => $id !== $blockId),
+-                );
++        }
++        return $ids;
++    }
++
++    /** Blok itu sendiri + seluruh turunannya. Aman terhadap data yang siklik. */
++    protected function collectTreeIds(string $rootId): array
++    {
++        $seen = [];
++        $stack = [$rootId];
++        while ($stack) {
++            $id = array_pop($stack);
++            if (isset($seen[$id]) || !isset($this->content[$id])) {
++                continue;
+             }
+-            // 🌟 TAMBAHAN UNTUK STEP-GROUP & MULTI-COLUMNS: Bersihkan zona 'children'
+-            if (isset($blockData["data"]["children"])) {
+-                $this->content[$parentId]["data"]["children"] = array_values(
+-                    array_filter($blockData["data"]["children"], fn($id) => $id !== $blockId),
+-                );
++            $seen[$id] = true;
++            foreach ($this->childIdsOf($id) as $childId) {
++                $stack[] = $childId;
+             }
+         }
++        return array_keys($seen);
+     }
+ 
+-    public function removeNestedBlock(string $parentId, string $zone, string $childId)
++    /** Cari [parentId, zone] yang memuat $childId, atau null. */
++    protected function findParentZone(string $childId): ?array
+     {
+-        // 1. Hapus ID anak dari zona induknya
+-        if (isset($this->content[$parentId]["data"][$zone])) {
+-            $this->content[$parentId]["data"][$zone] = array_values(
+-                array_diff($this->content[$parentId]["data"][$zone], [$childId]),
+-            );
++        foreach ($this->content as $parentId => $block) {
++            foreach ($block["data"] ?? [] as $key => $value) {
++                if ($this->isZoneKey($key) && is_array($value) && in_array($childId, $value, true)) {
++                    return [(string) $parentId, (string) $key];
++                }
++            }
+         }
++        return null;
++    }
++
++    /** Sisipkan $newId tepat setelah $afterId di sebuah zona (atau di akhir). */
++    protected function insertAfterInZone(string $parentId, string $zone, string $afterId, string $newId): void
++    {
++        $zoneArray = $this->content[$parentId]["data"][$zone] ?? [];
++        $index = array_search($afterId, $zoneArray, true);
+ 
+-        // 2. Hapus isi data blok anak itu sendiri dari memori global
+-        if (isset($this->content[$childId])) {
+-            unset($this->content[$childId]);
++        if ($index !== false) {
++            array_splice($zoneArray, $index + 1, 0, [$newId]);
++        } else {
++            $zoneArray[] = $newId;
+         }
++
++        $this->content[$parentId]["data"][$zone] = array_values($zoneArray);
+     }
+ 
+-    public function duplicateBlock(string $id)
++    /**
++     * Hapus blok + semua turunannya, lalu buang ID-nya dari urutan root dan
++     * dari zona induk mana pun (termasuk col_1_zone..col_6_zone, children).
++     */
++    protected function deleteBlockTree(string $blockId): void
+     {
+-        if (isset($this->content[$id])) {
+-            $newId = "blk_" . uniqid();
+-            $duplicatedBlock = $this->content[$id];
+-            $duplicatedBlock["id"] = $newId;
+-
+-            // Simpan konten kloningannya
+-            $this->content[$newId] = $duplicatedBlock;
+-
+-            // Sisipkan ke urutan tepat di bawah blok aslinya
+-            $index = array_search($id, $this->blockOrder);
+-            if ($index !== false) {
+-                array_splice($this->blockOrder, $index + 1, 0, [$newId]);
+-            } else {
+-                $this->blockOrder[] = $newId;
++        $doomed = $this->collectTreeIds($blockId) ?: [$blockId];
++        $doomedSet = array_flip($doomed);
++
++        foreach ($doomed as $id) {
++            unset($this->content[$id]);
++        }
++
++        $isDoomed = fn($id) => is_string($id) && isset($doomedSet[$id]);
++
++        $this->blockOrder = array_values(array_filter($this->blockOrder, fn($id) => !$isDoomed($id)));
++
++        foreach ($this->content as $parentId => $block) {
++            foreach ($block["data"] ?? [] as $key => $value) {
++                if ($this->isZoneKey($key) && is_array($value)) {
++                    $this->content[$parentId]["data"][$key] = array_values(
++                        array_filter($value, fn($id) => !$isDoomed($id)),
++                    );
++                }
+             }
+         }
+     }
+ 
+-    public function duplicateNestedBlock(string $parentId, string $zone, string $childId)
++    /**
++     * Salin dalam sebuah blok: ID baru untuk blok itu dan SELURUH turunannya.
++     * Mengembalikan ID salinan. $path melindungi dari data yang saling
++     * menunjuk (siklik). ID anak yang sudah tidak ada di $content dibuang.
++     */
++    protected function cloneBlockTree(string $blockId, array $path = []): string
+     {
+-        // 1. Pastikan parent dan child benar-benar ada di memori
+-        if (isset($this->content[$parentId]) && isset($this->content[$childId])) {
+-            // 2. Buat ID unik baru dan salin data anak
+-            $newId = "blk_" . uniqid();
+-            $duplicatedBlock = $this->content[$childId];
+-            $duplicatedBlock["id"] = $newId;
+-
+-            // 3. Simpan kloningan blok tersebut ke daftar konten global
+-            $this->content[$newId] = $duplicatedBlock;
+-
+-            // 4. Ambil array zona milik parent (misal: 'children' atau 'col_1_zone')
+-            $zoneArray = $this->content[$parentId]["data"][$zone] ?? [];
+-
+-            // Cari posisi indeks blok asli yang sedang diduplikat
+-            $index = array_search($childId, $zoneArray);
+-
+-            if ($index !== false) {
+-                // Sisipkan ID baru tepat di bawah blok asli
+-                array_splice($zoneArray, $index + 1, 0, [$newId]);
+-            } else {
+-                // Fallback (jaga-jaga): taruh di urutan paling bawah
+-                $zoneArray[] = $newId;
++        do {
++            $newId = "blk_" . Str::random(8);
++        } while (isset($this->content[$newId]));
++
++        $block = $this->content[$blockId];
++        $block["id"] = $newId;
++        $path[$blockId] = true;
++
++        foreach ($block["data"] ?? [] as $key => $value) {
++            if ($this->isZoneKey($key) && is_array($value)) {
++                $clones = [];
++                foreach ($value as $childId) {
++                    if (is_string($childId) && !isset($path[$childId]) && isset($this->content[$childId])) {
++                        $clones[] = $this->cloneBlockTree($childId, $path);
++                    }
++                }
++                $block["data"][$key] = $clones;
++            } elseif ($key === "cards" && is_array($value)) {
++                $block["data"]["cards"] = array_map(
++                    fn($card) => is_array($card) ? $this->regenerateCardIds($card) : $card,
++                    $value,
++                );
+             }
++        }
++
++        $this->content[$newId] = $block;
++
++        return $newId;
++    }
+ 
+-            // 5. Kembalikan array yang sudah disisipi kloningan ke data parent
+-            $this->content[$parentId]["data"][$zone] = $zoneArray;
++    /** ID baru untuk kartu, kolom, dan elemen di dalamnya (model row/column/element). */
++    protected function regenerateCardIds(array $card): array
++    {
++        $card["id"] = uniqid("card_");
++
++        $columns = $card["layout"]["children"] ?? null;
++        if (is_array($columns)) {
++            $card["layout"]["children"] = array_map(function ($col) {
++                $col["id"] = uniqid("col_");
++                if (isset($col["children"]) && is_array($col["children"])) {
++                    $col["children"] = array_map(function ($el) {
++                        $el["id"] = uniqid("el_");
++                        return $el;
++                    }, $col["children"]);
++                }
++                return $col;
++            }, $columns);
+         }
++
++        return $card;
++    }
++
++    /**
++     * Tambal $data dengan nilai dari $defaults HANYA untuk kunci yang belum ada.
++     * Hanya array asosiatif (mis. peta bahasa {id,en}) yang ditelusuri lebih
++     * dalam; daftar (list) dibiarkan apa adanya.
++     */
++    protected function fillDefaults(array $defaults, array $data): array
++    {
++        foreach ($defaults as $key => $default) {
++            if (!array_key_exists($key, $data)) {
++                $data[$key] = $default;
++            } elseif (is_array($default) && is_array($data[$key]) && $this->isAssocArray($default)) {
++                $data[$key] = $this->fillDefaults($default, $data[$key]);
++            }
++        }
++        return $data;
++    }
++
++    protected function isAssocArray(array $a): bool
++    {
++        return $a !== [] && array_keys($a) !== range(0, count($a) - 1);
+     }
+ 
+     public function updateBlockOrder(array $orderedIds = [])
+@@ -200,9 +348,14 @@
+             $type = $block["type"] ?? "";
+             $defaultSchema = $this->getDefaultDataForType($type);
+ 
+-            // array_replace_recursive akan menambal data DB yang bolong dengan kunci default.
+-            // Data yang sudah diisi user TIDAK AKAN tertimpa. Hanya properti baru/hilang yang disuntikkan.
+-            $block["data"] = array_replace_recursive($defaultSchema, $block["data"] ?? []);
++            // fillDefaults() HANYA menambal kunci yang belum ada. Berbeda dengan
++            // array_replace_recursive, daftar (stats, buttons, cards, ...) tidak
++            // digabung per indeks, jadi item yang sudah dihapus pengguna tidak
++            // "hidup lagi" dari data contoh di getDefaultDataForType().
++            $block["data"] = $this->fillDefaults($defaultSchema, $block["data"] ?? []);
++
++            // Anak yang dibuat addChildBlock() sebelumnya tidak punya kunci id.
++            $block["id"] = $block["id"] ?? $id;
+ 
+             $normalized[$id] = $block;
+         }
