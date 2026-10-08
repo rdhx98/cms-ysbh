@@ -329,6 +329,7 @@ return [
         "box",
         "download",
         "arrow-right",
+        "images",
     ],
     "fonts" => [
         "font-arial" => "Arial",
@@ -339,4 +340,16 @@ return [
         "font-opensans" => "Open Sans",
         "font-jakarta" => "Plus Jakarta Sans",
     ],
+    // ref ./docs/dua-aplikasi.md
+    'public' => [
+      'base'    => env('CMS_PUBLIC_URL', ''),   // CMS: https://ysbh.org  |  landing: kosong
+      'page'    => '/{slug}',
+      'article' => '/artikel/{slug}',
+      'cover'   => '/storage/posts/{file}',   // nama berkas sampul artikel -> alamat gambar (blok Artikel Terbaru)
+    ],
+    // Rute STATIS satu-segmen di routes/web.php landing. Halaman CMS ber-slug ini tidak akan pernah terbuka, jadi editor menolaknya.
+    'reserved_slugs' => ['about', 'contact', 'programs', 'credibility', 'transparancies', 'impact'],
+
+    // Halaman CMS ber-slug ini menjadi kepala daftar artikel (/artikel); boleh dipakai walau alamatnya rute tetap.
+    'articles_index_slug' => 'artikel',
 ];

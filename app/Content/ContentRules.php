@@ -2,6 +2,7 @@
 
 namespace App\Content;
 
+use App\Content\Rules\ReservedSlug;
 use App\Content\Rules\UniqueLocaleValue;
 use Illuminate\Validation\Rule;
 
@@ -38,6 +39,10 @@ final class ContentRules
                     // slug unik PER BAHASA pada kolom JSON; tahan terhadap baris lama berisi slug polos (bukan JSON)
                     new UniqueLocaleValue($type->table(), 'slug', $locale, $recordId),
                 ];
+                // Halaman: slug tidak boleh sama dengan alamat tetap situs (rute statis menang atas /{slug}). Artikel ada di /artikel/{slug}: aman.
+                if ($type === ContentType::Page) {
+                    $rules["slug.{$locale}"][] = new ReservedSlug(self::configured('reserved_slugs', []), self::indexSlug());
+                }
             }
             if ($type->usesMeta()) {
                 $rules["meta_title.{$locale}"] = 'nullable|string|max:255';
@@ -64,6 +69,26 @@ final class ContentRules
         }
 
         return $rules;
+    }
+
+    /** Slug halaman CMS yang menjadi kepala daftar artikel (boleh dipakai walau alamatnya rute tetap). */
+    public static function indexSlug(): string
+    {
+        $slug = self::configured('articles_index_slug', 'artikel');
+
+        return is_string($slug) && $slug !== '' ? $slug : 'artikel';
+    }
+
+    /** Membaca config('cms.*') tanpa melempar galat di luar aplikasi Laravel (pengujian murni). */
+    private static function configured(string $key, mixed $default): mixed
+    {
+        try {
+            $value = config('cms.' . $key, $default);
+        } catch (\Throwable) {
+            return $default;
+        }
+
+        return is_array($default) ? (is_array($value) ? $value : []) : $value;
     }
 
     /** Nama ramah untuk pesan galat ("Slug (ID) wajib diisi", bukan "slug.id wajib diisi"). */

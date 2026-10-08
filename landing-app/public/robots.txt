@@ -1,0 +1,5 @@
+User-agent: *
+Disallow:
+
+# Ganti dengan alamat situs Anda bila bukan ysbh.org
+Sitemap: https://ysbh.org/sitemap.xml

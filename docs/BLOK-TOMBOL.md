@@ -14,7 +14,7 @@ Ajakan bertindak: Donasi, Unduh laporan, Hubungi kami. Satu blok berisi 1 sampai
 | Halaman, Artikel | **ID** (bukan slug) + nama untuk tampilan | mengganti slug **tidak mematahkan** tombol. Tombol hanya tampil bila tujuannya **online / terbit** |
 | Berkas | `media_id` dari File Manager | otomatis tercatat di "Digunakan Di" milik berkas itu |
 | URL luar | teks | hanya `https://…`, `http://…`, atau jalur `/halaman`. Selain itu dikosongkan saat disimpan |
-| Telepon | nomor | dinormalkan: `+62 812-3456-7890` menjadi `tel:+6281234567890`; minimal 5 digit |
+| Telepon | nomor | dinormalkan: `+62 812-3456-7890` menjadi `tel:+6281234567890`; minimal 3 angka (nomor darurat **119 / 112 / 110** sah; sebelum rilis 7 minimalnya 5) |
 | Surel | alamat | harus alamat surel sah |
 | Anchor | `nama-bagian` | menuju blok yang memiliki **ID Tautan (Anchor)** yang sama di halaman itu |
 

@@ -12,7 +12,7 @@
   $lang ??= app()->getLocale();
   $locales = config('app.supported_locales', ['id', 'en']);
   $doc = \App\Content\ContentDocument::fromRaw($raw, $locales);
-  $blocks = \App\Content\Blocks\BlockSanitizer::clean($doc->blocks, $locales);
+  $blocks = \App\Content\Blocks\BlockSanitizer::forPublic($doc->blocks, $locales);
 @endphp
 
 <x-content.sections :blocks="$blocks" :order="$doc->order" :settings="$doc->settings" :lang="$lang" />

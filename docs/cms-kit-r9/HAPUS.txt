@@ -1,0 +1,2 @@
+app/Content/Rules/UniqueSlug.php
+resources/views/components/editor/outline-sementara.blade.php

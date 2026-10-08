@@ -1,0 +1,22 @@
+// resources/js/app.js — daftarkan SEKALI. Listener di `document` TIDAK dilepas saat wire:navigate,
+// jadi jangan menaruhnya di <script> halaman (akan menumpuk di tiap kunjungan).
+import { registerEditor } from './editor'
+import { registerCanvas } from './canvas'                       // rilis 3: panel pratinjau (kanvas)
+document.addEventListener('alpine:init', () => {
+  registerEditor(window.Alpine)
+  registerCanvas(window.Alpine)
+})
+
+// Store `editor` hidup di seluruh navigasi: bersihkan agar tidak membawa fokus dari halaman sebelumnya.
+document.addEventListener('livewire:navigated', () => {
+  window.blockCollapseState = {}            // ingatan collapse milik wrapper
+  window.Alpine?.store('editor')?.clear?.()
+})
+
+// Penjaga perubahan belum tersimpan. `store.editor.dirty` belum ada di kit; tambahkan di tahap T3.
+document.addEventListener('livewire:navigate', (e) => {
+  if (window.Alpine?.store('editor')?.dirty && !confirm('Ada perubahan yang belum disimpan. Tinggalkan halaman?')) e.preventDefault()
+})
+window.addEventListener('beforeunload', (e) => {
+  if (window.Alpine?.store('editor')?.dirty) { e.preventDefault(); e.returnValue = '' }
+})

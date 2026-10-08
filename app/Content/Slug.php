@@ -35,4 +35,38 @@ final class Slug
     {
         return (bool) preg_match(self::PATTERN, $slug);
     }
+
+    /**
+     * Slug yang TIDAK BOLEH dipakai halaman CMS karena alamat "/{slug}"-nya sudah dimiliki sesuatu yang didaftarkan lebih dulu di
+     * landing (rute statis, rute teknis, atau folder publik). Halaman CMS ber-slug ini tersimpan dan tampak "online", tetapi tidak
+     * pernah bisa dibuka. Rute statis milik situs dicatat di config('cms.reserved_slugs'); daftar ini hanya yang bersifat teknis.
+     */
+    public const RESERVED = ['articles', 'storage', 'build', 'fonts', 'logo', 'up', 'livewire', 'login', 'logout', 'admin', 'api', 'robots', 'sitemap', 'favicon', 'preview', 'v2'];
+
+    /**
+     * Daftar slug terlarang yang berlaku: bawaan + tambahan dari config, huruf kecil, tanpa duplikat. $allowed (mis. slug kepala
+     * daftar artikel, "artikel") dikeluarkan: alamatnya memang milik halaman CMS itu.
+     *
+     * @param  array<int,mixed> $configured tambahan dari config('cms.reserved_slugs'); nilai bukan teks diabaikan
+     * @return string[]
+     */
+    public static function reserved(array $configured = [], ?string $allowed = null): array
+    {
+        $all = [];
+        foreach (array_merge(self::RESERVED, $configured) as $slug) {
+            if (is_string($slug) && trim($slug) !== '') {
+                $all[strtolower(trim($slug))] = true;
+            }
+        }
+        if ($allowed !== null) {
+            unset($all[strtolower(trim($allowed))]);
+        }
+
+        return array_keys($all);
+    }
+
+    public static function isReserved(string $slug, array $configured = [], ?string $allowed = null): bool
+    {
+        return in_array(strtolower(trim($slug)), self::reserved($configured, $allowed), true);
+    }
 }

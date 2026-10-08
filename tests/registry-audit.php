@@ -104,6 +104,9 @@ namespace {
             if (!$has && $f->type !== 'media') $info($panel, "{$f->key}: kontrol ada, tetapi trait tidak menulis nilai bawaannya");
         }
         foreach ($covered([], $data['data'] ?? [], 'data') as $leaf) {
+            // kunci zona kontainer (children, col_N_zone) adalah struktur pohon, bukan properti yang diedit lewat kontrol
+            $last = substr($leaf, (int) strrpos($leaf, '.') + (str_contains($leaf, '.') ? 1 : 0));
+            if ($last === 'children' || str_ends_with($last, '_zone')) continue;
             $ok = false;
             foreach ($fieldKeys as $fk) { if ($leaf === $fk || str_starts_with($leaf, $fk . '.')) { $ok = true; break; } }
             if (!$ok) $info($panel, "{$leaf}: trait menulis kunci ini, tetapi tidak ada kontrolnya");
@@ -111,7 +114,7 @@ namespace {
     };
 
     // blok: heading, paragraph, section-divider (kedua ejaan)
-    foreach (['heading', 'paragraph', 'section-divider', 'section_divider'] as $t) {
+    foreach (['heading', 'paragraph', 'section-divider', 'section_divider', 'multi-columns', 'step-group'] as $t) {
         $h = new Harness();
         $h->addBlock($t);
         $id = $h->blockOrder[0] ?? null;

@@ -440,7 +440,8 @@ new class extends Component {
 
                       <a
                         wire:navigate
-                        href="{{ route('page.preview', ['pageSlug' => $slugCantik]) }}"
+                        {{-- href="{{ route('page.preview', ['pageSlug' => $slugCantik]) }}" --}}
+                        href="{{ route('v2.preview.record', ['type' => 'page', 'id' => $page->id ]) }}"
                         class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
                       >
                         <flux:icon

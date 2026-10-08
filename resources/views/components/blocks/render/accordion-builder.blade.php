@@ -6,11 +6,11 @@
   HTML dari penulis yang lolos. Pertanyaan tanpa teks dilewati. Kelas CSS dari daftar tetap (AccordionStyle).
   Di kanvas editor ($canvasMode dibagikan oleh <x-content.sections>) semua pertanyaan terbuka supaya jawabannya terlihat.
 --}}
-@props ([
-  "block" => [],
-  "data" => [],
-  "lang" => "id",
-  "allContent" => [],
+@props([
+  'block' => [],
+  'data' => [],
+  'lang' => 'id',
+  'allContent' => [],
 ])
 
 @php
@@ -19,44 +19,32 @@
   use App\Content\Blocks\FaqText;
 
   $inCanvas = (bool) ($canvasMode ?? false);
-  $clean = BlockSanitizer::forType(
-    "accordion-builder",
-    is_array($data) ? $data : [],
-    array_values(array_unique([$lang, "id", "en"])),
-  );
+  $clean = BlockSanitizer::forType('accordion-builder', is_array($data) ? $data : [], array_values(array_unique([$lang, 'id', 'en'])));
 
   // teks: bahasa halaman, lalu id, lalu en
   $pick = function (array $byLocale) use ($lang): string {
-    foreach ([$lang, "id", "en"] as $l) {
-      if (($byLocale[$l] ?? "") !== "") {
-        return $byLocale[$l];
+      foreach ([$lang, 'id', 'en'] as $l) {
+          if (($byLocale[$l] ?? '') !== '') {
+              return $byLocale[$l];
+          }
       }
-    }
 
-    return "";
+      return '';
   };
 
   $items = [];
-  foreach ($clean["items"] as $item) {
-    $question = $pick($item["question"]);
-    if ($question === "") {
-      continue;
-    }
-    $items[] = [
-      "id" => $item["id"],
-      "question" => $question,
-      "html" => FaqText::toHtml($pick($item["answer"])),
-    ];
+  foreach ($clean['items'] as $item) {
+      $question = $pick($item['question']);
+      if ($question === '') {
+          continue;
+      }
+      $items[] = ['id' => $item['id'], 'question' => $question, 'html' => FaqText::toHtml($pick($item['answer']))];
   }
 
   // satu terbuka sekali waktu: atribut name yang sama membuat peramban menutup yang lain (tidak dipakai di kanvas: semua terbuka)
-  $group =
-    !$clean["allow_multiple"] && !$inCanvas
-      ? "faq-" .
-        preg_replace("/[^A-Za-z0-9_-]/", "", (string) ($block["id"] ?? "x"))
-      : null;
-  $style = $clean["style"];
-  $color = $clean["color"];
+  $group = ! $clean['allow_multiple'] && ! $inCanvas ? 'faq-' . preg_replace('/[^A-Za-z0-9_-]/', '', (string) ($block['id'] ?? 'x')) : null;
+  $style = $clean['style'];
+  $color = $clean['color'];
 @endphp
 
 @if ($items)
@@ -65,37 +53,34 @@
       <details
         class="{{ AccordionStyle::item($style, $color) }}"
         @if ($group) name="{{ $group }}" @endif
-        @if ($inCanvas || ($clean["first_open"] && $i === 0)) open @endif
+        @if ($inCanvas || ($clean['first_open'] && $i === 0)) open @endif
       >
         <summary class="{{ AccordionStyle::summary($style, $color) }}">
-          <span>{{
-            $item[
-              "question"
-            ]
-          }}</span>
-          @if ($clean["marker"] === "plus")
+          <span>{{ $item['question'] }}</span>
+          @if ($clean['marker'] === 'plus')
             <svg class="{{ AccordionStyle::marker($color) }} group-open:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
             <svg class="{{ AccordionStyle::marker($color) }} hidden group-open:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /></svg>
           @else
             <svg class="{{ AccordionStyle::marker($color) }} transition-transform duration-200 group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
           @endif
         </summary>
-        @if ($item["html"] !== "")
-          <div class="{{ AccordionStyle::answer($style) }}">
-            {!! $item["html"] !!}
-          </div>
+        @if ($item['html'] !== '')
+          <div class="{{ AccordionStyle::answer($style) }}">{!! $item['html'] !!}</div>
         @endif
       </details>
     @endforeach
   </div>
 
-  @if ($clean["schema"])
-    <script type="application/ld+json">
-      {!! json_encode([
-            '@context' => 'https://schema.org',
-            '@type' => 'FAQPage',
-            'mainEntity' => array_map(fn ($i) => ['@type' => 'Question', 'name' => $i['question'], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $i['html']]], $items),
-          ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}
-    </script>
+  @if ($clean['schema'])
+    @php
+      // Disusun di dalam @php, BUKAN di dalam {!! !!}: Blade memproses direktif SEBELUM ekspresi echo, sehingga '@context' di dalam
+      // echo dikompilasi sebagai direktif @context (Laravel 12 terbaru) dan JSON-LD rusak. Isi blok @php tidak diproses sebagai direktif.
+      $faqJsonLd = json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => array_map(fn ($i) => ['@type' => 'Question', 'name' => $i['question'], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $i['html']]], $items),
+      ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    @endphp
+    <script type="application/ld+json">{!! $faqJsonLd !!}</script>
   @endif
 @endif

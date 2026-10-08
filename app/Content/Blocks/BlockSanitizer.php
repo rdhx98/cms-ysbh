@@ -18,6 +18,13 @@ final class BlockSanitizer
             if (!is_array($block)) {
                 continue;
             }
+            // anchor tingkat blok (kolom teks bebas di editor, tanpa validasi server): dicetak ke id="..." dan ke ekspresi JS daftar isi
+            if (array_key_exists('anchor', $block)) {
+                $anchor = self::anchor($block['anchor']);
+                if ($anchor !== $block['anchor']) {
+                    $blocks[$id]['anchor'] = $anchor;
+                }
+            }
             $type = str_replace('_', '-', strtolower((string) ($block['type'] ?? '')));
             $data = is_array($block['data'] ?? null) ? $block['data'] : [];
             $clean = self::forType($type, $data, $locales);
@@ -42,8 +49,70 @@ final class BlockSanitizer
         if (class_exists(\App\Editor\Modules::class) && ($module = \App\Editor\Modules::for($type))) {
             return $module::sanitize($data, $locales);
         }
+        if (CoreBlocks::handles($type)) {
+            return CoreBlocks::clean($type, $data);   // tujuh blok inti: hanya kolom berisiko; non-destruktif
+        }
 
         return $data;
+    }
+
+    /**
+     * Untuk SITUS PUBLIK dan pratinjau tersimpan: clean() + (a) HTML teks kaya heading/paragraph disaring RichText, dan (b) alamat
+     * internal://page|article/{slug} (tautan dari dialog TipTap, juga di kartu dan gambar) diselesaikan menjadi alamat publik.
+     * HTML TIDAK disaring saat SIMPAN (data editor tetap utuh); hanya saat ditampilkan kepada pengunjung.
+     *
+     * @param array<string,array> $blocks id => blok
+     */
+    public static function forPublic(array $blocks, array $locales = ['id', 'en'], ?callable $internal = null): array
+    {
+        $internal ??= fn (string $kind, string $slug): ?string => LinkResolver::address($kind, $slug);
+        $blocks = self::clean($blocks, $locales);
+        foreach ($blocks as $id => $block) {
+            if (!is_array($block)) {
+                continue;
+            }
+            $type = str_replace('_', '-', strtolower((string) ($block['type'] ?? '')));
+            $data = is_array($block['data'] ?? null) ? $block['data'] : [];
+            if ($type === 'heading' || $type === 'paragraph') {
+                if (isset($data['text']) && is_array($data['text'])) {
+                    foreach ($data['text'] as $loc => $html) {
+                        $data['text'][$loc] = RichText::clean($html, $internal);
+                    }
+                    $blocks[$id]['data'] = $data;
+                } elseif (isset($data['text']) && is_string($data['text'])) {
+                    $blocks[$id]['data']['text'] = RichText::clean($data['text'], $internal);
+                }
+            } elseif (CoreBlocks::handles($type)) {
+                $resolved = CoreBlocks::clean($type, $data, $internal);
+                if ($resolved !== $data) {
+                    $blocks[$id]['data'] = $resolved;
+                }
+            }
+        }
+
+        return $blocks;
+    }
+
+    /**
+     * Anchor blok: yang sudah sah (huruf/angka/garis bawah/tanda hubung, maksimal 64, diawali huruf atau angka) TIDAK diubah; yang lain
+     * dinormalkan seperti slug ("Beban Kasus" -> "beban-kasus", "x');alert(1);('" -> "x-alert-1"); bukan teks/angka atau hasilnya kosong -> "".
+     */
+    public static function anchor(mixed $value): string
+    {
+        if (is_int($value) || is_float($value)) {
+            $value = (string) $value;
+        }
+        if (!is_string($value)) {
+            return '';
+        }
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/D', $value)) {
+            return $value;
+        }
+        $s = strtolower(trim($value));
+        $s = preg_replace('/[^a-z0-9_]+/', '-', $s) ?? '';
+        $s = trim(substr($s, 0, 64), '-_');
+
+        return $s;
     }
 
     /** ID item daftar berulang: dipertahankan bila sah, jika tidak dibuat baru. */

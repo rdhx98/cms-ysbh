@@ -2,12 +2,10 @@
 
 namespace App\Content;
 
-use App\Content\Blocks\BlockSanitizer;
-
 /**
  * Bahan pratinjau untuk record yang SUDAH TERSIMPAN (halaman / artikel / snippet), dibaca dari NILAI MENTAH kolom di database,
  * apa pun bentuknya: dokumen blok dari builder, atau HTML lama dari editor artikel lama (diimpor sebagai satu blok Paragraf).
- * Data dibersihkan sebelum dirender (sama dengan jalur simpan dan pratinjau kanvas). Murni: $record cukup memiliki getRawOriginal(),
+ * Data dibersihkan dan dirakit lewat PublicLookup::document (sama dengan situs publik, termasuk snippet penutup). Murni: $record cukup memiliki getRawOriginal(),
  * getKey(), dan atribut status.
  */
 final class SavedPreview
@@ -18,7 +16,9 @@ final class SavedPreview
      */
     public static function from(ContentType $type, object $record, array $locales, string $lang): array
     {
-        $doc = ContentDocument::fromRaw($record->getRawOriginal('content'), $locales);
+        // Dirakit seperti di situs publik: snippet sisipan dan snippet penutup ikut (bukan untuk isi sebuah snippet itu sendiri),
+        // sehingga pratinjau tersimpan = yang dilihat pengunjung.
+        $doc = PublicLookup::document($record->getRawOriginal('content'), $locales, $type !== ContentType::Snippet);
         $status = (string) ($record->status ?? '');
 
         return [
@@ -26,10 +26,10 @@ final class SavedPreview
             'title' => Names::of($record->getRawOriginal('title'), $lang) ?: '#' . $record->getKey(),
             'status' => $status,
             'published' => $type->hasPublishedAt() ? $status === $type->publishedStatus() : $status === 'online',
-            'blocks' => BlockSanitizer::clean($doc->blocks, $locales),
-            'order' => $doc->order,
-            'settings' => $doc->settings,
-            'imported' => $doc->imported,
+            'blocks' => $doc['blocks'],
+            'order' => $doc['order'],
+            'settings' => $doc['settings'],
+            'imported' => $doc['imported'],
         ];
     }
 }

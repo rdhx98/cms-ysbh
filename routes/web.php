@@ -8,14 +8,6 @@ use App\Http\Controllers\EditorImageUploadController;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Redirect;
 
-// Route::view('/', 'welcome')->name('home');
-// 1. Logika untuk Halaman Utama "/" CMS
-// Route::get('/', function () {
-//     if (Auth::check()) {
-//         return redirect()->route('dashboard');
-//     }
-//     return redirect()->route('login');
-// });
 // Auth Route (Hanya bisa diakses jika belum login / Guest)
 Route::middleware(["guest"])->group(function () {
     Route::get("/login", [AuthenticatedSessionController::class, "create"])->name("login");
@@ -62,19 +54,6 @@ Route::middleware(["auth", "verified"])->group(function () {
     Route::livewire("/documentation", "json-viewer")->name("documentation");
 });
 
-// routes/web.php — builder di samping editor lama. Awalan "v2." ditoleransi ContentType::fromRouteName().
-// Setelah cutover: hapus awalan ->name('v2.') dan ->prefix('v2'), dan hapus rute editor lama.
-
-// Route::middleware(['auth'])->prefix('v2')->name('v2.')->group(function () {
-//     Route::livewire('/page/create',        'content.builder')->name('page.create');
-//     Route::livewire('/page/edit/{page:id}', 'content.builder')->name('page.edit');
-
-//     Route::livewire('/article/write',        'content.builder')->name('article.write');
-//     Route::livewire('/article/edit/{post:id}', 'content.builder')->name('article.edit');
-
-//     Route::livewire('/snippet/create',            'content.builder')->name('snippet.create');
-//     Route::livewire('/snippet/edit/{snippet:id}', 'content.builder')->name('snippet.edit');
-// });
 Route::middleware(["auth"])
     ->prefix("v2")
     ->name("v2.")
@@ -88,7 +67,7 @@ Route::middleware(["auth"])
         Route::livewire("/article/write", "content.builder")->name("article.write");
         Route::livewire("/article/edit/{post:id}", "content.builder")->name("article.edit");
 
-        Route::livewire("/snippet", "block-index")->name("snippet.index");
+        Route::livewire("/snippet", "snippet-index")->name("snippet.index");
         Route::livewire("/snippet/make", "content.builder")->name("snippet.create");
         Route::livewire("/snippet/edit/{snippet:id}", "content.builder")->name("snippet.edit");
 
@@ -108,5 +87,14 @@ Route::get("/language/{locale}", function ($locale) {
     // Kembalikan user ke halaman sebelumnya
     return Redirect::back();
 })->name("language.switch");
+
+// Route::view('/', 'welcome')->name('home');
+// 1. Logika untuk Halaman Utama "/" CMS
+// Route::get('/', function () {
+//     if (Auth::check()) {
+//         return redirect()->route('dashboard');
+//     }
+//     return redirect()->route('login');
+// });
 
 require __DIR__ . "/settings.php";
