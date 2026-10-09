@@ -12,22 +12,12 @@ import CodeBlock from '@tiptap/extension-code-block';
 import Bold from '@tiptap/extension-bold';
 
 import { FontSize } from "./tiptap/node/FontSize.js";
-import { Eyebrow } from "./tiptap/node/EyeBrow.js";
 import { Pill } from "./tiptap/node/Pill.js";
 import { ParagraphIndent } from './tiptap/extensions/ParagraphIndent.js'
 
 import Placeholder from '@tiptap/extension-placeholder';
 
 const ALLOWED_FONTS = ['Arial', 'Fraunces', 'Times New Roman', 'Roboto', 'JetBrains Mono', 'Open Sans', 'Plus Jakarta Sans'];
-
-const EYEBROW_ICONS = [
-    { key: 'crosshair', label: 'Crosshair', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>` },
-    { key: 'star', label: 'Star', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>` },
-    { key: 'zap', label: 'Zap', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>` },
-    { key: 'sparkles', label: 'Sparkles', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg>` },
-    { key: 'flag', label: 'Flag', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></svg>` },
-    { key: 'tag', label: 'Tag', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>` },
-];
 
 const FontWeight = Extension.create({
     name: 'fontWeight',
@@ -86,7 +76,8 @@ const PILL_COLOR_PRESETS = [
     { key: 'gray', label: 'Abu-abu', backgroundColor: '#F3F4F6', borderColor: '#D1D5DB' },
 ];
 
-const SharedExtensions = [
+// Diekspor: dipakai juga oleh rich-field.js (Tiptap tunggal di panel Properti, rilis 31).
+export const SharedExtensions = [
     StarterKit.configure({
         heading: false,
         // codeBlock: false,
@@ -157,7 +148,6 @@ const SharedExtensions = [
         },
     }),
     FontSize,
-    Eyebrow,
     Pill,
     ParagraphIndent,
     Placeholder.configure({
@@ -274,13 +264,11 @@ document.addEventListener('alpine:init', () => {
             baseFontSize: baseSize,  
             baseFontColor: baseColor,
             labelUkuran: customLabel,
+            single: false, // dibaca toolbars.blade.php (x-show="! single"); editor lama selalu multi-baris
 
             updatedAt: Date.now(),
             showLinkModal: false,
             linkInputUrl: '',
-
-            isEyebrowIconOpen: false,
-            eyebrowIcons: typeof EYEBROW_ICONS !== 'undefined' ? EYEBROW_ICONS : [],
 
             // State Pill Color
             isPillColorOpen: false,
@@ -600,28 +588,6 @@ document.addEventListener('alpine:init', () => {
                 const attributes = editor.getAttributes('textStyle');
                 // 🌟 Mengembalikan warna spesifik, atau warna bawaan (contoh: '#064F3B' untuk Heading)
                 return attributes.color || this.baseFontColor;
-            },
-            toggleEyebrowIconMenu() {
-                this.isEyebrowIconOpen = !this.isEyebrowIconOpen;
-            },
-            selectEyebrowIcon(icon) {
-                if (!editor) return;
-                if (editor.isActive('eyebrow')) {
-                    editor.chain().focus().setEyebrowIcon(icon).run();
-                } else {
-                    editor.chain().focus().setEyebrow(icon).run();
-                }
-                this.isEyebrowIconOpen = false;
-                this.updatedAt = Date.now();
-            },
-            getCurrentEyebrowIcon() {
-                this.updatedAt;
-                if (!editor) return EYEBROW_ICONS[0].key;
-                return editor.getAttributes('eyebrow').icon || EYEBROW_ICONS[0].key;
-            },
-            getEyebrowIconSVG(key) {
-                const found = EYEBROW_ICONS.find((item) => item.key === key);
-                return found ? found.svg : EYEBROW_ICONS[0].svg;
             },
             togglePillColorMenu() {
                 this.isPillColorOpen = !this.isPillColorOpen;

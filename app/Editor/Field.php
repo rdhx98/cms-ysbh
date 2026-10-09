@@ -68,8 +68,9 @@ final class Field
     }
 
     /**
-     * Teks kaya (HTML dari Tiptap) per bahasa. SENGAJA belum bisa diedit di inspektur: <x-editor.rich>
-     * hanya menampilkan teksnya sampai satu instance Tiptap dipasang (Fase 3), supaya HTML tidak rusak.
+     * Teks kaya (HTML dari Tiptap) per bahasa. <x-editor.rich> memasang SATU Tiptap aktif per bahasa untuk blok yang difokus
+     * (resources/js/rich-field.js, rilis 31). multi = false: judul satu baris (disimpan tanpa <p>); true: paragraf (HTML Tiptap).
+     * HTML tersimpan yang tidak bisa diwakili Tiptap tanpa kehilangan isi (tabel, gambar, ...) tetap hanya-baca.
      */
     public static function rich(string $key, string $label, bool $multi = false): self
     {

@@ -25,33 +25,36 @@ Route::get("/", function () {
 Route::middleware(["auth", "verified"])->group(function () {
     Route::livewire("/dashboard", "dashboard")->name("dashboard");
 
-    Route::livewire("/article", "article-index")->name("article.index");
-    Route::livewire("/article/write", "article-editor")->name("article.write");
-    Route::livewire("/article/edit/{category}/{post:slug}", "article-editor")->name("article.edit");
-    Route::livewire("/article/preview/{category}/{post:slug}", "article-preview")->name("article.preview");
-
     Route::post("/editor/upload-image", [EditorImageUploadController::class, "store"])->name("editor.upload-image");
     Route::livewire("/files", "file-manager")->name("files.index");
-
-    Route::livewire("/page", "page-index")->name("page.index");
-    Route::livewire("/page/create", "page-editor")->name("page.create");
-    Route::livewire("/page/edit/{pageSlug}", "page-editor")->name("page.edit");
-    // Route::livewire('/page/edit/{page:slug}', 'page-editor')->name('page.edit');
-    Route::livewire("/page/preview/{pageSlug}", "page-preview")->name("page.preview");
 
     // Route::livewire('/page/preview/{page:slug}', 'page-preview')->name('page.preview');
 
     Route::livewire("/page/menu-builder", "menu-builder")->name("page.menu-builder");
-    Route::livewire("/snippet", "block-index")->name("snippet.index");
-
+    
     // Route::livewire('/user/edit/{user:handle}', 'user-edit')->name('user.edit');
     Route::livewire("/user", "user-index")->name("user.index");
     Route::livewire("/user/create", "user-detail")->name("user.create");
     Route::livewire("/user/detail/{user:handle}", "user-detail")->name("user.detail");
-
+    
     Route::livewire("/preferences", "settings-manager")->name("settings.manager");
-
+    
     Route::livewire("/documentation", "json-viewer")->name("documentation");
+    
+    Route::livewire("/page", "page-index")->name("page.index");
+    Route::livewire("/page/create", "content.builder")->name("page.create");
+    Route::livewire("/page/edit/{page:id}", "content.builder")->name("page.edit");
+    
+    Route::livewire("/article", "article-index")->name("article.index");
+    Route::livewire("/article/write", "content.builder")->name("article.write");
+    Route::livewire("/article/edit/{post:id}", "content.builder")->name("article.edit");
+    
+    Route::livewire("/snippet", "snippet-index")->name("snippet.index");
+    Route::livewire("/snippet/make", "content.builder")->name("snippet.create");
+    Route::livewire("/snippet/edit/{snippet:id}", "content.builder")->name("snippet.edit");
+
+    Route::livewire('/preview/{token}', 'content.canvas-frame')->name('preview.frame');
+    Route::livewire('/preview/{type}/{id}', 'content.record-preview')->name('preview.record')->whereIn('type', ['page', 'article', 'snippet'])->whereNumber('id');
 });
 
 Route::middleware(["auth"])

@@ -2,6 +2,7 @@
 
 namespace App\Content\Links;
 
+use App\Content\Languages;
 use Closure;
 
 /**
@@ -65,18 +66,64 @@ final class LinkResolver
     }
 
     /**
-     * Alamat publik halaman ('page') atau artikel ('article') untuk $slug: (1) config('cms.public.page' | 'cms.public.article') = templat jalur
-     * + config('cms.public.base'); bila tidak diatur, (2) rute bernama page.show / article.show di aplikasi INI; bila tidak ada pula, (3) null.
+     * Alamat BERANDA: bila $slug sama dengan slug beranda ($homeSlug, config('cms.home_slug') untuk bahasa itu), alamatnya adalah alamat dasar +
+     * $homePath ("/" untuk bahasa bawaan, "/id" untuk bahasa lain). Selain itu null. Murni. Slug beranda kosong, bukan teks, atau tidak sah =
+     * tidak ada beranda (null); alamat dasar atau jalur beranda rusak = null (konfigurasi rusak tidak diam-diam dianggap kosong).
+     * Di CMS kuncinya boleh tidak ada: tautan ke halaman itu tetap "/{slug}", yang di landing dialihkan 301 ke beranda.
+     */
+    public static function homeUrl(string $slug, mixed $homeSlug, mixed $base = '', mixed $homePath = '/'): ?string
+    {
+        if (!is_string($homeSlug) || $homeSlug === '' || $slug === '' || $slug !== $homeSlug || !\App\Content\Slug::isValid($homeSlug)) {
+            return null;
+        }
+
+        return self::pathUrl($homePath, $base);
+    }
+
+    /**
+     * Alamat dasar + jalur tetap ("/", "/id", "/articles", "/id/artikel"). Jalur: diawali satu "/", segmen huruf/angka/_/- saja, tanpa "//" dan
+     * tanpa garis miring di ujung (kecuali "/" sendiri). Rusak = null. Murni.
+     */
+    public static function pathUrl(mixed $path, mixed $base = ''): ?string
+    {
+        if (!is_string($path) || !preg_match('#^/(?:[A-Za-z0-9_\-]+(?:/[A-Za-z0-9_\-]+)*)?$#D', $path)) {
+            return null;
+        }
+        if ($base !== null && !is_string($base)) {
+            return null;
+        }
+        $base = rtrim(trim((string) $base), '/');
+        if ($base !== '' && !preg_match('#^https?://[A-Za-z0-9.-]+(?::\d{1,5})?$#D', $base)) {
+            return null;
+        }
+
+        return $base . $path;
+    }
+
+    /**
+     * Alamat publik halaman ('page') atau artikel ('article') untuk $slug pada bahasa $locale (null = bahasa permintaan ini):
+     * (1) config('cms.public.page' | 'cms.public.article') = templat jalur + config('cms.public.base'); bila tidak diatur, (2) rute bernama
+     * page.show / article.show ("id.page.show" untuk bahasa selain bawaan) di aplikasi INI; bila tidak ada pula, (3) null.
+     * Templat boleh TEKS (semua bahasa) atau PETA bahasa (['en' => '/{slug}', 'id' => '/id/{slug}']). Beranda: slug beranda bahasa itu
+     * (config('cms.home_slug'), teks atau peta) dilayani di jalur beranda (config('cms.public.home'), bawaan "/" atau "/{kode}").
      * TIDAK PERNAH melempar galat bila rute tidak ada (mis. di CMS yang tidak punya rute publik).
      */
-    public static function address(string $kind, string $slug): ?string
+    public static function address(string $kind, string $slug, ?string $locale = null): ?string
     {
+        $locale ??= self::currentLocale();
+        $lang = Languages::fromConfig();
         $setting = fn (string $key) => function_exists('config') ? config('cms.public.' . $key) : null;
-        $template = $setting($kind);
-        if (is_string($template) && $template !== '') {
+        if ($kind === 'page' && function_exists('config')) {
+            $home = self::homeUrl($slug, Languages::setting(config('cms.home_slug'), $locale), $setting('base') ?? '', Languages::homePath($setting('home'), $locale, $lang['default']));
+            if ($home !== null) {
+                return $home;   // halaman beranda dilayani di "/" (atau "/id"), bukan di "/{slug}" (yang hanya mengalihkan)
+            }
+        }
+        $template = Languages::setting($setting($kind), $locale);
+        if ($template !== '') {
             return self::publicUrl($slug, $template, $setting('base') ?? '');
         }
-        $name = $kind === 'page' ? 'page.show' : 'article.show';
+        $name = ($locale !== '' && $locale !== $lang['default'] ? $locale . '.' : '') . ($kind === 'page' ? 'page.show' : 'article.show');
         try {
             return function_exists('app') && app('router')->has($name) ? route($name, $slug) : null;
         } catch (\Throwable) {
@@ -84,29 +131,75 @@ final class LinkResolver
         }
     }
 
+    /** Alamat BERANDA bahasa $locale (config('cms.public.home'); bawaan "/" atau "/{kode}"), atau null bila alamat dasar rusak. */
+    public static function homeAddress(?string $locale = null): ?string
+    {
+        $locale ??= self::currentLocale();
+
+        return self::pathUrl(Languages::homePath(self::config('cms.public.home'), $locale, Languages::fromConfig()['default']), self::config('cms.public.base') ?? '');
+    }
+
+    /** Alamat DAFTAR ARTIKEL bahasa $locale (config('cms.public.articles'), teks atau peta), atau null bila tidak diatur / rusak. */
+    public static function indexAddress(?string $locale = null): ?string
+    {
+        $locale ??= self::currentLocale();
+        $path = Languages::setting(self::config('cms.public.articles'), $locale);
+
+        return self::pathUrl($path, self::config('cms.public.base') ?? '');
+    }
+
+    private static function config(string $key): mixed
+    {
+        try {
+            return function_exists('config') ? config($key) : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /** Bahasa permintaan ini ('' bila tidak ada aplikasi, mis. pengujian murni). */
+    private static function currentLocale(): string
+    {
+        try {
+            return function_exists('app') ? (string) app()->getLocale() : '';
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
     /**
      * Resolver sungguhan: model Page/Post/Media; alamat halaman/artikel lewat address(). Hasil diingat per permintaan.
+     * Tujuan tanpa slug pada bahasa yang diminta tidak dibuang: tautan memakai slug (dan awalan) bahasa lain yang ada, urut bahasa bawaan
+     * dulu. Tautan yang membawa pembaca ke bahasa lain lebih baik daripada tombol yang hilang atau mati.
      */
     public static function make(): self
     {
-        $slugOf = fn ($model, string $locale) => \App\Content\Names::of($model->getRawOriginal('slug'), $locale);
-        $addressOf = fn (string $kind, string $slug): ?string => self::address($kind, $slug);
+        $addressOf = function (object $model, string $kind, string $locale): ?string {
+            $lang = Languages::fromConfig();
+            $order = array_values(array_unique(array_merge([$locale], [$lang['default']], $lang['locales'])));
+            foreach ($order as $l) {
+                $slug = \App\Content\Names::exact($model->getRawOriginal('slug'), $l);
+                if ($slug !== '' && ($url = self::address($kind, $slug, $l)) !== null) {
+                    return $url;
+                }
+            }
+
+            return null;
+        };
 
         return new self(
-            page: function (int $id, string $locale) use ($slugOf, $addressOf) {
+            page: function (int $id, string $locale) use ($addressOf) {
                 static $memo = [];
-                return $memo["$id:$locale"] ??= (function () use ($id, $locale, $slugOf, $addressOf) {
+                return $memo["$id:$locale"] ??= (function () use ($id, $locale, $addressOf) {
                     $page = \App\Models\Page::query()->find($id);
-                    $slug = $page && $page->status === 'online' ? $slugOf($page, $locale) : '';
-                    return $slug !== '' ? $addressOf('page', $slug) : null;
+                    return $page && $page->status === 'online' ? $addressOf($page, 'page', $locale) : null;
                 })();
             },
-            article: function (int $id, string $locale) use ($slugOf, $addressOf) {
+            article: function (int $id, string $locale) use ($addressOf) {
                 static $memo = [];
-                return $memo["$id:$locale"] ??= (function () use ($id, $locale, $slugOf, $addressOf) {
+                return $memo["$id:$locale"] ??= (function () use ($id, $locale, $addressOf) {
                     $post = \App\Models\Post::query()->find($id);
-                    $slug = $post && $post->status === 'published' ? $slugOf($post, $locale) : '';
-                    return $slug !== '' ? $addressOf('article', $slug) : null;
+                    return $post && $post->status === 'published' ? $addressOf($post, 'article', $locale) : null;
                 })();
             },
             file: function (int $id) {

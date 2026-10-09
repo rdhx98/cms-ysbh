@@ -66,11 +66,11 @@ final class ArticleCards
             if (!is_array($row)) {
                 continue;
             }
-            $title = trim(Names::of($row['title'] ?? null, $lang));
+            $title = Names::exact($row['title'] ?? null, $lang);   // satu alamat = satu bahasa: judul bahasa lain tidak dipinjam
             if ($title === '') {
-                continue; // artikel tanpa judul tidak ditampilkan
+                continue; // artikel tanpa judul (di bahasa ini) tidak ditampilkan
             }
-            $slug = trim(Names::of($row['slug'] ?? null, $lang));
+            $slug = Names::exact($row['slug'] ?? null, $lang);
             [$iso, $label] = self::date($row['published_at'] ?? null, $lang);
 
             $cards[] = [
@@ -91,21 +91,21 @@ final class ArticleCards
     /** meta_description (bila ada) atau paragraf pertama isi artikel; teks biasa, dipotong di batas kata. */
     public static function excerpt(mixed $metaDescription, mixed $rawContent, string $lang, int $max = 160): string
     {
-        $meta = self::plain(Names::of($metaDescription, $lang));
+        $meta = self::plain(Names::exact($metaDescription, $lang));
         if ($meta !== '') {
             return self::truncate($meta, $max);
         }
         if ($rawContent === null || $rawContent === '' || $rawContent === []) {
             return '';
         }
-        $doc = ContentDocument::fromRaw($rawContent, array_values(array_unique([$lang, 'id', 'en'])));
+        $doc = ContentDocument::fromRaw($rawContent, array_values(array_unique([$lang, 'en', 'id'])));
         foreach ($doc->order as $id) {
             $block = $doc->blocks[$id] ?? null;
             if (!is_array($block) || str_replace('_', '-', strtolower((string) ($block['type'] ?? ''))) !== 'paragraph') {
                 continue;
             }
             $text = $block['data']['text'] ?? null;
-            $plain = self::plain(is_array($text) ? ($text[$lang] ?? $text['id'] ?? $text['en'] ?? '') : (string) $text);
+            $plain = self::plain(is_array($text) ? (string) ($text[$lang] ?? '') : (string) $text);   // tanpa cadangan bahasa lain
             if ($plain !== '') {
                 return self::truncate($plain, $max);
             }

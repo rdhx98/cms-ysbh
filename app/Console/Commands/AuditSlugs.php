@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Content\Languages;
 use App\Content\SlugAudit;
 use App\Models\Page;
 use Illuminate\Console\Command;
@@ -20,7 +21,8 @@ class AuditSlugs extends Command
     public function handle(): int
     {
         $rows = Page::query()->get(['id', 'title', 'slug'])->map(fn ($p) => ['id' => $p->id, 'title' => $p->getRawOriginal('title'), 'slug' => $p->getRawOriginal('slug')]);
-        $found = SlugAudit::conflicts($rows, (array) config('cms.reserved_slugs', []), (string) config('cms.articles_index_slug', 'artikel'));
+        $lang = Languages::fromConfig();
+        $found = SlugAudit::conflicts($rows, (array) config('cms.reserved_slugs', []), config('cms.articles_index_slug'), $lang['locales'], $lang['default']);
 
         if ($found === []) {
             $this->info('Tidak ada halaman dengan slug terlarang.');

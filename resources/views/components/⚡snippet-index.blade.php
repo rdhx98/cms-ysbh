@@ -342,7 +342,7 @@ new class extends Component {
                       class="truncate font-medium text-zinc-900 dark:text-white"
                     >
                       {{
-                        $itam->getTranslation(
+                        $item->getTranslation(
                           "title",
                           "id",
                         )
@@ -356,7 +356,7 @@ new class extends Component {
                     <div
                       class="flex h-full min-h-14 items-center justify-start gap-2"
                     >
-                      /{{ $itam->slug }}
+                      /{{ $item->slug }}
                       {{-- <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{ $article->created_at->format('D, d/m/y') }} </div> --}}
                       {{-- <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{ $article->created_at->format('H:i') }} </div> --}}
                     </div>
@@ -476,7 +476,7 @@ new class extends Component {
     <!-- SECONDARY UX (KONTAINER KEDUA - PANEL/POPUP) -->
     {{-- <div x-show="activeSubPanel !== 'none'" class="contents">
 
-            <!-- 1. BACKDROP HITAM MOBILE -->
+            <!-- 1. BACKDROP Hitem MOBILE -->
             <div
                 x-show="activeSubPanel !== 'none'"
                 x-transition:enter="transition ease-out duration-300"

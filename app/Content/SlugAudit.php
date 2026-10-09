@@ -10,15 +10,19 @@ final class SlugAudit
 {
     /**
      * @param iterable<array{id:mixed,title:mixed,slug:mixed}> $rows nilai MENTAH kolom (JSON per bahasa, atau teks polos pada baris lama)
-     * @param array<int,mixed>                                  $configured config('cms.reserved_slugs')
+     * @param array<int|string,mixed> $configured  config('cms.reserved_slugs') (daftar, atau peta bahasa)
+     * @param mixed    $indexSlugs config('cms.articles_index_slug') (teks, atau peta bahasa; null = tidak ada pengecualian)
+     * @param string[] $locales    semua bahasa situs
      * @return list<array{id:mixed,title:string,locale:string,slug:string}>
      */
-    public static function conflicts(iterable $rows, array $configured = [], ?string $allowed = null): array
+    public static function conflicts(iterable $rows, array $configured = [], mixed $indexSlugs = null, array $locales = [], ?string $default = null): array
     {
         $found = [];
         foreach ($rows as $row) {
             foreach (self::slugs($row['slug'] ?? null) as $locale => $slug) {
-                if (Slug::isReserved($slug, $configured, $allowed)) {
+                $loc = $locale === '*' ? null : (string) $locale;   // baris lama teks polos tidak punya bahasa
+                $allowed = $indexSlugs === null ? null : ($loc === null ? (is_string($indexSlugs) ? $indexSlugs : null) : Languages::indexSlug($indexSlugs, $loc));
+                if (Slug::isReserved($slug, $configured, $allowed, $loc, $locales, $default)) {
                     $found[] = ['id' => $row['id'] ?? null, 'title' => self::title($row['title'] ?? null), 'locale' => (string) $locale, 'slug' => $slug];
                 }
             }

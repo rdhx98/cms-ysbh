@@ -82,6 +82,32 @@ final class SectionBuilder
         return ['sections' => $sections, 'toc' => $toc, 'tocPosition' => $tocPosition];
     }
 
+    /**
+     * Banner atas (rilis 27): ID blok PERTAMA yang dirender di halaman (blok pertama seksi pertama yang punya blok; pemisah seksi tidak dihitung)
+     * bila blok itu gambar berlebar penuh (type image, data.width "w-screen"); selain itu null. Daftar isi menunggu sampai banner ini terlewati.
+     * Hanya blok gambar: blok layar penuh lain (video, kartu) tetap memakai aturan tumpang tindih biasa.
+     *
+     * @param list<array{blocks:list<string>}> $sections hasil group()['sections']
+     * @param array<string,array>              $blocks   id => blok
+     */
+    public static function topBanner(array $sections, array $blocks): ?string
+    {
+        foreach ($sections as $section) {
+            $first = $section['blocks'][0] ?? null;
+            if ($first === null) {
+                continue;
+            }
+            $block = $blocks[$first] ?? null;
+            $data = is_array($block) && is_array($block['data'] ?? null) ? $block['data'] : [];
+
+            return is_array($block) && str_replace('_', '-', strtolower((string) ($block['type'] ?? ''))) === 'image' && ($data['width'] ?? null) === 'w-screen'
+                ? (string) $first
+                : null;
+        }
+
+        return null;
+    }
+
     /** Teks dari bidang yang bisa berupa string atau peta bahasa: bahasa diminta, lalu id, lalu elemen pertama. */
     private static function text(mixed $field, string $lang): string
     {

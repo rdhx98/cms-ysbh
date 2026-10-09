@@ -7,11 +7,12 @@ use App\Content\Names;
 
 /**
  * Pencarian tujuan tautan (halaman / artikel) untuk pemilih tautan di inspektur. Dipanggil dari browser lewat
- * $wire.searchLinkTargets(jenis, kata) dan mengembalikan larik kecil [{id, label, hint}] (maks. 8). Hanya id dan judul keluar.
+ * $wire.searchLinkTargets(jenis, kata) dan mengembalikan larik kecil [{id, label, hint, slug}] (maks. 8). Hanya id, judul, status, dan slug keluar (slug = alamat publik, dipakai
+ * tautan internal://page|article/{slug} di editor teks kaya).
  */
 trait SearchesLinkTargets
 {
-    /** @return list<array{id:int,label:string,hint:string}> */
+    /** @return list<array{id:int,label:string,hint:string,slug:string}> */
     public function searchLinkTargets(string $kind, string $q): array
     {
         abort_unless(auth()->check(), 403);
@@ -39,6 +40,7 @@ trait SearchesLinkTargets
                 'id' => (int) $row->getKey(),
                 'label' => Names::of($row->getRawOriginal('title'), app()->getLocale()) ?: '#' . $row->getKey(),
                 'hint' => (string) $row->status,
+                'slug' => Names::of($row->getRawOriginal('slug'), 'en'),   // slug bahasa bawaan (EN); resolver menerima slug bahasa mana pun
             ])
             ->all();
     }

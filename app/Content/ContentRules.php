@@ -41,7 +41,8 @@ final class ContentRules
                 ];
                 // Halaman: slug tidak boleh sama dengan alamat tetap situs (rute statis menang atas /{slug}). Artikel ada di /artikel/{slug}: aman.
                 if ($type === ContentType::Page) {
-                    $rules["slug.{$locale}"][] = new ReservedSlug(self::configured('reserved_slugs', []), self::indexSlug());
+                    // per bahasa: daftar larangan dan kepala daftar artikel bahasa itu; kode bahasa lain terlarang di bahasa bawaan
+                    $rules["slug.{$locale}"][] = new ReservedSlug(self::configured('reserved_slugs', []), self::indexSlug($locale), $locale, $locales, Languages::fromConfig()['default']);
                 }
             }
             if ($type->usesMeta()) {
@@ -71,12 +72,10 @@ final class ContentRules
         return $rules;
     }
 
-    /** Slug halaman CMS yang menjadi kepala daftar artikel (boleh dipakai walau alamatnya rute tetap). */
-    public static function indexSlug(): string
+    /** Slug halaman CMS yang menjadi kepala daftar artikel pada bahasa $locale (boleh dipakai walau alamatnya rute tetap). */
+    public static function indexSlug(string $locale = ''): string
     {
-        $slug = self::configured('articles_index_slug', 'artikel');
-
-        return is_string($slug) && $slug !== '' ? $slug : 'artikel';
+        return Languages::indexSlug(self::configured('articles_index_slug', null), $locale);
     }
 
     /** Membaca config('cms.*') tanpa melempar galat di luar aplikasi Laravel (pengujian murni). */

@@ -4,76 +4,95 @@ Centang berurutan. Setiap baris: **lakukan → hasil yang benar → bila salah, 
 Kirimkan ke saya bagian "Bila masih macet" (di akhir) bersama hasil yang tidak cocok.
 
 ## 0. Persiapan (hindari mengejar hantu)
+
 - [ ] `APP_DEBUG=true` di `.env` (panel debug editor hanya muncul dengan ini).
 - [ ] `php artisan optimize:clear` dan `php artisan view:clear` (Blade lama tersimpan di cache).
 - [ ] Vite berjalan (`npm run dev`), atau `npm run build` diulang setelah `editor.js` / kelas Tailwind baru. Muat ulang keras (Ctrl+Shift+R).
-- [ ] DevTools terbuka: tab **Console** dan **Network** (centang *Preserve log*, filter `livewire`).
+- [ ] DevTools terbuka: tab **Console** dan **Network** (centang _Preserve log_, filter `livewire`).
 - [ ] Ekor log di terminal lain: `Get-Content .\storage\logs\laravel.log -Tail 40 -Wait` (PowerShell).
 
 ## 1. Dua menit pertama (di `/v2/page/create`)
+
 Tempel di Console:
 
-| Perintah | Hasil yang benar | Bila tidak |
-|---|---|---|
-| `Alpine.store('editor')` | objek `{id, panel, base, lang, ...}` | `editor.js` tidak terdaftar di `app.js` / belum di-build |
-| `document.querySelectorAll('svg[data-icon-sprite] symbol').length` | **≥ 75** | **0** = sprite belum dipasang di layout → ikon outline dan menu kosong |
-| `!!document.getElementById('icon-heading-1')` | `true` | ikon palet tidak ada di paket Lucide Anda (dilewati diam-diam) atau sprite tidak ada |
-| `document.querySelectorAll('*').length` | catat angkanya | (angka dasar untuk perbandingan performa) |
-| `document.querySelectorAll('[x-data]').length` | catat angkanya | (idem) |
-| Panel debug pojok kanan bawah | `● debug editor: utuh` | merah = ada yatim/hantu: buka panelnya, lihat daftar |
+| Perintah                                                           | Hasil yang benar                     | Bila tidak                                                                           |
+| ------------------------------------------------------------------ | ------------------------------------ | ------------------------------------------------------------------------------------ |
+| `Alpine.store('editor')`                                           | objek `{id, panel, base, lang, ...}` | `editor.js` tidak terdaftar di `app.js` / belum di-build                             |
+| `document.querySelectorAll('svg[data-icon-sprite] symbol').length` | **≥ 75**                             | **0** = sprite belum dipasang di layout → ikon outline dan menu kosong               |
+| `!!document.getElementById('icon-heading-1')`                      | `true`                               | ikon palet tidak ada di paket Lucide Anda (dilewati diam-diam) atau sprite tidak ada |
+| `document.querySelectorAll('*').length`                            | catat angkanya                       | (angka dasar untuk perbandingan performa)                                            |
+| `document.querySelectorAll('[x-data]').length`                     | catat angkanya                       | (idem)                                                                               |
+| Panel debug pojok kanan bawah                                      | `● debug editor: utuh`               | merah = ada yatim/hantu: buka panelnya, lihat daftar                                 |
 
 > Hasil Anda: jumlah simbol = **0** dan `icon-heading-1` = `false`. Sprite belum ada di halaman. Perbaikannya: tempel `<x-editor.icon-sprite />` di layout yang dipakai builder (lihat `PASANG.md` bagian 2). Hitung ulang: harus ≥ 75, dan `icon-heading-1` harus `true`.
 
 ## 2. Outline (kiri)
-Untuk setiap baris: hitung request di Network (endpoint update Livewire, `POST .../livewire.../update`).
-Isi request: tab *Payload* → `components[0].calls[0].method` dan `params`.
 
-| Lakukan | Request | Hasil yang benar |
-|---|---|---|
-| Klik baris blok | **0** | panel kanan berganti; baris tersorot |
-| `+ Tambah blok` → Judul | **1** (`addBlockAt`, params `[null, null, "heading"]`) | blok baru muncul di bawah dan **langsung terfokus** |
-| `+ Tambah blok` → Kolom, lalu `Tambah ke Kolom 1` → Paragraf | 1 (`addBlockAt`, params `["blk_…", "col_1_zone", "paragraph"]`) | anak masuk ke kolom 1 |
-| Menu di dalam kolom | – | **tidak** menawarkan Kolom / Step / Pemisah Seksi / Kartu Builder |
-| ↑ / ↓ | 1 (`moveBlock`) | bertukar dengan tetangga **di zonanya**; ujung = tombol nonaktif |
-| Duplikat blok Kolom yang berisi anak | 1 (`duplicateBlock`) | salinan di bawahnya, anaknya ber-ID **baru** |
-| Hapus blok berisi anak | konfirmasi dulu, lalu 1 (`removeBlock`) | semua anak ikut hilang; panel debug tetap "utuh" |
+Untuk setiap baris: hitung request di Network (endpoint update Livewire, `POST .../livewire.../update`).
+Isi request: tab _Payload_ → `components[0].calls[0].method` dan `params`.
+
+| Lakukan                                                      | Request                                                         | Hasil yang benar                                                  |
+| ------------------------------------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Klik baris blok                                              | **0**                                                           | panel kanan berganti; baris tersorot                              |
+| `+ Tambah blok` → Judul                                      | **1** (`addBlockAt`, params `[null, null, "heading"]`)          | blok baru muncul di bawah dan **langsung terfokus**               |
+| `+ Tambah blok` → Kolom, lalu `Tambah ke Kolom 1` → Paragraf | 1 (`addBlockAt`, params `["blk_…", "col_1_zone", "paragraph"]`) | anak masuk ke kolom 1                                             |
+| Menu di dalam kolom                                          | –                                                               | **tidak** menawarkan Kolom / Step / Pemisah Seksi / Kartu Builder |
+| ↑ / ↓                                                        | 1 (`moveBlock`)                                                 | bertukar dengan tetangga **di zonanya**; ujung = tombol nonaktif  |
+| Duplikat blok Kolom yang berisi anak                         | 1 (`duplicateBlock`)                                            | salinan di bawahnya, anaknya ber-ID **baru**                      |
+| Hapus blok berisi anak                                       | konfirmasi dulu, lalu 1 (`removeBlock`)                         | semua anak ikut hilang; panel debug tetap "utuh"                  |
 
 Bila Duplikat/Hapus meninggalkan yatim (panel debug merah): `HasContentBlocks` bukan versi patch.
 Bila `moveBlock`/`addBlockAt` "tidak ditemukan": `ManagesBlockStructure` belum di-`use` di builder.
 
 ## 3. Inspektur (kanan) dan data
+
 - [ ] Klik blok Judul → mengetik di kolom ID **tidak** membuat request selagi mengetik; mode live (bawaan) mengirim **satu** request ±0,8 dtk setelah berhenti.
 - [ ] Label baris outline ikut berubah **seketika** saat mengetik judul (tanpa request).
-- [ ] Klik H1 atau H3 pada blok Judul → buka **panel debug** (pojok kanan bawah, klik judulnya) dan lihat bagian `terfokus`: `data.level` harus berganti ke `h1`/`h3`. Blok lain tidak berubah. *(Tanpa konsol: panel debug menampilkan data blok yang sedang difokus.)*
+- [ ] Klik H1 atau H3 pada blok Judul → buka **panel debug** (pojok kanan bawah, klik judulnya) dan lihat bagian `terfokus`: `data.level` harus berganti ke `h1`/`h3`. Blok lain tidak berubah. _(Tanpa konsol: panel debug menampilkan data blok yang sedang difokus.)_
 - [ ] Mengetik `<b>x</b>` di kolom Judul tersimpan sebagai `&lt;b&gt;x&lt;/b&gt;` dan kolom **tetap bisa diedit**.
-- [ ] *(Tunda sampai rute edit bisa membuka halaman lama.)* Buka halaman yang dibuat editor lama; bila judulnya berformat (tebal/miring), kolom Judul tampil **hanya-baca** dengan catatan kuning "Teks berformat masih diedit lewat editor lama". Halaman baru dari builder tidak bisa menghasilkan ini, jadi tidak bisa diuji sekarang.
+- [ ] _(Tunda sampai rute edit bisa membuka halaman lama.)_ Buka halaman yang dibuat editor lama; bila judulnya berformat (tebal/miring), kolom Judul tampil **hanya-baca** dengan catatan kuning "Teks berformat masih diedit lewat editor lama". Halaman baru dari builder tidak bisa menghasilkan ini, jadi tidak bisa diuji sekarang.
 - [ ] Kolom anchor: `Hello World!` → `hello-world`.
 - [ ] Blok tipe `eyebrow` / `image` / `multi-columns`: panel kuning "belum punya panel" (wajar; belum didaftarkan).
 
 ## 4. Simpan, rute edit, dan keutuhan data
+
 Tab **Halaman** (kolom kanan) berisi judul, slug, status, SEO. Memfokus blok memindahkan ke tab **Blok**.
 
 ### Cara memakai tinker (kalau belum pernah): 1 menit
+
 Tinker adalah "layar perintah" untuk bertanya langsung ke aplikasi Anda. Tidak mengubah apa pun kecuali Anda menyuruhnya.
-1. Buka terminal **di folder proyek** (VS Code: menu *Terminal → New Terminal*; pastikan jalurnya berakhir di nama proyek Anda).
+
+1. Buka terminal **di folder proyek** (VS Code: menu _Terminal → New Terminal_; pastikan jalurnya berakhir di nama proyek Anda).
 2. Ketik `php artisan tinker` lalu Enter. Prompt berubah menjadi `>`.
 3. Tempel **satu baris** di bawah ini lalu Enter. Hasilnya tampil tepat di bawahnya.
 4. Ketik `exit` lalu Enter untuk keluar.
 
 Satu baris yang berguna (ganti `5` dengan id halaman):
+
 ```php
-\App\Models\Page::find(5)->only('title', 'slug', 'status', 'published_at')
+\App\Models\Page::find(5)->only("title", "slug", "status", "published_at");
 ```
+
 Keutuhan isi halaman, **satu baris**:
+
 ```php
-$d = \App\Content\ContentDocument::fromRaw(\App\Models\Page::find(5)->getRawOriginal('content')); [count($d->blocks), count($d->reachableIds()), array_values(array_diff(array_keys($d->blocks), $d->reachableIds()))]
+$d = \App\Content\ContentDocument::fromRaw(
+  \App\Models\Page::find(5)->getRawOriginal("content"),
+);
+[
+  count($d->blocks),
+  count($d->reachableIds()),
+  array_values(array_diff(array_keys($d->blocks), $d->reachableIds())),
+];
 ```
+
 Hasil benar: dua angka pertama **sama**, dan daftar terakhir **kosong** (`[]`) = tidak ada blok yatim.
 
 **Tanpa tinker:** `php artisan model:show Page` (kolom, tipe, dan cast) atau aplikasi database Anda dengan
 `SELECT id, status, published_at FROM pages ORDER BY id DESC LIMIT 5;`
 
 ### Halaman baru
+
 - [ ] Ketik judul ID → slug ID terisi otomatis. Ketik langsung di kolom **slug**: spasi menjadi `-`, huruf kecil, aksen hilang (`Ibu & Anak` → `ibu-dan-anak`). `-` di ujung masih boleh saat mengetik, dan dirapikan saat Anda meninggalkan kolom.
 - [ ] Ubah slug sendiri, lalu ketik judul lagi → slug **tidak** ditimpa. Kosongkan slug → otomatis aktif lagi.
 - [ ] Simpan dengan judul kosong → banner merah dan panel pindah ke tab **Halaman**.
@@ -82,58 +101,68 @@ Hasil benar: dua angka pertama **sama**, dan daftar terakhir **kosong** (`[]`) =
 - [ ] `published_at` kosong saat Offline, terisi saat pertama Online, dan tidak bergeser saat disimpan lagi.
 
 ### Halaman yang sudah ada
+
 - [ ] Judul/slug/status terisi. Mengetik judul **tidak** mengubah slug; peringatan kuning soal tautan lama tampil.
 - [ ] Buka-simpan tanpa mengubah apa pun: kolom `content` tidak berubah (selain ID hantu dibuang dan `toc_position` terisi).
 
 ### Snippet (`/v2/snippet/make`)
+
 - [ ] Nama, Kunci (`Hubungi Kami!` → `hubungi-kami`), catatan, status, penutup, urutan. Tanpa slug dan SEO.
 - [ ] Urutan: kosongkan kolomnya → tersimpan `0` (bukan galat). Kunci ganda ditolak dengan pesan jelas.
 
 ### Artikel (`/v2/article/write`)
+
 - [ ] Kategori: dropdown berisi kategori dari database; "— Pilih kategori —" = belum memilih.
 - [ ] Tag: ketik lalu Enter atau koma; saran muncul dari tag yang ada; nama yang sama dengan tag lama (huruf besar/kecil tak berpengaruh) memakai tag lama, tidak menggandakan. Backspace pada kolom kosong menghapus tag terakhir; `×` menghapus tag tertentu. Minimal satu tag.
-- [ ] Status untuk **penulis biasa**: hanya *Draf* dan *Ditinjau*. Untuk **admin/editor**: keenam status. (Dicek juga di server: memaksa `published` ditolak.)
-- [ ] Simpan artikel baru → baris di `posts`, tag di `post_tags`, `featured_image` = `default.webp`, `user_id` = pengguna yang login, `published_at` terisi saat status *Terbit*.
+- [ ] Status untuk **penulis biasa**: hanya _Draf_ dan _Ditinjau_. Untuk **admin/editor**: keenam status. (Dicek juga di server: memaksa `published` ditolak.)
+- [ ] Simpan artikel baru → baris di `posts`, tag di `post_tags`, `featured_image` = `default.webp`, `user_id` = pengguna yang login, `published_at` terisi saat status _Terbit_.
 - [ ] Tag baru yang diketik benar-benar dibuat di tabel `tags` (nama dan slug).
 - [ ] **Buka artikel lama** (`/v2/article/edit/<id>` untuk artikel yang dibuat editor lama): banner kuning "Isi lama diimpor sebagai satu blok Paragraf"; isinya tampil utuh di blok itu. **Data di database tidak berubah** sampai Anda menekan Simpan.
 - [ ] Setelah itu Simpan → isi menjadi dokumen blok. **Peringatan:** halaman publik artikel membaca `content` sebagai HTML; artikel yang disimpan dari builder baru tampil benar bila renderernya mendukung blok. Uji **hanya pada artikel percobaan**.
 
 ### Langkah terakhir yang membingungkan, dijelaskan ulang
-*"Setelah redirect `navigate: true`, `Alpine.store('editor').tab` kembali `'page'` dan outline menampilkan blok yang tersimpan."*
+
+_"Setelah redirect `navigate: true`, `Alpine.store('editor').tab` kembali `'page'` dan outline menampilkan blok yang tersimpan."_
 Store `editor` hidup di **browser** dan bertahan saat `wire:navigate` berpindah halaman, tidak seperti komponennya yang dibuat baru. Tanpa pengaman, fokus blok dari halaman sebelumnya bisa ikut terbawa. Cara mencobanya:
-1. Di halaman **baru**, tambahkan dua blok, lalu **klik salah satu** (panel kanan pindah ke tab *Blok*, blok tersorot).
-2. Pindah ke tab *Halaman*, isi judul/slug, **klik sebuah blok lagi** (supaya fokus aktif), lalu tekan **Simpan**.
+
+1. Di halaman **baru**, tambahkan dua blok, lalu **klik salah satu** (panel kanan pindah ke tab _Blok_, blok tersorot).
+2. Pindah ke tab _Halaman_, isi judul/slug, **klik sebuah blok lagi** (supaya fokus aktif), lalu tekan **Simpan**.
 3. Setelah URL berubah ke `/v2/page/edit/<id>`, yang benar: panel kanan di tab **Halaman**, **tidak ada** blok tersorot, dan outline menampilkan **kedua blok** tadi.
 4. Di Console: `Alpine.store('editor').tab` harus `'page'` dan `Alpine.store('editor').id` harus `null`.
-Bila tab masih "Blok" atau ada blok tersorot, `x-init="$store.editor.clear()"` di akar builder tidak berjalan setelah navigasi: kirimkan hasilnya.
+   Bila tab masih "Blok" atau ada blok tersorot, `x-init="$store.editor.clear()"` di akar builder tidak berjalan setelah navigasi: kirimkan hasilnya.
 
 ### Keutuhan di database
+
 Pakai baris tinker di atas setelah beberapa kali menambah, memindah, menduplikat, dan menghapus blok, lalu Simpan.
 
 ## 5. Navigasi dan judul tab
+
 - [ ] `/v2/page/create` → `/v2/article/write` lewat `wire:navigate`: judul tab, jenis, dan outline berganti, tanpa sisa dari halaman sebelumnya.
 - [ ] Tombol Back/Forward: setelah edit → simpan → keluar → Back, editor menampilkan data **terbaru** (Livewire bisa memakai halaman dari cache).
 - [ ] `Alpine.store('editor').panel` kembali `null` setelah pindah halaman.
 - [ ] Listener tidak menumpuk: di Console Chrome `getEventListeners(document)['livewire:navigate']?.length` tetap **1** setelah beberapa kali pindah halaman.
 
 ## 6. Performa (bandingkan dengan angka dasar bagian 1)
-- [ ] Ukuran respons satu request update (tab Network → *Size*) sesudah "Tambah blok". Bila ≥ ±100 KB, markup inspektur ikut terkirim tiap request → pindahkan ke `@island` atau muat sekali lewat route statis.
+
+- [ ] Ukuran respons satu request update (tab Network → _Size_) sesudah "Tambah blok". Bila ≥ ±100 KB, markup inspektur ikut terkirim tiap request → pindahkan ke `@island` atau muat sekali lewat route statis.
 - [ ] Waktu dari klik "Tambah blok" sampai blok terlihat. Catat (konteks: shared hosting Hostinger bisa jauh lebih lambat dari Herd lokal).
 - [ ] Tambah 50 blok ke Step Builder: jumlah elemen DOM dan `[x-data]` harus naik **linear kecil**, bukan ribuan per blok.
 
 ## 6b. Blok Tombol (di aplikasi sungguhan)
+
 Sudah teruji di lab: kontrol, urutan, pemilih tautan, keamanan, dan tampilan. Yang **hanya** bisa dipastikan di Livewire dan layout Anda ada di daftar ini.
 
-- [ ] `+ Tambah blok → Tombol`: blok muncul, tab *Blok* terbuka, daftar berisi satu tombol "(tanpa teks)". Di panel debug, `keutuhan` tetap "utuh".
+- [ ] `+ Tambah blok → Tombol`: blok muncul, tab _Blok_ terbuka, daftar berisi satu tombol "(tanpa teks)". Di panel debug, `keutuhan` tetap "utuh".
 - [ ] Buka tombol, ketik teks ID/EN: baris di daftar ikut berubah; mengetik lalu **langsung** menekan ↑/↓ tidak menukar atau menimpa teks tombol lain.
-- [ ] **Halaman/Artikel**: ketik 2+ huruf judul → daftar hasil muncul. *(Ini memanggil `searchLinkTargets` lewat Livewire: bila daftar tetap kosong, buka Console dan Network; kirim isi responsnya.)* Pilih satu → muncul chip bernama; tombol hanya tampil di publik bila halamannya **online**.
+- [ ] **Halaman/Artikel**: ketik 2+ huruf judul → daftar hasil muncul. _(Ini memanggil `searchLinkTargets` lewat Livewire: bila daftar tetap kosong, buka Console dan Network; kirim isi responsnya.)_ Pilih satu → muncul chip bernama; tombol hanya tampil di publik bila halamannya **online**.
 - [ ] **Berkas**: "Pilih berkas" membuka File Manager; setelah memilih, nama berkas tampil. Di File Manager, berkas itu kini tercatat **Digunakan Di** halaman/artikel/snippet ini.
 - [ ] **URL luar**: ketik `javascript:alert(1)` → peringatan kuning. Simpan, lalu cek kolom `content` di database: `ref` **kosong**.
 - [ ] Simpan, muat ulang: semua tombol kembali sama, urutannya benar.
-- [ ] Halaman publik: tombol tampil dengan warna/gaya yang dipilih. Tombol tanpa teks atau dengan tujuan offline **tidak** tampil. *(Bila blok tidak tampil sama sekali, periksa cara `page-preview` memanggil komponen render; lihat `docs/BLOK-TOMBOL.md`, bagian "Yang perlu diperhatikan".)*
+- [ ] Halaman publik: tombol tampil dengan warna/gaya yang dipilih. Tombol tanpa teks atau dengan tujuan offline **tidak** tampil. _(Bila blok tidak tampil sama sekali, periksa cara `page-preview` memanggil komponen render; lihat `docs/BLOK-TOMBOL.md`, bagian "Yang perlu diperhatikan".)_
 - [ ] Ikon: pilih satu, "Posisi ikon" muncul; "Hapus ikon" mengosongkannya.
 
 ## 6c. Kanvas (di aplikasi sungguhan)
+
 Sudah teruji di lab: pengelompokan seksi (3000 dokumen dibandingkan dengan logika asli), render, dan protokol pesan di browser. Yang **hanya** bisa dipastikan di Livewire dan layout Anda:
 
 - [ ] Panel tengah menampilkan pratinjau (bukan petunjuk "Rute pratinjau belum dipasang"). Bila petunjuk itu muncul: rute `preview.frame` belum ada di grup `v2`.
@@ -143,7 +172,7 @@ Sudah teruji di lab: pengelompokan seksi (3000 dokumen dibandingkan dengan logik
 - [ ] **Daftar isi (TOC)**: tidak tampil di panel biasa, **dan itu benar**: wadahnya `hidden 2xl:block`, hanya muncul bila lebar jendela ≥ 1536 px (sama seperti situs). Klik ikon **Layar lebar** (ikon sudut-sudut, paling kanan dari empat ukuran): bingkai berjendela 1600 px lalu diperkecil agar muat, dan TOC muncul bila halaman punya blok ber-anchor (judul atau pemisah seksi yang punya "ID Tautan").
 - [ ] **Izin iframe (`X-Frame-Options` / `frame-ancestors`)**. Cara memeriksa: (1) bila pratinjau tampil di dalam panel, izinnya sudah benar dan butir ini lulus. (2) Bila panel putih/kosong: tekan F12, tab **Console**; pesan "Refused to display ... in a frame because it set 'X-Frame-Options' to 'deny'" memastikannya. (3) Untuk melihat headernya: tab **Network**, muat ulang, klik permintaan bertipe **document** bernama `<token>?lang=id`, lihat **Response Headers**. Yang boleh: `X-Frame-Options` tidak ada atau `SAMEORIGIN`; `Content-Security-Policy` tanpa `frame-ancestors` atau `frame-ancestors 'self'`. Yang salah: `DENY`.
 - [ ] Ketik di kolom judul blok: pratinjau ikut berubah ±1 detik kemudian **tanpa berkedip dan tanpa melompat ke atas** (render ulang lewat `$wire.$refresh()`).
-- [ ] Klik sebuah blok di pratinjau: blok itu terpilih di outline, tab pindah ke *Blok*, panel properti terbuka; garis putus-putus saat disorot. Klik tautan/tombol di dalam pratinjau **tidak** berpindah halaman.
+- [ ] Klik sebuah blok di pratinjau: blok itu terpilih di outline, tab pindah ke _Blok_, panel properti terbuka; garis putus-putus saat disorot. Klik tautan/tombol di dalam pratinjau **tidak** berpindah halaman.
 - [ ] **Blok Tombol di kanvas**: tombol yang baru ditambah tampil **pudar dengan tepi putus-putus** (tanda belum lengkap: teks atau tujuan tautan kosong, atau tujuannya belum online/terbit); arahkan kursor untuk melihat penjelasannya. Setelah teks dan tautan terisi, tampil normal. Di **situs publik** tombol belum lengkap tetap **tidak tampil** (disengaja: tidak ada tombol mati).
 - [ ] **Blok kosong**: blok yang tidak mencetak apa pun (mis. FAQ tanpa pertanyaan) tampil sebagai kotak "Blok ... masih kosong", sehingga tetap bisa diklik dan dipilih.
 - [ ] Pilih blok dari outline: pratinjau menggulir ke blok itu dan memberinya garis hijau.
@@ -155,6 +184,7 @@ Sudah teruji di lab: pengelompokan seksi (3000 dokumen dibandingkan dengan logik
 - [ ] Cache: `CACHE_STORE` tidak boleh `array`; `database` (yang Anda pakai) atau `file` cukup. Bila pratinjau selalu "kedaluwarsa", periksa tabel `cache` ada (`php artisan cache:table` lalu `migrate`).
 
 ## 6d. Akordion / FAQ (di aplikasi sungguhan)
+
 Teruji di lab: pembersih, teks → HTML (1500 teks acak), tampilan, perilaku `<details>` di Chromium, dan panel inspektur. Yang perlu dipastikan di aplikasi Anda:
 
 - [ ] **Modul ditemukan**: di menu `+ Tambah blok` ada **Akordion / FAQ** (grup Konten), juga di menu di dalam kolom. Bila tidak ada: berkas harus persis `app/Editor/Blocks/AccordionBlock.php` dengan nama kelas `AccordionBlock`; lalu `composer dump-autoload` dan `php artisan optimize:clear`.
@@ -162,15 +192,16 @@ Teruji di lab: pembersih, teks → HTML (1500 teks acak), tampilan, perilaku `<d
 - [ ] Jawaban: Enter membuat baris baru (kolom banyak-baris); simpan, muat ulang, baris barunya tetap ada.
 - [ ] Di kanvas: semua pertanyaan **terbuka** dan jawabannya terlihat; mengklik blok memilihnya.
 - [ ] Di halaman publik: pertanyaan tertutup; mengkliknya membuka dengan panah berputar; membuka yang lain menutup yang pertama (kecuali "Boleh membuka beberapa sekaligus" aktif).
-  **Cara**: simpan halaman berisi blok FAQ, lalu buka `/v2/preview/page/<id>` (pratinjau tersimpan, rilis 6), atau `/page/preview/<id>?mode=raw` yang sudah ada, atau alamat publik halaman bila statusnya online.
+      **Cara**: simpan halaman berisi blok FAQ, lalu buka `/v2/preview/page/<id>` (pratinjau tersimpan, rilis 6), atau `/page/preview/<id>?mode=raw` yang sudah ada, atau alamat publik halaman bila statusnya online.
 - [ ] Papan ketik: Tab ke pertanyaan, Enter/Spasi membuka-tutup; ada cincin fokus.
 - [ ] Ketik jawaban `usia <5 tahun & bayi` dan `<b>coba</b>`: tampil **apa adanya** di situs (bukan tebal, tidak terpotong).
 - [ ] Ketik `https://ysbh.org.` di jawaban: menjadi tautan; titik di ujung kalimat **di luar** tautan.
 - [ ] "Tandai untuk mesin pencari": lihat sumber halaman publik, ada `<script type="application/ld+json">` dengan `FAQPage`; tempel alamat halaman di _Rich Results Test_ Google untuk memeriksanya. Aktifkan hanya pada satu blok per halaman.
-  **Cara**: buka halaman tersimpan seperti di atas, tekan Ctrl+U (lihat sumber), cari `ld+json`. Isinya harus diawali `{"@context":"https://schema.org","@type":"FAQPage",…`. **Bila Anda melihat `<?php`, `__contextArgs`, atau `context()->` di dalam blok itu, berkas `accordion-builder.blade.php` masih versi lama (sebelum rilis 9)**: Blade versi baru mengompilasi `@context` sebagai direktif. *Rich Results Test* Google **tidak bisa** membuka alamat lokal (`.test`, `localhost`): pakai tabnya **Kode** lalu tempel seluruh sumber halaman; setelah situs ada di server publik, tempel alamatnya.
+      **Cara**: buka halaman tersimpan seperti di atas, tekan Ctrl+U (lihat sumber), cari `ld+json`. Isinya harus diawali `{"@context":"https://schema.org","@type":"FAQPage",…`. **Bila Anda melihat `<?php`, `__contextArgs`, atau `context()->` di dalam blok itu, berkas `accordion-builder.blade.php` masih versi lama (sebelum rilis 9)**: Blade versi baru mengompilasi `@context` sebagai direktif. _Rich Results Test_ Google **tidak bisa** membuka alamat lokal (`.test`, `localhost`): pakai tabnya **Kode** lalu tempel seluruh sumber halaman; setelah situs ada di server publik, tempel alamatnya.
 - [ ] Kolom `content` di database tersimpan bersih: tidak ada gaya/warna di luar daftar, paling banyak 30 pertanyaan.
 
 ## 6e. Daftar unduhan (di aplikasi sungguhan)
+
 Teruji di lab: pembersih, urut/kelompok, ukuran dan jenis berkas, tampilan, pencatatan "Digunakan Di", dan panel inspektur. Yang perlu dipastikan di aplikasi Anda:
 
 - [ ] **Modul ditemukan**: di menu `+ Tambah blok` ada **Daftar Unduhan** (grup Konten), juga di dalam kolom.
@@ -184,6 +215,7 @@ Teruji di lab: pembersih, urut/kelompok, ukuran dan jenis berkas, tampilan, penc
 - [ ] Pindahkan sebuah berkas ke Sampah di File Manager: butirnya **hilang dari situs** tanpa mengubah halaman.
 
 ## 6f. Pratinjau versi tersimpan (rilis 6)
+
 - [ ] Rute `preview.record` terpasang (lihat `contoh-kode/routes.php`): `/v2/preview/page/<id>` menampilkan halaman tersimpan dengan pita kecil di pojok. Bila 404: rute belum ada di grup `v2`.
 - [ ] Layout polos, **tanpa sidebar admin** (sama seperti kanvas). Bila sidebar muncul: periksa `#[Layout('layouts.landing.index')]` di `⚡record-preview.blade.php`.
 - [ ] Halaman **offline** tetap bisa dibuka (pita menandai status "offline" berwarna kuning); halaman online bertanda hijau.
@@ -195,74 +227,85 @@ Teruji di lab: pembersih, urut/kelompok, ukuran dan jenis berkas, tampilan, penc
 - [ ] Tautan **Edit** di pita membuka builder untuk record yang sama.
 
 ## 6g. Callout / Catatan (di aplikasi sungguhan)
+
 Teruji di lab: pembersih, tampilan (jenis, gaya, ikon, aksi), pencatatan tautan aman, panel inspektur, dan jalur simpan/pratinjau. Yang perlu dipastikan di aplikasi Anda:
 
-- [ ] **Modul ditemukan**: di menu `+ Tambah blok` ada **Callout / Catatan** (ikon megafon), juga di menu di dalam kolom.
-- [ ] Blok baru kosong: di kanvas tampil kotak "masih kosong" (bisa dipilih); setelah mengisi judul atau isi, kotak berwarna tampil dengan ikon bawaan jenis.
-- [ ] **Enam jenis × tiga gaya** tampil benar di situs (bukan hanya di kanvas): warnanya sama dengan yang di kanvas. Bila warna **polos/tanpa warna**, kelas Tailwind palet bawaan (`sky`, `emerald`, `amber`, `red`) tidak ada di build Anda: kirim berkas CSS/tema Tailwind.
-- [ ] Gaya **Penuh + Peringatan**: teks gelap di atas kuning (bukan putih); gaya Penuh lain: teks putih.
-- [ ] Isi: Enter membuat baris baru; `- ` menjadi daftar poin; `https://ysbh.org.` menjadi tautan dengan titik di luar. Ketik `usia <5 tahun`: tampil apa adanya.
-- [ ] **Aksi "Hubungi 119"**: jenis Telepon, nilai `119`: di situs menjadi `tel:119` (di ponsel membuka penelepon). Nomor tiga angka sah sejak rilis 7.
-- [ ] Aksi dengan **halaman offline** sebagai tujuan: di situs **tidak tampil**; di kanvas tampil pudar bertepi putus-putus.
-- [ ] Pembaca layar atau mode kontras: kotak diumumkan sebagai catatan dengan nama jenisnya ("Peringatan: …").
-- [ ] Ikon: "Tampilkan ikon" mati = tanpa ikon; pilih ikon lain (mis. **heart**) tampil di situs; "Hapus ikon" kembali ke ikon bawaan jenis.
+- [passed] **Modul ditemukan**: di menu `+ Tambah blok` ada **Callout / Catatan** (ikon megafon), juga di menu di dalam kolom.
+- [passed] Blok baru kosong: di kanvas tampil kotak "masih kosong" (bisa dipilih); setelah mengisi judul atau isi, kotak berwarna tampil dengan ikon bawaan jenis.
+- [passed] **Enam jenis × tiga gaya** tampil benar di situs (bukan hanya di kanvas): warnanya sama dengan yang di kanvas. Bila warna **polos/tanpa warna**, kelas Tailwind palet bawaan (`sky`, `emerald`, `amber`, `red`) tidak ada di build Anda: kirim berkas CSS/tema Tailwind.
+- [passed] Gaya **Penuh + Peringatan**: teks gelap di atas kuning (bukan putih); gaya Penuh lain: teks putih.
+- [passed] Isi: Enter membuat baris baru; `- ` menjadi daftar poin; `https://ysbh.org.` menjadi tautan dengan titik di luar. Ketik `usia <5 tahun`: tampil apa adanya.
+  Q: tautan dengan titik diluar maksudnya ini bagaimana?
+- [passed] **Aksi "Hubungi 119"**: jenis Telepon, nilai `119`: di situs menjadi `tel:119` (di ponsel membuka penelepon). Nomor tiga angka sah sejak rilis 7.
+- [passed] Aksi dengan **halaman offline** sebagai tujuan: di situs **tidak tampil**; di kanvas tampil pudar bertepi putus-putus.
+- [not tested] Pembaca layar atau mode kontras: kotak diumumkan sebagai catatan dengan nama jenisnya ("Peringatan: …").
+- [passed] Ikon: "Tampilkan ikon" mati = tanpa ikon; pilih ikon lain (mis. **heart**) tampil di situs; "Hapus ikon" kembali ke ikon bawaan jenis.
 
 ## 6h. Video YouTube / Vimeo (di aplikasi sungguhan)
+
 Teruji di lab: penguraian alamat (6000 alamat acak), tampilan, perilaku klik-untuk-memutar di browser (termasuk bukti tanpa permintaan jaringan sebelum klik), panel inspektur, dan jalur simpan. Yang perlu dipastikan di aplikasi Anda:
 
-- [ ] **Modul ditemukan**: di menu `+ Tambah blok` ada **Video** (ikon video), juga di dalam kolom.
-- [ ] Tempel `https://www.youtube.com/watch?v=…`, lalu `https://youtu.be/…`, lalu alamat Shorts: di kanvas tampil **fasad** (latar hijau, tombol putar, label "YouTube"). Tempel alamat salah (mis. situs lain): kotak penjelasan "hanya YouTube dan Vimeo".
-- [ ] **Rasio tampil benar**: fasad berbentuk kotak 16:9 (bukan garis tipis tanpa tinggi). Bila tingginya nol, build Tailwind Anda tidak memindai folder `app/` (kelas rasio ada di `app/Content/Blocks/VideoStyle.php`): tambahkan `@source '../../app';` di CSS Anda.
-- [ ] **Privasi**: di halaman publik (atau `/v2/preview/page/<id>`), buka DevTools → tab **Network**, muat ulang: **tidak ada** permintaan ke youtube, google, atau vimeo sebelum Anda mengklik. Tidak ada `<iframe>` di tab Elements.
-- [ ] Klik fasad: video dimuat di tempat dan diputar. Di Network muncul `youtube-nocookie.com/embed/…`. Halaman tidak berpindah.
-- [ ] Bila setelah klik kotak tetap kosong atau Console menyebut "Refused to frame": situs Anda memakai **Content-Security-Policy**; izinkan `frame-src https://www.youtube-nocookie.com https://player.vimeo.com`.
-- [ ] Tab ke fasad lalu Enter: memutar; ada cincin fokus.
-- [ ] Alamat dengan `?t=90`: video mulai di detik 90.
-- [ ] Gambar sampul dari File Manager tampil di fasad; memilih berkas **PDF** sebagai sampul: diabaikan (kembali ke latar hijau).
-- [ ] Rasio **9:16** + lebar **Sempit** untuk video vertikal (Shorts).
-- [ ] Dua video di satu halaman: memutar yang kedua tidak memuat yang pertama.
-- [ ] Alamat video privat/dihapus: pesan dari YouTube/Vimeo tampil di dalam kotak setelah klik (bukan galat CMS).
+- [passed] **Modul ditemukan**: di menu `+ Tambah blok` ada **Video** (ikon video), juga di dalam kolom.
+- [passed] Tempel `https://www.youtube.com/watch?v=…`, lalu `https://youtu.be/…`, lalu alamat Shorts: di kanvas tampil **fasad** (latar hijau, tombol putar, label "YouTube"). Tempel alamat salah (mis. situs lain): kotak penjelasan "hanya YouTube dan Vimeo".
+- [passed] **Rasio tampil benar**: fasad berbentuk kotak 16:9 (bukan garis tipis tanpa tinggi). Bila tingginya nol, build Tailwind Anda tidak memindai folder `app/` (kelas rasio ada di `app/Content/Blocks/VideoStyle.php`): tambahkan `@source '../../app';` di CSS Anda.
+- [passed] **Privasi**: di halaman publik (atau `/v2/preview/page/<id>`), buka DevTools → tab **Network**, muat ulang: **tidak ada** permintaan ke youtube, google, atau vimeo sebelum Anda mengklik. Tidak ada `<iframe>` di tab Elements.
+- [] Klik fasad: video dimuat di tempat dan diputar. Di Network muncul `youtube-nocookie.com/embed/…`. Halaman tidak berpindah.
+  Halaman tidak berpindah, tapi di tab network tidak ada request apapun ketika video dimainkan
+- [passed] Bila setelah klik kotak tetap kosong atau Console menyebut "Refused to frame": situs Anda memakai **Content-Security-Policy**; izinkan `frame-src https://www.youtube-nocookie.com https://player.vimeo.com`.
+- [passed] Tab ke fasad lalu Enter: memutar; ada cincin fokus.
+- [passed] Alamat dengan `?t=90`: video mulai di detik 90.
+  akhiran url dari youtube dikasih '&t=detik' bukan '?t=detik'tapi bekerja.
+- [passed] Gambar sampul dari File Manager tampil di fasad; memilih berkas **PDF** sebagai sampul: diabaikan (kembali ke latar hijau).
+- [passed] Rasio **9:16** + lebar **Sempit** untuk video vertikal (Shorts).
+- [passed] Dua video di satu halaman: memutar yang kedua tidak memuat yang pertama.
+- [passed] Alamat video privat/dihapus: pesan dari YouTube/Vimeo tampil di dalam kotak setelah klik (bukan galat CMS).
 
 ## 6i. Galeri / Logo (di aplikasi sungguhan)
+
 Teruji di lab: pembersih, penyusun butir, tampilan (grid, carousel, logo, pembesar), perilaku di browser (jumlah gambar per layar di ponsel/tablet/desktop, panah, geser, papan ketik, berjalan otomatis, "kurangi gerakan", pembesar), panel inspektur, dan jalur simpan. Yang perlu dipastikan di aplikasi Anda:
 
-- [ ] **Modul ditemukan**: di menu `+ Tambah blok` ada **Galeri / Logo**, juga di dalam kolom. (Ikon palet `images` bisa kosong bila paket Lucide Anda lama; itu tidak merusak apa pun.)
-- [ ] **Jelajahi File Manager** di dalam butir menawarkan **hanya gambar**. Pilih gambar: di kanvas butir itu berhenti pudar dan gambarnya tampil.
-- [ ] Grid Foto: 2 kolom di ponsel, 3 di tablet, sesuai pilihan di desktop (coba kolom 4).
-- [ ] **Carousel**: ganti Tampilan ke Carousel dengan lebih banyak gambar daripada kolom. Panah **Sebelumnya/Berikutnya** muncul dan bergeser tepat satu gambar; di ponsel bisa digeser dengan jari dan berhenti rapi di gambar. Bila gambar bertumpuk atau lebarnya penuh: kelas `basis-[calc(…)]` tidak dihasilkan; tambahkan `@source '../../app';` di CSS Anda.
-- [ ] Carousel dengan gambar yang muat semua (mis. 3 gambar, 4 kolom): panah **tidak tampil**.
-- [ ] **Berjalan otomatis** (sakelar): bergeser sendiri; berhenti saat kursor di atas galeri; tombol **Jeda** berfungsi. Di Windows: Pengaturan → Aksesibilitas → Efek visual → matikan "Efek animasi", muat ulang: carousel **tidak** berjalan sendiri.
-- [ ] **Logo mitra**: logo tampil utuh di kotak putih; "Logo hitam-putih" membuatnya abu-abu dan berwarna saat disorot; logo bertautan membuka situs mitra di tab baru.
-- [ ] **Pembesar**: klik foto membuka tampilan besar (latar gelap) dengan keterangannya; panah kiri/kanan berpindah foto (melingkar); **Esc** menutup dan fokus kembali ke foto tadi; klik latar gelap menutup. Foto yang bertautan membuka tautannya, bukan pembesar.
-- [ ] Tautan ke **halaman yang belum online**: logo tetap tampil (tanpa tautan); di kanvas ditandai.
-- [ ] "Digunakan Di" di File Manager mencatat gambar galeri (butuh trait `SyncsMediaUsage` pada model Halaman/Artikel).
-- [ ] Kecepatan: foto besar (≥ 2 MB) memperlambat halaman; unggah yang sudah dikecilkan.
+- [passed] **Modul ditemukan**: di menu `+ Tambah blok` ada **Galeri / Logo**, juga di dalam kolom. (Ikon palet `images` bisa kosong bila paket Lucide Anda lama; itu tidak merusak apa pun.)
+- [passed] **Jelajahi File Manager** di dalam butir menawarkan **hanya gambar**. Pilih gambar: di kanvas butir itu berhenti pudar dan gambarnya tampil.
+- [passed] Grid Foto: 2 kolom di ponsel, 3 di tablet, sesuai pilihan di desktop (coba kolom 4).
+- [passed] **Carousel**: ganti Tampilan ke Carousel dengan lebih banyak gambar daripada kolom. Panah **Sebelumnya/Berikutnya** muncul dan bergeser tepat satu gambar; di ponsel bisa digeser dengan jari dan berhenti rapi di gambar. Bila gambar bertumpuk atau lebarnya penuh: kelas `basis-[calc(…)]` tidak dihasilkan; tambahkan `@source '../../app';` di CSS Anda.
+- [passed] Carousel dengan gambar yang muat semua (mis. 3 gambar, 4 kolom): panah **tidak tampil**.
+- [passed] **Berjalan otomatis** (sakelar): bergeser sendiri; berhenti saat kursor di atas galeri; tombol **Jeda** berfungsi. Di Windows: Pengaturan → Aksesibilitas → Efek visual → matikan "Efek animasi", muat ulang: carousel **tidak** berjalan sendiri.
+- [passed] **Logo mitra**: logo tampil utuh di kotak putih; "Logo hitam-putih" membuatnya abu-abu dan berwarna saat disorot; logo bertautan membuka situs mitra di tab baru.
+- [passed] **Pembesar**: klik foto membuka tampilan besar (latar gelap) dengan keterangannya; panah kiri/kanan berpindah foto (melingkar); **Esc** menutup dan fokus kembali ke foto tadi; klik latar gelap menutup. Foto yang bertautan membuka tautannya, bukan pembesar.
+- [passed] Tautan ke **halaman yang belum online**: logo tetap tampil (tanpa tautan); di kanvas ditandai.
+- [passed] "Digunakan Di" di File Manager mencatat gambar galeri (butuh trait `SyncsMediaUsage` pada model Halaman/Artikel).
+- [passed] Kecepatan: foto besar (≥ 2 MB) memperlambat halaman; unggah yang sudah dikecilkan.
 
 ## 6j. Dua aplikasi: alamat publik dan sinkron ke landing (rilis 11)
-- [ ] **CMS: tautan ke halaman/artikel tidak lagi menimbulkan galat.** Di builder buat Tombol/Callout/Galeri dengan tautan jenis Halaman atau Artikel (yang online/terbit), lalu buka kanvas dan pratinjau tersimpan: tidak ada galat "Route [page.show] not defined". Tanpa konfigurasi `cms.public`, tautan itu hanya tidak tampil.
-- [ ] Tambahkan `cms.public` (`contoh-kode/config-dua-aplikasi.php`) dan `CMS_PUBLIC_URL=https://…` di CMS. Arahkan kursor ke tombol bertautan halaman di pratinjau tersimpan: alamatnya **absolut ke domain landing** (`https://ysbh.org/…`), sesuai bahasa pratinjau.
-- [ ] Halaman offline / artikel draf sebagai tujuan tautan: tombol itu tidak tampil di situs (di kanvas ditandai pudar), bukan galat.
-- [ ] `php tools\sync-landing.php C:\jalur\landing` (mode periksa) menampilkan berkas BARU pada landing yang belum disinkron; `--apply` menyalinnya; menjalankan periksa lagi menghasilkan "0 baru, 0 berbeda".
-- [ ] Folder yang bukan proyek Laravel ditolak dengan pesan jelas.
-- [ ] Di landing, `php artisan view:clear` lalu buka halaman yang berisi blok FAQ, Unduhan, Callout, Video, dan Galeri: semuanya tampil. Galat "Class … not found" = ada berkas yang belum tersinkron; jalankan sinkron lagi.
-- [ ] Uji kontrak di landing: `route('article.show', 'x', absolute: false)` sama dengan templat `cms.public.article`.
-- [ ] Gambar: unggah satu gambar lewat CMS; ia tampil di halaman landing dengan URL `https://ysbh.org/storage/…` (bukan subdomain CMS), dan tetap tampil bila subdomain CMS dimatikan sementara.
+
+- [passed] **CMS: tautan ke halaman/artikel tidak lagi menimbulkan galat.** Di builder buat Tombol/Callout/Galeri dengan tautan jenis Halaman atau Artikel (yang online/terbit), lalu buka kanvas dan pratinjau tersimpan: tidak ada galat "Route [page.show] not defined". Tanpa konfigurasi `cms.public`, tautan itu hanya tidak tampil.
+- [passed] Tambahkan `cms.public` (`contoh-kode/config-dua-aplikasi.php`) dan `CMS_PUBLIC_URL=https://…` di CMS. Arahkan kursor ke tombol bertautan halaman di pratinjau tersimpan: alamatnya **absolut ke domain landing** (`https://ysbh.org/…`), sesuai bahasa pratinjau.
+- [passed] Halaman offline / artikel draf sebagai tujuan tautan: tombol itu tidak tampil di situs (di kanvas ditandai pudar), bukan galat.
+- [passed] `php tools\sync-landing.php D:\Herd\landing-ysbh` (mode periksa) menampilkan berkas BARU pada landing yang belum disinkron; `--apply` menyalinnya; menjalankan periksa lagi menghasilkan "0 baru, 0 berbeda".
+- [passed] Folder yang bukan proyek Laravel ditolak dengan pesan jelas.
+- [passed] Di landing, `php artisan view:clear` lalu buka halaman yang berisi blok FAQ, Unduhan, Callout, Video, dan Galeri: semuanya tampil. Galat "Class … not found" = ada berkas yang belum tersinkron; jalankan sinkron lagi.
+- [passed] Uji kontrak di landing: `route('article.show', 'x', absolute: false)` sama dengan templat `cms.public.article`.
+- [passed] Gambar: unggah satu gambar lewat CMS; ia tampil di halaman landing dengan URL `https://ysbh.org/storage/…` (bukan subdomain CMS), dan tetap tampil bila subdomain CMS dimatikan sementara.
 
 ## 6k. Artikel Terbaru, snippet di situs publik, dan landing (rilis 12)
-- [ ] **Modul ditemukan**: di menu `+ Tambah blok` ada **Artikel Terbaru** (ikon koran), juga di dalam kolom.
-- [ ] Tambahkan blok itu pada sebuah halaman, atur jumlah 3: di **kanvas** tampil kartu artikel terbit sungguhan (judul, kategori, tanggal, ringkasan). Tidak ada artikel terbit: tampil keterangan "belum ada artikel berstatus terbit".
-- [ ] **Sampul**: tanpa `cms.public.cover` di `config/cms.php`, kartu tampil dengan latar hijau (aman). Setelah mengisinya dengan templat yang benar (`/storage/posts/{file}` atau sesuai folder Anda), sampul artikel tampil; artikel bersampul `default.webp` tetap berlatar hijau, bukan gambar rusak.
-- [ ] Klik kartu di situs menuju `…/artikel/<slug>` di landing (setelah rute `article.show` ada). Di CMS, tautan kartu absolut ke landing bila `CMS_PUBLIC_URL` diatur.
-- [ ] Ringkasan: artikel dengan `meta_description` memakainya; tanpa itu, paragraf pertama (tanpa HTML). Artikel lama berisi HTML tetap punya ringkasan yang rapi (tanpa kata menempel).
-- [ ] Di halaman **artikel**, "Artikel Terbaru" tidak memuat artikel yang sedang dibuka (hanya bila halaman membagikan `currentArticleId`, seperti contoh `article-show`).
-- [ ] **Snippet penutup di situs**: buat satu snippet berstatus online dan bertanda "penutup" (mis. ajakan donasi); buka halaman publik (atau `/v2/preview/page/<id>`): snippet muncul di **akhir** halaman. Atur penutup halaman itu ke "tanpa penutup": hilang. Snippet yang offline tidak tampil. **Di rilis ≤ 11 snippet penutup tidak tampil di situs publik sama sekali.**
-- [ ] Landing: `php tools\sync-landing.php C:\jalur\landing` menampilkan tujuh berkas BARU dibanding rilis 11 (termasuk `PublicLookup.php`); `--apply` menyalinnya; di landing sediakan model `Snippet` dan `Category` (contoh baca-saja: `landing-app/app/Models/*.php`).
+
+- [passed] **Modul ditemukan**: di menu `+ Tambah blok` ada **Artikel Terbaru** (ikon koran), juga di dalam kolom.
+- [passed] Tambahkan blok itu pada sebuah halaman, atur jumlah 3: di **kanvas** tampil kartu artikel terbit sungguhan (judul, kategori, tanggal, ringkasan). Tidak ada artikel terbit: tampil keterangan "belum ada artikel berstatus terbit".
+- [passed] **Sampul**: tanpa `cms.public.cover` di `config/cms.php`, kartu tampil dengan latar hijau (aman). Setelah mengisinya dengan templat yang benar (`/storage/posts/{file}` atau sesuai folder Anda), sampul artikel tampil; artikel bersampul `default.webp` tetap berlatar hijau, bukan gambar rusak.
+- [passed] Klik kartu di situs menuju `…/artikel/<slug>` di landing (setelah rute `article.show` ada). Di CMS, tautan kartu absolut ke landing bila `CMS_PUBLIC_URL` diatur.
+- [passed] Ringkasan: artikel dengan `meta_description` memakainya; tanpa itu, paragraf pertama (tanpa HTML). Artikel lama berisi HTML tetap punya ringkasan yang rapi (tanpa kata menempel).
+- [passed] Di halaman **artikel**, "Artikel Terbaru" tidak memuat artikel yang sedang dibuka (hanya bila halaman membagikan `currentArticleId`, seperti contoh `article-show`).
+- [] **Snippet penutup di situs**: buat satu snippet berstatus online dan bertanda "penutup" (mis. ajakan donasi); buka halaman publik (atau `/v2/preview/page/<id>`): snippet muncul di **akhir** halaman. Atur penutup halaman itu ke "tanpa penutup": hilang. Snippet yang offline tidak tampil. **Di rilis ≤ 11 snippet penutup tidak tampil di situs publik sama sekali.**
+- [ ] Landing: `php tools\sync-landing.php D:\Herd\landing-ysbh` menampilkan tujuh berkas BARU dibanding rilis 11 (termasuk `PublicLookup.php`); `--apply` menyalinnya; di landing sediakan model `Snippet` dan `Category` (contoh baca-saja: `landing-app/app/Models/*.php`).
 - [ ] Landing: model `Media` memakai `SoftDeletes`: hapus satu gambar di File Manager CMS (ke Sampah), muat ulang halaman publik: gambar itu tidak lagi tampil.
 - [ ] Landing: `findPage` dan `findArticle` lewat contoh `page-show` / `article-show`: slug tak ada, halaman offline, dan artikel draf menghasilkan 404, bukan galat.
 - [ ] Gambar lewat folder bersama (lihat `DUA-APLIKASI.md`): unggah satu gambar di CMS, buka `https://ysbh.org/storage/<path>`, dan pastikan berkas `.php` uji di folder itu **tidak** dijalankan.
 
 ## 6l. Landing tahap 1 (rilis 13)
-- [ ] **Pemeriksa landing**: `php tools\check-landing.php C:\jalur\landing-ysbh` berakhir `==> 0 galat`. Setiap GALAT berisi berkas dan petunjuknya; PERINGATAN boleh ada tetapi sebaiknya dibereskan.
+
+> Sejak rilis 24 alamat `/artikel` dan `/articles` (301) sudah diganti: `/articles` (EN) dan `/id/artikel` (ID); slug `articles` kini boleh; semua kunci config per bahasa. Gunakan bagian 6q; butir di bawah yang menyebut alamat lama sudah usang.
+
+- [ ] **Pemeriksa landing**: `php tools\check-landing.php D:\Herd\landing-ysbh` berakhir `==> 0 galat`. Setiap GALAT berisi berkas dan petunjuknya; PERINGATAN boleh ada tetapi sebaiknya dibereskan.
 - [ ] **Menu tidak lagi menjatuhkan situs**: buat satu baris di tabel `navigations` dengan `route_name` salah ketik (mis. `tidak-ada`) dan `url` `/tentang-kami`: situs tetap tampil, menu menuju `/tentang-kami`. Baris tanpa keduanya menuju `#`.
 - [ ] Menu bernama rute `programs` ikut **aktif** (bergaris) di halaman `/programs/malaria`.
 - [ ] Menu berisi `#kontak`, `mailto:` atau `tel:` tidak pernah tampil sebagai menu aktif.
@@ -276,7 +319,10 @@ Teruji di lab: pembersih, penyusun butir, tampilan (grid, carousel, logo, pembes
 - [ ] Halaman statis lama (`/about`, `/contact`, `/programs/...`) tetap jalan, dan `/{slug}` tidak menimpanya.
 
 ## 6m. Slug terlarang dan kepala daftar artikel (rilis 15)
-- [ ] **CMS**: tambahkan `reserved_slugs` dan `articles_index_slug` ke `config/cms.php` (lihat `contoh-kode/config-slug-terlarang.php`), lalu `php artisan optimize:clear`.
+
+> Sejak rilis 24 alamat `/artikel` dan `/articles` (301) sudah diganti: `/articles` (EN) dan `/id/artikel` (ID); slug `articles` kini boleh; semua kunci config per bahasa. Gunakan bagian 6q; butir di bawah yang menyebut alamat lama sudah usang.
+
+- [ ] **CMS**: tambahkan `reserved_slugs` (rilis 23: `[]`), `home_slug`, dan `articles_index_slug` ke `config/cms.php` (lihat `contoh-kode/config-slug-terlarang.php`), lalu `php artisan optimize:clear`.
 - [ ] Buat halaman baru ber-slug `about` (atau `contact`, `programs`): simpan **ditolak** dengan pesan "dipakai oleh alamat tetap situs". Slug biasa (`tentang-kami`) tersimpan.
 - [ ] Slug terlarang di salah satu bahasa saja (mis. EN `contact`, ID `kontak`): ditolak untuk bahasa yang bermasalah, dengan nama "Slug (EN)".
 - [ ] **Artikel** ber-slug `about` tetap boleh (alamatnya `/artikel/about`).
@@ -286,9 +332,12 @@ Teruji di lab: pembersih, penyusun butir, tampilan (grid, carousel, logo, pembes
 - [ ] `/artikel?page=2`: **tanpa** pengantar; judul tab bernomor "(halaman 2)"; sumber halaman (Ctrl+U) memuat `rel="canonical"` yang berakhir `?page=2`.
 - [ ] Jadikan halaman `artikel` offline: `/artikel` kembali ke judul bawaan "Artikel" dan daftar polos, tanpa galat.
 - [ ] Judul SEO dan deskripsi SEO halaman `artikel` muncul di `<title>` dan `<meta name="description">` `/artikel`.
-- [ ] `php tools\check-landing.php C:\jalur\landing`: tidak ada PERINGATAN tentang rute statis atau `articles_index_slug`. Tambahkan sementara `Route::view('/uji', ...)` ke `web.php` tanpa mencatatnya: pemeriksa memberi PERINGATAN; hapus kembali.
+- [ ] `php tools\check-landing.php D:\Herd\landing-ysbh`: tidak ada PERINGATAN tentang rute statis atau `articles_index_slug`. Tambahkan sementara `Route::view('/uji', ...)` ke `web.php` tanpa mencatatnya: pemeriksa memberi PERINGATAN; hapus kembali.
 
 ## 6n. Peta situs dan robots.txt (rilis 17)
+
+> Sejak rilis 24 alamat `/artikel` dan `/articles` (301) sudah diganti: `/articles` (EN) dan `/id/artikel` (ID); slug `articles` kini boleh; semua kunci config per bahasa. Gunakan bagian 6q; butir di bawah yang menyebut alamat lama sudah usang.
+
 - [ ] `.env` landing: `APP_URL=https://domain-anda` (tanpa jalur), lalu `php artisan config:clear`.
 - [ ] Buka `/sitemap.xml`: tampil sebagai XML (bukan halaman 404/HTML), berisi `<loc>https://domain-anda/...` dengan **domain asli, bukan localhost**.
 - [ ] Ada alamat untuk setiap halaman statis (`/`, `/about`, `/programs/malaria`, ...) dan `/artikel`.
@@ -298,10 +347,12 @@ Teruji di lab: pembersih, penyusun butir, tampilan (grid, carousel, logo, pembes
 - [ ] Ubah `APP_URL` sementara menjadi `https://domain-anda/jalur` (tidak sah): peta situs tetap berisi alamat yang benar (memakai alamat permintaan), tidak kosong. Pulihkan.
 - [ ] `/robots.txt` menampilkan baris `Sitemap: https://domain-anda/sitemap.xml` dan tidak berisi `Disallow: /`.
 - [ ] Google Search Console, menu Sitemaps: kirim `sitemap.xml`; statusnya "Berhasil" dan jumlah halaman terbaca sama dengan yang Anda harapkan.
-- [ ] `php tools\check-landing.php C:\jalur\landing`: tidak ada PERINGATAN tentang `sitemap_static` atau robots.txt. Tambahkan sementara `Route::view('/uji', ...)` ke `web.php`: ada dua PERINGATAN (slug terlarang dan peta situs); hapus kembali.
+- [ ] `php tools\check-landing.php D:\Herd\landing-ysbh`: tidak ada PERINGATAN tentang `sitemap_static` atau robots.txt. Tambahkan sementara `Route::view('/uji', ...)` ke `web.php`: ada dua PERINGATAN (slug terlarang dan peta situs); hapus kembali.
 
 ## 6o. Penyaring isi publik (rilis 18)
+
 Mulai dari sinkron ke landing (`tools\sync-landing.php --apply`, kini 47 berkas), salin tujuh renderer dan daftar isi dari CMS, lalu `php artisan view:clear`.
+
 - [ ] `php tests\run-all.php` berakhir `==> N ok, 0 gagal` (sesudah `php tests\lab\setup.php`).
 - [ ] Halaman CMS online dengan judul dan paragraf berformat (tebal, miring, warna, ukuran huruf, "pill", daftar, tautan): tampilannya di situs publik **sama** dengan pratinjau tersimpan di CMS.
 - [ ] Di editor, buat tautan ke halaman lain lewat dialog "halaman internal", simpan, lalu klik tautan itu di situs publik: menuju alamat halaman itu (bukan `internal://...`).
@@ -313,16 +364,125 @@ Mulai dari sinkron ke landing (`tools\sync-landing.php --apply`, kini 47 berkas)
 - [ ] Sumber halaman publik (Ctrl+U): tidak ada atribut `x-data`, `x-init`, `@click`, atau `wire:` yang berasal dari isi konten (yang berasal dari tata letak situs sendiri wajar).
 
 ## 6p. Daftar isi dan anchor (rilis 20)
+
 - [ ] Salin `table-of-contents.blade.php` dari `landing-app/` ke **landing dan CMS**, lalu `php artisan view:clear` di keduanya.
 - [ ] Halaman dengan beberapa heading ber-anchor, dibuka di layar lebar (>= 1536 px): kartu daftar isi tampil, **tanpa teks `[cite: 1]`** di akhir setiap judul.
 - [ ] Klik sebuah judul di daftar isi: halaman menggulir ke heading itu, dan judul yang sedang dibaca ditandai tebal berwarna hijau saat digulir.
 - [ ] Judul kartu: situs berbahasa Inggris menampilkan "Contents", situs berbahasa Indonesia "Daftar Isi".
 - [ ] **Uji anchor jahat** (hanya di lingkungan uji): di editor, isi anchor sebuah heading dengan `x');alert(1);('` lalu simpan dan buka pratinjau tersimpan. Tidak ada dialog; anchor tersimpan menjadi `x-alert-1`. Isi `Beban Kasus`: menjadi `beban-kasus`. Anchor yang sudah sah (`beban-kasus`) tidak berubah.
-- [ ] `php tools\check-landing.php C:\jalur\landing`: bagian [5b] hijau. Salin sementara versi LAMA daftar isi dari CMS ke landing: pemeriksa memberi GALAT dengan petunjuk `@js`; pulihkan.
+- [ ] `php tools\check-landing.php D:\Herd\landing-ysbh`: bagian [5b] hijau. Salin sementara versi LAMA daftar isi dari CMS ke landing: pemeriksa memberi GALAT dengan petunjuk `@js`; pulihkan.
+
+## 6q. Dua bahasa (rilis 24)
+
+Pasang CMS dan landing dari zip yang sama, samakan `config/cms.php` (per bahasa; `BAHASA.md`), `php artisan optimize:clear` di keduanya, `npm run build`.
+
+- [ ] `php tests\run-all.php --strict` berakhir `==> 33 ok, 0 gagal` (sesudah `php tests\lab\setup.php`).
+- [ ] `php tools\check-landing.php D:\Herd\landing-ysbh`: tidak ada GALAT. Bagian bahasa memeriksa `public.page|article|home|articles`, `home_slug`, `articles_index_slug`, dan `default_locale`.
+- [ ] Buat halaman **home** (slug EN `home`, ID `beranda`, judul di kedua bahasa, online). `/` menampilkannya dalam bahasa Inggris dan `/id` dalam bahasa Indonesia. Sebelum dibuat: kedua alamat menjawab 503, bukan 404.
+- [ ] `/home` dan `/id/beranda` dialihkan 301 ke `/` dan `/id`.
+- [ ] Halaman dengan slug `about-us` (EN) dan `tentang-kami` (ID): `/about-us` dan `/id/tentang-kami` tampil; `/tentang-kami` dialihkan 301 ke `/about-us`; `/id/about-us` dialihkan 301 ke `/id/tentang-kami`.
+- [ ] Halaman yang hanya punya slug ID: `/id/<slug>` tampil; `/<slug>` dan `/id` tidak menampilkan salinannya (404 untuk bahasa EN).
+- [ ] `/en/about-us` menjawab 404.
+- [ ] Pengalih bahasa di header (desktop dan lembar menu ponsel) menuju versi bahasa lain **halaman yang sedang dibuka**; di halaman yang belum diterjemahkan menuju beranda bahasa itu. Tidak ada kedip atau pemuatan ulang tanpa tujuan (tautan biasa).
+- [ ] Sumber halaman (Ctrl+U) di halaman dua bahasa: `<link rel="alternate" hreflang="en">`, `hreflang="id"`, dan `hreflang="x-default"` (= alamat EN), alamatnya saling timbal-balik. Halaman satu bahasa: tanpa tag hreflang.
+- [ ] `<html lang>` mengikuti bahasa alamat (layout `app` milik Anda harus memakai `str_replace('_', '-', app()->getLocale())`; kit tidak menyentuh layout itu); tanggal artikel "Oct 8, 2026" di EN dan "8 Okt 2026" di ID.
+- [ ] Menu: satu baris `navigations` dengan `url` = `/about-us` menuju `/about-us` di EN dan `/id/tentang-kami` di ID. Baris `url` = `/` menuju `/` dan `/id`. Baris `url` = `/articles` menuju daftar artikel bahasa pembaca. Menu aktif ditandai benar, termasuk di beranda.
+- [ ] `/articles` dan `/id/artikel`: hanya artikel yang sudah diterjemahkan ke bahasa itu; penomoran (`?page=2`) konsisten; kartu tidak pernah menuju 404. Kepala daftar dari halaman CMS `articles` / `artikel`.
+- [ ] Artikel `/articles/<slug-en>` dan `/id/artikel/<slug-id>` tampil; slug bahasa lain dialihkan 301; artikel yang belum diterjemahkan menjawab 404 di bahasa itu.
+- [ ] Blok **Artikel Terbaru** di halaman EN: kartu menuju `/articles/...`; di halaman ID menuju `/id/artikel/...`.
+- [ ] Tautan internal (`internal://page/...`) di teks Inggris menuju versi Inggris halaman itu; di teks Indonesia menuju `/id/...`.
+- [ ] `/sitemap.xml`: setiap versi bahasa adalah satu `<loc>` (beranda `/` dan `/id`, bukan `/home`), ditambah `/articles` dan `/id/artikel`; halaman yang belum diterjemahkan tidak muncul di bahasa itu.
+- [ ] Halaman 404 dan 503 mengikuti bahasa alamat (`/id/tidak-ada` berbahasa Indonesia; `/tidak-ada` berbahasa Inggris). Tombol "kembali ke beranda" menuju beranda bahasa itu.
+- [ ] Aksi Livewire di halaman `/id/...` (mis. paginasi) tetap berbahasa Indonesia setelah permintaan pembaruan (bahasa dipulihkan dari properti terkunci).
+- [ ] **CMS**: menyimpan halaman EN dengan slug `id` ditolak; slug `articles` diizinkan; `php artisan cms:audit-slugs` bersih; `php artisan cms:audit-translations` mendaftar halaman yang belum atau setengah diterjemahkan (kode keluar 1 untuk "separuh"/"isi").
+- [ ] **CMS**: tombol/tautan ke halaman di blok menghasilkan alamat landing per bahasa (`https://ysbh.org/about-us` dan `https://ysbh.org/id/tentang-kami`), bukan alamat CMS.
+
+## 6r. Halaman situs dan penanda (rilis 25, isi rilis 26)
+
+- [ ] `php artisan migrate:status`: semuanya **Ran** (terutama `create_snippets_table`). Bila ada **Pending**, `php artisan migrate`, lalu lanjut.
+- [ ] `php artisan cms:seed-pages` menampilkan tabel 12 halaman + snippet `legal-details`, tanpa membuat apa pun. Bila `reserved_slugs` masih berisi slug lama, perintah berhenti dengan daftar slug yang ditolak. Halaman yang sudah ada karena rilis 25 ditandai "ADA, dilewati".
+- [ ] Bila halaman kerangka rilis 25 sudah ada (satu paragraf `[ISI-DULU]`): hapus ke-12 halaman itu di admin (semuanya offline dan kosong), lalu `php artisan cms:seed-pages --apply`. Bila belum ada: langsung `--apply`. Hasil: 12 halaman **offline** dan snippet `legal-details` offline. Bila ada galat per halaman (kolom wajib lain di tabel `pages`), kirimkan pesannya. Jalankan lagi: semuanya "ADA, dilewati".
+- [ ] Di admin, halaman Malaria: judul "Malaria Program" (EN) / "Program Malaria" (ID), slug `malaria-program` / `program-malaria`, isi **banyak blok** (judul "Together Towards a Malaria-Free Papua" / "Bersama Mewujudkan Tanah Papua Bebas Malaria", paragraf, daftar, keterangan foto berpenanda). Ganti ke bahasa ID di editor: isi sejajar, tidak ada blok kosong.
+- [ ] Pratinjau satu halaman program (`/v2/preview/page/<id>`): judul besar H1 hanya satu, daftar dan tabel tampil rapi, tautan di Beranda dan indeks program menuju halaman program yang benar di bahasa yang sama (EN ke `/malaria-program`, ID ke `/id/program-malaria`).
+- [ ] Halaman Transparansi: di bagian bawah judul "Tax ID and bank details" / "NPWP dan rekening" lalu blok snippet. Snippet `legal-details`: dua baris (NPWP, rekening) berisi `[ISI-DULU]`, **tanpa angka**.
+- [ ] Halaman Hubungi Kami: kode pos tertulis "`[ISI-DULU]` 99351 atau 99225" (belum diputuskan).
+- [ ] `/malaria-program` dan `/id/program-malaria` di landing menjawab 404 selama offline.
+- [ ] `php artisan cms:audit-placeholders`: "Tidak ada penanda" (semua offline); `--all` mendaftar 12 halaman + snippet (halaman Imunisasi, indeks Program, dan Transparansi: hanya snippet yang berpenanda). Jadikan satu halaman online tanpa menyelesaikan penandanya: perintah pertama melaporkannya dan berkode keluar 1. Kembalikan ke offline.
+- [ ] `php artisan cms:audit-translations`: tidak melaporkan satu pun dari 12 halaman.
+
+## 6s. Footer dan rute hilang (rilis 26)
+
+- [ ] Salin `opsional/footer.blade.php` ke `resources/views/components/layouts/footer.blade.php` di landing (cadangkan footer lama). Buka `/` lalu `/id`: judul kolom "Programs / Foundation / Contact" dan "Program / Yayasan / Info Kontak"; teks hak cipta dan slogan mengikuti bahasa.
+- [ ] Tautan kolom Program dan Yayasan menuju alamat bahasa yang sama (di `/id`: `/id/program-malaria`, `/id/tentang-kami`, ...). Selama halamannya offline, klik menjawab 404 (wajar); setelah online, terbuka. Tidak ada tautan `#`.
+- [ ] Telepon (`tel:`), email (`mailto:contact@ysbh.org`), peta, dan Instagram `@ysbhusada` berfungsi. Ikon bulat "IG" tampil rapi. Beri tahu bila alamat Instagram-nya salah.
+- [ ] `php tools\check-landing.php D:\Herd\landing-ysbh` tetap `==> 0 galat`. Pesan "rute dihapus" kini menyarankan `url('/about-us')`, `url('/malaria-program')`, dst. (bukan `/programs/kia`).
+
+## 6t. Daftar isi: di tengah saat dimuat, menempel di atas saat digulir (rilis 29)
+
+Salin `sections.blade.php` ke CMS **dan landing** (`php tools\sync-landing.php D:\Herd\landing-ysbh --apply`), lalu `php artisan view:clear` di keduanya. Uji di layar ≥ 1536 px (daftar isi tidak tampil di bawahnya). Muat ulang keras (Ctrl+F5).
+
+- [ ] Halaman TANPA banner `w-screen` di blok pertama, dengan beberapa heading ber-anchor: saat dimuat kartu daftar isi berada di **tengah tinggi layar** (bukan di bawah navigasi), muncul dengan halus, tanpa melompat dari posisi lama.
+- [ ] Gulir pelan ke bawah: kartu ikut naik bersama halaman sampai jaraknya sekitar 128 px dari atas layar, lalu **menempel** di sana. Gulir kembali ke atas: ia turun lagi ke tengah.
+- [ ] Halaman dengan blok **gambar** `w-screen` sebagai blok PERTAMA: gambar memenuhi lebar layar, daftar isi **belum tampil**. Gulir: daftar isi muncul ketika tepi bawah gambar melewati tepi atas kartu (sekitar 128 px dari atas layar), lalu menandai judul yang dibaca. Gulir kembali ke atas: ia menyingkir lagi.
+- [ ] Banner dengan gambar yang lambat dimuat (muat ulang tanpa cache): setelah gambar tampil, daftar isi tetap benar (tidak muncul di atas banner).
+- [ ] Pindahkan gambar `w-screen` menjadi blok KEDUA (paragraf di depannya): daftar isi tampil di tengah dari awal dan hanya menyingkir saat berpapasan dengan gambar itu. Gambar `w-screen` di tengah halaman: menyingkir saat berpapasan, lalu kembali.
+- [ ] Ubah lebar gambar pertama menjadi bukan `w-screen`: daftar isi tampil seperti halaman tanpa banner. Bila banner tidak pernah menyembunyikan kartu, periksa nilai `width` blok gambar Anda: harus tepat `w-screen`.
+- [ ] Jendela dipendekkan (tinggi ~500 px): kartu tidak naik di atas 128 px dari atas layar dan tidak keluar dari layar.
+
+## 6u. Menu Builder (rilis 28)
+
+Salin isi `opsional/menu-builder.blade.php` menimpa berkas menu builder Anda, dan pasang `app/Content/MenuTarget.php` (pemasang CMS). `php artisan view:clear`. Panduan: `docs/MENU.md`.
+
+- [ ] Formulir menampilkan satu kolom label per bahasa (EN dan ID, bahasa bawaan bertanda *), pilihan **Tujuan tautan**, dan tidak ada lagi kotak "Route Name".
+- [ ] Tambah "About Us": Tujuan = Halaman CMS, ketik "tentang" atau "about": hasil pencarian muncul; pilih satu: tertulis `/slug`. Kotak **Yang dilihat pembaca** menampilkan alamat EN dan ID (`/about-us` dan `/id/tentang-kami`; absolut ke landing bila `CMS_PUBLIC_URL` diatur). Simpan: baris muncul dengan "Halaman: /about-us"; notifikasi tampil.
+- [ ] Kosongkan label ID lalu simpan: label ID terisi sama dengan label EN. Kosongkan label EN: galat "Label bahasa bawaan (EN) wajib diisi".
+- [ ] Tujuan URL khusus: `javascript:alert(1)`, `//evil.test`, `https://a b`, dan alamat > 255 karakter **ditolak** dengan pesan; `https://contoh.org/x` diterima. Email tidak sah, telepon `12`, anchor `1a` ditolak.
+- [ ] Beranda menjadi `/`, Daftar artikel menjadi `/articles`. Di landing: menu itu menuju `/` dan `/articles` untuk EN, `/id` dan `/id/artikel` untuk ID.
+- [ ] Halaman yang masih offline sebagai tujuan: baris diberi ⚠ "belum online atau tidak ditemukan". Jadikan online, muat ulang: ⚠ hilang.
+- [ ] Baris lama ber-`route_name` `about`: tampil ⚠ "Tujuan perlu dipilih ulang" (atau "rute lama" bila `url` terisi). Edit: kotak kuning menyebut rutenya; pilih tujuan baru, simpan: ⚠ hilang dan kolom `route_name` di database kosong.
+- [ ] Geser sebuah baris ke atas dan ke bawah, muat ulang: urutan tersimpan; kolom `order` di database berurutan 0, 1, 2, ... tanpa lubang.
+- [ ] Hapus (dengan konfirmasi): baris hilang; menghapus baris yang sedang diedit mengosongkan formulir.
+- [ ] Menu di landing mengikuti: label sesuai bahasa, tautan sesuai bahasa, baris "Tampilkan di Publik" dimatikan tidak muncul.
+- [ ] Bila `x-sort` tidak bekerja (baris tidak bisa digeser): kirimkan pesan Console (F12); berkas lama Anda memakai fitur yang sama.
+
+## 6v. Teks kaya: Tiptap tunggal di panel Properti (rilis 31)
+
+Pasang dulu (lihat `PERUBAHAN.md` rilis 31): `rich-field.js` + `editor.js` baru + `app.js` + `mikro-tiptap.js` dan `toolbars.blade.php` proyek Anda. Lalu `npm run build`, `php artisan view:clear`, muat ulang keras (Ctrl+F5).
+
+- [ ] Console (F12): `Alpine.data` tidak galat; tidak ada pesan `richField is not defined`.
+- [ ] Tambah blok Paragraf, klik blok itu: panel **Properti** menampilkan kotak Tiptap per bahasa (ID dan EN) **dengan toolbar** (tab Teks/Format). Sebelum ada blok yang difokus: kotak abu-abu "Pilih sebuah blok…".
+- [ ] Ketik di kolom ID: teks muncul di kanvas/outline; tidak ada request selagi mengetik, **satu** request ±0,8 dtk setelah berhenti. Panel debug → `terfokus`: `data.text.id` = `<p>…</p>`.
+- [ ] Tebal, miring, warna, ukuran (Kecil…H1), rata teks, daftar, kutipan, tautan: tombol yang aktif menyala sesuai posisi kursor.
+- [ ] **Tautan**: tab Halaman, ketik 2 huruf nama halaman, pilih: tersimpan `internal://page/{slug}` (lihat panel debug), TANPA `target`/`rel`. Tab Alamat: `ysbh.org` jadi `https://ysbh.org` (dengan `target="_blank"`); `javascript:alert(1)` ditolak (dialog tidak menutup).
+- [ ] Blok Judul: toolbar **tanpa** rata teks, daftar, kutipan, kode; **Enter tidak membuat baris baru**; menempel dua paragraf tetap satu baris; mengosongkan judul menyimpan `""` (bukan `<p></p>`); `data.text.id` **tanpa** `<p>`.
+- [ ] Pindah ke blok lain lalu tekan Ctrl+Z di kotak: **tidak** mengembalikan teks blok sebelumnya (riwayat per pemasangan).
+- [ ] Pilih tampilan bahasa "ID" saja: hanya satu kotak; kembali "keduanya": dua kotak, isi utuh.
+- [ ] Halaman hasil seed (mis. Beranda, blok "Program kami: …" dengan tautan internal): buka blok itu **tanpa mengetik**: panel debug menunjukkan data tidak berubah; Simpan tidak menghasilkan perubahan. Ketik satu huruf: tautan `internal://…` tetap ada, tebal tetap tebal, daftar tetap daftar.
+- [ ] Blok yang isinya tabel (Kredibilitas → tabel mitra): kotak **hanya-baca** + catatan kuning + tombol **Sunting juga** (meminta konfirmasi). Ini disengaja: Tiptap proyek tidak punya tabel.
+- [ ] Editor lama (halaman lama): tetap bekerja; tombol Tautan di toolbar tidak berubah.
+
+## 6w. Panel Eyebrow, Gambar, Kartu Builder + jarak bawah (rilis 32)
+
+Pasang dulu (lihat `PERUBAHAN.md` rilis 32). `npm run build`, `php artisan view:clear`, muat ulang keras. Landing: `sync-landing`, `view:clear`.
+
+- [ ] Console (F12): tidak ada galat `cardPanel is not defined` / `Cannot read properties of undefined (reading 'parentId')`.
+- [ ] Klik blok **Eyebrow**: panel Properti menampilkan Teks (ID/EN), Ikon, Warna, Jarak Bawah. Mengubah teks, ikon, warna tampil di kanvas; tidak ada lagi catatan kuning "Tipe ini belum punya panel".
+- [ ] Klik blok **Gambar**: Pilih gambar (File Manager), Teks Alternatif, Keterangan, Lebar, Posisi, Sudut, Tinggi Maksimum, Pemotongan, Jarak Bawah. Setiap pilihan mengubah kanvas; **Layar penuh (banner)** pada gambar pertama halaman tetap memunculkan perilaku daftar isi rilis 29. Bandingkan dengan editor lama pada satu gambar yang sudah ada: bila ada pilihan lama yang tidak ada di panel baru, catat dan kirimkan.
+- [ ] Klik blok **Kartu Builder**: Kartu per Baris dan Jarak Bawah, lalu daftar kartu. Kartu yang sudah ada tampil dengan judul teks pertamanya.
+- [ ] `+ Tumpuk`, `+ Ikon + teks`, `+ Dokumen`: kartu baru muncul (terbuka) dengan 1, 2, 3 kolom; kanvas ikut berubah.
+- [ ] Naik/Turun/Duplikat/Hapus kartu bekerja; hapus kartu berisi meminta konfirmasi, kartu kosong tidak. Muat ulang: urutan tersimpan.
+- [ ] Buka sebuah kartu → "Tampilan kartu": latar, ruang dalam, sudut, garis, bayangan, saat disorot, rata vertikal, tautan. Setiap pilihan mengubah kartu itu saja (bukan kartu lain), dan **pilihan yang sudah dipakai kartu lama tampil terpilih** (bukan kosong).
+- [ ] Kolom: `+ Kolom`, geser kiri/kanan, lebar relatif, hapus (konfirmasi bila berisi). Elemen: `+ Tambah elemen…` (Teks, Ikon, Inisial, Foto profil, Akordeon), naik/turun, hapus.
+- [ ] Klik sebuah elemen: panelnya terbuka dengan tombol **← Kembali ke Kartu Builder**; ubah isinya; Kembali: kartu yang sama masih terbuka. Elemen baru dari panel memiliki setiap kontrol berpilihan terpilih (bukan kosong).
+- [ ] Mengetik di elemen Teks, lalu langsung klik Kembali dan pindah blok: teksnya tersimpan di kartu yang benar (bukan kartu lain).
+- [ ] **Jarak bawah**: di setiap blok dasar (Judul, Paragraf, Eyebrow, Gambar, Kartu Builder, Tombol, Kolom, Grup Langkah, Akordion, Callout, Video, Galeri, Unduhan, Artikel Terbaru) ada kontrol **Jarak Bawah**; Pemisah Seksi tidak. Pilih "tight" (mb-0) dan "besar": jarak ke blok berikutnya berubah di **kanvas dan di situs publik**.
+- [ ] Judul/Paragraf/Eyebrow/Gambar/Kartu: bila memilih jarak tapi **tidak ada perubahan di kanvas**, renderer proyek Anda tidak mencetak `margin_bottom`: kirimkan berkas renderernya (atau keluarkan tipe itu dari `Spacing::OWN`).
+- [ ] Tombol/Video/Galeri tanpa pengaturan: kini berjarak `mb-4 md:mb-6` ke blok berikutnya (sebelumnya dempet). Menyimpan dan memuat ulang mempertahankan pilihan.
 
 ## 7. Pesan galat → penyebab
+
 | Pesan | Penyebab |
-|---|---|
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | sumber halaman memuat `<?php`, `__contextArgs`, atau `context()->`; JSON-LD kehilangan `"@context"` | `@context` (dan nama lain seperti `@use`, `@session`) di dalam `{{ }}`, `{!! !!}`, atau tanda kutip dikompilasi Blade sebagai **direktif**; Laravel menambah direktif tiap versi | letakkan teks itu di dalam `@php … @endphp` atau tulis `@@context`; jalankan `php tests\blade-scan.php <proyek>` (README langkah 5) |
 | `HasContentBlocks belum di-patch ...` | trait masih versi asli: pasang patch |
 | `Class "App\Editor\…" not found` | berkas di `app/Editor/` belum disalin (atau `composer dump-autoload`) |
@@ -334,8 +494,9 @@ Mulai dari sinkron ke landing (`tools\sync-landing.php --apply`, kini 47 berkas)
 | `Livewire\Exceptions\… multiple root elements` | view builder punya >1 elemen akar (slot judul harus di luar akar) |
 
 ## 8. Bila masih macet, kirimkan ke saya
+
 1. Pesan galat **lengkap** (Console dan/atau `laravel.log`, tiga baris teratas dari stack trace).
-2. Tab Network: *Payload* dari request yang bermasalah (bagian `calls`) dan ukuran responsnya.
+2. Tab Network: _Payload_ dari request yang bermasalah (bagian `calls`) dan ukuran responsnya.
 3. Isi panel debug editor (salin teksnya).
 4. `composer show livewire/livewire laravel/framework | findstr versions` dan `php -v`.
 5. Hasil tinker keutuhan (bagian 4) bila datanya yang dicurigai.

@@ -26,12 +26,12 @@
   use App\Content\PublicLookup;
 
   $inCanvas = (bool) ($canvasMode ?? false);
-  $clean = BlockSanitizer::forType('latest-articles-builder', is_array($data) ? $data : [], array_values(array_unique([$lang, 'id', 'en'])));
+  $clean = BlockSanitizer::forType('latest-articles-builder', is_array($data) ? $data : [], array_values(array_unique([$lang, 'en', 'id'])));
 
   if ($feed === null) {
       try {
           $exclude = (int) ($currentArticleId ?? 0) ?: null;
-          $feed = PublicLookup::latestArticles((int) $clean['limit'], $exclude);
+          $feed = PublicLookup::latestArticles((int) $clean['limit'], $exclude, $lang);   // hanya artikel yang diterjemahkan ke bahasa halaman
       } catch (\Throwable $e) {
           if (function_exists('report')) {
               report($e);
@@ -50,14 +50,14 @@
   }
   $mediaMap = ($mediaUrl === null && $mediaIds) ? FileInfo::lookup($mediaIds) : [];
 
-  $articleUrl ??= fn (string $slug) => LinkResolver::address('article', $slug);
+  $articleUrl ??= fn (string $slug) => LinkResolver::address('article', $slug, $lang);
   $coverFile ??= fn (string $file) => LinkResolver::publicUrl($file, function_exists('config') ? config('cms.public.cover') : null, function_exists('config') ? (config('cms.public.base') ?? '') : '', '{file}');
   $mediaUrl ??= fn (int $id) => isset($mediaMap[$id]) && str_starts_with(strtolower($mediaMap[$id]['mime']), 'image/') ? $mediaMap[$id]['url'] : null;
 
   $cards = ArticleCards::prepare($feed['rows'], $feed['categories'], $lang, $articleUrl, $coverFile, $mediaUrl);
 
   $pick = function (array $byLocale) use ($lang): string {
-      foreach ([$lang, 'id', 'en'] as $l) {
+      foreach ([$lang, 'en', 'id'] as $l) {
           if (($byLocale[$l] ?? '') !== '') {
               return $byLocale[$l];
           }

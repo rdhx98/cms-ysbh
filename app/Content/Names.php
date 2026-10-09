@@ -33,4 +33,15 @@ final class Names
 
         return '';
     }
+
+    /**
+     * Teks MILIK bahasa itu saja, tanpa cadangan bahasa lain ('' bila kosong). Teks polos / bukan peta bahasa = ''. Dipakai situs publik,
+     * di mana satu alamat = satu bahasa: isi bahasa lain tidak boleh bocor (slug EN yang menunjuk judul ID).
+     */
+    public static function exact(mixed $value, string $locale): string
+    {
+        $value = LocaleMap::decode($value);
+
+        return is_array($value) && isset($value[$locale]) && is_scalar($value[$locale]) ? trim((string) $value[$locale]) : '';
+    }
 }

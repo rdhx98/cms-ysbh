@@ -3,6 +3,7 @@
 namespace App\Content;
 
 use App\Content\Blocks\BlockSanitizer;
+use App\Content\Links\LinkResolver;
 
 /**
  * Akses data untuk SITUS PUBLIK (landing): mencari halaman/artikel dari slug, daftar artikel terbaru, dan merakit dokumen yang tampil
@@ -13,51 +14,176 @@ use App\Content\Blocks\BlockSanitizer;
  */
 final class PublicLookup
 {
+    /** Ingatan sibling() per permintaan (kind|slug|bahasa => hasil). Kosongkan dengan flush() (pengujian, proses panjang). @var array<string,?array> */
+    private static array $siblings = [];
+
+    public static function flush(): void
+    {
+        self::$siblings = [];
+    }
+
     public const PAGE_STATUS = 'online';
     public const ARTICLE_STATUS = 'published';
 
-    /** @return array{model:object,locale:string}|null halaman online dengan slug itu (bahasa yang diminta dulu, lalu bahasa lain) */
-    public static function findPage(string $slug, string $locale, array $locales = ['id', 'en']): ?array
+    /**
+     * Halaman online untuk alamat "{bahasa}/{slug}". KETAT per bahasa (rilis 24): slug dicari HANYA di bahasa alamat itu.
+     *   - cocok di bahasa itu                                   -> ['model', 'locale', 'redirect' => null]
+     *   - cocok di bahasa LAIN, dan halaman itu punya slug sah di bahasa yang diminta -> 'redirect' = slug bahasa yang diminta
+     *     (301 ke versi bahasa yang SAMA; pembaca tidak dipindah ke bahasa lain)
+     *   - selain itu (tidak ada, offline, atau belum diterjemahkan)  -> null (404)
+     *
+     * @return array{model:object,locale:string,redirect:?string}|null
+     */
+    public static function findPage(string $slug, string $locale, array $locales = ['en', 'id']): ?array
     {
         return self::bySlug(\App\Models\Page::class, self::PAGE_STATUS, $slug, $locale, $locales);
     }
 
-    /** @return array{model:object,locale:string}|null artikel terbit dengan slug itu */
-    public static function findArticle(string $slug, string $locale, array $locales = ['id', 'en']): ?array
+    /** @see findPage() artikel terbit dengan slug itu @return array{model:object,locale:string,redirect:?string}|null */
+    public static function findArticle(string $slug, string $locale, array $locales = ['en', 'id']): ?array
     {
         return self::bySlug(\App\Models\Post::class, self::ARTICLE_STATUS, $slug, $locale, $locales);
     }
 
     /**
      * @param class-string<\Illuminate\Database\Eloquent\Model> $model
-     * @return array{model:object,locale:string}|null
+     * @return array{model:object,locale:string,redirect:?string}|null
      */
     private static function bySlug(string $model, string $status, string $slug, string $locale, array $locales): ?array
     {
         if (strlen($slug) > 190 || !Slug::isValid($slug)) {
             return null; // bukan slug sah (atau mustahil ada): tidak perlu menyentuh basis data
         }
-        $driver = (new $model())->getConnection()->getDriverName();
-        $expression = JsonSql::locale($driver, 'slug') . ' = ?';
+        $all = array_values(array_unique(array_merge([$locale], $locales)));
+        $rows = self::rowsWithSlug($model, $status, $slug, $all);
 
-        foreach (array_values(array_unique(array_merge([$locale], $locales))) as $candidate) {
-            $found = $model::query()->where('status', $status)->whereRaw($expression, [JsonSql::path($candidate), $slug])->first();
-            if ($found) {
-                return ['model' => $found, 'locale' => $candidate];
+        foreach ($rows as $row) {
+            if (Names::exact($row->getRawOriginal('slug'), $locale) === $slug) {
+                return ['model' => $row, 'locale' => $locale, 'redirect' => null];
+            }
+        }
+        foreach ($rows as $row) {
+            $own = Names::exact($row->getRawOriginal('slug'), $locale);
+            if ($own !== '' && Slug::isValid($own)) {
+                return ['model' => $row, 'locale' => $locale, 'redirect' => $own];
             }
         }
 
         return null;
     }
 
+    /** Baris berstatus $status yang slug-nya $slug di SALAH SATU bahasa $locales (paling banyak 5, id naik). @return iterable<object> */
+    private static function rowsWithSlug(string $model, string $status, string $slug, array $locales): iterable
+    {
+        $expression = JsonSql::locale((new $model())->getConnection()->getDriverName(), 'slug') . ' = ?';
+
+        return $model::query()->where('status', $status)
+            ->where(function ($where) use ($locales, $expression, $slug) {
+                foreach ($locales as $candidate) {
+                    $where->orWhereRaw($expression, [JsonSql::path($candidate), $slug]);
+                }
+            })
+            ->orderBy('id')->limit(5)->get();
+    }
+
+    /**
+     * Slug yang dipakai sebuah halaman/artikel di tiap bahasa, hanya yang SAH dan yang judulnya terisi (= sudah diterjemahkan). Bahan
+     * hreflang dan sakelar bahasa. @return array<string,string> bahasa => slug
+     */
+    public static function alternates(object $model, array $locales): array
+    {
+        $out = [];
+        foreach ($locales as $l) {
+            $slug = Names::exact($model->getRawOriginal('slug'), $l);
+            if ($slug !== '' && Slug::isValid($slug) && Names::exact($model->getRawOriginal('title'), $l) !== '') {
+                $out[$l] = $slug;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Alamat tiap versi bahasa sebuah halaman/artikel (bahan hreflang dan sakelar bahasa), hanya yang bisa dibentuk.
+     *
+     * @param 'page'|'article' $kind
+     * @return array<string,string> bahasa => alamat (jalur, atau absolut bila config('cms.public.base') diisi)
+     */
+    public static function alternateUrls(string $kind, object $model, array $locales): array
+    {
+        $out = [];
+        foreach (self::alternates($model, $locales) as $l => $slug) {
+            $url = LinkResolver::address($kind, $slug, $l);
+            if ($url !== null) {
+                $out[$l] = $url;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Padanan sebuah slug pada bahasa $locale: untuk tautan menu (kolom `url`, satu teks untuk semua bahasa) dan tautan internal://.
+     * Slug dicari di SEMUA bahasa; hasilnya slug halaman itu di $locale, atau (belum diterjemahkan) di bahasa lain yang ada, bahasa bawaan dulu.
+     * Diingat per permintaan. @param 'page'|'article' $kind  @return array{locale:string,slug:string}|null  null = tidak ada / tidak online
+     */
+    public static function sibling(string $kind, string $slug, string $locale, array $locales, ?string $default = null): ?array
+    {
+        $key = "$kind|$slug|$locale";
+        if (array_key_exists($key, self::$siblings)) {
+            return self::$siblings[$key];
+        }
+        $model = $kind === 'article' ? \App\Models\Post::class : \App\Models\Page::class;
+        $status = $kind === 'article' ? self::ARTICLE_STATUS : self::PAGE_STATUS;
+        $found = null;
+        if (strlen($slug) <= 190 && Slug::isValid($slug)) {
+            $all = array_values(array_unique(array_merge([$locale], $locales)));
+            $row = null;
+            foreach (self::rowsWithSlug($model, $status, $slug, $all) as $candidate) {
+                $row ??= $candidate;
+                if (Names::exact($candidate->getRawOriginal('slug'), $locale) === $slug) {
+                    $row = $candidate;   // cocok di bahasa yang diminta: paling tepat
+                    break;
+                }
+            }
+            if ($row !== null) {
+                foreach (array_values(array_unique(array_merge([$locale], $default !== null ? [$default] : [], $all))) as $l) {
+                    $own = Names::exact($row->getRawOriginal('slug'), $l);
+                    if ($own !== '' && Slug::isValid($own)) {
+                        $found = ['locale' => $l, 'slug' => $own];
+                        break;
+                    }
+                }
+            }
+        }
+
+        return self::$siblings[$key] = $found;
+    }
+
+    /**
+     * Pemecah tautan internal://page|article/{slug} untuk dokumen berbahasa $lang: slug yang diketik editor (bahasa mana pun) diganti slug
+     * halaman itu di $lang, jadi tautan di teks Inggris menuju versi Inggris. Tujuan yang tidak online/terbit: null (tautan dibuang).
+     *
+     * @return callable(string,string):?string
+     */
+    public static function internalLinks(string $lang, array $locales, ?string $default = null): callable
+    {
+        return function (string $kind, string $slug) use ($lang, $locales, $default): ?string {
+            $hit = self::sibling($kind, $slug, $lang, $locales, $default);
+
+            return $hit === null ? null : LinkResolver::address($kind, $hit['slug'], $hit['locale']);
+        };
+    }
+
     /**
      * Artikel terbit terbaru (paling baru dulu), sebagai nilai MENTAH kolom untuk App\Content\Blocks\ArticleCards::prepare().
+     * $locale (rilis 24): hanya artikel yang punya slug DAN judul di bahasa itu (situs berbahasa itu tidak menampilkan kartu yang tautannya 404).
      *
      * @return array{rows:list<array<string,mixed>>,categories:array<int,mixed>}
      */
-    public static function latestArticles(int $limit, ?int $excludeId = null): array
+    public static function latestArticles(int $limit, ?int $excludeId = null, ?string $locale = null): array
     {
-        $query = self::publishedArticles()->limit(max(1, min(12, $limit)));
+        $query = self::publishedArticles($locale)->limit(max(1, min(12, $limit)));
         if ($excludeId !== null) {
             $query->where('id', '!=', $excludeId);
         }
@@ -66,23 +192,38 @@ final class PublicLookup
     }
 
     /**
-     * Satu halaman daftar artikel terbit (paling baru dulu), untuk halaman indeks artikel.
+     * Satu halaman daftar artikel terbit (paling baru dulu), untuk halaman indeks artikel. $locale: lihat latestArticles().
      *
      * @return array{rows:list<array<string,mixed>>,categories:array<int,mixed>,total:int,page:int,perPage:int}
      */
-    public static function articlesPage(int $page, int $perPage = 9): array
+    public static function articlesPage(int $page, int $perPage = 9, ?string $locale = null): array
     {
         $perPage = max(1, min(24, $perPage));
         $page = max(1, $page);
-        $total = \App\Models\Post::query()->where('status', self::ARTICLE_STATUS)->count();
+        $total = self::inLocale(\App\Models\Post::query()->where('status', self::ARTICLE_STATUS), $locale)->count();
 
-        return self::feed(self::publishedArticles()->offset(($page - 1) * $perPage)->limit($perPage)) + ['total' => $total, 'page' => $page, 'perPage' => $perPage];
+        return self::feed(self::publishedArticles($locale)->offset(($page - 1) * $perPage)->limit($perPage)) + ['total' => $total, 'page' => $page, 'perPage' => $perPage];
     }
 
     /** Artikel terbit, paling baru dulu; urutan tetap pasti walau tanggalnya sama (id menurun). */
-    private static function publishedArticles(): \Illuminate\Database\Eloquent\Builder
+    private static function publishedArticles(?string $locale = null): \Illuminate\Database\Eloquent\Builder
     {
-        return \App\Models\Post::query()->where('status', self::ARTICLE_STATUS)->orderByDesc('published_at')->orderByDesc('id');
+        return self::inLocale(\App\Models\Post::query()->where('status', self::ARTICLE_STATUS), $locale)->orderByDesc('published_at')->orderByDesc('id');
+    }
+
+    /** Menyaring ke baris yang slug DAN judulnya terisi di $locale (null = tanpa saringan). */
+    private static function inLocale(\Illuminate\Database\Eloquent\Builder $query, ?string $locale): \Illuminate\Database\Eloquent\Builder
+    {
+        if ($locale === null) {
+            return $query;
+        }
+        $driver = $query->getModel()->getConnection()->getDriverName();
+        foreach (['slug', 'title'] as $column) {
+            $e = JsonSql::locale($driver, $column);
+            $query->whereRaw("{$e} IS NOT NULL AND {$e} <> ''", [JsonSql::path($locale), JsonSql::path($locale)]);
+        }
+
+        return $query;
     }
 
     /** @return array{rows:list<array<string,mixed>>,categories:array<int,mixed>} */
@@ -110,44 +251,35 @@ final class PublicLookup
     }
 
     /**
-     * Bahan peta situs: setiap halaman ONLINE dan artikel TERBIT, satu baris per slug per bahasa (slug berbeda = alamat berbeda).
-     * Hanya slug yang sah (Slug::isValid); slug teks polos pada baris lama dibaca sebagai satu slug. Nilai mentah dibaca langsung dari kolom,
-     * sehingga baris lama yang kolomnya bukan JSON tidak menjatuhkan peta situs. Urutan tetap (id naik) dan dibatasi $limit per jenis.
+     * Bahan peta situs: setiap halaman ONLINE dan artikel TERBIT, satu baris per slug per bahasa (slug berbeda = alamat berbeda), bertanda
+     * bahasanya (templat alamat berbeda per bahasa). Hanya slug yang sah (Slug::isValid) yang judulnya terisi di bahasa itu (sudah diterjemahkan);
+     * baris lama berisi teks polos dilewati (tidak pernah bisa dibuka di situs, lihat bySlug). Nilai mentah dibaca langsung dari kolom, sehingga
+     * baris lama yang kolomnya bukan JSON tidak menjatuhkan peta situs. Urutan tetap (id naik) dan dibatasi $limit per jenis.
      *
      * @param  string[] $locales
-     * @return list<array{kind:string,slug:string,lastmod:?string}>
+     * @return list<array{kind:string,slug:string,locale:string,lastmod:?string}>
      */
-    public static function sitemapEntries(array $locales = ['id', 'en'], int $limit = 10000): array
+    public static function sitemapEntries(array $locales = ['en', 'id'], int $limit = 10000): array
     {
         $limit = max(1, min(Sitemap::MAX_URLS, $limit));
         $rows = [];
         $seen = [];
-        $add = function (string $kind, mixed $rawSlug, ?string $lastmod) use (&$rows, &$seen, $locales): void {
-            $slugs = [];
-            $decoded = is_array($rawSlug) ? $rawSlug : (is_string($rawSlug) ? json_decode($rawSlug, true) : null);
-            if (is_array($decoded)) {
-                foreach ($locales as $locale) {
-                    $v = $decoded[$locale] ?? null;
-                    if (is_string($v)) {
-                        $slugs[] = $v;
-                    }
+        $add = function (string $kind, mixed $rawSlug, mixed $rawTitle, ?string $lastmod) use (&$rows, &$seen, $locales): void {
+            foreach ($locales as $locale) {
+                $slug = Names::exact($rawSlug, $locale);
+                if ($slug === '' || !Slug::isValid($slug) || Names::exact($rawTitle, $locale) === '' || isset($seen["$kind:$locale:$slug"])) {
+                    continue;
                 }
-            } elseif (is_string($rawSlug)) {
-                $slugs[] = $rawSlug;   // baris lama: teks polos
-            }
-            foreach ($slugs as $slug) {
-                if (Slug::isValid($slug) && !isset($seen[$kind . ':' . $slug])) {
-                    $seen[$kind . ':' . $slug] = true;
-                    $rows[] = ['kind' => $kind, 'slug' => $slug, 'lastmod' => $lastmod];
-                }
+                $seen["$kind:$locale:$slug"] = true;
+                $rows[] = ['kind' => $kind, 'slug' => $slug, 'locale' => $locale, 'lastmod' => $lastmod];
             }
         };
 
-        foreach (\App\Models\Page::query()->where('status', self::PAGE_STATUS)->orderBy('id')->limit($limit)->get(['id', 'slug', 'updated_at']) as $page) {
-            $add('page', $page->getRawOriginal('slug'), Sitemap::date($page->getRawOriginal('updated_at')));
+        foreach (\App\Models\Page::query()->where('status', self::PAGE_STATUS)->orderBy('id')->limit($limit)->get(['id', 'title', 'slug', 'updated_at']) as $page) {
+            $add('page', $page->getRawOriginal('slug'), $page->getRawOriginal('title'), Sitemap::date($page->getRawOriginal('updated_at')));
         }
-        foreach (\App\Models\Post::query()->where('status', self::ARTICLE_STATUS)->orderBy('id')->limit($limit)->get(['id', 'slug', 'published_at', 'updated_at']) as $post) {
-            $add('article', $post->getRawOriginal('slug'), Sitemap::date($post->getRawOriginal('updated_at')) ?? Sitemap::date($post->getRawOriginal('published_at')));
+        foreach (\App\Models\Post::query()->where('status', self::ARTICLE_STATUS)->orderBy('id')->limit($limit)->get(['id', 'title', 'slug', 'published_at', 'updated_at']) as $post) {
+            $add('article', $post->getRawOriginal('slug'), $post->getRawOriginal('title'), Sitemap::date($post->getRawOriginal('updated_at')) ?? Sitemap::date($post->getRawOriginal('published_at')));
         }
 
         return $rows;
@@ -160,18 +292,20 @@ final class PublicLookup
      * Penutup (mis. ajakan donasi) dipisah dari pengantar karena harus tampil SESUDAH daftar. Keduanya memakai `blocks` yang sama;
      * yang membedakan hanya `order`. Mengembalikan null bila halamannya tidak ada, offline, atau slug tidak sah: daftar tampil polos.
      *
+     * KETAT per bahasa: slug kepala hanya dicari di bahasa $locale (tidak ada pengalihan: bila belum diterjemahkan, daftar tampil polos).
+     *
      * @return array{locale:string,title:string,metaTitle:string,description:string,intro:array{blocks:array,order:array,settings:array},closing:array{blocks:array,order:array,settings:array}}|null
      */
-    public static function articlesHeader(string $slug, string $locale, array $locales = ['id', 'en']): ?array
+    public static function articlesHeader(string $slug, string $locale, array $locales = ['en', 'id']): ?array
     {
         $found = self::findPage($slug, $locale, $locales);
-        if ($found === null) {
+        if ($found === null || $found['redirect'] !== null) {
             return null;
         }
 
         $page = $found['model'];
         $lang = $found['locale'];
-        $doc = self::document($page->getRawOriginal('content'), $locales);
+        $doc = self::document($page->getRawOriginal('content'), $locales, true, $lang);
         $title = Names::of($page->getRawOriginal('title'), $lang);
 
         return [
@@ -190,6 +324,9 @@ final class PublicLookup
      * PENUTUP di akhir menurut ClosingPolicy (bawaan + penggantian settings.closing). Hasil dibersihkan (BlockSanitizer) dan siap
      * diberikan ke <x-content.sections>.
      *
+     * $lang (rilis 24): bahasa halaman. Tautan internal://page|article/{slug} di seluruh dokumen diselesaikan ke versi bahasa itu (internalLinks);
+     * null = pemecah bawaan BlockSanitizer (bahasa permintaan ini).
+     *
      * Batasan: hanya blok `snippet` di tingkat atas yang diperluas; satu snippet tampil paling banyak sekali per halaman.
      *
      * `closingFrom` = indeks di `order` tempat snippet PENUTUP mulai (= jumlah order bila tidak ada), supaya halaman yang menyela isinya dengan
@@ -197,7 +334,7 @@ final class PublicLookup
      *
      * @return array{blocks:array,order:array,settings:array,imported:bool,closingFrom:int}
      */
-    public static function document(mixed $rawContent, array $locales = ['id', 'en'], bool $withSnippets = true): array
+    public static function document(mixed $rawContent, array $locales = ['en', 'id'], bool $withSnippets = true, ?string $lang = null): array
     {
         $doc = ContentDocument::fromRaw($rawContent, $locales);
         $blocks = $doc->blocks;
@@ -253,7 +390,9 @@ final class PublicLookup
             $order = $final;
         }
 
-        return ['blocks' => BlockSanitizer::forPublic($blocks, $locales), 'order' => $order, 'settings' => $doc->settings, 'imported' => $doc->imported, 'closingFrom' => $closingFrom];
+        $internal = $lang !== null ? self::internalLinks($lang, $locales, Languages::fromConfig()['default']) : null;
+
+        return ['blocks' => BlockSanitizer::forPublic($blocks, $locales, $internal), 'order' => $order, 'settings' => $doc->settings, 'imported' => $doc->imported, 'closingFrom' => $closingFrom];
     }
 
     /** Blok $rootId beserta semua anaknya (zona kolom / langkah), menurut kunci id. @return array<string,array> */

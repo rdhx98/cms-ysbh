@@ -360,7 +360,8 @@ final class RichText
         $color = '(?:#[0-9a-fA-F]{3,8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*[01]?(?:\.\d+)?\s*)?\)|hsla?\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*(?:,\s*[01]?(?:\.\d+)?\s*)?\)|[a-zA-Z]{3,20})';
         return match ($kind) {
             'color' => preg_match('/^' . $color . '$/D', $v) === 1,
-            'size' => preg_match('/^(?:' . $len . '|xx-small|x-small|small|medium|large|x-large|xx-large|smaller|larger)$/D', $v) === 1,
+            // clamp(min, pilihan, maks) dari skala ukuran toolbar editor: tiga panjang saja, tanpa fungsi bersarang
+            'size' => preg_match('/^(?:' . $len . '|xx-small|x-small|small|medium|large|x-large|xx-large|smaller|larger|clamp\(\s*' . $len . '\s*,\s*' . $len . '\s*,\s*' . $len . '\s*\))$/D', $v) === 1,
             'family' => strlen($v) <= 200 && preg_match('/^[A-Za-z0-9 ,\'"_\-]+$/D', $v) === 1,
             'weight' => preg_match('/^(?:normal|bold|bolder|lighter|[1-9]00)$/D', $v) === 1,
             'fstyle' => in_array($v, ['normal', 'italic', 'oblique'], true),

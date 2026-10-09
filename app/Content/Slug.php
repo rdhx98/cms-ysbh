@@ -37,23 +37,43 @@ final class Slug
     }
 
     /**
-     * Slug yang TIDAK BOLEH dipakai halaman CMS karena alamat "/{slug}"-nya sudah dimiliki sesuatu yang didaftarkan lebih dulu di
-     * landing (rute statis, rute teknis, atau folder publik). Halaman CMS ber-slug ini tersimpan dan tampak "online", tetapi tidak
-     * pernah bisa dibuka. Rute statis milik situs dicatat di config('cms.reserved_slugs'); daftar ini hanya yang bersifat teknis.
+     * Slug yang TIDAK BOLEH dipakai halaman CMS karena alamatnya sudah dimiliki sesuatu yang didaftarkan lebih dulu di landing (rute statis,
+     * rute teknis, atau folder publik). Halaman CMS ber-slug ini tersimpan dan tampak "online", tetapi tidak pernah bisa dibuka.
+     * Rute statis milik situs dicatat di config('cms.reserved_slugs'); daftar ini hanya yang bersifat teknis.
+     * Sejak rilis 24 "articles" TIDAK lagi di sini: itu kepala daftar artikel bahasa Inggris (config('cms.articles_index_slug')), dan boleh
+     * dipakai halaman CMS (halaman itu justru yang menyumbang judul/pengantarnya).
      */
-    public const RESERVED = ['articles', 'storage', 'build', 'fonts', 'logo', 'up', 'livewire', 'login', 'logout', 'admin', 'api', 'robots', 'sitemap', 'favicon', 'preview', 'v2'];
+    public const RESERVED = ['storage', 'build', 'fonts', 'logo', 'up', 'livewire', 'login', 'logout', 'admin', 'api', 'robots', 'sitemap', 'favicon', 'preview', 'v2'];
 
     /**
-     * Daftar slug terlarang yang berlaku: bawaan + tambahan dari config, huruf kecil, tanpa duplikat. $allowed (mis. slug kepala
-     * daftar artikel, "artikel") dikeluarkan: alamatnya memang milik halaman CMS itu.
+     * Daftar slug terlarang yang berlaku, huruf kecil, tanpa duplikat.
      *
-     * @param  array<int,mixed> $configured tambahan dari config('cms.reserved_slugs'); nilai bukan teks diabaikan
+     * @param  array<int|string,mixed> $configured config('cms.reserved_slugs'): DAFTAR (berlaku untuk semua bahasa) atau PETA bahasa
+     *                                  (['en' => ['…'], 'id' => ['…'], '*' => ['…']]; '*' = semua bahasa). Nilai bukan teks diabaikan.
+     * @param  string|null $allowed     slug kepala daftar artikel BAHASA ITU (mis. "artikel"): dikeluarkan, alamatnya memang milik halaman CMS itu
+     * @param  string|null $locale      bahasa slug yang diperiksa; null = gabungan semua bahasa (tanpa pengecualian per bahasa)
+     * @param  string[]    $locales     semua bahasa situs
+     * @param  string|null $default     bahasa bawaan. Di bahasa bawaan, KODE bahasa lain ("id") terlarang: "/id" adalah beranda bahasa itu
      * @return string[]
      */
-    public static function reserved(array $configured = [], ?string $allowed = null): array
+    public static function reserved(array $configured = [], ?string $allowed = null, ?string $locale = null, array $locales = [], ?string $default = null): array
     {
+        $list = self::RESERVED;
+        if (Languages::isMap($configured)) {
+            foreach ($configured as $key => $values) {
+                if (is_array($values) && ($locale === null || $key === '*' || $key === $locale)) {
+                    $list = array_merge($list, $values);
+                }
+            }
+        } else {
+            $list = array_merge($list, $configured);
+        }
+        if ($default !== null && ($locale === null || $locale === $default)) {
+            $list = array_merge($list, array_diff($locales, [$default]));
+        }
+
         $all = [];
-        foreach (array_merge(self::RESERVED, $configured) as $slug) {
+        foreach ($list as $slug) {
             if (is_string($slug) && trim($slug) !== '') {
                 $all[strtolower(trim($slug))] = true;
             }
@@ -65,8 +85,9 @@ final class Slug
         return array_keys($all);
     }
 
-    public static function isReserved(string $slug, array $configured = [], ?string $allowed = null): bool
+    /** @see reserved() */
+    public static function isReserved(string $slug, array $configured = [], ?string $allowed = null, ?string $locale = null, array $locales = [], ?string $default = null): bool
     {
-        return in_array(strtolower(trim($slug)), self::reserved($configured, $allowed), true);
+        return in_array(strtolower(trim($slug)), self::reserved($configured, $allowed, $locale, $locales, $default), true);
     }
 }

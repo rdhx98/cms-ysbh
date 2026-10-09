@@ -6,6 +6,7 @@
  * Pemasangan (resources/js/app.js):
  *   import { registerEditor } from './editor'
  *   document.addEventListener('alpine:init', () => registerEditor(window.Alpine))
+ * (registerEditor mengembalikan { wireFieldFactory, extend } untuk registerRich di rich-field.js, rilis 31.)
  */
 export function registerEditor(Alpine) {
   const canon = (t) => String(t || '').replace(/_/g, '-').toLowerCase()
@@ -482,4 +483,6 @@ export function registerEditor(Alpine) {
     }),
   )
 
+  // Dipakai komponen lain yang perlu membaca/menulis path yang sama (mis. registerRich di rich-field.js)
+  return { wireFieldFactory, extend }
 }

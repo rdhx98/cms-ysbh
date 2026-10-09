@@ -22,11 +22,15 @@ final class Sitemap
     private const LOC = '#^https?://[A-Za-z0-9.-]+(?::\d{1,5})?(?:/[A-Za-z0-9._~%/\-]*)?$#D';
 
     /**
-     * @param list<array{kind:string,slug:string,lastmod:?string}> $rows nilai dari PublicLookup::sitemapEntries()
-     * @param array<int,mixed>                                     $staticPaths jalur statis ("/", "/about", ...) dari config('cms.sitemap_static')
+     * @param list<array{kind:string,slug:string,locale?:string,lastmod:?string}> $rows nilai dari PublicLookup::sitemapEntries() (locale: bahasa baris itu)
+     * @param array<int,mixed> $staticPaths jalur statis ("/articles", "/id/artikel", ...) dari config('cms.sitemap_static')
+     * @param mixed            $pageTemplate    config('cms.public.page'): teks (semua bahasa) atau peta bahasa
+     * @param mixed            $articleTemplate config('cms.public.article'): idem
+     * @param mixed            $homeSlug slug halaman beranda (config('cms.home_slug'), teks atau peta bahasa): halaman itu masuk sebagai alamat beranda, bukan "{base}/{slug}"
+     * @param mixed            $homePaths config('cms.public.home'): jalur beranda per bahasa (bawaan "/" bila tidak diatur)
      * @return list<array{loc:string,lastmod:?string}>                  sudah divalidasi dan tanpa duplikat; [] bila alamat dasar tidak sah
      */
-    public static function entries(array $rows, array $staticPaths, string $base, mixed $pageTemplate, mixed $articleTemplate): array
+    public static function entries(array $rows, array $staticPaths, string $base, mixed $pageTemplate, mixed $articleTemplate, mixed $homeSlug = null, mixed $homePaths = '/'): array
     {
         $base = rtrim(trim($base), '/');
         if (!preg_match('#^https?://[A-Za-z0-9.-]+(?::\d{1,5})?$#D', $base)) {
@@ -35,8 +39,14 @@ final class Sitemap
 
         $out = [];
         foreach ($rows as $row) {
-            $template = ($row['kind'] ?? '') === 'article' ? $articleTemplate : $pageTemplate;
-            $loc = LinkResolver::publicUrl((string) ($row['slug'] ?? ''), $template, $base);
+            $locale = is_string($row['locale'] ?? null) ? $row['locale'] : '';
+            $kind = $row['kind'] ?? '';
+            $template = Languages::setting($kind === 'article' ? $articleTemplate : $pageTemplate, $locale);
+            $slug = (string) ($row['slug'] ?? '');
+            // $homePaths dalam bentuk peta tanpa kunci bahasa ini: tidak ada jalur beranda -> halaman tetap di "/{slug}" (dialihkan ke beranda oleh landing)
+            $homePath = Languages::setting($homePaths, $locale);
+            $loc = $kind === 'page' && $homePath !== '' ? LinkResolver::homeUrl($slug, Languages::setting($homeSlug, $locale), $base, $homePath) : null;
+            $loc ??= LinkResolver::publicUrl($slug, $template, $base);
             if ($loc !== null) {
                 $out[] = ['loc' => $loc, 'lastmod' => $row['lastmod'] ?? null];
             }

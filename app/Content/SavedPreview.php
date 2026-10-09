@@ -18,7 +18,8 @@ final class SavedPreview
     {
         // Dirakit seperti di situs publik: snippet sisipan dan snippet penutup ikut (bukan untuk isi sebuah snippet itu sendiri),
         // sehingga pratinjau tersimpan = yang dilihat pengunjung.
-        $doc = PublicLookup::document($record->getRawOriginal('content'), $locales, $type !== ContentType::Snippet);
+        // $lang: tautan internal:// di pratinjau menuju versi bahasa pratinjau (seperti di situs publik)
+        $doc = PublicLookup::document($record->getRawOriginal('content'), $locales, $type !== ContentType::Snippet, $lang);
         $status = (string) ($record->status ?? '');
 
         return [

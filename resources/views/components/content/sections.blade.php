@@ -23,23 +23,38 @@
   $sections = $grouped['sections'];
   $tocItems = $grouped['toc'];
   $tocPosition = $grouped['tocPosition'];
+  $topBannerId = \App\Content\SectionBuilder::topBanner($sections, $blocks); // gambar w-screen sebagai blok pertama halaman, atau null
 @endphp
 
 <div class="bg-paper relative w-full">
-  {{-- Daftar isi kaca di luar max-w-7xl; hanya muncul di layar >= 1536px dan menyingkir bila menabrak blok layar penuh --}}
+  {{-- Daftar isi kaca di luar max-w-7xl; hanya muncul di layar >= 1536px dan menyingkir bila menabrak blok layar penuh.
+       Rilis 29 (mengganti aturan rilis 27): saat halaman dimuat kartu berada di TENGAH sumbu vertikal layar, lalu ikut turun-naik bersama gulir
+       sampai menempel di 128 px dari atas (setara top-32) dan tetap di sana (tocTop). Bila blok PERTAMA halaman adalah gambar w-screen
+       (data-top-banner), kartu tersembunyi sampai tepi bawah banner itu melewati tepi atas kartu, lalu muncul. Blok layar penuh lainnya
+       menyembunyikan kartu selama menimpanya (margin 50 px), seperti sebelumnya. --}}
   @if (count($tocItems) > 0 && $tocPosition !== 'hidden')
     <div
       x-data="{
-        isTocHidden: false,
+        isTocHidden: true,
+        tocTop: 128,
         checkOverlap() {
           const toc = $refs.tocCard
           if (! toc) return
-          const tocRect = toc.getBoundingClientRect()
-          const blocks = document.querySelectorAll('[data-banner-block]')
+          const stick = 128
+          const height = toc.offsetHeight
+          const top = Math.max(stick, Math.round((window.innerHeight - height) / 2) - window.scrollY)
+          this.tocTop = top
+          const bottom = top + height
+          const banner = document.querySelector('[data-top-banner]')
+          if (banner && banner.getBoundingClientRect().bottom > top) {
+            this.isTocHidden = true
+            return
+          }
+          const blocks = document.querySelectorAll('[data-banner-block]:not([data-top-banner])')
           let overlap = false
           for (let i = 0; i < blocks.length; i++) {
             const rect = blocks[i].getBoundingClientRect()
-            if (rect.top < tocRect.bottom + 50 && rect.bottom > tocRect.top - 50) {
+            if (rect.top < bottom + 50 && rect.bottom > top - 50) {
               overlap = true
               break
             }
@@ -47,14 +62,15 @@
           this.isTocHidden = overlap
         },
       }"
-      x-init="setTimeout(() => checkOverlap(), 300)"
+      x-init="$nextTick(() => checkOverlap()); setTimeout(() => checkOverlap(), 300)"
       @scroll.window.capture.passive="checkOverlap()"
       @resize.window.capture.passive="checkOverlap()"
+      @load.window.capture="checkOverlap()"
       class="pointer-events-none fixed inset-0 z-50 hidden 2xl:block"
     >
       <div class="relative mx-auto h-full w-full max-w-7xl">
         @if ($tocPosition === 'left')
-          <div class="pointer-events-auto absolute top-32 right-full mr-8 w-64 transition-all duration-500">
+          <div class="pointer-events-auto absolute right-full mr-8 w-64" x-bind:style="'top:' + tocTop + 'px'">
             <div
               x-ref="tocCard"
               class="scrollbar-hide max-h-[75vh] overflow-y-auto rounded-2xl border border-white/60 bg-white/40 p-5 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out"
@@ -64,7 +80,7 @@
             </div>
           </div>
         @else
-          <div class="pointer-events-auto absolute top-32 left-full ml-8 w-64 transition-all duration-500">
+          <div class="pointer-events-auto absolute left-full ml-8 w-64" x-bind:style="'top:' + tocTop + 'px'">
             <div
               x-ref="tocCard"
               class="scrollbar-hide max-h-[75vh] overflow-y-auto rounded-2xl border border-white/60 bg-white/40 p-5 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out"
@@ -98,6 +114,7 @@
 
           <div
             @if ($isFullScreen) data-banner-block="true" @endif
+            @if ((string) $blockId === $topBannerId) data-top-banner="true" @endif
             @if ($canvas) data-block-id="{{ $blockId }}" data-block-type="{{ $type }}" @endif
             id="{{ ! empty($block['anchor']) ? $block['anchor'] : $blockId }}"
             @unless ($canvas)
