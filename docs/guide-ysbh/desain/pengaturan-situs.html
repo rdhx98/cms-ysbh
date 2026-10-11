@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pengaturan Situs — CMS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          foresty: '#064F3B', forest: '#043328',
+          goldy: '#EBCC26', 'goldy-soft': '#F7EBAF',
+          coral: '#E42326', 'coral-dark': '#BE1417',
+          paper: '#FBF7EA', ink: '#12241C', 'ink-soft': '#4B5D53',
+          'sage-soft': '#E9F1EB',
+        },
+        fontFamily: { display: ['Fraunces', 'serif'], body: ['"Plus Jakarta Sans"', 'sans-serif'] },
+      },
+    },
+  };
+</script>
+</head>
+<body class="m-0 bg-sage-soft text-ink font-body antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 shrink-0 bg-forest text-white flex flex-col">
+    <div class="flex items-center gap-3 px-6 py-6 border-b border-white/10">
+      <div class="w-9 h-9 rounded-lg bg-goldy flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-foresty" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      </div>
+      <div>
+        <div class="font-display font-bold text-sm leading-tight">CMS Editor</div>
+        <div class="text-[11px] text-goldy uppercase tracking-wider font-semibold">Blok Halaman</div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-5 px-3 space-y-6">
+      <div>
+        <a href="cms-dashboard-v2.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          Dashboard
+        </a>
+      </div>
+
+      <div>
+        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/40 mb-2">Konten</div>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/></svg>
+          Halaman
+          <span class="ml-auto text-[10px] font-bold bg-goldy text-foresty w-5 h-5 rounded-full flex items-center justify-center">12</span>
+        </a>
+      </div>
+
+      <div>
+        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/40 mb-2">Sistem</div>
+        <a href="kelola-pengguna.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Pengguna
+        </a>
+        <a href="pengaturan-situs.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/10 text-white font-semibold text-sm">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+          Pengaturan Situs
+        </a>
+      </div>
+    </nav>
+
+    <div class="px-4 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-goldy text-foresty flex items-center justify-center font-display font-bold text-sm">A</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold truncate">Admin</div>
+          <div class="text-xs text-white/50 truncate">Editor Konten</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <header class="bg-white border-b border-foresty/10 px-8 py-4 flex items-center justify-between gap-6 sticky top-0 z-10">
+      <div>
+        <h1 class="font-display font-bold text-xl text-foresty">Pengaturan Situs</h1>
+        <p class="text-xs text-ink-soft mt-0.5">Konfigurasi yang berlaku di seluruh halaman</p>
+      </div>
+      <button class="inline-flex items-center gap-2 bg-coral text-white text-sm font-bold px-5 py-2.5 rounded-full hover:bg-coral-dark transition-colors whitespace-nowrap">
+        Simpan Perubahan
+      </button>
+    </header>
+
+    <main class="flex-1 p-8 max-w-3xl space-y-6">
+
+      <!-- BAHASA AKTIF -->
+      <div class="bg-white rounded-2xl border border-foresty/10 shadow-sm p-6">
+        <div class="flex items-start justify-between mb-1">
+          <h2 class="font-display font-bold text-foresty">Bahasa Aktif</h2>
+          <span class="text-[10px] font-bold bg-sage-soft text-foresty px-2 py-1 rounded-full uppercase">Dwibahasa</span>
+        </div>
+        <p class="text-xs text-ink-soft mb-5">Bahasa yang tersedia untuk diisi di setiap Halaman &amp; blok. Menonaktifkan bahasa tidak menghapus isi yang sudah ada — cuma disembunyikan dari editor.</p>
+
+        <div class="space-y-3">
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-sage-soft">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-xs font-bold text-foresty border border-foresty/15">ID</span>
+              <div>
+                <div class="text-sm font-semibold text-ink">Bahasa Indonesia</div>
+                <div class="text-xs text-ink-soft">Bahasa utama — tidak bisa dinonaktifkan</div>
+              </div>
+            </div>
+            <div class="w-11 h-6 rounded-full bg-foresty relative shrink-0">
+              <div class="w-5 h-5 rounded-full bg-white absolute top-0.5 right-0.5"></div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-sage-soft">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-xs font-bold text-foresty border border-foresty/15">EN</span>
+              <div>
+                <div class="text-sm font-semibold text-ink">English</div>
+                <div class="text-xs text-ink-soft">Aktif — muncul sebagai pilihan tab bahasa di editor</div>
+              </div>
+            </div>
+            <div class="w-11 h-6 rounded-full bg-foresty relative shrink-0">
+              <div class="w-5 h-5 rounded-full bg-white absolute top-0.5 right-0.5"></div>
+            </div>
+          </div>
+
+          <button class="w-full flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed border-foresty/20 text-xs font-bold text-ink-soft hover:border-foresty hover:text-foresty transition-colors">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            Tambah Bahasa
+          </button>
+        </div>
+
+        <div class="mt-5 pt-4 border-t border-foresty/10">
+          <div class="text-xs font-bold text-ink-soft uppercase mb-2">Tampilan Editor Default</div>
+          <div class="flex gap-2">
+            <label class="flex-1 flex items-center gap-2 p-3 rounded-xl border-2 border-foresty bg-sage-soft cursor-pointer">
+              <input type="radio" name="layoutMode" checked class="text-foresty">
+              <span class="text-sm font-semibold text-foresty">Tunggal — satu bahasa per layar</span>
+            </label>
+            <label class="flex-1 flex items-center gap-2 p-3 rounded-xl border-2 border-foresty/15 cursor-pointer">
+              <input type="radio" name="layoutMode" class="text-foresty">
+              <span class="text-sm font-semibold text-ink-soft">Ganda — dua bahasa berdampingan</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- INFORMASI SITUS -->
+      <div class="bg-white rounded-2xl border border-foresty/10 shadow-sm p-6">
+        <h2 class="font-display font-bold text-foresty mb-4">Informasi Situs</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs font-bold text-ink-soft uppercase tracking-wide mb-1.5 block">Nama Situs</label>
+            <input type="text" value="Nama Situs Anda" class="w-full px-4 py-2.5 rounded-xl border border-foresty/15 text-sm focus:outline-none focus:border-foresty">
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold text-ink-soft uppercase tracking-wide mb-1.5 block">Logo</label>
+              <div class="border-2 border-dashed border-foresty/20 rounded-xl p-4 text-center text-xs text-ink-soft hover:border-foresty cursor-pointer transition-colors">
+                Klik untuk unggah
+              </div>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-ink-soft uppercase tracking-wide mb-1.5 block">Favicon</label>
+              <div class="border-2 border-dashed border-foresty/20 rounded-xl p-4 text-center text-xs text-ink-soft hover:border-foresty cursor-pointer transition-colors">
+                Klik untuk unggah
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEO DEFAULT -->
+      <div class="bg-white rounded-2xl border border-foresty/10 shadow-sm p-6">
+        <h2 class="font-display font-bold text-foresty mb-1">SEO Default</h2>
+        <p class="text-xs text-ink-soft mb-4">Dipakai untuk Halaman baru yang belum diisi Judul Meta/Deskripsi Meta-nya sendiri.</p>
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs font-bold text-ink-soft uppercase tracking-wide mb-1.5 block">Pola Judul Meta</label>
+            <input type="text" value="{judul_halaman} | Nama Situs Anda" class="w-full px-4 py-2.5 rounded-xl border border-foresty/15 text-sm font-mono focus:outline-none focus:border-foresty">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-ink-soft uppercase tracking-wide mb-1.5 block">Deskripsi Meta Default</label>
+            <textarea rows="3" class="w-full px-4 py-2.5 rounded-xl border border-foresty/15 text-sm focus:outline-none focus:border-foresty resize-none">Tulis deskripsi singkat yang mewakili situs Anda secara umum...</textarea>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

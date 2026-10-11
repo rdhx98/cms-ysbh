@@ -37,7 +37,7 @@ class AuditTranslations extends Command
         foreach ([['Halaman', Page::class, PublicLookup::PAGE_STATUS], ['Artikel', Post::class, PublicLookup::ARTICLE_STATUS]] as [$label, $model, $status]) {
             $query = $model::query();
             if (!$this->option('all')) {
-                $query->where('status', $status);
+                $query = PublicLookup::visible($query, $status);
             }
             $rows = $query->orderBy('id')->get(['id', 'title', 'slug', 'content'])->map(fn ($r) => [
                 'id' => $r->id, 'title' => $r->getRawOriginal('title'), 'slug' => $r->getRawOriginal('slug'), 'content' => $r->getRawOriginal('content'),

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Content\ContentDocument;
 use App\Content\ContentType;
+use App\Models\Concerns\RecordsChanges;
 use App\Traits\SyncsMediaUsage;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -32,7 +33,7 @@ use Spatie\Translatable\HasTranslations;
 #[Fillable('key', 'title', 'description', 'content', 'status', 'is_closing', 'sort_order', 'created_by', 'updated_by')]
 class Snippet extends Model
 {
-    use HasFactory, HasTranslations, LogsActivity, SoftDeletes;
+    use HasFactory, HasTranslations, LogsActivity, SoftDeletes, RecordsChanges;
     // Gambar di dalam snippet ikut tercatat di "Digunakan Di" milik file manager.
     use SyncsMediaUsage;
 
@@ -154,6 +155,12 @@ class Snippet extends Model
 
     // ------------------------------------------------------------------ relasi & log
 
+    /** Deskripsi baris log: perubahan status = "status_<nilai>" (lihat RecordsChanges). */
+    public function getDescriptionForEvent(string $eventName): string
+    {
+        return $this->describeEvent($eventName);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -164,12 +171,16 @@ class Snippet extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    /** `content` sengaja tidak dicatat: ukurannya besar dan berubah pada tiap simpan. */
+    /**
+     * `content` sengaja tidak dicatat di sini (ukurannya besar); "Isi diubah" + siapa + kapan dicatat trait RecordsChanges (rilis 44).
+     * Online/offline tercatat lewat `status`; hapus dan pulihkan (SoftDeletes) dicatat otomatis oleh paket.
+     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['key', 'title', 'status', 'is_closing', 'sort_order'])
+            ->logOnly(['key', 'title', 'status', 'is_closing', 'sort_order', 'description'])   // `content` sengaja tidak dicatat
             ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
             ->useLogName('snippet_updates');
     }
 }

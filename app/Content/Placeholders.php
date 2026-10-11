@@ -40,11 +40,37 @@ final class Placeholders
     {
         $found = [];
         foreach ($row as $column => $value) {
-            if (self::contains($value)) {
+            if (self::contains($value) || self::hasEmptyImage($value)) {
                 $found[] = (string) $column;
             }
         }
 
         return $found;
+    }
+
+    /**
+     * Dokumen konten (JSON mentah atau larik {blocks: ...}) memuat blok Gambar TANPA berkas (rilis 37)? Tempat foto yang disiapkan
+     * cms:seed-pages adalah blok seperti itu; ia tidak tercetak di situs, tetapi halaman yang masih memilikinya belum selesai.
+     */
+    public static function hasEmptyImage(mixed $value): bool
+    {
+        if (is_string($value)) {
+            $t = ltrim($value);
+            if ($t === '' || $t[0] !== '{') {
+                return false;
+            }
+            $value = json_decode($t, true);
+        }
+        $blocks = is_array($value) ? ($value['blocks'] ?? null) : null;
+        if (!is_array($blocks)) {
+            return false;
+        }
+        foreach ($blocks as $b) {
+            if (is_array($b) && str_replace('_', '-', strtolower((string) ($b['type'] ?? ''))) === 'image' && trim((string) ($b['data']['url'] ?? '')) === '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

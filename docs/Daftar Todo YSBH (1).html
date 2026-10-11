@@ -1,0 +1,670 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset=utf8>
+  <meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <style>
+    :root {
+      color-scheme: light;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px)
+    }
+
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px)
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font: 14px -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fff;
+      color: #000
+    }
+
+    img {
+      max-width: 100%
+    }
+
+    [hidden]:not([hidden=until-found i]) {
+      display: none !important
+    }
+  </style>
+</head>
+<body>
+  <title>Daftar Todo YSBH</title>
+  <style>
+    :root {
+      --bg: #f6f5f1;
+      --surface: #fff;
+      --ink: #1d2321;
+      --muted: #667069;
+      --line: #e2e0d8;
+      --accent: #1f7a5a;
+      --accent-ink: #fff;
+      --soft: #e6f3ed;
+      --warn: #b4570f;
+      --warn-soft: #fbeedd;
+      --bar: #e6e4dc;
+      --t-uji: #2b6cb0;
+      --t-pasang: #6b46c1;
+      --t-deploy: #b4570f;
+      --t-konten: #0f766e;
+      --t-putus: #b4233a;
+      --t-saran: #667069;
+      --t-fondasi: #1f7a5a
+    }
+
+    @media (prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #141816;
+        --surface: #1c211f;
+        --ink: #e8ece9;
+        --muted: #9aa6a0;
+        --line: #2c3330;
+        --accent: #4cc79a;
+        --accent-ink: #0b1f17;
+        --soft: #173328;
+        --warn: #f0a35e;
+        --warn-soft: #3a2a17;
+        --bar: #2b322f;
+        --t-uji: #7db3ee;
+        --t-pasang: #b79af0;
+        --t-deploy: #f0a35e;
+        --t-konten: #4fd1c5;
+        --t-putus: #f28b9b;
+        --t-saran: #9aa6a0;
+        --t-fondasi: #4cc79a
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #141816;
+      --surface: #1c211f;
+      --ink: #e8ece9;
+      --muted: #9aa6a0;
+      --line: #2c3330;
+      --accent: #4cc79a;
+      --accent-ink: #0b1f17;
+      --soft: #173328;
+      --warn: #f0a35e;
+      --warn-soft: #3a2a17;
+      --bar: #2b322f;
+      --t-uji: #7db3ee;
+      --t-pasang: #b79af0;
+      --t-deploy: #f0a35e;
+      --t-konten: #4fd1c5;
+      --t-putus: #f28b9b;
+      --t-saran: #9aa6a0;
+      --t-fondasi: #4cc79a
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif
+    }
+
+    .wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 16px 64px
+    }
+
+    header {
+      padding: 28px 0 12px
+    }
+
+    h1 {
+      font-size: 24px;
+      margin: 0 0 4px;
+      letter-spacing: -.01em
+    }
+
+    .sub {
+      color: var(--muted);
+      margin: 0;
+      font-size: 14px
+    }
+
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: var(--bg);
+      padding: 10px 0 12px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .pbar {
+      height: 10px;
+      background: var(--bar);
+      border-radius: 99px;
+      overflow: hidden
+    }
+
+    .pbar>i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width .25s
+    }
+
+    .pline {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 6px 0 10px;
+      flex-wrap: wrap
+    }
+
+    .pline b {
+      color: var(--ink)
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center
+    }
+
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--surface)
+    }
+
+    .seg button {
+      border: 0;
+      background: none;
+      color: var(--ink);
+      padding: 6px 11px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer
+    }
+
+    .seg button[aria-pressed="true"] {
+      background: var(--accent);
+      color: var(--accent-ink)
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 99px;
+      padding: 3px 10px;
+      font: inherit;
+      font-size: 12.5px;
+      cursor: pointer
+    }
+
+    .chip[aria-pressed="true"] {
+      border-color: var(--accent);
+      background: var(--soft)
+    }
+
+    input[type=search] {
+      flex: 1 1 150px;
+      min-width: 120px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font: inherit;
+      font-size: 13px
+    }
+
+    .note {
+      display: none;
+      margin: 10px 0 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: var(--warn-soft);
+      color: var(--warn);
+      font-size: 13px
+    }
+
+    .note.on {
+      display: block
+    }
+
+    section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin-top: 16px;
+      overflow: hidden
+    }
+
+    .sh {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+      user-select: none
+    }
+
+    .sh h2 {
+      font-size: 16px;
+      margin: 0;
+      flex: 1
+    }
+
+    .sh .cnt {
+      font-size: 12.5px;
+      color: var(--muted);
+      white-space: nowrap
+    }
+
+    .sh .mini {
+      width: 64px;
+      height: 6px;
+      background: var(--bar);
+      border-radius: 99px;
+      overflow: hidden;
+      flex: none
+    }
+
+    .sh .mini>i {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+      width: 0
+    }
+
+    .sh .chev {
+      transition: transform .15s;
+      color: var(--muted)
+    }
+
+    section.closed .chev {
+      transform: rotate(-90deg)
+    }
+
+    section.closed ul {
+      display: none
+    }
+
+    .intro {
+      padding: 0 14px 8px;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0
+    }
+
+    section.closed .intro {
+      display: none
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0
+    }
+
+    li {
+      display: flex;
+      gap: 10px;
+      padding: 10px 14px;
+      border-top: 1px solid var(--line);
+      align-items: flex-start
+    }
+
+    li label {
+      display: flex;
+      gap: 10px;
+      flex: 1;
+      cursor: pointer;
+      align-items: flex-start;
+      min-width: 0
+    }
+
+    li input[type=checkbox] {
+      width: 19px;
+      height: 19px;
+      margin: 2px 0 0;
+      accent-color: var(--accent);
+      flex: none;
+      cursor: pointer
+    }
+
+    .tx {
+      min-width: 0
+    }
+
+    .tx .t {
+      overflow-wrap: anywhere
+    }
+
+    .tx .d {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 2px;
+      overflow-wrap: anywhere
+    }
+
+    li.done .t {
+      color: var(--muted);
+      text-decoration: line-through
+    }
+
+    .tag {
+      flex: none;
+      font-size: 11.5px;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: 1px 7px;
+      margin-top: 2px;
+      border: 1px solid currentColor;
+      white-space: nowrap
+    }
+
+    .tag.uji {
+      color: var(--t-uji)
+    }
+
+    .tag.pasang {
+      color: var(--t-pasang)
+    }
+
+    .tag.deploy {
+      color: var(--t-deploy)
+    }
+
+    .tag.konten {
+      color: var(--t-konten)
+    }
+
+    .tag.putus {
+      color: var(--t-putus)
+    }
+
+    .tag.saran {
+      color: var(--t-saran)
+    }
+
+    .tag.fondasi {
+      color: var(--t-fondasi)
+    }
+
+    code {
+      font: 12.5px ui-monospace, Menlo, Consolas, monospace;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 0 4px
+    }
+
+    .empty {
+      padding: 14px;
+      color: var(--muted);
+      font-size: 14px;
+      border-top: 1px solid var(--line)
+    }
+
+    footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 12.5px
+    }
+
+    @media (max-width:520px) {
+      li {
+        padding: 10px 12px
+      }
+
+      .tag {
+        display: none
+      }
+
+      .sh .mini {
+        display: none
+      }
+    }
+  </style>
+
+  <div class="wrap">
+    <header>
+      <h1>Daftar Todo YSBH</h1>
+      <p class="sub">CMS &amp; landing Yayasan Sinar Bhakti Husada · diperbarui sampai rilis 48 · centang yang sudah selesai</p>
+    </header>
+
+    <div class="top">
+      <div class="pbar" role="progressbar" aria-label="Kemajuan keseluruhan"><i id="pfill"></i></div>
+      <div class="pline"><span><b id="pdone">0</b> dari <b id="ptotal">0</b> selesai (<b id="ppct">0%</b>)</span><span id="pleft"></span></div>
+      <div class="filters">
+        <div class="seg" id="seg">
+          <button data-f="all" aria-pressed="true">Semua</button>
+          <button data-f="todo" aria-pressed="false">Belum</button>
+          <button data-f="done" aria-pressed="false">Sudah</button>
+        </div>
+        <input type="search" id="q" placeholder="Cari…" aria-label="Cari">
+      </div>
+      <div class="filters" id="tags" style="margin-top:8px"></div>
+      <div class="note" id="note">Penyimpanan centang tidak tersedia di tampilan ini, jadi centang hilang saat halaman ditutup.</div>
+    </div>
+
+    <main id="main"></main>
+
+    <footer>Rujukan <code>DEBUG 6z…</code> dan nama berkas mengacu ke folder <code>docs/</code> di kit. Nomor rilis (R) mengikuti <code>PERUBAHAN.md</code>. Nilai NPWP/rekening tidak pernah ditulis di sini: pakai placeholder <code>[ISI-DULU]</code> di CMS.</footer>
+  </div>
+
+  <script>
+    const TAGS = { uji: 'Uji', pasang: 'Pasang', deploy: 'Deploy', konten: 'Konten', putus: 'Putusan', saran: 'Saran', fondasi: 'Fondasi' };
+    // [id, tag, teks, rincian]
+    const DATA = [
+      {
+        id: 'a', title: 'A. Pasang & uji rilis terbaru (R38–R48)', intro: 'Kit sudah siap; langkah di bawah dilakukan di proyek Anda. Panduan uji ada di docs/DEBUG.md.', items: [
+          ['a-tests', 'uji', 'Jalankan <code>php tests/run-all.php</code> di mesin Anda: 54 suite hijau', 'docs/PENGUJIAN.md'],
+          ['a-sync', 'pasang', 'Jalankan sync-landing untuk R38–R48 (58 berkas di landing-files.txt)', 'docs/DUA-APLIKASI.md · pastikan salinan di cms-ysbh dan landing-ysbh seragam'],
+          ['a-r38', 'uji', 'Alur persetujuan artikel: penulis → tinjau → terbit / jadwal / kembali / tolak', 'DEBUG 6zc'],
+          ['a-r39', 'uji', 'Pencarian tautan di tiap kartu Kartu Builder', 'DEBUG 6zd'],
+          ['a-r40', 'uji', 'Pemilih thumbnail artikel (featured_image = id media)', 'DEBUG 6ze'],
+          ['a-r41', 'uji', 'Aturan empat mata: pengaju ≠ penyetuju, pesan panel benar', 'DEBUG 6zf'],
+          ['a-r42', 'uji', 'Panel riwayat perubahan (audit trail)', 'DEBUG 6zg'],
+          ['a-r42b', 'uji', 'Artikel per kategori + tampil di menu', 'DEBUG 6zh'],
+          ['a-r43', 'uji', 'Outline: menu ⋯, sisip di posisi, pindah lintas level, masuk/keluar kontainer', 'DEBUG 6zi'],
+          ['a-r44', 'uji', 'Pencatatan riwayat Page / Post / Snippet (isi, status, slug)', 'DEBUG 6zj'],
+          ['a-r45', 'uji', 'Alamat gambar tidak terpanggang host: buka halaman lama, gambar tetap tampil di CMS dan landing', 'DEBUG 6zk · MEDIA_URL harus benar di kedua .env'],
+          ['a-sql', 'uji', 'Cek SQL: masih ada entri <code>.test/storage</code> di blok lama? Bila ada, pastikan tiap blok punya <code>media_id</code> (yang tanpa media_id tidak bisa diperbaiki otomatis)', 'DEBUG 6zk'],
+          ['a-r46', 'uji', 'Kelola Kategori dan Tag dua bahasa: buat, ubah, hapus, duplikat nama/slug ditolak', 'DEBUG 6zl · docs/KATEGORI-TAG.md'],
+          ['a-index', 'pasang', 'Kirim berkas daftar artikel (articles-index) agar panel Kategori/Tag dipasang, atau tempel manual dari <code>contoh-kode/panel-kategori-tag.blade.php</code>', 'docs/KATEGORI-TAG.md · berkas itu belum ada di kit'],
+          ['a-r47', 'uji', 'Thumbnail di halaman artikel (gambar lebar di bawah judul) dan og:image mutlak; artikel tanpa thumbnail tetap rapi', 'DEBUG 6zm · Facebook menyimpan pratinjau lama: pakai Sharing Debugger'],
+          ['a-pasang48', 'pasang', 'R48: <code>php tools/pasang-cms.php &lt;cms&gt; --apply</code>, <code>sync-landing --apply</code>, lalu <code>npm run build</code> (CMS) dan <code>php artisan view:clear</code> (keduanya)', 'baca rencana (tanpa --apply) dulu · cadangan otomatis di storage/pasang-cadangan'],
+          ['a-r48', 'uji', 'Blok Artikel Terbaru dinamis: kategori banyak, unggulan 1–6 (kisi bento), sematan, daftar kolom/baris, tombol halaman berikutnya, ponsel/tablet', 'DEBUG 6zn · docs/BLOK-ARTIKEL-TERBARU.md'],
+          ['a-r48b', 'uji', 'Pemilih di inspektur (cari kategori/artikel, tambah, geser, lepas) berfungsi di editor sungguhan', 'belum pernah dijalankan di Livewire sungguhan, laporkan bila ada yang aneh'],
+          ['a-lw', 'uji', 'Uji komponen di Livewire sungguhan (di kit, Livewire hanya diuji logika/Blade/Alpine, bukan dijalankan)', 'tahap uji manual di browser']
+        ]
+      },
+      {
+        id: 'b', title: 'B. Deploy ke Hostinger', intro: 'Shared hosting tanpa root; public_html tidak bisa diganti; symlink() dimatikan.', items: [
+          ['b-git', 'deploy', 'Git deploy ke <code>public_html</code> tersambung untuk CMS dan landing', ''],
+          ['b-htaccess', 'deploy', '<code>.htaccess</code> di root mengarahkan ke <code>public/</code> (Laravel)', 'sudah dijelaskan di docs/PASANG-*.md'],
+          ['b-composer', 'deploy', '<code>composer install</code> / folder <code>vendor</code> ada di server', ''],
+          ['b-env', 'deploy', '<code>.env</code> dibuat sekali di server: APP_KEY, APP_URL, DB, <code>MEDIA_URL</code> (sama di kedua aplikasi)', 'jangan di-commit'],
+          ['b-build', 'deploy', '<code>public/build</code> (hasil <code>npm run build</code>) terunggah', ''],
+          ['b-storage', 'deploy', 'Unggah isi <code>public/storage</code> (tanpa symlink) dan atur izin <code>storage/</code> &amp; <code>bootstrap/cache</code>', 'docs/MEDIA-MANAGER.md'],
+          ['b-db', 'deploy', 'Impor database lewat phpMyAdmin; atasi collation <code>utf8mb4_0900_ai_ci</code>', 'kedua aplikasi memakai satu DB'],
+          ['b-temp', 'deploy', 'Uji di domain sementara <code>lightblue-crab-413250.hostingersite.com</code>: landing, CMS, login, unggah gambar, halaman EN dan /id', ''],
+          ['b-cache', 'deploy', 'Cache konfigurasi/rute/tampilan di produksi, setelah semua berjalan', ''],
+          ['b-domain', 'deploy', 'Arahkan <code>ysbh.org</code> (landing) dan <code>cms.ysbh.org</code> (CMS), aktifkan SSL', ''],
+          ['b-301', 'deploy', 'Alihan 301 untuk alamat lama yang sudah terindeks (hanya relevan saat peluncuran)', 'docs/BAHASA.md'],
+          ['b-backup', 'deploy', 'Cadangan rutin database dan <code>public/storage</code>', '']
+        ]
+      },
+      {
+        id: 'c', title: 'C. Isi situs', intro: '12 halaman rencana di docs/HALAMAN-SITUS.md. Sebelum tayang: audit placeholder dan terjemahan harus bersih.', items: [
+          ['c-seed', 'konten', 'Jalankan <code>php artisan cms:seed-pages</code> (membuat 12 halaman dari app/Content/SitePages.php)', ''],
+          ['c-p1', 'konten', 'Tinjau halaman Beranda (home), EN &amp; ID', ''],
+          ['c-p2', 'konten', 'Tinjau halaman Tentang (about), EN &amp; ID', ''],
+          ['c-p3', 'konten', 'Tinjau halaman Program (programs), EN &amp; ID', ''],
+          ['c-p4', 'konten', 'Tinjau halaman Malaria, EN &amp; ID', ''],
+          ['c-p5', 'konten', 'Tinjau halaman Imunisasi (immunization), EN &amp; ID', ''],
+          ['c-p6', 'konten', 'Tinjau halaman Kesehatan Ibu &amp; Anak (maternal-child-health), EN &amp; ID', ''],
+          ['c-p7', 'konten', 'Tinjau halaman TB, EN &amp; ID', ''],
+          ['c-p8', 'konten', 'Tinjau halaman HIV, EN &amp; ID', ''],
+          ['c-p9', 'konten', 'Tinjau halaman Kredibilitas (credibility), EN &amp; ID', ''],
+          ['c-p10', 'konten', 'Tinjau halaman Dampak (impact), EN &amp; ID', ''],
+          ['c-p11', 'konten', 'Tinjau halaman Transparansi (transparency), EN &amp; ID', ''],
+          ['c-p12', 'konten', 'Tinjau halaman Kontak (contact), EN &amp; ID', ''],
+          ['c-photo', 'konten', 'Isi 20 blok Gambar kosong (tempat foto) dengan foto asli dan teks alternatif', 'R37 · <code>cms:convert-photos</code>'],
+          ['c-ph', 'konten', '<code>cms:audit-placeholders</code> bersih (tidak ada <code>[ISI-DULU]</code> tersisa)', ''],
+          ['c-tr', 'konten', '<code>cms:audit-translations</code> bersih (EN dan ID lengkap)', ''],
+          ['c-legal', 'konten', 'Isi snippet <code>legal-details</code> (NPWP, rekening) langsung di CMS', 'jangan dikirim lewat chat'],
+          ['c-research', 'konten', 'Buat kategori <b>Penelitian</b> (EN &amp; ID), beri kategori itu ke artikel penelitian, lalu buat halaman Penelitian dengan blok Artikel Terbaru bersumber "Kategori tertentu"', 'R48 · docs/BLOK-ARTIKEL-TERBARU.md · pilih juga artikel unggulan/sematan'],
+          ['c-menu', 'konten', 'Susun menu header dan footer, termasuk tautan kategori artikel', 'docs/MENU.md'],
+          ['c-art', 'konten', 'Buat kategori, tag, dan artikel pertama (dua bahasa) lalu lewati alur persetujuan', 'docs/ARTIKEL-ALUR.md'],
+          ['c-seo', 'konten', 'Judul, deskripsi, dan gambar berbagi (og:image) tiap halaman utama', '']
+        ]
+      },
+      {
+        id: 'd', title: 'D. Keputusan yang menunggu', intro: 'Hal yang tidak bisa saya putuskan sendiri.', items: [
+          ['d-donate', 'putus', 'Yayasan: bagaimana donasi diterima? (CTA di Beranda masih <code>[ISI-DULU]</code>)', 'docs/HALAMAN-SITUS.md'],
+          ['d-npwp', 'putus', 'Yayasan: apakah NPWP/rekening ditampilkan di situs, dan di halaman mana?', ''],
+          ['d-notif', 'putus', 'Perlu notifikasi (email/dalam panel) ke peninjau saat ada artikel diajukan?', 'docs/ARTIKEL-ALUR.md · "Yang belum"'],
+          ['d-prev', 'putus', 'Perlu pratinjau publik untuk artikel terjadwal?', 'docs/ARTIKEL-ALUR.md'],
+          ['d-cut', 'putus', 'Kapan cutover: setelah berapa minggu editor lama dihapus?', 'PETA-JALAN tahap G (2–3 minggu stabil)']
+        ]
+      },
+      {
+        id: 'e', title: 'E. Backlog pengembangan kit', intro: 'Pekerjaan berikutnya di sisi saya. Urutan hanya saran.', items: [
+          ['e-idx', 'saran', 'Rapikan <code>article-index</code> Anda: dropdown kategori (<code>categoryList</code> dikomentari), kunci placeholder status <code>ui.articles.all_tags</code>, panggilan <code>deleteCategory/deleteTag</code> yang usang', 'temuan saat membaca berkasnya · bisa saya kerjakan bila berkasnya dikirim'],
+          ['e-del', 'saran', '<code>deleteArticle</code>: hapus gambar yang dipakai bersama artikel lain (risiko)', 'temuan saat membaca article-index'],
+          ['e-btn', 'saran', 'Jenis tautan <code>category</code> untuk blok Tombol', ''],
+          ['e-sm', 'saran', 'Kategori masuk sitemap', ''],
+          ['e-tagpub', 'saran', 'Tag ditampilkan di halaman publik (halaman artikel / daftar per tag)', ''],
+          ['e-notif', 'saran', 'Notifikasi ke peninjau', 'tergantung D'],
+          ['e-sched', 'saran', 'Pratinjau publik untuk artikel terjadwal', 'tergantung D'],
+          ['e-dnd', 'saran', 'Drag &amp; drop di outline (opsional; kontainer dalam kontainer tetap dilarang)', 'docs/OUTLINE.md'],
+          ['e-guard', 'saran', 'Tahap F: penjaga perubahan belum tersimpan', 'PETA-JALAN'],
+          ['e-bf', 'saran', 'Tahap F: cache Back/Forward', 'PETA-JALAN'],
+          ['e-resp', 'saran', 'Tahap F: tata letak responsif editor (tablet/ponsel)', 'PETA-JALAN'],
+          ['e-g', 'saran', 'Tahap G: hapus awalan <code>v2</code>, arahkan daftar ke builder, hapus <code>page-editor</code> lama', 'PETA-JALAN · setelah 2–3 minggu stabil']
+        ]
+      },
+      {
+        id: 'f', title: 'F. Fondasi: sudah terpasang &amp; teruji di proyek Anda?', intro: 'Sudah dibuat di kit (rilis 1–37). Centang bila sudah Anda pasang dan uji.', items: [
+          ['f-a', 'fondasi', 'Pengaturan halaman + Simpan end-to-end (judul, slug, status, SEO; snippet)', 'PETA-JALAN A'],
+          ['f-b', 'fondasi', 'Semua tipe blok terdaftar (eyebrow, image, card-builder, kolom, grup langkah)', 'PETA-JALAN B'],
+          ['f-b2', 'fondasi', 'Blok baru: Tombol, Akordion/FAQ, Daftar unduhan, Callout, Video, Galeri/Logo, Artikel terbaru', 'docs/USULAN-BLOK.md'],
+          ['f-tbl', 'fondasi', 'Blok Tabel (R34) dan Kolom rata vertikal (R35)', ''],
+          ['f-c', 'fondasi', 'Kanvas = pratinjau (iframe, pilih blok dengan klik, desktop/tablet/ponsel, bahasa)', 'docs/KANVAS.md'],
+          ['f-d', 'fondasi', 'Tiptap tunggal per bahasa + sanitizer server', 'PETA-JALAN D'],
+          ['f-e', 'fondasi', 'Artikel (kategori, tag, penulis, gambar unggulan, jadwal, alur status) dan Snippet', 'PETA-JALAN E'],
+          ['f-lnd', 'fondasi', 'Landing tahap 1: halaman, artikel, indeks, menu, SEO dasar', 'docs/LANDING-TAHAP-1.md'],
+          ['f-lang', 'fondasi', 'Dua bahasa: EN tanpa awalan, ID di /id', 'docs/BAHASA.md'],
+          ['f-med', 'fondasi', 'Media manager &amp; jenis berkas', 'docs/MEDIA-MANAGER.md'],
+          ['f-mig', 'fondasi', 'Migrasi data lama ke blok', 'docs/MIGRASI.md'],
+          ['f-design', 'fondasi', 'Galeri desain (landing + CMS) dilihat dan disetujui', 'desain-ysbh.zip']
+        ]
+      }
+    ];
+
+    const $ = s => document.querySelector(s);
+    const state = { f: 'all', tag: null, q: '', closed: {} };
+    const checks = new Map();   // id -> true
+    let db = null;
+
+    function esc(s) { return s }
+    function allItems() { return DATA.flatMap(s => s.items.map(i => ({ sec: s.id, id: i[0], tag: i[1], text: i[2], det: i[3] }))) }
+
+    function buildTagChips() {
+      const box = $('#tags'); box.innerHTML = '';
+      Object.keys(TAGS).forEach(k => {
+        const b = document.createElement('button'); b.className = 'chip'; b.textContent = TAGS[k]; b.setAttribute('aria-pressed', 'false'); b.dataset.t = k;
+        b.onclick = () => { state.tag = state.tag === k ? null : k; render() }; box.appendChild(b);
+      });
+    }
+
+    function render() {
+      const items = allItems();
+      const total = items.length, done = items.filter(i => checks.has(i.id)).length;
+      $('#pdone').textContent = done; $('#ptotal').textContent = total;
+      const pct = total ? Math.round(done * 100 / total) : 0;
+      $('#ppct').textContent = pct + '%'; $('#pfill').style.width = pct + '%';
+      $('#pleft').textContent = (total - done) + ' tersisa';
+      document.querySelectorAll('#seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === state.f)));
+      document.querySelectorAll('#tags .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === state.tag)));
+      const q = state.q.trim().toLowerCase();
+      const main = $('#main'); main.innerHTML = '';
+      DATA.forEach(s => {
+        const its = s.items.map(i => ({ id: i[0], tag: i[1], text: i[2], det: i[3] }));
+        const sd = its.filter(i => checks.has(i.id)).length;
+        const shown = its.filter(i => {
+          const d = checks.has(i.id);
+          if (state.f === 'todo' && d) return false;
+          if (state.f === 'done' && !d) return false;
+          if (state.tag && i.tag !== state.tag) return false;
+          if (q && !(i.text + ' ' + i.det).toLowerCase().includes(q)) return false;
+          return true;
+        });
+        const filtering = state.f !== 'all' || state.tag || q;
+        if (filtering && !shown.length) return;
+        const sec = document.createElement('section');
+        if (state.closed[s.id] && !filtering) sec.classList.add('closed');
+        sec.innerHTML = '<div class="sh" role="button" tabindex="0" aria-expanded="' + (!sec.classList.contains('closed')) + '"><h2>' + s.title + '</h2><span class="cnt">' + sd + '/' + its.length + '</span><span class="mini"><i style="width:' + (its.length ? sd * 100 / its.length : 0) + '%"></i></span><span class="chev">▾</span></div><p class="intro">' + s.intro + '</p>';
+        const head = sec.querySelector('.sh');
+        const toggle = () => { state.closed[s.id] = !state.closed[s.id]; render() };
+        head.onclick = toggle; head.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() } };
+        const ul = document.createElement('ul');
+        shown.forEach(i => {
+          const li = document.createElement('li'); const d = checks.has(i.id); if (d) li.className = 'done';
+          li.innerHTML = '<label><input type="checkbox"' + (d ? ' checked' : '') + '><span class="tx"><span class="t">' + i.text + '</span>' + (i.det ? '<span class="d">' + i.det + '</span>' : '') + '</span></label><span class="tag ' + i.tag + '">' + TAGS[i.tag] + '</span>';
+          li.querySelector('input').onchange = e => toggleItem(i.id, e.target.checked);
+          ul.appendChild(li);
+        });
+        if (!shown.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Tidak ada yang cocok.'; sec.appendChild(e) }
+        sec.appendChild(ul); main.appendChild(sec);
+      });
+      if (!main.children.length) { main.innerHTML = '<section><div class="empty">Tidak ada yang cocok dengan filter.</div></section>' }
+    }
+
+    let writing = Promise.resolve();
+    function toggleItem(id, on) {
+      if (on) checks.set(id, true); else checks.delete(id);
+      render();
+      if (!db) return;
+      const ref = db.doc('checks/' + id);
+      writing = writing.then(() => on ? ref.set({ done: true, at: Date.now() }) : ref.delete()).catch(() => { $('#note').textContent = 'Gagal menyimpan satu centang. Coba lagi.'; $('#note').classList.add('on') });
+    }
+
+    $('#seg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { state.f = b.dataset.f; render() } });
+    $('#q').addEventListener('input', e => { state.q = e.target.value; render() });
+
+    buildTagChips(); render();
+
+    (async () => {
+      try {
+        db = window.claude ? await claude.use('db') : null;
+      } catch (e) { db = null }
+      if (!db) { $('#note').classList.add('on'); return }
+      try {
+        db.collection('checks').onSnapshot(snap => {
+          checks.clear();
+          snap.docs.forEach(d => { if (d.exists) checks.set(d.id, true) });
+          render();
+        }, () => { $('#note').classList.add('on') });
+      } catch (e) { $('#note').classList.add('on') }
+    })();
+  </script>
+
+</body>
+</html>

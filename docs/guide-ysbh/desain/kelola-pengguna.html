@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kelola Pengguna — CMS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          foresty: '#064F3B', forest: '#043328',
+          goldy: '#EBCC26', 'goldy-soft': '#F7EBAF',
+          coral: '#E42326', 'coral-dark': '#BE1417',
+          paper: '#FBF7EA', ink: '#12241C', 'ink-soft': '#4B5D53',
+          'sage-soft': '#E9F1EB',
+        },
+        fontFamily: { display: ['Fraunces', 'serif'], body: ['"Plus Jakarta Sans"', 'sans-serif'] },
+      },
+    },
+  };
+</script>
+</head>
+<body class="m-0 bg-sage-soft text-ink font-body antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 shrink-0 bg-forest text-white flex flex-col">
+    <div class="flex items-center gap-3 px-6 py-6 border-b border-white/10">
+      <div class="w-9 h-9 rounded-lg bg-goldy flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-foresty" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      </div>
+      <div>
+        <div class="font-display font-bold text-sm leading-tight">CMS Editor</div>
+        <div class="text-[11px] text-goldy uppercase tracking-wider font-semibold">Blok Halaman</div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-5 px-3 space-y-6">
+      <div>
+        <a href="cms-dashboard-v2.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          Dashboard
+        </a>
+      </div>
+
+      <div>
+        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/40 mb-2">Konten</div>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/></svg>
+          Halaman
+          <span class="ml-auto text-[10px] font-bold bg-goldy text-foresty w-5 h-5 rounded-full flex items-center justify-center">12</span>
+        </a>
+      </div>
+
+      <div>
+        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/40 mb-2">Sistem</div>
+        <a href="kelola-pengguna.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/10 text-white font-semibold text-sm">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Pengguna
+        </a>
+        <a href="pengaturan-situs.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+          Pengaturan Situs
+        </a>
+      </div>
+    </nav>
+
+    <div class="px-4 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-goldy text-foresty flex items-center justify-center font-display font-bold text-sm">A</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold truncate">Admin</div>
+          <div class="text-xs text-white/50 truncate">Editor Konten</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <header class="bg-white border-b border-foresty/10 px-8 py-4 flex items-center justify-between gap-6 sticky top-0 z-10">
+      <div>
+        <h1 class="font-display font-bold text-xl text-foresty">Kelola Pengguna</h1>
+        <p class="text-xs text-ink-soft mt-0.5">Akun staf yang bisa masuk ke CMS ini</p>
+      </div>
+      <button onclick="document.getElementById('addUserModal').classList.remove('hidden')" class="inline-flex items-center gap-2 bg-coral text-white text-sm font-bold px-5 py-2.5 rounded-full hover:bg-coral-dark transition-colors whitespace-nowrap">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Tambah Pengguna
+      </button>
+    </header>
+
+    <main class="flex-1 p-8 space-y-6">
+
+      <!-- STAT STRIP -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="bg-white rounded-2xl border border-foresty/10 p-5 shadow-sm">
+          <div class="font-display font-bold text-2xl text-foresty">5</div>
+          <div class="text-sm text-ink-soft mt-1">Total Pengguna</div>
+        </div>
+        <div class="bg-white rounded-2xl border border-foresty/10 p-5 shadow-sm">
+          <div class="font-display font-bold text-2xl text-foresty">4</div>
+          <div class="text-sm text-ink-soft mt-1">Akun Aktif</div>
+        </div>
+        <div class="bg-white rounded-2xl border border-foresty/10 p-5 shadow-sm">
+          <div class="font-display font-bold text-2xl text-coral">1</div>
+          <div class="text-sm text-ink-soft mt-1">Akun Nonaktif</div>
+        </div>
+        <div class="bg-white rounded-2xl border border-foresty/10 p-5 shadow-sm">
+          <div class="font-display font-bold text-2xl text-foresty">1</div>
+          <div class="text-sm text-ink-soft mt-1">Super Admin</div>
+        </div>
+      </div>
+
+      <!-- PENJELASAN PERAN -->
+      <div class="bg-white rounded-2xl border border-foresty/10 shadow-sm p-6">
+        <h2 class="font-display font-bold text-foresty mb-4 text-sm">Tingkatan Peran</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="p-4 rounded-xl bg-sage-soft">
+            <span class="text-xs font-bold bg-foresty text-white px-2.5 py-1 rounded-full">Super Admin</span>
+            <p class="text-xs text-ink-soft mt-2.5 leading-relaxed">Akses penuh — termasuk kelola pengguna lain &amp; pengaturan situs.</p>
+          </div>
+          <div class="p-4 rounded-xl bg-sage-soft">
+            <span class="text-xs font-bold bg-forest text-goldy-soft px-2.5 py-1 rounded-full">Editor</span>
+            <p class="text-xs text-ink-soft mt-2.5 leading-relaxed">Bisa membuat &amp; menerbitkan Halaman apa pun, tanpa akses pengguna/pengaturan.</p>
+          </div>
+          <div class="p-4 rounded-xl bg-sage-soft">
+            <span class="text-xs font-bold bg-goldy-soft text-foresty px-2.5 py-1 rounded-full">Penulis</span>
+            <p class="text-xs text-ink-soft mt-2.5 leading-relaxed">Bisa menyusun Halaman, tapi perlu ditinjau Editor sebelum online.</p>
+          </div>
+          <div class="p-4 rounded-xl bg-sage-soft">
+            <span class="text-xs font-bold bg-white border border-foresty/20 text-ink-soft px-2.5 py-1 rounded-full">Peninjau</span>
+            <p class="text-xs text-ink-soft mt-2.5 leading-relaxed">Cuma bisa melihat &amp; memberi komentar, tidak bisa mengubah isi.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABEL PENGGUNA -->
+      <div class="bg-white rounded-2xl border border-foresty/10 shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs text-ink-soft uppercase tracking-wide bg-sage-soft/50">
+              <th class="px-6 py-3 font-semibold">Nama</th>
+              <th class="px-6 py-3 font-semibold">Peran</th>
+              <th class="px-6 py-3 font-semibold">Status</th>
+              <th class="px-6 py-3 font-semibold">Terakhir Masuk</th>
+              <th class="px-6 py-3 font-semibold text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-foresty/5">
+            <tr class="hover:bg-sage-soft/30">
+              <td class="px-6 py-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-foresty text-goldy-soft flex items-center justify-center font-display font-bold text-xs shrink-0">RS</div>
+                  <div>
+                    <div class="font-semibold text-ink">Rina Setiawan</div>
+                    <div class="text-xs text-ink-soft">rina@contoh.org</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-3.5"><span class="text-xs font-bold bg-foresty text-white px-2.5 py-1 rounded-full">Super Admin</span></td>
+              <td class="px-6 py-3.5"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-foresty"><span class="w-1.5 h-1.5 rounded-full bg-foresty"></span>Aktif</span></td>
+              <td class="px-6 py-3.5 text-ink-soft">Hari ini, 09:14</td>
+              <td class="px-6 py-3.5 text-right">
+                <button class="text-ink-soft hover:text-foresty px-2" title="Edit"><svg class="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+              </td>
+            </tr>
+            <tr class="hover:bg-sage-soft/30">
+              <td class="px-6 py-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-goldy text-foresty flex items-center justify-center font-display font-bold text-xs shrink-0">DP</div>
+                  <div>
+                    <div class="font-semibold text-ink">Dedi Purnama</div>
+                    <div class="text-xs text-ink-soft">dedi@contoh.org</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-3.5"><span class="text-xs font-bold bg-forest text-goldy-soft px-2.5 py-1 rounded-full">Editor</span></td>
+              <td class="px-6 py-3.5"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-foresty"><span class="w-1.5 h-1.5 rounded-full bg-foresty"></span>Aktif</span></td>
+              <td class="px-6 py-3.5 text-ink-soft">Kemarin, 16:40</td>
+              <td class="px-6 py-3.5 text-right">
+                <button class="text-ink-soft hover:text-foresty px-2" title="Edit"><svg class="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+              </td>
+            </tr>
+            <tr class="hover:bg-sage-soft/30">
+              <td class="px-6 py-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-goldy text-foresty flex items-center justify-center font-display font-bold text-xs shrink-0">AN</div>
+                  <div>
+                    <div class="font-semibold text-ink">Aulia Nur</div>
+                    <div class="text-xs text-ink-soft">aulia@contoh.org</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-3.5"><span class="text-xs font-bold bg-goldy-soft text-foresty px-2.5 py-1 rounded-full">Penulis</span></td>
+              <td class="px-6 py-3.5"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-foresty"><span class="w-1.5 h-1.5 rounded-full bg-foresty"></span>Aktif</span></td>
+              <td class="px-6 py-3.5 text-ink-soft">3 hari lalu</td>
+              <td class="px-6 py-3.5 text-right">
+                <button class="text-ink-soft hover:text-foresty px-2" title="Edit"><svg class="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+              </td>
+            </tr>
+            <tr class="hover:bg-sage-soft/30">
+              <td class="px-6 py-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-sage-soft text-foresty flex items-center justify-center font-display font-bold text-xs shrink-0">BW</div>
+                  <div>
+                    <div class="font-semibold text-ink">Bayu Wicaksono</div>
+                    <div class="text-xs text-ink-soft">bayu@contoh.org</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-3.5"><span class="text-xs font-bold bg-white border border-foresty/20 text-ink-soft px-2.5 py-1 rounded-full">Peninjau</span></td>
+              <td class="px-6 py-3.5"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-foresty"><span class="w-1.5 h-1.5 rounded-full bg-foresty"></span>Aktif</span></td>
+              <td class="px-6 py-3.5 text-ink-soft">1 minggu lalu</td>
+              <td class="px-6 py-3.5 text-right">
+                <button class="text-ink-soft hover:text-foresty px-2" title="Edit"><svg class="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+              </td>
+            </tr>
+            <tr class="hover:bg-sage-soft/30 opacity-60">
+              <td class="px-6 py-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-sage-soft text-foresty flex items-center justify-center font-display font-bold text-xs shrink-0">TH</div>
+                  <div>
+                    <div class="font-semibold text-ink">Tono Hidayat</div>
+                    <div class="text-xs text-ink-soft">tono@contoh.org</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-3.5"><span class="text-xs font-bold bg-white border border-foresty/20 text-ink-soft px-2.5 py-1 rounded-full">Penulis</span></td>
+              <td class="px-6 py-3.5"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-ink-soft"><span class="w-1.5 h-1.5 rounded-full bg-ink-soft/40"></span>Nonaktif</span></td>
+              <td class="px-6 py-3.5 text-ink-soft">2 bulan lalu</td>
+              <td class="px-6 py-3.5 text-right">
+                <button class="text-ink-soft hover:text-foresty px-2" title="Edit"><svg class="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ADD USER MODAL -->
+<div id="addUserModal" class="hidden fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-md p-7 shadow-xl">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-display font-bold text-lg text-foresty">Tambah Pengguna Baru</h3>
+      <button onclick="document.getElementById('addUserModal').classList.add('hidden')" class="text-ink-soft hover:text-foresty">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="text-xs font-bold text-ink-soft uppercase tracking-wide mb-1.5 block">Nama Lengkap</label>
+        <input type="text" placeholder="Mis. Aulia Nur" class="w-full px-4 py-2.5 rounded-xl border border-foresty/15 text-sm focus:outline-none focus:border-foresty">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-ink-soft uppercase tracking-wide mb-1.5 block">Email</label>
+        <input type="email" placeholder="nama@contoh.org" class="w-full px-4 py-2.5 rounded-xl border border-foresty/15 text-sm focus:outline-none focus:border-foresty">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-ink-soft uppercase tracking-wide mb-1.5 block">Peran</label>
+        <select class="w-full px-4 py-2.5 rounded-xl border border-foresty/15 text-sm focus:outline-none focus:border-foresty bg-white">
+          <option>Super Admin</option>
+          <option selected>Editor</option>
+          <option>Penulis</option>
+          <option>Peninjau</option>
+        </select>
+      </div>
+      <p class="text-xs text-ink-soft">Tautan undangan berisi link untuk membuat kata sandi akan dikirim ke email di atas.</p>
+      <button class="w-full bg-coral text-white font-bold text-sm py-3 rounded-xl hover:bg-coral-dark transition-colors">Kirim Undangan</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

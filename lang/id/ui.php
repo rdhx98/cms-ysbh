@@ -53,6 +53,7 @@ return [
         'documentation' => 'Dokumentasi',
         'settings' => 'Pengaturan',
         'block' => 'Blok',
+        'navigation' => 'Navigasi',
     ],
     'header' => [
         'dashboard' => 'Dasbor',

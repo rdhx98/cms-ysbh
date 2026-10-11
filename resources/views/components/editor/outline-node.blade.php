@@ -2,8 +2,11 @@
   <x-editor.outline-node> — satu baris di pohon struktur, dirender REKURSIF untuk anak-anaknya.
   Struktur (blok apa ada di mana) datang dari server; yang reaktif di klien hanya label dan sorotan fokus,
   sehingga berpindah fokus dan mengetik judul tidak memerlukan request.
+
+  Rilis 43: tombol "⋯" membuka menu bersama di <x-editor.outline> (satu menu untuk seluruh pohon). Baris menyimpan konteksnya di
+  data-ctx (induk, zona, indeks, jenis daftar); menu dan pintasan Alt+panah membacanya dari situ.
 --}}
-@props(['id', 'content', 'depth' => 0, 'index' => 0, 'count' => 1])
+@props(['id', 'content', 'depth' => 0, 'index' => 0, 'count' => 1, 'parent' => null, 'zone' => null, 'prev' => null, 'zoneHidden' => false])
 
 @php
   $block = $content[$id] ?? null;
@@ -14,17 +17,43 @@
       $childTotal += count($block['data'][$z['key']] ?? []);
   }
   $pad = 6 + $depth * 14;
+
+  // Konteks baris untuk menu "⋯" dan pintasan keyboard (rilis 43). Hanya petunjuk tampilan: server memvalidasi ulang SEMUA argumen.
+  //   kind   = daftar jenis untuk "Sisipkan di atas/bawah": 'root' atau jenis induk (kontainer)
+  //   canAdd = false di zona tersembunyi (server menolak menambah ke sana)
+  //   in     = saudara tepat di atasnya kontainer yang menerima jenis ini dan punya zona tampil
+  $ctx = null;
+  if ($block) {
+      $inLabel = null;
+      $prevBlock = $prev ? ($content[$prev] ?? null) : null;
+      if ($prevBlock && \App\Editor\BlockPalette::isContainer($prevBlock['type'] ?? '')
+          && \App\Editor\BlockPalette::allowsChild($prevBlock['type'], $type)
+          && collect(\App\Editor\BlockPalette::zonesFor($prevBlock))->contains(fn ($z) => ! $z['hidden'])) {
+          $inLabel = \App\Editor\BlockPalette::label($prevBlock['type']);
+      }
+      $ctx = [
+          'id' => $id, 'parent' => $parent, 'zone' => $zone, 'index' => $index, 'count' => $count,
+          'kind' => $parent ? \App\Editor\BlockPalette::canonical($content[$parent]['type'] ?? '') : 'root',
+          'canAdd' => ! $zoneHidden,
+          'out' => $parent !== null,
+          'in' => $inLabel !== null, 'inLabel' => $inLabel,
+      ];
+  }
 @endphp
 
 @if ($block)
   <div wire:key="outline-{{ $id }}">
     <div
       class="group flex items-center rounded-md"
+      data-outline-row="{{ $id }}"
+      data-ctx="{{ json_encode($ctx) }}"
       x-bind:class="$store.editor.id === @js($id) ? 'bg-foresty text-white' : 'hover:bg-sage-soft'"
     >
       <button
         type="button"
         x-on:click="$store.editor.focusBlock(@js($id), @js($type))"
+        x-on:keydown="rowKey($event)"
+        data-outline-focus
         class="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pr-1 text-left"
         style="padding-left: {{ $pad }}px"
       >
@@ -34,6 +63,9 @@
       </button>
 
       <div class="flex shrink-0 items-center pr-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
+        <button type="button" title="Menu: sisipkan, pindahkan, masuk/keluar kontainer" aria-label="Menu blok" aria-haspopup="menu" x-on:click.stop="openMenu($event)" class="rounded p-1 hover:bg-black/10">
+          <svg class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2.2" /><circle cx="12" cy="12" r="2.2" /><circle cx="19" cy="12" r="2.2" /></svg>
+        </button>
         <button type="button" title="Naik" @disabled($index === 0) x-on:click.stop="$wire.moveBlock(@js($id), -1)" class="rounded p-1 hover:bg-black/10 disabled:opacity-30">
           <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6" /></svg>
         </button>
@@ -69,7 +101,8 @@
         @endif
 
         @foreach ($children as $i => $childId)
-          <x-editor.outline-node :id="$childId" :content="$content" :depth="$depth + 1" :index="$i" :count="count($children)" />
+          <x-editor.outline-node :id="$childId" :content="$content" :depth="$depth + 1" :index="$i" :count="count($children)"
+            :parent="$id" :zone="$zone['key']" :prev="$children[$i - 1] ?? null" :zone-hidden="$zone['hidden']" />
         @endforeach
 
         @unless ($zone['hidden'])

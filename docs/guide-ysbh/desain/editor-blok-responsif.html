@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor Blok — Primitif yang Dirakit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --foresty:#064F3B; --forest:#043328;
+    --goldy:#EBCC26; --goldy-soft:#F7EBAF;
+    --coral:#E42326; --coral-dark:#BE1417;
+    --paper:#FBF7EA; --ink:#12241C; --ink-soft:#4B5D53;
+    --sage-soft:#E9F1EB; --white:#FFFFFF;
+    --line: rgba(6,79,59,0.14);
+    --shadow: 0 18px 40px -26px rgba(6,45,35,0.35);
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  body{ margin:0; background:var(--sage-soft); color:var(--ink); font-family:'Plus Jakarta Sans',sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:'Fraunces',serif; color:var(--foresty); margin:0; }
+  button{ font-family:inherit; cursor:pointer; }
+  input,textarea,select{ font-family:inherit; }
+  svg{ display:block; flex-shrink:0; }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+
+  .page{ max-width:1400px; margin:0 auto; padding:22px 24px 36px; }
+  .head{ display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:14px; }
+  .head .eyebrow{ font-size:11.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--coral-dark); }
+  .head h1{ font-size:1.55rem; margin-top:5px; }
+  .head p{ font-size:13px; color:var(--ink-soft); max-width:640px; margin:5px 0 0; }
+  .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{ background:#fff; border:1px solid var(--line); border-radius:999px; padding:7px 13px; font-size:12px; font-weight:700; color:var(--ink-soft); }
+  .chip b{ color:var(--foresty); font-family:'Fraunces',serif; font-size:14px; }
+
+  /* ---------- EDITOR SHELL ---------- */
+  .editor{ background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; height:calc(100vh - 150px); min-height:640px; }
+  .e-top{ display:flex; align-items:center; gap:14px; padding:11px 16px; border-bottom:1px solid var(--line); background:var(--paper); flex-shrink:0; }
+  .crumbs{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; flex:1; font-size:12.5px; font-weight:600; color:var(--ink-soft); min-width:0; }
+  .crumbs a{ cursor:pointer; }
+  .crumbs a:hover{ color:var(--foresty); text-decoration:underline; }
+  .crumbs .sep{ opacity:.4; }
+  .crumbs .cur{ color:var(--foresty); font-weight:800; }
+  .seg{ display:flex; background:var(--sage-soft); border-radius:9px; padding:3px; }
+  .seg button{ border:none; background:none; padding:6px 13px; border-radius:7px; font-weight:800; font-size:12px; color:var(--ink-soft); }
+  .seg button.on{ background:var(--foresty); color:#fff; }
+  .btn-save{ background:var(--coral); color:#fff; border:none; font-weight:800; font-size:12.5px; padding:9px 18px; border-radius:999px; }
+  .e-body{ flex:1; display:grid; grid-template-columns:250px minmax(0,1fr) 330px; min-height:0; }
+  .pane{ overflow-y:auto; min-height:0; }
+  .e-foot{ border-top:1px solid var(--line); background:var(--paper); padding:7px 16px; font-size:11.5px; color:var(--ink-soft); display:flex; gap:18px; flex-wrap:wrap; flex-shrink:0; }
+  .e-foot kbd{ background:#fff; border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:10.5px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--foresty); }
+
+  /* ---------- OUTLINE ---------- */
+  .outline{ border-right:1px solid var(--line); padding:14px 10px; }
+  .outline h4, .insp h4{ margin:0 0 10px; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); padding:0 6px; }
+  .ol, .ol ul{ list-style:none; margin:0; padding:0; font-size:12.5px; }
+  .ol ul{ padding-left:13px; margin-left:9px; border-left:1px solid var(--line); }
+  .ol .slot{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#8a978f; padding:7px 8px 3px; }
+  .ol .gap{ font-size:11px; color:#8a978f; padding:4px 10px; font-style:italic; }
+  .ol a{ display:flex; align-items:center; gap:7px; padding:5px 8px; border-radius:7px; color:var(--ink-soft); font-weight:600; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ol a:hover{ background:var(--sage-soft); color:var(--foresty); }
+  .ol a.path{ color:var(--foresty); font-weight:800; }
+  .ol a.on{ background:var(--foresty); color:#fff; }
+  .ol a .ti{ width:15px; height:15px; opacity:.75; }
+  .ol a span{ overflow:hidden; text-overflow:ellipsis; }
+
+  /* ---------- CANVAS ---------- */
+  .canvas{ padding:20px 24px 40px; background:var(--paper); }
+  .node-head{ display:flex; align-items:center; gap:12px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin-bottom:16px; flex-wrap:wrap; }
+  .node-head .ico{ width:38px; height:38px; border-radius:11px; background:var(--foresty); color:var(--goldy); display:flex; align-items:center; justify-content:center; }
+  .node-head .t{ flex:1; min-width:150px; }
+  .node-head .t b{ display:block; font-family:'Fraunces',serif; font-size:1.05rem; color:var(--foresty); line-height:1.2; }
+  .node-head .t span{ font-size:11.5px; color:var(--ink-soft); }
+  .nav{ display:flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700; color:var(--ink-soft); }
+  .ib{ width:30px; height:30px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; }
+  .ib:hover:not(:disabled){ background:var(--foresty); color:#fff; border-color:var(--foresty); }
+  .ib:disabled{ opacity:.35; cursor:default; }
+  .ib svg{ width:14px; height:14px; }
+  .ib.del:hover:not(:disabled){ background:var(--coral); border-color:var(--coral); }
+  .tagline{ display:flex; gap:6px; margin:-6px 0 16px 2px; flex-wrap:wrap; }
+  .tg{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; padding:3px 9px; border-radius:999px; background:var(--goldy-soft); color:var(--foresty); }
+  .tg.d{ background:var(--sage-soft); }
+
+  .lbl{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); margin:0 0 8px; }
+  .pvbox{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:var(--shadow); margin-bottom:20px; }
+
+  .slotbox{ margin-bottom:18px; }
+  .slot-h{ display:flex; align-items:center; gap:10px; margin-bottom:8px; position:relative; flex-wrap:wrap; }
+  .slot-h .nm{ font-weight:800; font-size:13px; color:var(--ink); }
+  .slot-h .rule{ font-size:11px; color:var(--ink-soft); flex:1; min-width:120px; }
+  .slot-h .warn{ color:var(--coral-dark); font-weight:800; }
+  .pbtn{ display:inline-flex; align-items:center; gap:6px; border:none; border-radius:999px; font-weight:800; font-size:12px; padding:7px 13px; background:var(--foresty); color:#fff; }
+  .pbtn:disabled{ opacity:.4; cursor:default; }
+  .pbtn.soft{ background:var(--sage-soft); color:var(--foresty); }
+  .pbtn.soft:hover:not(:disabled){ background:var(--foresty); color:#fff; }
+  .pbtn svg{ width:13px; height:13px; }
+  .menu{ position:absolute; right:0; top:34px; z-index:20; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 24px 50px -18px rgba(6,45,35,.45); padding:6px; width:290px; max-height:340px; overflow-y:auto; }
+  .menu .grp{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:#8a978f; padding:8px 8px 4px; }
+  .menu button{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:none; border:none; padding:8px; border-radius:8px; }
+  .menu button:hover:not(:disabled){ background:var(--sage-soft); }
+  .menu button:disabled{ opacity:.4; cursor:default; }
+  .menu .mi{ width:28px; height:28px; border-radius:8px; background:var(--sage-soft); color:var(--foresty); display:flex; align-items:center; justify-content:center; }
+  .menu .mi svg{ width:14px; height:14px; }
+  .menu b{ display:block; font-size:12.5px; color:var(--ink); }
+  .menu small{ font-size:11px; color:var(--ink-soft); }
+  .filter{ border:1.5px solid var(--line); border-radius:999px; padding:6px 12px; font-size:12px; outline:none; width:180px; background:#fff; }
+  .filter:focus{ border-color:var(--foresty); }
+
+  .row{ display:flex; align-items:center; gap:10px; background:#fff; border:1.5px solid transparent; border-radius:11px; padding:8px 10px; margin-bottom:6px; cursor:pointer; box-shadow:0 6px 18px -14px rgba(6,45,35,.35); }
+  .row:hover{ border-color:var(--line); }
+  .row .no{ width:22px; text-align:right; font-size:11px; font-weight:800; color:#8a978f; flex-shrink:0; }
+  .row .ty{ display:flex; align-items:center; gap:6px; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; padding:3px 8px; border-radius:6px; background:var(--sage-soft); color:var(--foresty); flex-shrink:0; width:92px; }
+  .row .ty svg{ width:12px; height:12px; }
+  .row .lb{ flex:1; min-width:0; font-size:12.5px; font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .row .cn{ font-size:10.5px; font-weight:800; color:var(--ink-soft); background:var(--paper); border-radius:999px; padding:2px 8px; flex-shrink:0; }
+  .row .act{ display:flex; gap:3px; opacity:0; transition:opacity .12s; }
+  .row:hover .act{ opacity:1; }
+  .row .ib{ width:26px; height:26px; }
+  .row .go{ color:#8a978f; }
+  .empty{ border:2px dashed var(--line); border-radius:12px; padding:18px; text-align:center; font-size:12.5px; color:var(--ink-soft); background:rgba(255,255,255,.6); }
+  .more{ width:100%; border:1.5px dashed var(--line); background:#fff; border-radius:10px; padding:9px; font-weight:800; font-size:12px; color:var(--ink-soft); }
+  .more:hover{ border-color:var(--foresty); color:var(--foresty); }
+  .leafhint{ background:var(--goldy-soft); border-radius:12px; padding:14px 16px; font-size:12.5px; color:var(--ink); }
+
+  /* ---------- INSPECTOR ---------- */
+  .insp{ border-left:1px solid var(--line); padding:16px 16px 28px; background:#fff; }
+  .ctx{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .ctx .id{ font-size:10.5px; color:#8a978f; }
+  .fld{ margin-bottom:15px; }
+  .fld > label{ display:block; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-bottom:7px; }
+  .i18n{ margin-bottom:7px; position:relative; }
+  .i18n .lg{ position:absolute; top:7px; left:8px; font-size:9.5px; font-weight:800; background:var(--sage-soft); color:var(--foresty); border-radius:4px; padding:1px 6px; }
+  .i18n textarea{ width:100%; border:1.5px solid var(--line); border-radius:9px; padding:26px 10px 8px; font-size:12.5px; color:var(--ink); resize:vertical; outline:none; min-height:62px; }
+  .i18n textarea.one{ min-height:0; height:62px; }
+  .i18n textarea:focus{ border-color:var(--foresty); }
+  .choice{ display:flex; flex-wrap:wrap; gap:5px; }
+  .choice button{ border:1.5px solid var(--line); background:#fff; border-radius:8px; padding:6px 11px; font-size:12px; font-weight:700; color:var(--ink-soft); }
+  .choice button.on{ border-color:var(--foresty); background:var(--foresty); color:#fff; }
+  .sw{ display:flex; gap:8px; flex-wrap:wrap; }
+  .sw button{ width:30px; height:30px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--line); }
+  .sw button.on{ box-shadow:0 0 0 2.5px var(--foresty); }
+  .sw .auto{ background:conic-gradient(#064F3B 0 25%,#E42326 0 50%,#EBCC26 0 75%,#4B5D53 0); }
+  .igrid{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
+  .igrid button{ aspect-ratio:1; border:1.5px solid var(--line); border-radius:9px; background:#fff; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; }
+  .igrid button.on{ border-color:var(--foresty); background:var(--sage-soft); color:var(--foresty); }
+  .igrid svg{ width:17px; height:17px; }
+  .mgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+  .mgrid button{ border:2px solid transparent; border-radius:9px; padding:0; height:52px; }
+  .mgrid button.on{ border-color:var(--coral); }
+  .rgrid{ display:flex; flex-direction:column; gap:6px; }
+  .rgrid button{ display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); background:#fff; border-radius:9px; padding:7px 9px; font-size:12px; font-weight:700; color:var(--ink-soft); }
+  .rgrid button.on{ border-color:var(--foresty); color:var(--foresty); background:var(--sage-soft); }
+  .rgrid .bars{ display:flex; gap:3px; flex:1; height:14px; }
+  .rgrid .bars i{ background:#b9c4bd; border-radius:3px; display:block; }
+  .rgrid button.on .bars i{ background:var(--foresty); }
+  .sec{ margin-top:18px; padding-top:14px; border-top:1px solid var(--line); }
+  .sec h5{ margin:0 0 10px; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--foresty); }
+  .kv{ display:flex; justify-content:space-between; font-size:12px; padding:4px 0; color:var(--ink-soft); }
+  .kv b{ color:var(--ink); }
+  details{ margin-top:14px; }
+  summary{ font-size:11.5px; font-weight:800; color:var(--ink-soft); cursor:pointer; }
+  pre{ background:#12241C; color:#cfe5d8; font-size:10.5px; border-radius:10px; padding:12px; overflow-x:auto; line-height:1.5; margin:8px 0 0; font-family:'JetBrains Mono',monospace; }
+  .dangerbtn{ width:100%; margin-top:14px; background:#FDEAEA; color:var(--coral-dark); border:none; border-radius:9px; padding:9px; font-weight:800; font-size:12.5px; }
+  .dangerbtn:hover{ background:var(--coral); color:#fff; }
+
+
+  /* ================= RESPONSIF ================= */
+  .btn-struct, .btn-back{ display:none; flex-shrink:0; }
+  .scrim{ display:none; }
+  .tabbar{ display:none; }
+
+  /* Tablet & layar sempit: struktur jadi laci, kanvas + properti tetap berdampingan */
+  @media (max-width:1100px){
+    .e-body{ grid-template-columns:minmax(0,1fr) 300px; position:relative; }
+    .outline{ position:absolute; left:0; top:0; bottom:0; width:270px; z-index:30; background:#fff;
+              transform:translateX(-100%); transition:transform .22s ease; box-shadow:0 0 0 rgba(0,0,0,0); }
+    .editor.drawer .outline{ transform:none; box-shadow:18px 0 40px -20px rgba(6,45,35,.5); }
+    .editor.drawer .scrim{ display:block; position:absolute; inset:0; background:rgba(6,36,28,.35); z-index:25; }
+    .btn-struct{ display:flex; }
+    .e-foot{ display:none; }
+    .canvas{ padding:16px 16px 32px; }
+  }
+  /* Layar sentuh: aksi baris tidak boleh bergantung pada hover */
+  @media (hover:none){ .row .act{ opacity:1; } }
+
+  /* Ponsel: satu panel per waktu + bilah tab bawah */
+  @media (max-width:760px){
+    .page{ padding:10px 10px 14px; }
+    .head{ margin-bottom:8px; }
+    .head h1{ font-size:1.15rem; }
+    .head p{ display:none; }
+    .chips .chip{ padding:5px 10px; font-size:11px; }
+    .editor{ height:calc(100dvh - 118px); min-height:520px; border-radius:14px; }
+    .e-top{ padding:8px 10px; gap:8px; }
+    .btn-struct{ display:none; }
+    .btn-back{ display:flex; }
+    .crumbs > :not(.cur){ display:none; }
+    .crumbs .cur{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:13px; }
+    .seg button{ padding:6px 9px; }
+    .btn-save{ padding:8px 12px; }
+    .e-body{ display:block; overflow:hidden; }
+    .e-body > .pane{ display:none; height:100%; width:100%; position:static; transform:none; box-shadow:none; border:none; }
+    .editor[data-pane="outline"] .outline{ display:block; }
+    .editor[data-pane="canvas"] .canvas{ display:flex; flex-direction:column; }
+    .canvas > .lbl, .canvas > .pvbox{ order:9; }          /* struktur dulu, pratinjau di bawah */
+    .canvas > .pvbox{ max-height:360px; overflow:hidden; position:relative; }
+    .canvas > .pvbox::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:56px; background:linear-gradient(transparent,#fff); pointer-events:none; }
+    .editor[data-pane="insp"] .insp{ display:block; }
+    .scrim{ display:none !important; }
+    .tabbar{ display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--line); background:#fff; flex-shrink:0; }
+    .tabbar button{ border:none; background:none; padding:13px 0 12px; font-weight:800; font-size:12.5px; color:var(--ink-soft); border-top:3px solid transparent; }
+    .tabbar button.on{ color:var(--foresty); border-top-color:var(--coral); background:var(--sage-soft); }
+    .canvas{ padding:14px 12px 28px; }
+    .insp{ padding:14px 14px 28px; }
+    .node-head{ padding:10px; gap:8px; }
+    .node-head .nav span{ display:none; }
+    .ib{ width:38px; height:38px; }
+    .ib svg{ width:16px; height:16px; }
+    .pvbox{ padding:14px; }
+    .slot-h .rule{ display:none; }
+    .menu{ left:0; right:0; width:auto; top:40px; }
+    .row{ padding:10px; gap:8px; }
+    .row .no{ display:none; }
+    .row .ty{ width:auto; font-size:0; gap:0; padding:5px 7px; }
+    .row .ty svg{ width:14px; height:14px; }
+    .row .act{ display:none; }
+    .choice button{ padding:9px 13px; }
+    .sw button{ width:38px; height:38px; }
+    .igrid{ grid-template-columns:repeat(4,1fr); }
+    .filter{ width:100%; }
+  }
+
+  .toast{ position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(16px); background:var(--coral-dark); color:#fff; padding:11px 20px; border-radius:999px; font-size:13px; font-weight:700; opacity:0; pointer-events:none; transition:.25s; z-index:99; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <div>
+      <div class="eyebrow">Mockup · Editor Blok</div>
+      <h1>Satu Mesin, Banyak Bentuk</h1>
+      <p>Blok dasar (Teks, Eyebrow, Ikon, Gambar, Tombol) dirakit lewat container (Kartu, Kolom, Langkah, Step Group). Hanya node yang difokus yang menjadi editor; anak-anaknya tampil sebagai ringkasan. Coba buka langkah, tambah blok, ganti jumlah kolom, atau duplikat.</p>
+    </div>
+    <div class="chips">
+      <div class="chip">Node <b id="stNodes">0</b></div>
+      <div class="chip">Editor penuh di DOM <b>1</b></div>
+      <div class="chip">Kedalaman fokus <b id="stDepth">0</b> / 6</div>
+    </div>
+  </div>
+
+  <div class="editor" data-pane="canvas">
+    <div class="e-top">
+      <button class="ib btn-struct" data-act="drawer" title="Struktur">☰</button>
+      <button class="ib btn-back" data-act="back" title="Naik satu level">‹</button>
+      <div class="crumbs" id="crumbs"></div>
+      <div class="seg" id="langSeg">
+        <button data-lang="id">ID</button><button data-lang="en">EN</button><button data-lang="both" class="on">Ganda</button>
+      </div>
+      <button class="btn-save">Simpan</button>
+    </div>
+    <div class="e-body">
+      <div class="scrim" data-act="drawer"></div>
+      <nav class="pane outline"><h4>Struktur</h4><div id="outline"></div></nav>
+      <section class="pane canvas" id="canvas"></section>
+      <aside class="pane insp"><h4>Properti</h4><div id="insp"></div></aside>
+    </div>
+    <div class="e-foot">
+      <span><kbd>Esc</kbd> naik satu level</span>
+      <span><kbd>←</kbd> <kbd>→</kbd> blok sebelum / sesudah</span>
+      <span>Slot menerima blok berdasarkan <b>tag</b>, bukan daftar tipe</span>
+    </div>
+    <div class="tabbar" id="tabbar">
+      <button data-act="pane" data-p="outline">Struktur</button>
+      <button data-act="pane" data-p="canvas" class="on">Kanvas</button>
+      <button data-act="pane" data-p="insp">Properti</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================
+   REGISTRI — satu-satunya sumber aturan
+   ===================================================== */
+const MAXD = 6;
+const ICONS = {
+  search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  pill:'<path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',
+  heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8Z"/>',
+  file:'<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l6 6v12a2 2 0 0 1-2 2z"/><path d="M14 2v6h6"/>',
+  star:'<path d="m12 2 3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>',
+  cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  flask:'<path d="M9 3h6M10 3v6L4 20a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1l-6-11V3"/>',
+  home:'<path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/>',
+  map:'<path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/>',
+  // UI
+  type:'<path d="M4 7V4h16v3M9 20h6M12 4v16"/>',
+  eyebrow:'<path d="M4 7h10M4 13h16M4 18h12"/>',
+  image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
+  button:'<rect x="3" y="8" width="18" height="8" rx="4"/>',
+  card:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h4M7 13h10"/>',
+  columns:'<rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="18" rx="1.5"/>',
+  step:'<circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/>',
+  steps:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  page:'<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l6 6v12a2 2 0 0 1-2 2z"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  up:'<path d="m18 15-6-6-6 6"/>', down:'<path d="m6 9 6 6 6-6"/>',
+  left:'<path d="m15 18-6-6 6-6"/>', right:'<path d="m9 18 6-6-6-6"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+  trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/>',
+  wand:'<path d="m15 4 5 5L8 21l-5-5z"/><path d="M14 5l5 5"/>'
+};
+const ICON_NAMES = ['search','users','pill','shield','heart','file','star','cal','flask','home','phone','map'];
+const MEDIA = [
+  {id:1,name:'malaria-sarmi-signing.jpg',g:['#064F3B','#0E6A4F']},
+  {id:2,name:'imunisasi-cold-chain.jpg',g:['#1b6b8a','#0d3d52']},
+  {id:3,name:'hiv-wanggar-bimtek.jpg',g:['#8a5a1b','#52330d']},
+  {id:4,name:'kia-pelatihan-bayi.jpg',g:['#b83b6a','#6a1f3c']},
+  {id:5,name:'tbc-ojt-wanggar.jpg',g:['#4a6b1b','#2a3f0d']},
+  {id:6,name:'laporan-sampul.jpg',g:['#4B5D53','#12241C']}
+];
+const RATIOS = [[1],[1,1],[1,3],[1,2,1],[1,1,1,1]];
+const TONES = [['goldy','Goldy','#F7EBAF'],['sage','Sage','#E9F1EB'],['forest','Forest','#064F3B']];
+const COLORS = [['','Otomatis',null],['foresty','Foresty','#064F3B'],['coral','Coral','#E42326'],['soft','Abu','#4B5D53']];
+const CHex = {foresty:'#064F3B',coral:'#E42326',soft:'#4B5D53',ink:'#12241C'};
+
+const slotCols = (accepts)=> (n)=> n.props.layout.map((r,i)=>({name:'col_'+(i+1),label:'Kolom '+(i+1),accepts,min:0,max:Infinity}));
+
+const REG = {
+  page:{label:'Halaman',kind:'root',tags:[],ic:'page',desc:'',
+    slots:()=>[{name:'body',label:'Isi halaman',accepts:['content','surface','layout'],min:0,max:Infinity}], fields:[], defaults:{}},
+  text:{label:'Teks',kind:'leaf',tags:['content'],ic:'type',desc:'Judul, isi, keterangan, atau lencana',
+    fields:[{k:'text',t:'i18n',label:'Teks',multi:true},
+            {k:'role',t:'choice',label:'Peran',opts:[['title','Judul'],['body','Isi'],['caption','Keterangan'],['pill','Lencana']]},
+            {k:'color',t:'swatch',label:'Warna',opts:COLORS}],
+    defaults:{text:{id:'',en:''},role:'body',color:''}},
+  eyebrow:{label:'Eyebrow',kind:'leaf',tags:['content'],ic:'eyebrow',desc:'Label kecil di atas judul',
+    fields:[{k:'text',t:'i18n',label:'Teks'}], defaults:{text:{id:'',en:''}}},
+  icon:{label:'Ikon',kind:'leaf',tags:['content','media'],ic:'star',desc:'Ikon dalam kotak berwarna',
+    fields:[{k:'name',t:'icon',label:'Ikon'},{k:'tone',t:'swatch',label:'Nada',opts:TONES},
+            {k:'size',t:'choice',label:'Ukuran',opts:[['md','Standar'],['lg','Besar']]}],
+    defaults:{name:'star',tone:'goldy',size:'md'}},
+  image:{label:'Gambar',kind:'leaf',tags:['content','media'],ic:'image',desc:'Gambar dari pustaka berkas',
+    fields:[{k:'media_id',t:'media',label:'Berkas'},{k:'alt',t:'i18n',label:'Teks alternatif'},{k:'caption',t:'i18n',label:'Keterangan'},
+            {k:'ratio',t:'choice',label:'Rasio',opts:[['16:9','16:9'],['4:3','4:3'],['1:1','1:1']]}],
+    defaults:{media_id:1,alt:{id:'',en:''},caption:{id:'',en:''},ratio:'16:9'}},
+  button:{label:'Tombol',kind:'leaf',tags:['content'],ic:'button',desc:'Tombol ajakan bertindak',
+    fields:[{k:'label',t:'i18n',label:'Label'},{k:'style',t:'choice',label:'Gaya',opts:[['solid','Solid'],['ghost','Garis']]}],
+    defaults:{label:{id:'Pelajari',en:'Learn more'},style:'solid'}},
+  card:{label:'Kartu',kind:'container',tags:['surface'],ic:'card',desc:'Permukaan dengan kolom',
+    slots:slotCols(['content']),
+    fields:[{k:'layout',t:'ratios',label:'Kolom'},{k:'surface',t:'choice',label:'Permukaan',opts:[['soft','Putih'],['plain','Garis'],['forest','Hijau']]}],
+    defaults:{layout:[1,3],surface:'soft'}},
+  columns:{label:'Kolom',kind:'container',tags:['layout'],ic:'columns',desc:'Tata letak banyak kolom',
+    slots:slotCols(['content','surface']),
+    fields:[{k:'layout',t:'ratios',label:'Kolom'},{k:'gap',t:'choice',label:'Jarak',opts:[['md','Sedang'],['lg','Lebar']]}],
+    defaults:{layout:[1,1],gap:'md'}},
+  step:{label:'Langkah',kind:'container',tags:['step'],ic:'step',desc:'Satu langkah, berisi satu kartu',
+    slots:()=>[{name:'body',label:'Isi langkah',accepts:['surface'],min:1,max:1}],
+    fields:[{k:'title',t:'i18n',label:'Judul langkah'}], defaults:{title:{id:'Langkah baru',en:'New step'}}},
+  steps:{label:'Step Group',kind:'container',tags:['layout'],ic:'steps',desc:'Kumpulan langkah berurutan',
+    slots:()=>[{name:'items',label:'Langkah',accepts:['step'],min:1,max:100}],
+    fields:[{k:'numbering',t:'choice',label:'Penomoran',opts:[['num','Angka'],['dot','Titik']]}], defaults:{numbering:'num'}}
+};
+
+/* =====================================================
+   MODEL — pohon datar, anak = ID di dalam slot bernama
+   ===================================================== */
+let seq = 0;
+const nodes = {};
+const clone = (o)=>JSON.parse(JSON.stringify(o));
+const slotsOf = (n)=>REG[n.type].slots ? REG[n.type].slots(n) : [];
+const canAccept = (sd,type)=> sd.accepts.includes('*') || REG[type].tags.some(t=>sd.accepts.includes(t));
+
+function mk(type, props={}, slots={}){
+  const id = 'n'+(++seq);
+  const n = {id,type,props:Object.assign(clone(REG[type].defaults||{}),clone(props)),slots:{}};
+  nodes[id]=n;
+  slotsOf(n).forEach(s=>n.slots[s.name]=[]);
+  Object.keys(slots).forEach(k=>n.slots[k]=slots[k]);
+  return id;
+}
+const I18=(a,b)=>({id:a,en:b});
+function cardStd(icon,tone,tId,tEn,bId,bEn){
+  const c = mk('card',{layout:[1,3]});
+  nodes[c].slots.col_1=[mk('icon',{name:icon,tone})];
+  nodes[c].slots.col_2=[mk('text',{role:'title',color:'foresty',text:I18(tId,tEn)}), mk('text',{role:'body',text:I18(bId,bEn)})];
+  return c;
+}
+function stepStd(title, icon, tone, tId,tEn,bId,bEn){
+  return mk('step',{title:title},{body:[cardStd(icon,tone,tId,tEn,bId,bEn)]});
+}
+
+function seed(){
+  nodes.page = {id:'page',type:'page',props:{},slots:{body:[]}};
+  const b = nodes.page.slots.body;
+  b.push(mk('eyebrow',{text:I18('Alur Layanan','Service Pathway')}));
+  b.push(mk('text',{role:'title',color:'foresty',text:I18('Tiga Tahap Program HIV-PPIA','Three Stages of the HIV-PMTCT Program')}));
+  b.push(mk('text',{role:'body',text:I18('Dukungan YSBH difokuskan pada program prioritas nasional triple eliminasi (HIV, Sifilis, Hepatitis B) yang ditargetkan tercapai 2030.','YSBH support focuses on the national triple-elimination priority (HIV, Syphilis, Hepatitis B), targeted for 2030.')}));
+  const cols = mk('columns',{layout:[1,1]});
+  nodes[cols].slots.col_1=[mk('text',{role:'body',text:I18('Prevalensi HIV di Tanah Papua 1,4% menurut STBP 2025 — turun dari 2,3% pada 2013.','HIV prevalence in Papua Land is 1.4% per the 2025 STBP — down from 2.3% in 2013.')}), mk('button',{label:I18('Baca program lengkap','Read the full program')})];
+  nodes[cols].slots.col_2=[cardStd('shield','forest','Triple eliminasi 2030','Triple elimination 2030','HIV, Sifilis, dan Hepatitis B ditangani bersama lewat PPIA.','HIV, Syphilis and Hepatitis B are addressed together through PMTCT.')];
+  b.push(cols);
+  const steps = mk('steps',{});
+  const S = nodes[steps].slots.items;
+  S.push(stepStd(I18('Skrining','Screening'),'search','goldy','Skrining terpadu di kunjungan ANC pertama','Integrated screening at the first ANC visit','Setiap ibu hamil diskrining HIV, Sifilis, Hepatitis B, TBC dan Malaria.','Every pregnant woman is screened for HIV, Syphilis, Hepatitis B, TB and Malaria.'));
+  S.push(stepStd(I18('Dukungan','Support'),'users','sage','Konseling & dukungan berjejaring','Counselling & peer support','Dukungan mental oleh konselor terlatih dan rujukan sesuai kebutuhan.','Mental support from trained counsellors and referrals as needed.'));
+  S.push(stepStd(I18('Pengobatan','Treatment'),'pill','sage','Terapi ARV sedini mungkin','ARV therapy as early as possible','Ibu hamil positif HIV memulai pengobatan minimal 6 bulan sebelum persalinan.','HIV-positive pregnant women start treatment at least 6 months before delivery.'));
+  const cyc = ['file','cal','flask','home','phone','map','heart','star'];
+  for(let i=4;i<=50;i++){
+    S.push(stepStd(I18('Langkah '+i,'Step '+i),cyc[i%cyc.length],i%2?'goldy':'sage','Judul langkah '+i,'Step '+i+' title','Isi langkah '+i+' — ganti dengan konten Anda.','Step '+i+' content — replace with your own.'));
+  }
+  b.push(steps);
+  return steps;
+}
+
+/* ---- indeks induk & kedalaman ---- */
+let PM = {};
+function buildIndex(){
+  PM = {};
+  (function walk(id){ const n=nodes[id]; for(const s in n.slots) for(const c of n.slots[s]){ PM[c]={id,slot:s}; walk(c); } })('page');
+}
+function depthOf(id){ let d=0; while(id!=='page' && PM[id]){ d++; id=PM[id].id; } return d; }
+function heightOf(id){ const n=nodes[id]; let h=0; for(const s in n.slots) for(const c of n.slots[s]) h=Math.max(h,heightOf(c)); return 1+h; }
+function pathTo(id){ const p=[id]; while(id!=='page' && PM[id]){ id=PM[id].id; p.unshift(id); } return p; }
+function siblings(id){ const m=PM[id]; return m ? nodes[m.id].slots[m.slot] : []; }
+
+/* ---- label ringkas diturunkan dari isi ---- */
+let LANG = 'both';
+const L = ()=> LANG==='en' ? 'en' : 'id';
+const esc = (s)=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const cut = (s,n=60)=> s.length>n ? s.slice(0,n-1)+'…' : s;
+function labelOf(id){
+  const n = nodes[id], p = n.props;
+  switch(n.type){
+    case 'page': return 'Halaman';
+    case 'text': return cut(p.text[L()]||p.text.id||'(teks kosong)');
+    case 'eyebrow': return cut(p.text[L()]||p.text.id||'(kosong)');
+    case 'icon': return 'Ikon · '+p.name;
+    case 'image': return (MEDIA.find(m=>m.id===p.media_id)||{name:'(belum dipilih)'}).name;
+    case 'button': return cut(p.label[L()]||p.label.id||'(kosong)');
+    case 'card': return 'Kartu · '+p.layout.join(':');
+    case 'columns': return 'Kolom · '+p.layout.join(':');
+    case 'step': return cut(p.title[L()]||p.title.id||'(tanpa judul)');
+    case 'steps': return 'Step Group · '+nodes[id].slots.items.length+' langkah';
+  }
+}
+function crumbLabel(id){
+  const n = nodes[id];
+  if(n.type==='page') return 'Halaman';
+  if(n.type==='step'){ const i=siblings(id).indexOf(id); return 'Langkah '+(i+1); }
+  if(n.type==='text'||n.type==='eyebrow'||n.type==='button') return REG[n.type].label+' · '+cut(labelOf(id),18);
+  if(n.type==='image') return 'Gambar';
+  return REG[n.type].label;
+}
+
+/* =====================================================
+   AKSI STRUKTUR — divalidasi registri
+   ===================================================== */
+let focus = null;
+const limits = {}, filters = {};
+let menu = null;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove('show'),2600); }
+const slotDef = (pid,slot)=> slotsOf(nodes[pid]).find(s=>s.name===slot);
+
+function addNode(pid,slot,buildFn,labelOfAdd){
+  const sd = slotDef(pid,slot), arr = nodes[pid].slots[slot];
+  if(arr.length>=sd.max){ toast('Slot "'+sd.label+'" sudah penuh (maks '+sd.max+')'); return null; }
+  const id = buildFn();
+  if(!canAccept(sd, nodes[id].type)){ removeSubtree(id); toast('Slot ini tidak menerima '+REG[nodes[id].type].label); return null; }
+  if(depthOf(pid)+heightOf(id) > MAXD){ removeSubtree(id); toast('Melebihi kedalaman maksimum ('+MAXD+' level)'); return null; }
+  arr.push(id); return id;
+}
+function removeSubtree(id){ const n=nodes[id]; if(!n) return; for(const s in n.slots) n.slots[s].forEach(removeSubtree); delete nodes[id]; }
+function dupSubtree(id){
+  const n=nodes[id], c={id:'n'+(++seq),type:n.type,props:clone(n.props),slots:{}};
+  nodes[c.id]=c; for(const s in n.slots) c.slots[s]=n.slots[s].map(dupSubtree);
+  return c.id;
+}
+function setLayout(id,arr){
+  const n=nodes[id], old=n.props.layout; n.props.layout=arr.slice();
+  const names = slotsOf(n).map(s=>s.name), last = names[names.length-1];
+  Object.keys(n.slots).forEach(k=>{ if(!names.includes(k)){ n.slots[last]=(n.slots[last]||[]).concat(n.slots[k]); delete n.slots[k]; } });
+  names.forEach(k=>{ if(!n.slots[k]) n.slots[k]=[]; });
+}
+
+const PRESETS = [
+  {key:'langkah',label:'Langkah standar',desc:'Kartu dengan ikon + judul + isi',root:'step',build:()=>stepStd(I18('Langkah baru','New step'),'star','goldy','Judul langkah','Step title','Isi langkah.','Step content.')},
+  {key:'kartu',label:'Kartu ikon + teks',desc:'Ikon di kiri, judul dan isi di kanan',root:'card',build:()=>cardStd('heart','goldy','Judul kartu','Card title','Isi kartu.','Card content.')},
+  {key:'dua',label:'Dua kolom teks + kartu',desc:'Teks dan tombol di kiri, kartu di kanan',root:'columns',build:()=>{
+      const c=mk('columns',{layout:[1,1]});
+      nodes[c].slots.col_1=[mk('text',{text:I18('Teks pembuka.','Intro text.')}),mk('button',{})];
+      nodes[c].slots.col_2=[cardStd('shield','forest','Judul','Title','Isi.','Body.')]; return c; }}
+];
+
+/* =====================================================
+   RENDERER PUBLIK (dipakai juga untuk pratinjau)
+   ===================================================== */
+function rich(id,o){ return R[nodes[id].type](nodes[id],o); }
+const R = {
+  text(n,o){
+    const p=n.props, t=esc(p.text[L()]||p.text.id||'—');
+    const col = p.color ? CHex[p.color] : null;
+    const dark = o.dark;
+    if(p.role==='title') return `<div style="font-family:'Fraunces',serif;font-size:22px;font-weight:600;line-height:1.25;color:${col||(dark?'#fff':'#064F3B')};margin-bottom:8px">${t}</div>`;
+    if(p.role==='caption') return `<div style="font-size:12px;font-style:italic;color:${col||(dark?'rgba(255,255,255,.75)':'#4B5D53')};margin-bottom:6px">${t}</div>`;
+    if(p.role==='pill') return `<div style="margin-bottom:8px"><span style="display:inline-block;background:${dark?'#EBCC26':'#F7EBAF'};color:${col||'#064F3B'};font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px">${t}</span></div>`;
+    return `<div style="font-size:14.5px;line-height:1.6;color:${col||(dark?'rgba(255,255,255,.88)':'#4B5D53')};margin-bottom:8px">${t}</div>`;
+  },
+  eyebrow(n,o){ return `<div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:${o.dark?'#EBCC26':'#BE1417'};margin-bottom:8px">${esc(n.props.text[L()]||n.props.text.id||'—')}</div>`; },
+  icon(n){
+    const p=n.props, t={goldy:['#F7EBAF','#064F3B'],sage:['#E9F1EB','#064F3B'],forest:['#064F3B','#EBCC26']}[p.tone]||['#F7EBAF','#064F3B'];
+    const s = p.size==='lg'?64:42, g = p.size==='lg'?30:20;
+    return `<div style="width:${s}px;height:${s}px;border-radius:${p.size==='lg'?20:13}px;background:${t[0]};color:${t[1]};display:flex;align-items:center;justify-content:center;margin-bottom:8px"><svg viewBox="0 0 24 24" width="${g}" height="${g}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[p.name]||ICONS.star}</svg></div>`;
+  },
+  image(n){
+    const p=n.props, m=MEDIA.find(x=>x.id===p.media_id), pad={'16:9':56.25,'4:3':75,'1:1':100}[p.ratio]||56.25;
+    const cap = p.caption[L()]||p.caption.id;
+    return `<div style="margin-bottom:8px"><div style="position:relative;padding-top:${pad}%;border-radius:12px;background:linear-gradient(135deg,${m?m.g[0]:'#cfd8d2'},${m?m.g[1]:'#9aa8a0'});overflow:hidden"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.65)"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6">${ICONS.image}</svg></div></div>${cap?`<div style="font-size:11.5px;font-style:italic;color:#4B5D53;margin-top:6px">${esc(cap)}</div>`:''}</div>`;
+  },
+  button(n){
+    const p=n.props, t=esc(p.label[L()]||p.label.id||'—');
+    return p.style==='ghost'
+      ? `<div style="margin-bottom:8px"><span style="display:inline-block;border:2px solid #064F3B;color:#064F3B;font-weight:800;font-size:13px;padding:8px 18px;border-radius:999px">${t}</span></div>`
+      : `<div style="margin-bottom:8px"><span style="display:inline-block;background:#E42326;color:#fff;font-weight:800;font-size:13px;padding:10px 20px;border-radius:999px">${t}</span></div>`;
+  },
+  card(n,o){
+    const p=n.props, dark=p.surface==='forest';
+    const st = p.surface==='forest' ? 'background:#064F3B;' : p.surface==='plain' ? 'background:transparent;border:1.5px solid rgba(6,79,59,.25);' : 'background:#fff;border:1px solid rgba(6,79,59,.14);box-shadow:0 14px 30px -22px rgba(6,45,35,.4);';
+    const cols = slotsOf(n).map(s=>`<div style="min-width:0">${n.slots[s.name].map(c=>rich(c,{dark})).join('')}</div>`).join('');
+    return `<div style="${st}border-radius:18px;padding:18px;display:grid;grid-template-columns:${p.layout.map(r=>r+'fr').join(' ')};gap:16px;align-items:start;margin-bottom:8px">${cols}</div>`;
+  },
+  columns(n,o){
+    const p=n.props, gap=p.gap==='lg'?32:18;
+    const cols = slotsOf(n).map(s=>`<div style="min-width:0">${n.slots[s.name].map(c=>rich(c,o)).join('')}</div>`).join('');
+    return `<div style="display:grid;grid-template-columns:${p.layout.map(r=>r+'fr').join(' ')};gap:${gap}px;align-items:start;margin-bottom:8px">${cols}</div>`;
+  },
+  step(n,o){
+    const idx = o.index!=null ? o.index : Math.max(0,siblings(n.id).indexOf(n.id));
+    const num = (o.numbering||'num')==='dot' ? '' : (idx+1);
+    const body = n.slots.body.map(c=>rich(c,o)).join('');
+    return `<div style="display:grid;grid-template-columns:42px 1fr;gap:14px;margin-bottom:6px"><div style="display:flex;flex-direction:column;align-items:center"><div style="width:34px;height:34px;border-radius:50%;background:#064F3B;color:#EBCC26;font-family:'Fraunces',serif;font-weight:700;display:flex;align-items:center;justify-content:center">${num||'•'}</div><div style="flex:1;width:3px;background:rgba(6,79,59,.15);margin-top:4px;border-radius:3px"></div></div><div><div style="font-weight:800;font-size:13px;color:#064F3B;margin:6px 0 8px">${esc(n.props.title[L()]||n.props.title.id)}</div>${body||'<div style="font-size:12px;color:#BE1417">Langkah belum berisi kartu</div>'}</div></div>`;
+  },
+  steps(n,o){
+    const items=n.slots.items, lim=o.limit||items.length;
+    let h = items.slice(0,lim).map((c,i)=>rich(c,{index:i,numbering:n.props.numbering,limit:o.limit})).join('');
+    if(items.length>lim) h += `<div style="font-size:12px;color:#8a978f;font-style:italic;padding:6px 0 0 56px">… dan ${items.length-lim} langkah lainnya (pratinjau di editor dipersingkat)</div>`;
+    return `<div>${h}</div>`;
+  },
+  page(n,o){ return n.slots.body.map(c=>rich(c,o)).join(''); }
+};
+
+/* =====================================================
+   RENDER EDITOR
+   ===================================================== */
+const $ = (id)=>document.getElementById(id);
+const ic = (name,sz)=>`<svg viewBox="0 0 24 24" ${sz?`width="${sz}" height="${sz}"`:''} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`;
+
+function renderCrumbs(){
+  const bb=document.querySelector('.btn-back'); if(bb) bb.style.visibility = focus==='page' ? 'hidden' : 'visible';
+  const p = pathTo(focus);
+  $('crumbs').innerHTML = p.map((id,i)=> i===p.length-1 ? `<span class="cur">${esc(crumbLabel(id))}</span>` : `<a data-act="focus" data-id="${id}">${esc(crumbLabel(id))}</a>`).join('<span class="sep">›</span>');
+}
+
+function windowItems(arr, active){
+  const n=arr.length; if(n<=9) return arr.map((id,i)=>({id,i}));
+  const keep=new Set([0,1,n-1]);
+  if(active>=0){ for(let k=active-2;k<=active+2;k++){ if(k>=0&&k<n) keep.add(k); } }
+  else { [2,3].forEach(k=>keep.add(k)); }
+  const out=[]; let prev=-1;
+  [...keep].sort((a,b)=>a-b).forEach(i=>{ if(i-prev>1) out.push({gap:i-prev-1}); out.push({id:arr[i],i}); prev=i; });
+  if(prev<n-1) out.push({gap:n-1-prev});
+  return out;
+}
+function renderOutline(){
+  const path = pathTo(focus);
+  function kids(pid){
+    const node=nodes[pid], sl=slotsOf(node); let h='<ul>';
+    sl.forEach(sd=>{
+      const arr=node.slots[sd.name]; if(!arr) return;
+      if(sl.length>1) h+=`<li class="slot">${esc(sd.label)}</li>`;
+      const active = arr.findIndex(c=>path.includes(c));
+      windowItems(arr,active).forEach(it=>{
+        if(it.gap){ h+=`<li class="gap">⋯ ${it.gap} lainnya</li>`; return; }
+        const id=it.id, c=nodes[id], cls = id===focus?'on':(path.includes(id)?'path':'');
+        h+=`<li><a class="${cls}" data-act="focus" data-id="${id}">${ic(REG[c.type].ic).replace('<svg','<svg class="ti"')}<span>${esc(labelOf(id))}</span></a>`;
+        if(path.includes(id) && id!==focus && slotsOf(c).length) h+=kids(id);
+        else if(id===focus && slotsOf(c).length) h+=kids(id);
+        h+='</li>';
+      });
+    });
+    return h+'</ul>';
+  }
+  $('outline').innerHTML = `<ul class="ol"><li><a class="${focus==='page'?'on':'path'}" data-act="focus" data-id="page">${ic('page').replace('<svg','<svg class="ti"')}<span>Halaman</span></a>${kids('page')}</li></ul>`;
+}
+
+function rowHtml(id,i,arr,pid,slot){
+  const n=nodes[id], cnt = Object.values(n.slots).reduce((a,s)=>a+s.length,0), isC = REG[n.type].kind==='container';
+  return `<div class="row" data-act="focus" data-id="${id}">
+    <span class="no">${i+1}</span>
+    <span class="ty">${ic(REG[n.type].ic)}${esc(REG[n.type].label)}</span>
+    <span class="lb">${esc(labelOf(id))}</span>
+    ${isC?`<span class="cn">${cnt} isi</span>`:''}
+    <span class="act">
+      <button class="ib" data-act="up" data-id="${id}" ${i===0?'disabled':''} title="Naik">${ic('up')}</button>
+      <button class="ib" data-act="down" data-id="${id}" ${i===arr.length-1?'disabled':''} title="Turun">${ic('down')}</button>
+      <button class="ib" data-act="dup" data-id="${id}" title="Duplikat">${ic('copy')}</button>
+      <button class="ib del" data-act="del" data-id="${id}" title="Hapus">${ic('trash')}</button>
+    </span>
+    <span class="go">${ic('right',14)}</span>
+  </div>`;
+}
+function slotHtml(pid,sd){
+  const arr = nodes[pid].slots[sd.name], key=pid+'|'+sd.name;
+  const q = (filters[key]||'').toLowerCase();
+  let idxs = arr.map((_,i)=>i);
+  if(q) idxs = idxs.filter(i=>labelOf(arr[i]).toLowerCase().includes(q) || String(i+1)===q);
+  const lim = limits[key] || (arr.length>15?12:Infinity);
+  const shown = q ? idxs : idxs.slice(0,lim);
+  const rule = (sd.accepts.includes('*')?'menerima semua blok':'menerima: '+sd.accepts.join(', '))+(sd.max!==Infinity?' · maks '+sd.max:'')+(sd.min?' · min '+sd.min:'');
+  const warn = arr.length<sd.min ? ` <span class="warn">⚠ butuh minimal ${sd.min}</span>` : '';
+  const full = arr.length>=sd.max;
+  const presets = PRESETS.filter(p=>canAccept(sd,p.root));
+  let h = `<div class="slotbox"><div class="slot-h"><span class="nm">${esc(sd.label)} (${arr.length})</span><span class="rule">${esc(rule)}${warn}</span>`;
+  if(arr.length>15) h+=`<input class="filter" data-filter="${key}" placeholder="Cari ${esc(sd.label.toLowerCase())}…" value="${esc(filters[key]||'')}">`;
+  h+=`<button class="pbtn soft" data-act="menu" data-p="${pid}" data-s="${sd.name}" ${full?'disabled':''}>${ic('plus')}Tambah</button>`;
+  if(menu && menu.p===pid && menu.s===sd.name){
+    h+=`<div class="menu" data-menu>`;
+    const types = Object.keys(REG).filter(t=>t!=='page' && canAccept(sd,t));
+    h+=`<div class="grp">Blok</div>`+types.map(t=>`<button data-act="add" data-p="${pid}" data-s="${sd.name}" data-t="${t}"><span class="mi">${ic(REG[t].ic)}</span><span><b>${esc(REG[t].label)}</b><small>${esc(REG[t].desc)}</small></span></button>`).join('');
+    if(presets.length) h+=`<div class="grp">Preset (sudah terisi)</div>`+presets.map(p=>`<button data-act="preset" data-p="${pid}" data-s="${sd.name}" data-k="${p.key}"><span class="mi">${ic('wand')}</span><span><b>${esc(p.label)}</b><small>${esc(p.desc)}</small></span></button>`).join('');
+    h+=`</div>`;
+  }
+  h+=`</div>`;
+  if(!arr.length) h+=`<div class="empty">Slot kosong — tambahkan blok lewat tombol di atas.</div>`;
+  h+= shown.map(i=>rowHtml(arr[i],i,arr,pid,sd.name)).join('');
+  if(!q && idxs.length>shown.length) h+=`<button class="more" data-act="more" data-key="${key}">Tampilkan ${Math.min(12,idxs.length-shown.length)} lagi (${idxs.length-shown.length} tersembunyi)</button>`;
+  if(q && !shown.length) h+=`<div class="empty">Tidak ada yang cocok dengan “${esc(q)}”.</div>`;
+  return h+'</div>';
+}
+
+function renderCanvas(){
+  const n=nodes[focus], r=REG[n.type], sib=siblings(focus), si=sib.indexOf(focus), pm=PM[focus];
+  const pvOpt = {limit:2};
+  let h = `<div class="node-head"><div class="ico">${ic(r.ic,20)}</div>
+    <div class="t"><b id="hdrLabel">${esc(n.type==='page'?'Halaman':labelOf(focus))}</b><span>${esc(r.label)}${r.desc?' · '+esc(r.desc):''}</span></div>`;
+  if(sib.length>1) h+=`<div class="nav"><button class="ib" data-act="prev" ${si===0?'disabled':''}>${ic('left')}</button><span>${si+1} / ${sib.length}</span><button class="ib" data-act="next" ${si===sib.length-1?'disabled':''}>${ic('right')}</button></div>`;
+  if(n.type!=='page') h+=`<button class="ib" data-act="up" data-id="${focus}" ${si===0?'disabled':''} title="Naik">${ic('up')}</button><button class="ib" data-act="down" data-id="${focus}" ${si===sib.length-1?'disabled':''} title="Turun">${ic('down')}</button><button class="ib" data-act="dup" data-id="${focus}" title="Duplikat">${ic('copy')}</button><button class="ib del" data-act="del" data-id="${focus}" title="Hapus">${ic('trash')}</button>`;
+  h+=`</div>`;
+  if(n.type!=='page') h+=`<div class="tagline">${r.tags.map(t=>`<span class="tg">${t}</span>`).join('')}<span class="tg d">${r.kind}</span><span class="tg d">kedalaman ${depthOf(focus)}</span></div>`;
+  h+=`<div class="lbl">Pratinjau (renderer yang sama dengan halaman publik)</div><div class="pvbox" id="pv">${rich(focus,pvOpt)}</div>`;
+  const sl = slotsOf(n);
+  if(sl.length){ sl.forEach(sd=>{ h+=slotHtml(focus,sd); }); }
+  else h+=`<div class="leafhint"><b>Blok dasar tidak punya isi turunan.</b> Ubah isi dan gayanya di panel Properti. Tekan <kbd>Esc</kbd> untuk kembali ke induknya.</div>`;
+  $('canvas').innerHTML = h;
+}
+
+/* ---- inspektur: bentuk form diturunkan dari skema ---- */
+function langBoxes(val, k, multi){
+  const langs = LANG==='both' ? ['id','en'] : [LANG];
+  return langs.map(l=>`<div class="i18n"><span class="lg">${l.toUpperCase()}</span><textarea class="${multi?'':'one'}" data-i18n="${k}" data-lang="${l}">${esc(val[l]||'')}</textarea></div>`).join('');
+}
+function fieldHtml(f,n){
+  const v = n.props[f.k]; let inner='';
+  if(f.t==='i18n') inner = langBoxes(v,f.k,f.multi);
+  else if(f.t==='choice') inner = `<div class="choice">${f.opts.map(([o,l])=>`<button class="${v===o?'on':''}" data-act="set" data-k="${f.k}" data-v="${o}">${l}</button>`).join('')}</div>`;
+  else if(f.t==='swatch') inner = `<div class="sw">${f.opts.map(([o,l,c])=>`<button class="${v===o?'on':''} ${c?'':'auto'}" style="${c?'background:'+c:''}" title="${l}" data-act="set" data-k="${f.k}" data-v="${o}"></button>`).join('')}</div>`;
+  else if(f.t==='icon') inner = `<div class="igrid">${ICON_NAMES.map(nm=>`<button class="${v===nm?'on':''}" title="${nm}" data-act="set" data-k="${f.k}" data-v="${nm}">${ic(nm)}</button>`).join('')}</div>`;
+  else if(f.t==='media') inner = `<div class="mgrid">${MEDIA.map(m=>`<button class="${v===m.id?'on':''}" title="${m.name}" style="background:linear-gradient(135deg,${m.g[0]},${m.g[1]})" data-act="set" data-k="${f.k}" data-v="${m.id}"></button>`).join('')}</div>`;
+  else if(f.t==='ratios') inner = `<div class="rgrid">${RATIOS.map(r=>`<button class="${r.join()===v.join()?'on':''}" data-act="layout" data-v="${r.join(',')}"><span class="bars">${r.map(x=>`<i style="flex:${x}"></i>`).join('')}</span>${r.join(' : ')}</button>`).join('')}</div>`;
+  return `<div class="fld"><label>${f.label}</label>${inner}</div>`;
+}
+function renderInsp(){
+  const n=nodes[focus], r=REG[n.type];
+  if(n.type==='page'){
+    $('insp').innerHTML = `<div class="ctx"><span class="tg">Halaman</span></div><div class="fld"><label>Info</label><div class="kv"><span>Blok tingkat atas</span><b>${n.slots.body.length}</b></div><div class="kv"><span>Total node</span><b>${Object.keys(nodes).length-1}</b></div></div><div class="leafhint">Pilih sebuah blok di kanvas untuk melihat dan mengubah properti-nya. Properti yang muncul di sini diturunkan dari skema tipe blok, bukan ditulis per blok.</div>`;
+    return;
+  }
+  let h = `<div class="ctx"><span class="tg">${esc(r.label)}</span><span class="id mono">${n.id}</span></div>`;
+  h += r.fields.length ? r.fields.map(f=>fieldHtml(f,n)).join('') : '<div class="leafhint">Tipe ini tidak punya properti sendiri.</div>';
+  const pm=PM[focus], pn=nodes[pm.id];
+  h += `<div class="sec"><h5>Info</h5><div class="kv"><span>Induk</span><b>${esc(crumbLabel(pm.id))}</b></div><div class="kv"><span>Slot</span><b class="mono">${pm.slot}</b></div><div class="kv"><span>Kedalaman</span><b>${depthOf(focus)} / ${MAXD}</b></div><div class="kv"><span>Isi turunan</span><b>${Object.values(n.slots).reduce((a,s)=>a+s.length,0)}</b></div></div>`;
+  h += `<details><summary>Lihat JSON node</summary><pre>${esc(JSON.stringify({type:n.type,props:n.props,slots:n.slots},null,1))}</pre></details>`;
+  h += `<button class="dangerbtn" data-act="del" data-id="${focus}">Hapus blok ini${REG[n.type].kind==='container'?' beserta isinya':''}</button>`;
+  $('insp').innerHTML = h;
+}
+function renderStats(){
+  $('stNodes').textContent = Object.keys(nodes).length-1;
+  $('stDepth').textContent = depthOf(focus);
+}
+function renderAll(){
+  buildIndex(); renderCrumbs(); renderOutline(); renderCanvas(); renderInsp(); renderStats();
+}
+function renderLight(){
+  renderCrumbs(); renderOutline();
+  $('pv').innerHTML = rich(focus,{limit:2});
+  const hl=$('hdrLabel'); if(hl) hl.textContent = nodes[focus].type==='page'?'Halaman':labelOf(focus);
+}
+
+/* =====================================================
+   EVENT
+   ===================================================== */
+const editorEl = document.querySelector('.editor');
+const isPhone = ()=> window.matchMedia('(max-width:760px)').matches;
+function setPane(p){
+  editorEl.dataset.pane = p;
+  document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on', b.dataset.p===p));
+}
+function setFocus(id){
+  focus=id; menu=null; renderAll(); $('canvas').scrollTop=0; $('insp').scrollTop=0;
+  editorEl.classList.remove('drawer');
+  if(isPhone()){ setPane(REG[nodes[id].type].kind==='leaf' ? 'insp' : 'canvas'); }
+}
+function parentOf(id){ return PM[id] ? PM[id].id : null; }
+
+document.addEventListener('click',(ev)=>{
+  if(ev.target.closest('input,textarea')) return;
+  if(menu && !ev.target.closest('[data-menu]') && !ev.target.closest('[data-act="menu"]')){ menu=null; renderCanvas(); }
+  const a = ev.target.closest('[data-act]'); if(!a) return;
+  const act=a.dataset.act, id=a.dataset.id;
+  if(act==='focus') return setFocus(id);
+  if(act==='drawer'){ editorEl.classList.toggle('drawer'); return; }
+  if(act==='pane'){ setPane(a.dataset.p); return; }
+  if(act==='back'){ const par=parentOf(focus); if(par) setFocus(par); return; }
+  if(act==='menu'){ const same = menu&&menu.p===a.dataset.p&&menu.s===a.dataset.s; menu = same?null:{p:a.dataset.p,s:a.dataset.s}; return renderCanvas(); }
+  if(act==='add'){ const nid = addNode(a.dataset.p,a.dataset.s,()=>mk(a.dataset.t)); menu=null; buildIndex(); if(nid) return setFocus(nid); return renderAll(); }
+  if(act==='preset'){ const p=PRESETS.find(x=>x.key===a.dataset.k); const nid=addNode(a.dataset.p,a.dataset.s,p.build); menu=null; buildIndex(); if(nid) return setFocus(nid); return renderAll(); }
+  if(act==='up'||act==='down'){ const arr=siblings(id), i=arr.indexOf(id), j=i+(act==='up'?-1:1); if(j>=0&&j<arr.length){ [arr[i],arr[j]]=[arr[j],arr[i]]; } return renderAll(); }
+  if(act==='dup'){
+    const m=PM[id], arr=nodes[m.id].slots[m.slot], sd=slotDef(m.id,m.slot);
+    if(arr.length>=sd.max) return toast('Slot "'+sd.label+'" sudah penuh (maks '+sd.max+') — tidak bisa diduplikat');
+    const c=dupSubtree(id); arr.splice(arr.indexOf(id)+1,0,c); buildIndex(); toast('Diduplikat dengan ID baru (salinan dalam)'); return setFocus(c);
+  }
+  if(act==='del'){
+    const m=PM[id], arr=nodes[m.id].slots[m.slot]; const cnt=(function c(x){return 1+Object.values(nodes[x].slots).flat().reduce((s,y)=>s+c(y),0);})(id);
+    arr.splice(arr.indexOf(id),1); removeSubtree(id); focus = (id===focus||!nodes[focus]) ? m.id : focus; buildIndex();
+    toast(cnt>1?'Dihapus beserta '+(cnt-1)+' isi turunannya':'Blok dihapus'); return renderAll();
+  }
+  if(act==='prev'||act==='next'){ const arr=siblings(focus), i=arr.indexOf(focus)+(act==='prev'?-1:1); if(arr[i]) setFocus(arr[i]); return; }
+  if(act==='more'){ const k=a.dataset.key; limits[k]=(limits[k]||12)+12; return renderCanvas(); }
+  if(act==='set'){
+    const k=a.dataset.k; let v=a.dataset.v; if(k==='media_id') v=+v; nodes[focus].props[k]=v; return renderAll();
+  }
+  if(act==='layout'){ setLayout(focus,a.dataset.v.split(',').map(Number)); return renderAll(); }
+});
+
+document.addEventListener('input',(ev)=>{
+  const t=ev.target;
+  if(t.dataset.i18n){ nodes[focus].props[t.dataset.i18n][t.dataset.lang]=t.value; renderLight(); return; }
+  if(t.dataset.filter){
+    filters[t.dataset.filter]=t.value; renderCanvas();
+    const el=document.querySelector('[data-filter="'+t.dataset.filter+'"]'); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); }
+  }
+});
+
+$('langSeg').addEventListener('click',(ev)=>{
+  const b=ev.target.closest('button'); if(!b) return; LANG=b.dataset.lang;
+  document.querySelectorAll('#langSeg button').forEach(x=>x.classList.toggle('on',x===b)); renderAll();
+});
+
+document.addEventListener('keydown',(ev)=>{
+  const typing = ev.target.closest && ev.target.closest('input,textarea');
+  if(ev.key==='Escape'){ if(menu){ menu=null; return renderCanvas(); } const p=parentOf(focus); if(p) setFocus(p); return; }
+  if(typing) return;
+  if(ev.key==='ArrowLeft'||ev.key==='ArrowRight'){ const arr=siblings(focus), i=arr.indexOf(focus)+(ev.key==='ArrowLeft'?-1:1); if(arr[i]) setFocus(arr[i]); }
+});
+
+/* ---- mulai ---- */
+const stepsId = seed();
+buildIndex();
+focus = stepsId;
+renderAll();
+</script>
+</body>
+</html>

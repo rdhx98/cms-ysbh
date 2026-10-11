@@ -36,6 +36,9 @@ final class BlockPalette
 
     public const MAX_COLUMNS = 6;
 
+    /** Jenis kontainer (punya zona anak). Outline membuat satu daftar pilihan jenis untuk tiap kontainer ini. */
+    public const CONTAINERS = ['multi-columns', 'step-group'];
+
     /** @var array<string, array{0:string,1:string,2:string,3:bool}>|null bawaan + modul (app/Editor/Blocks) */
     private static ?array $types = null;
     /** @var string[]|null */
@@ -133,7 +136,7 @@ final class BlockPalette
 
     public static function isContainer(string $type): bool
     {
-        return in_array(self::canonical($type), ['multi-columns', 'step-group'], true);
+        return in_array(self::canonical($type), self::CONTAINERS, true);
     }
 
     /**

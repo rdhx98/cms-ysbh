@@ -37,15 +37,13 @@
     </button>
 
     <div class="flex items-center gap-4 p-2 text-sm font-bold tracking-wide">
-      {{-- {{ $title }}  --}}
-      <title>
-        {{
-          isset($title) && filled($title)
-            ? $title . " — " . config("app.name")
-            : config("app.name")
-        }}
-      </title>
-      wawa {{ $header }}
+      {{
+        isset($title) && filled($title)
+          ? $title //. " — " . config("app.name")
+          : config("app.name")
+      }}
+
+      {{ $header }}
     </div>
     <div id="editor-toolbar-portal"></div>
   </div>

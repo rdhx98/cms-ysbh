@@ -17,7 +17,7 @@
     Pilih sebuah blok atau elemen untuk mengubah isi dan gayanya.
   </div>
 
-  {{-- Blok/elemen yang belum didaftarkan di BlockRegistry (mis. eyebrow, image): jelaskan, jangan biarkan panel kosong --}}
+  {{-- Blok/elemen yang belum didaftarkan di BlockRegistry (mis. tipe lama yang tidak dikenal): jelaskan, jangan biarkan panel kosong --}}
   <div
     x-show="$store.editor.panel && ! @js(array_keys($types)).includes($store.editor.panel)"
     x-cloak
@@ -33,6 +33,22 @@
         <span class="text-[10px] font-semibold text-gray-400 uppercase">{{ $def->kind === 'block' ? 'Blok' : 'Elemen kartu' }}</span>
       </div>
 
+      @if ($def->kind === 'element')
+        {{-- Elemen kartu dibuka dari daftar di panel Kartu Builder: sediakan jalan kembali --}}
+        <button
+          type="button"
+          x-show="$store.editor.parentId"
+          x-cloak
+          x-on:click="$store.editor.backToParent()"
+          data-back-to-parent
+          class="hover:bg-sage-soft hover:text-foresty flex w-fit items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-[11px] font-bold text-gray-600"
+        >← Kembali ke Kartu Builder</button>
+      @endif
+
+      @if ($def->component && $def->componentFirst)
+        <x-dynamic-component :component="$def->component" :locales="$locales" />
+      @endif
+
       @foreach ($def->contentFields() as $field)
         <x-editor.field :field="$field" :locales="$locales" />
       @endforeach
@@ -44,6 +60,11 @@
           @endforeach
         </div>
       @endif
+
+      @if ($def->component && ! $def->componentFirst)
+        <x-dynamic-component :component="$def->component" :locales="$locales" />
+      @endif
+
 
       @if ($def->kind === 'block')
         <x-editor.field :field="$anchor" :locales="$locales" />

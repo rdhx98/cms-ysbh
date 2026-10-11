@@ -53,7 +53,7 @@ trait SyncsMediaUsage
         static::created(fn ($model) => $model->syncMediaUsage());
 
         static::updated(function ($model) {
-            if ($model->wasChanged($model->mediaContentColumn())) {
+            if ($model->wasChanged([$model->mediaContentColumn(), 'featured_image'])) {
                 $model->syncMediaUsage();
             }
         });
@@ -86,6 +86,12 @@ trait SyncsMediaUsage
         $content = is_array($content) ? $content : [];
 
         $currentIds = $this->extractMediaIds($content ?? []);
+        // Thumbnail artikel (rilis 40): kolom featured_image berisi ID media (angka). Tanpa ini penjaga hapus File Manager tidak tahu
+        // gambar itu dipakai sebagai thumbnail, dan sinkronisasi ini menghapus catatannya karena tidak ada di `content`.
+        $cover = $this->getAttributes()['featured_image'] ?? null;
+        if (is_scalar($cover) && ctype_digit(trim((string) $cover)) && (int) $cover > 0) {
+            $currentIds[] = (int) $cover;
+        }
         $currentIds = array_values(array_unique(array_filter($currentIds)));
 
         $existingIds = $this->mediaUsages()->pluck('media_id')->all();

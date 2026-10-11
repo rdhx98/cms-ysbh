@@ -12,11 +12,14 @@ use App\Content\Links\LinkResolver;
  * Karena itu yang disimpan adalah slug SATU bahasa (bawaan), bukan alamat per bahasa. `route_name` TIDAK lagi diisi oleh formulir: rute statis lama
  * sudah dihapus (rilis 23); hanya `home` dan `articles` yang masih dikenali sebagai tujuan lama dan diubah menjadi "/" dan "/articles".
  *
+ * Rilis 42: "category" = halaman artikel satu kategori. Disimpan "/{slug daftar artikel bahasa bawaan}/category/{slug kategori}" (mis. "/articles/category/malaria");
+ * landing menerjemahkannya ke alamat bahasa pembaca ("/id/artikel/kategori/malaria"), lihat NavLinks dan CategoryLookup::SEGMENTS.
+ *
  * Aturan keamanan sama dengan tombol (LinkResolver): hanya http(s), "/jalur", mailto:, tel:, dan #anchor; kolom `url` dibatasi 255 karakter.
  */
 final class MenuTarget
 {
-    public const KINDS = ['home', 'articles', 'page', 'url', 'mailto', 'tel', 'anchor'];
+    public const KINDS = ['home', 'articles', 'category', 'page', 'url', 'mailto', 'tel', 'anchor'];
 
     public const MAX_URL = 255;
 
@@ -37,6 +40,7 @@ final class MenuTarget
         $url = match ($kind) {
             'home' => '/',
             'articles' => Slug::isValid($articlesSlug) ? '/' . $articlesSlug : null,
+            'category' => $ref === '' ? null : (Slug::isValid($ref) && Slug::isValid($articlesSlug) ? '/' . $articlesSlug . '/' . CategoryLookup::SEGMENTS[0] . '/' . $ref : false),
             'page' => $ref === '' ? null : (Slug::isValid($ref) ? '/' . $ref : false),
             'url' => $ref === '' ? null : LinkResolver::safeUrl($ref),
             'mailto' => filter_var($ref, FILTER_VALIDATE_EMAIL) ? 'mailto:' . $ref : null,
@@ -46,11 +50,16 @@ final class MenuTarget
         };
 
         if ($url === false) {
-            return $fail($kind === 'page' ? 'Slug halaman tidak sah. Pilih halaman dari daftar.' : 'Jenis tujuan tidak dikenal.');
+            return $fail(match ($kind) {
+                'page' => 'Slug halaman tidak sah. Pilih halaman dari daftar.',
+                'category' => 'Slug kategori tidak sah. Pilih kategori dari daftar.',
+                default => 'Jenis tujuan tidak dikenal.',
+            });
         }
         if ($url === null) {
             return $fail(match ($kind) {
                 'page' => 'Pilih halaman tujuan.',
+                'category' => 'Pilih kategori tujuan.',
                 'url' => $ref === '' ? 'Isi alamat tujuan.' : 'Alamat tidak aman atau tidak sah. Gunakan https://… atau jalur yang diawali satu "/" (tanpa spasi).',
                 'mailto' => 'Alamat email tidak sah.',
                 'tel' => 'Nomor telepon tidak sah (minimal 3 angka).',
@@ -108,6 +117,9 @@ final class MenuTarget
             if ($segments === []) {
                 return ['kind' => 'home', 'ref' => '', 'legacy' => $legacy];
             }
+            if (count($segments) === 3 && in_array($segments[0], $indexSlugs, true) && in_array($segments[1], CategoryLookup::SEGMENTS, true) && Slug::isValid($segments[2])) {
+                return ['kind' => 'category', 'ref' => $segments[2], 'legacy' => $legacy];
+            }
             if (count($segments) === 1 && Slug::isValid($segments[0])) {
                 return in_array($segments[0], $indexSlugs, true)
                     ? ['kind' => 'articles', 'ref' => '', 'legacy' => $legacy]
@@ -124,6 +136,7 @@ final class MenuTarget
         $text = match ($kind) {
             'home' => 'Beranda',
             'articles' => 'Daftar artikel',
+            'category' => 'Artikel kategori: ' . $ref,
             'page' => 'Halaman: /' . $ref,
             'url' => 'URL: ' . $ref,
             'mailto' => 'Email: ' . $ref,

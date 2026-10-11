@@ -18,7 +18,7 @@ class AuditPlaceholders extends Command
 {
     protected $signature = 'cms:audit-placeholders {--all : termasuk halaman offline, artikel draf, dan snippet offline}';
 
-    protected $description = 'Daftar halaman/artikel/snippet yang masih memuat penanda [ISI-DULU]';
+    protected $description = 'Daftar halaman/artikel/snippet yang masih memuat penanda [ISI-DULU] atau blok Gambar tanpa berkas';
 
     public function handle(): int
     {
@@ -29,7 +29,7 @@ class AuditPlaceholders extends Command
                   ['Snippet', Snippet::class, 'online', ['title', 'content']]] as [$label, $model, $status, $columns]) {
             $query = $model::query();
             if (!$this->option('all')) {
-                $query->where('status', $status);
+                $query = PublicLookup::visible($query, $status);
             }
             foreach ($query->orderBy('id')->get() as $row) {
                 $raw = [];
@@ -50,7 +50,7 @@ class AuditPlaceholders extends Command
             return self::SUCCESS;
         }
         $this->table(['Jenis', 'ID', 'Judul', 'Status', 'Kolom'], $table);
-        $this->line($this->option('all') ? "\n$found record masih berpenanda (daftar pekerjaan)." : "\n$found record ONLINE masih memuat " . Placeholders::TOKEN . ': tulis isinya atau jadikan offline.');
+        $this->line($this->option('all') ? "\n$found record masih berpenanda (daftar pekerjaan)." : "\n$found record ONLINE masih berpenanda (" . Placeholders::TOKEN . ' atau blok Gambar tanpa berkas): lengkapi isinya atau jadikan offline.');
 
         return $this->option('all') ? self::SUCCESS : self::FAILURE;
     }

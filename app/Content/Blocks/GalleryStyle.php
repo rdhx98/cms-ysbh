@@ -7,10 +7,12 @@ final class GalleryStyle
 {
     public const MODES = ['photos', 'logos'];
     public const LAYOUTS = ['grid', 'carousel'];
-    public const COLUMNS = ['2', '3', '4', '5', '6'];
+    public const COLUMNS = ['1', '2', '3', '4', '5', '6'];
     public const RATIOS = ['1:1', '4:3', '3:2', '16:9'];
 
+    // 1 kolom (rilis 35): satu gambar selebar blok di semua ukuran layar (ponsel juga 1, bukan 2)
     private const GRID = [
+        1 => 'grid grid-cols-1 gap-4',
         2 => 'grid grid-cols-2 gap-4',
         3 => 'grid grid-cols-2 gap-4 md:grid-cols-3',
         4 => 'grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4',
@@ -20,6 +22,7 @@ final class GalleryStyle
 
     /** Lebar butir pada carousel dengan jarak gap-4 (1rem): (100% - (n-1) x 1rem) / n. Ponsel selalu 2, tablet paling banyak 3. */
     private const BASIS = [
+        1 => 'basis-full',
         2 => 'basis-[calc(50%-0.5rem)]',
         3 => 'basis-[calc(50%-0.5rem)] md:basis-[calc(33.333%-0.667rem)]',
         4 => 'basis-[calc(50%-0.5rem)] md:basis-[calc(33.333%-0.667rem)] lg:basis-[calc(25%-0.75rem)]',

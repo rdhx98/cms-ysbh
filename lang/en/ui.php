@@ -75,6 +75,7 @@ return [
         'documentation' => 'Documentations',
         'settings' => 'Settings',
         'block' => 'Blocks',
+        'navigation' => 'Navigation',
     ],
     'header' => [
         'dashboard' => 'Dashboard',

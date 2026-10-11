@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pustaka Blok — Editor Artikel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#064F3B; --forest-dark:#043328;
+    --goldy:#EBCC26; --goldy-soft:#F7EBAF;
+    --coral:#E42326; --coral-dark:#BE1417;
+    --paper:#FBF7EA; --ink:#12241C; --ink-soft:#4B5D53;
+    --sage-soft:#E9F1EB; --white:#FFFFFF;
+    --line: rgba(6,79,59,0.13);
+    --shadow: 0 20px 44px -24px rgba(6,45,35,0.32);
+    --radius-lg: 22px; --radius-md: 14px;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  body{ margin:0; background:var(--sage-soft); color:var(--ink); font-family:'Plus Jakarta Sans', sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:'Fraunces', serif; color:var(--forest); margin:0; letter-spacing:-0.01em; }
+  a{ color:inherit; }
+  img{ max-width:100%; display:block; }
+  .wrap{ max-width:1200px; margin:0 auto; padding:0 32px; }
+  @media (max-width:640px){ .wrap{ padding:0 20px; } }
+
+  /* TOP BAR - mimics editor chrome */
+  .editor-bar{ background:var(--forest); color:var(--white); padding:16px 0; position:sticky; top:0; z-index:50; }
+  .editor-bar .row{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .editor-bar .title{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:15px; }
+  .editor-bar .title svg{ width:20px; height:20px; color:var(--goldy); }
+  .editor-bar .search{ display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.12); border-radius:999px; padding:9px 16px; width:280px; }
+  .editor-bar .search svg{ width:14px; height:14px; color:rgba(255,255,255,0.6); flex-shrink:0; }
+  .editor-bar .search input{ background:none; border:none; outline:none; color:var(--white); font-family:inherit; font-size:13px; width:100%; }
+  .editor-bar .search input::placeholder{ color:rgba(255,255,255,0.5); }
+  .editor-bar .close-btn{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.12); border:none; color:var(--white); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .editor-bar .close-btn svg{ width:16px; height:16px; }
+
+  .page-intro{ padding:36px 0 8px; }
+  .page-intro p{ font-size:14px; color:var(--ink-soft); max-width:600px; }
+
+  .cat-tabs{ display:flex; gap:8px; flex-wrap:wrap; padding:20px 0 36px; position:sticky; top:68px; background:var(--sage-soft); z-index:40; }
+  .cat-tab{ font-size:13px; font-weight:700; padding:9px 16px; border-radius:999px; background:var(--white); color:var(--ink-soft); border:1px solid var(--line); cursor:pointer; }
+  .cat-tab.active{ background:var(--forest); color:var(--white); border-color:var(--forest); }
+
+  .cat-section{ padding-bottom:52px; }
+  .cat-head{ display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+  .cat-head .icon{ width:38px; height:38px; border-radius:11px; background:var(--forest); color:var(--goldy); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cat-head .icon svg{ width:19px; height:19px; }
+  .cat-head h2{ font-size:1.3rem; font-weight:600; }
+  .cat-head .count{ font-size:12.5px; color:var(--ink-soft); }
+
+  .block-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:20px; }
+  @media (max-width:820px){ .block-grid{ grid-template-columns:1fr; } }
+
+  .block-card{ background:var(--white); border-radius:var(--radius-lg); box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--line); transition:transform .2s ease, box-shadow .2s ease; }
+  .block-card:hover{ transform:translateY(-3px); box-shadow:0 28px 54px -24px rgba(6,45,35,0.4); }
+  .block-preview{ padding:26px 26px 22px; background:var(--paper); border-bottom:1px solid var(--line); min-height:150px; display:flex; align-items:center; }
+  .block-meta{ padding:16px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .block-meta .name{ font-weight:700; font-size:14.5px; color:var(--ink); }
+  .block-meta .desc{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .add-btn{ flex-shrink:0; display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:var(--forest); background:var(--sage-soft); padding:8px 14px; border-radius:999px; border:none; cursor:pointer; white-space:nowrap; }
+  .add-btn:hover{ background:var(--forest); color:var(--white); }
+  .add-btn svg{ width:13px; height:13px; }
+
+  /* ===== PREVIEW STYLES (mirroring the article template blocks) ===== */
+  .pv-lead{ font-size:16px; color:var(--ink); font-weight:500; line-height:1.6; }
+  .pv-lead b{ color:var(--forest); }
+
+  .pv-quote{ border-left:4px solid var(--goldy); background:var(--goldy-soft); border-radius:0 10px 10px 0; padding:16px 20px; font-family:'Fraunces',serif; font-style:italic; font-size:15px; color:var(--forest); line-height:1.5; width:100%; }
+
+  .pv-stat{ display:flex; gap:16px; background:var(--forest); border-radius:12px; padding:18px 20px; width:100%; }
+  .pv-stat .num{ font-family:'Fraunces',serif; font-weight:700; font-size:2rem; color:var(--goldy); line-height:1; flex-shrink:0; }
+  .pv-stat .txt{ color:rgba(255,255,255,0.85); font-size:12px; display:flex; align-items:center; }
+
+  .pv-list{ list-style:none; margin:0; padding:0; width:100%; counter-reset:pv; }
+  .pv-list li{ counter-increment:pv; display:flex; gap:12px; padding:9px 0; font-size:12.5px; }
+  .pv-list li::before{ content:counter(pv); flex-shrink:0; width:24px; height:24px; border-radius:50%; background:var(--sage-soft); color:var(--forest); font-family:'Fraunces',serif; font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; }
+  .pv-list .t{ padding-top:3px; }
+  .pv-list b{ display:block; color:var(--ink); font-size:13px; }
+  .pv-list span{ color:var(--ink-soft); }
+
+  .pv-table{ width:100%; border-collapse:collapse; font-size:12px; border-radius:8px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.06); }
+  .pv-table th{ background:var(--forest); color:var(--white); text-align:left; padding:8px 12px; font-size:10px; text-transform:uppercase; }
+  .pv-table td{ padding:9px 12px; border-bottom:1px solid var(--line); background:var(--white); }
+  .pv-table .n{ font-weight:700; color:var(--forest); text-align:right; }
+
+  .pv-fig{ width:100%; }
+  .pv-fig .img{ height:90px; border-radius:10px; background:linear-gradient(135deg, var(--sage-soft), var(--goldy-soft)); display:flex; align-items:center; justify-content:center; color:var(--forest); opacity:0.5; }
+  .pv-fig .img svg{ width:30px; height:30px; }
+  .pv-fig .cap{ font-size:11px; color:var(--ink-soft); font-style:italic; margin-top:8px; text-align:center; }
+
+  .pv-closing{ background:var(--goldy-soft); border-radius:12px; padding:18px 20px; width:100%; }
+  .pv-closing h4{ font-size:13.5px; font-weight:700; color:var(--forest); margin-bottom:6px; font-family:'Fraunces',serif; }
+  .pv-closing p{ font-size:12px; color:var(--ink); margin:0; }
+
+  .pv-tags{ display:flex; gap:8px; flex-wrap:wrap; width:100%; }
+  .pv-tag{ font-size:11.5px; font-weight:700; color:var(--forest); background:var(--sage-soft); padding:6px 13px; border-radius:999px; }
+
+  .pv-share{ display:flex; align-items:center; gap:12px; width:100%; }
+  .pv-share .lbl{ font-size:12px; font-weight:700; color:var(--ink-soft); }
+  .pv-share .icons{ display:flex; gap:8px; }
+  .pv-share .icons span{ width:30px; height:30px; border-radius:50%; background:var(--sage-soft); color:var(--forest); display:flex; align-items:center; justify-content:center; }
+  .pv-share .icons svg{ width:13px; height:13px; }
+
+  .pv-author{ display:flex; gap:12px; align-items:center; width:100%; }
+  .pv-author .av{ width:44px; height:44px; border-radius:50%; background:var(--forest); color:var(--goldy); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; font-size:15px; flex-shrink:0; }
+  .pv-author .name{ font-size:13px; font-weight:700; color:var(--ink); }
+  .pv-author .role{ font-size:11.5px; color:var(--ink-soft); }
+
+  .pv-toc{ width:100%; border-left:2px solid var(--line); padding-left:14px; }
+  .pv-toc .lbl{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--coral-dark); margin-bottom:8px; }
+  .pv-toc .item{ font-size:12px; font-weight:600; color:var(--ink-soft); padding:5px 0; }
+  .pv-toc .item.active{ color:var(--forest); }
+
+  .pv-related{ display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; }
+  .pv-related .rc{ background:var(--paper); border-radius:8px; padding:10px; }
+  .pv-related .rc .rimg{ height:44px; border-radius:6px; background:var(--sage-soft); margin-bottom:8px; }
+  .pv-related .rc .rt{ font-size:10.5px; font-weight:700; color:var(--ink); line-height:1.3; }
+
+  .pv-progress{ width:100%; }
+  .pv-progress .track{ height:6px; background:var(--sage-soft); border-radius:999px; overflow:hidden; }
+  .pv-progress .fill{ height:100%; width:62%; background:var(--coral); border-radius:999px; }
+  .pv-progress .lbl{ font-size:11px; color:var(--ink-soft); margin-top:8px; }
+
+  .pv-gallery{ display:grid; grid-template-columns:1fr 1fr; gap:6px; width:100%; }
+  .pv-gallery .g{ height:64px; border-radius:8px; background:linear-gradient(135deg, var(--sage-soft), var(--goldy-soft)); }
+  .pv-gallery .g:first-child{ grid-row:span 2; height:134px; }
+
+  .pv-side-photo{ display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; }
+  .pv-side-photo figure{ margin:0; }
+  .pv-side-photo .img{ height:70px; border-radius:8px; background:linear-gradient(135deg, var(--sage-soft), var(--goldy-soft)); }
+  .pv-side-photo .cap{ font-size:10px; color:var(--ink-soft); font-style:italic; margin-top:6px; }
+
+  .pv-fullwidth{ width:100%; }
+  .pv-fullwidth .img{ height:100px; border-radius:10px; background:linear-gradient(135deg, var(--forest), var(--forest-dark)); display:flex; align-items:flex-end; padding:12px; }
+  .pv-fullwidth .tag{ background:var(--goldy); color:var(--forest); font-size:9.5px; font-weight:800; text-transform:uppercase; padding:4px 10px; border-radius:999px; }
+
+  .pv-compare{ display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; }
+  .pv-compare .box{ background:var(--forest); border-radius:10px; padding:12px; text-align:center; }
+  .pv-compare .arrow{ font-family:'Fraunces',serif; font-weight:700; font-size:16px; color:var(--goldy); }
+  .pv-compare .desc{ font-size:9.5px; color:rgba(255,255,255,0.8); margin-top:4px; }
+
+  .pv-statgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:100%; }
+  .pv-statgrid .box{ background:var(--forest); border-radius:8px; padding:10px 6px; text-align:center; }
+  .pv-statgrid .n{ font-family:'Fraunces',serif; font-weight:700; font-size:15px; color:var(--goldy); }
+  .pv-statgrid .l{ font-size:8.5px; color:rgba(255,255,255,0.8); margin-top:2px; }
+
+  .pv-rank{ display:flex; align-items:center; justify-content:center; gap:0; width:100%; }
+  .pv-rank .p{ display:flex; align-items:center; gap:8px; }
+  .pv-rank .n{ font-family:'Fraunces',serif; font-weight:700; font-size:22px; color:var(--forest); }
+  .pv-rank .n.hl{ color:var(--coral); }
+  .pv-rank .flag{ font-size:18px; }
+  .pv-rank .div{ width:1px; height:26px; background:var(--line); margin:0 16px; }
+
+  .pv-bartable{ width:100%; font-size:11px; }
+  .pv-bartable .row{ display:flex; align-items:center; gap:8px; padding:5px 0; }
+  .pv-bartable .lbl{ width:50px; flex-shrink:0; font-weight:600; color:var(--ink); }
+  .pv-bartable .track{ flex:1; background:var(--sage-soft); border-radius:6px; height:8px; overflow:hidden; }
+  .pv-bartable .fill{ height:100%; background:var(--coral); border-radius:6px; }
+  .pv-bartable .val{ width:32px; text-align:right; font-weight:700; color:var(--forest); font-size:10px; }
+
+  footer{ text-align:center; padding:40px 0; font-size:12.5px; color:var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<div class="editor-bar">
+  <div class="wrap row">
+    <div class="title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      Pustaka Blok — Editor Artikel
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" placeholder="Cari blok...">
+    </div>
+    <button class="close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="page-intro">
+    <p>20 blok konten baru, diambil dari template artikel yang sudah dibuat — siap dipasang ke katalog blok editor Anda, berdampingan dengan Heading, Paragraph, Card Builder, dan blok lain yang sudah ada.</p>
+  </div>
+
+  <div class="cat-tabs">
+    <button class="cat-tab active">Semua</button>
+    <button class="cat-tab">Teks</button>
+    <button class="cat-tab">Data &amp; Statistik</button>
+    <button class="cat-tab">Media</button>
+    <button class="cat-tab">Sosial &amp; Navigasi</button>
+  </div>
+
+  <!-- KATEGORI: TEKS -->
+  <section class="cat-section">
+    <div class="cat-head">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div>
+      <div><h2>Teks</h2><div class="count">3 blok</div></div>
+    </div>
+    <div class="block-grid">
+
+      <div class="block-card">
+        <div class="block-preview">
+          <p class="pv-lead">Tanah Papua dengan <b>6 provinsi mandiri</b> dan 42 kabupatennya merupakan wilayah penyumbang 90% kasus malaria di Indonesia.</p>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Paragraf Pembuka</div><div class="desc">Teks lebih besar untuk kalimat pembuka artikel</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-quote">"Eliminasi malaria bukan hanya tentang menurunkan angka kasus, tetapi juga melindungi generasi masa depan Papua."</div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Kutipan</div><div class="desc">Kutipan bergaya editorial dengan aksen emas</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-closing">
+            <h4>Tidak Ada yang Seharusnya Normal</h4>
+            <p>Padahal, tidak ada anak yang seharusnya tumbuh dengan risiko sakit berulang akibat malaria.</p>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Kotak Penutup</div><div class="desc">Sorotan berlatar lembut untuk pesan penutup</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- KATEGORI: DATA -->
+  <section class="cat-section">
+    <div class="cat-head">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-6 3 3 5-7"/></svg></div>
+      <div><h2>Data &amp; Statistik</h2><div class="count">7 blok</div></div>
+    </div>
+    <div class="block-grid">
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-stat">
+            <div class="num">204rb</div>
+            <div class="txt">Kasus malaria tercatat di Papua Tengah sepanjang 2025.</div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Angka Sorotan</div><div class="desc">Satu angka besar dengan keterangan singkat</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <table class="pv-table">
+            <thead><tr><th>Kabupaten</th><th style="text-align:right;">Kasus</th></tr></thead>
+            <tbody>
+              <tr><td>Mimika</td><td class="n">190.597</td></tr>
+              <tr><td>Nabire</td><td class="n">8.744</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Tabel Data</div><div class="desc">Tabel bergaris rapi untuk data terstruktur</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <ul class="pv-list">
+            <li><div class="t"><b>Penguatan Tata Kelola</b><span>Koordinasi lintas pemangku kepentingan</span></div></li>
+            <li><div class="t"><b>Penguatan Surveilans</b><span>Deteksi &amp; respons kasus cepat</span></div></li>
+          </ul>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Daftar Bernomor</div><div class="desc">Poin bernomor dengan judul &amp; keterangan</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-compare">
+            <div class="box"><div class="arrow">326 → 65</div><div class="desc">Target insiden TB per 100rb, menuju 2030</div></div>
+            <div class="box"><div class="arrow">94 → 6</div><div class="desc">Target kematian TBC per 100rb</div></div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Perbandingan Sebelum → Sesudah</div><div class="desc">Dua target/capaian berdampingan dengan panah</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-statgrid">
+            <div class="box"><div class="n">90%</div><div class="l">Kasus nasional</div></div>
+            <div class="box"><div class="n">204rb</div><div class="l">Kasus 2025</div></div>
+            <div class="box"><div class="n">5</div><div class="l">Komponen</div></div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Grid Statistik</div><div class="desc">Tiga angka ringkas berdampingan</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-rank">
+            <div class="p"><div class="n">#1</div><div class="flag">🇮🇳</div></div>
+            <div class="div"></div>
+            <div class="p"><div class="n hl">#2</div><div class="flag">🇮🇩</div></div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Peringkat</div><div class="desc">Perbandingan posisi/ranking antar entitas</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-bartable">
+            <div class="row"><div class="lbl">Mimika</div><div class="track"><div class="fill" style="width:100%"></div></div><div class="val">191rb</div></div>
+            <div class="row"><div class="lbl">Nabire</div><div class="track"><div class="fill" style="width:5%"></div></div><div class="val">8,7rb</div></div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Tabel dengan Bar</div><div class="desc">Baris data dengan visual batang proporsional</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- KATEGORI: MEDIA -->
+  <section class="cat-section">
+    <div class="cat-head">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
+      <div><h2>Media</h2><div class="count">4 blok</div></div>
+    </div>
+    <div class="block-grid">
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-fig">
+            <div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
+            <div class="cap">Penandatanganan kerja sama antara YSBH dan Dinas Kesehatan.</div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Gambar + Keterangan</div><div class="desc">Foto dengan caption italic di bawahnya</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-side-photo">
+            <figure><div class="img"></div><div class="cap">OJT di Kabupaten Paniai untuk program Malaria.</div></figure>
+            <figure><div class="img"></div><div class="cap">Penandatanganan kerja sama di Sarmi.</div></figure>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Foto Berdampingan</div><div class="desc">Dua foto sejajar, masing-masing dengan caption sendiri</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-gallery">
+            <div class="g"></div><div class="g"></div><div class="g"></div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Galeri Foto</div><div class="desc">Beberapa foto tersusun dalam satu grid</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-fullwidth">
+            <div class="img"><span class="tag">Malaria</span></div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Foto Penuh Lebar</div><div class="desc">Gambar besar sebagai jeda visual antar bagian</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- KATEGORI: SOSIAL & NAVIGASI -->
+  <section class="cat-section">
+    <div class="cat-head">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div><h2>Sosial &amp; Navigasi</h2><div class="count">6 blok</div></div>
+    </div>
+    <div class="block-grid">
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-tags">
+            <span class="pv-tag">Malaria</span>
+            <span class="pv-tag">Papua Tengah</span>
+            <span class="pv-tag">Puskesmas Model</span>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Tag Topik</div><div class="desc">Label bulat untuk kata kunci artikel</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-share">
+            <span class="lbl">Bagikan:</span>
+            <div class="icons">
+              <span><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg></span>
+              <span><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg></span>
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Tombol Bagikan</div><div class="desc">Ikon berbagi ke media sosial &amp; salin tautan</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-author">
+            <div class="av">YS</div>
+            <div><div class="name">Tim Program Malaria</div><div class="role">YSBH · Penulis</div></div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Kartu Penulis</div><div class="desc">Info singkat penulis di akhir artikel</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-toc">
+            <div class="lbl">Daftar Isi</div>
+            <div class="item active">Beban Kasus</div>
+            <div class="item">Dampak pada Kelompok Rentan</div>
+            <div class="item">Lima Komponen</div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Daftar Isi Otomatis</div><div class="desc">Navigasi bagian, menyorot posisi baca</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-related">
+            <div class="rc"><div class="rimg"></div><div class="rt">Melindungi Generasi Papua Tengah</div></div>
+            <div class="rc"><div class="rimg"></div><div class="rt">Skrining, Dukungan, Pengobatan HIV</div></div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Artikel Terkait</div><div class="desc">Rekomendasi bacaan lain di akhir artikel</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-progress">
+            <div class="track"><div class="fill"></div></div>
+            <div class="lbl">62% terbaca</div>
+          </div>
+        </div>
+        <div class="block-meta">
+          <div><div class="name">Bar Progres Baca</div><div class="desc">Indikator kemajuan membaca, mengikuti scroll</div></div>
+          <button class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<footer>Pustaka Blok — dibuat dari template artikel Sinar Bhakti Husada</footer>
+
+<script>
+  const tabs = document.querySelectorAll('.cat-tab');
+  const sections = document.querySelectorAll('.cat-section');
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      if(i === 0){ sections.forEach(s => s.style.display = 'block'); }
+      else{ sections.forEach((s, si) => s.style.display = (si === i-1) ? 'block' : 'none'); }
+    });
+  });
+</script>
+
+</body>
+</html>

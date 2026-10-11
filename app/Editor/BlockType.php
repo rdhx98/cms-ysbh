@@ -16,7 +16,29 @@ final class BlockType
         public readonly array $fields,
         /** Nilai bawaan data blok baru (boleh memuat "@id"/"@locales", lihat Defaults). Kosong = pakai bawaan trait. */
         public readonly array $defaults = [],
+        /** Komponen Blade tambahan di bawah kontrol blok ini (mis. "editor.cards": daftar kartu → kolom → elemen). null = tidak ada. */
+        public readonly ?string $component = null,
+        /** true = komponen tambahan tampil DI ATAS kontrol blok (mis. kisi isi tabel), bukan di bawahnya. */
+        public readonly bool $componentFirst = false,
     ) {
+    }
+
+    /** Salinan dengan kontrol tambahan di akhir daftar (BlockType tak bisa diubah). */
+    public function withFields(array $extra): self
+    {
+        return new self($this->type, $this->label, $this->icon, $this->kind, [...$this->fields, ...$extra], $this->defaults, $this->component, $this->componentFirst);
+    }
+
+    /** Apakah ada kontrol dengan salah satu key ini. */
+    public function hasField(string ...$keys): bool
+    {
+        foreach ($this->fields as $f) {
+            if (in_array($f->key, $keys, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Kunci panel inspektur, mis. "block:heading" atau "element:text". */

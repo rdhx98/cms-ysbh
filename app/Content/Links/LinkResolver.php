@@ -148,6 +148,27 @@ final class LinkResolver
         return self::pathUrl($path, self::config('cms.public.base') ?? '');
     }
 
+    /**
+     * Alamat ARTIKEL PER KATEGORI bahasa $locale (rilis 42): templat config('cms.public.category') (teks atau peta bahasa, satu penanda {slug},
+     * mis. ['en' => '/articles/category/{slug}', 'id' => '/id/artikel/kategori/{slug}']); bila tidak diatur, rute bernama "articles.category"
+     * ("id.articles.category" untuk bahasa selain bawaan); bila tidak ada pula, null. $slug = slug kategori DI BAHASA itu. Tidak pernah galat.
+     */
+    public static function categoryAddress(string $slug, ?string $locale = null): ?string
+    {
+        $locale ??= self::currentLocale();
+        $template = Languages::setting(self::config('cms.public.category'), $locale);
+        if ($template !== '') {
+            return self::publicUrl($slug, $template, self::config('cms.public.base') ?? '');
+        }
+        $default = Languages::fromConfig()['default'];
+        $name = ($locale !== '' && $locale !== $default ? $locale . '.' : '') . 'articles.category';
+        try {
+            return function_exists('app') && \App\Content\Slug::isValid($slug) && app('router')->has($name) ? route($name, $slug) : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     private static function config(string $key): mixed
     {
         try {
@@ -199,7 +220,9 @@ final class LinkResolver
                 static $memo = [];
                 return $memo["$id:$locale"] ??= (function () use ($id, $locale, $addressOf) {
                     $post = \App\Models\Post::query()->find($id);
-                    return $post && $post->status === 'published' ? $addressOf($post, 'article', $locale) : null;
+                    // terbit, atau terjadwal yang waktunya sudah tiba (sama dengan PublicLookup::visible)
+                    $due = $post && $post->status === 'scheduled' && ($at = $post->getRawOriginal('published_at')) && strtotime((string) $at) <= time();
+                    return $post && ($post->status === 'published' || $due) ? $addressOf($post, 'article', $locale) : null;
                 })();
             },
             file: function (int $id) {

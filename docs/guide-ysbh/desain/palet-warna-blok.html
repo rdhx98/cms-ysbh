@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palet Warna — Elemen Blok</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --foresty:#064F3B; --forest:#043328;
+    --goldy:#EBCC26; --goldy-soft:#F7EBAF;
+    --coral:#E42326; --coral-dark:#BE1417;
+    --paper:#FBF7EA; --ink:#12241C; --ink-soft:#4B5D53;
+    --sage-soft:#E9F1EB; --white:#FFFFFF;
+    --amber:#B8860B; --amber-soft:#FBF0D9;
+    --green:#1F7A4D; --green-soft:#E3F3EA;
+    --line: rgba(6,79,59,0.12);
+    --shadow: 0 20px 44px -26px rgba(6,45,35,0.32);
+    --radius-lg: 20px; --radius-md: 14px;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  body{ margin:0; background:var(--sage-soft); color:var(--ink); font-family:'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing:antialiased; line-height:1.6; }
+  h1,h2,h3{ font-family:'Fraunces', serif; color:var(--foresty); margin:0; }
+  code, .mono{ font-family:'JetBrains Mono', monospace; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:48px 32px 80px; }
+  @media (max-width:640px){ .wrap{ padding:32px 20px 60px; } }
+
+  .page-head{ margin-bottom:44px; }
+  .page-head .eyebrow{ font-size:12px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:var(--coral-dark); }
+  .page-head h1{ font-size:2rem; font-weight:600; margin:10px 0 10px; }
+  .page-head p{ color:var(--ink-soft); font-size:14.5px; max-width:640px; }
+
+  .section{ margin-bottom:52px; }
+  .section-head{ display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .section-head .n{ width:30px; height:30px; border-radius:9px; background:var(--foresty); color:var(--goldy); font-family:'Fraunces',serif; font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .section-head h2{ font-size:1.25rem; font-weight:600; }
+  .section-note{ font-size:13px; color:var(--ink-soft); margin:-10px 0 20px 42px; max-width:640px; }
+
+  /* ===== TOKEN SWATCHES ===== */
+  .token-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; }
+  @media (max-width:900px){ .token-grid{ grid-template-columns:repeat(2, 1fr); } }
+  .token-card{ background:var(--white); border-radius:var(--radius-md); overflow:hidden; box-shadow:var(--shadow); }
+  .token-swatch{ height:64px; }
+  .token-info{ padding:12px 14px; }
+  .token-name{ font-weight:700; font-size:13px; color:var(--ink); }
+  .token-hex{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+  .token-use{ font-size:11.5px; color:var(--ink-soft); margin-top:6px; line-height:1.5; }
+
+  /* ===== BLOCK MAPPING CARDS ===== */
+  .block-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:18px; }
+  @media (max-width:860px){ .block-grid{ grid-template-columns:1fr; } }
+  .block-card{ background:var(--white); border-radius:var(--radius-lg); box-shadow:var(--shadow); overflow:hidden; }
+  .block-preview{ padding:22px; background:var(--paper); border-bottom:1px solid var(--line); }
+  .block-legend{ padding:16px 20px; }
+  .block-legend .name{ font-weight:700; font-size:13.5px; color:var(--ink); margin-bottom:10px; }
+  .legend-row{ display:flex; align-items:center; gap:9px; font-size:12px; color:var(--ink-soft); margin-bottom:6px; }
+  .legend-row:last-child{ margin-bottom:0; }
+  .legend-dot{ width:13px; height:13px; border-radius:4px; flex-shrink:0; border:1px solid rgba(0,0,0,0.08); }
+  .legend-row .tok{ font-weight:700; color:var(--ink); }
+
+  /* ===== PREVIEW STYLES (dicuplik dari desain asli) ===== */
+  .pv-heading{ font-family:'Fraunces',serif; font-weight:600; color:var(--foresty); font-size:1.3rem; }
+  .pv-eyebrow{ font-size:11px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:var(--coral-dark); }
+  .pv-paragraph{ color:var(--ink-soft); font-size:13px; margin-top:6px; }
+  .pv-lead{ font-size:14.5px; color:var(--ink); font-weight:500; }
+  .pv-lead b{ color:var(--foresty); }
+
+  .pv-quote{ border-left:4px solid var(--goldy); background:var(--goldy-soft); border-radius:0 10px 10px 0; padding:14px 18px; font-family:'Fraunces',serif; font-style:italic; font-size:13.5px; color:var(--foresty); }
+  .pv-closing{ background:var(--goldy-soft); border-radius:12px; padding:16px 18px; }
+  .pv-closing h4{ font-size:13px; font-weight:700; color:var(--foresty); margin-bottom:5px; font-family:'Fraunces',serif; }
+  .pv-closing p{ font-size:12px; color:var(--ink); margin:0; }
+
+  .pv-card{ background:var(--white); border:1px solid var(--line); border-radius:12px; padding:16px; box-shadow:var(--shadow); }
+  .pv-card .num{ width:26px; height:26px; border-radius:50%; background:var(--sage-soft); color:var(--foresty); font-family:'Fraunces',serif; font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+  .pv-card .t{ font-size:12.5px; font-weight:700; color:var(--ink); }
+  .pv-card .d{ font-size:11.5px; color:var(--ink-soft); margin-top:4px; }
+
+  .pv-divider{ display:flex; align-items:center; gap:10px; color:var(--ink-soft); font-size:12px; }
+  .pv-divider::before, .pv-divider::after{ content:''; flex:1; height:2px; background:rgba(6,79,59,0.25); }
+
+  .pv-stat{ display:flex; gap:12px; background:var(--foresty); border-radius:10px; padding:14px 16px; }
+  .pv-stat .n{ font-family:'Fraunces',serif; font-weight:700; font-size:1.6rem; color:var(--goldy); line-height:1; }
+  .pv-stat .t{ color:rgba(255,255,255,0.85); font-size:11px; display:flex; align-items:center; }
+
+  .pv-table{ width:100%; border-collapse:collapse; font-size:11.5px; border-radius:8px; overflow:hidden; }
+  .pv-table th{ background:var(--foresty); color:var(--white); text-align:left; padding:7px 10px; font-size:9.5px; text-transform:uppercase; }
+  .pv-table td{ padding:7px 10px; border-bottom:1px solid var(--line); background:var(--white); }
+
+  .pv-compare{ display:flex; gap:10px; }
+  .pv-compare .box{ flex:1; background:var(--foresty); border-radius:9px; padding:10px; text-align:center; }
+  .pv-compare .arrow{ font-family:'Fraunces',serif; font-weight:700; font-size:13px; color:var(--goldy); }
+
+  .pv-rank{ display:flex; align-items:center; justify-content:center; gap:16px; }
+  .pv-rank .n{ font-family:'Fraunces',serif; font-weight:700; font-size:18px; color:var(--foresty); }
+  .pv-rank .n.hl{ color:var(--coral); }
+
+  .pv-fig .img{ height:60px; border-radius:8px; background:linear-gradient(135deg, var(--sage-soft), var(--goldy-soft)); }
+  .pv-fig .cap{ font-size:10.5px; color:var(--ink-soft); font-style:italic; margin-top:6px; }
+
+  .pv-btn{ display:inline-flex; align-items:center; gap:7px; background:var(--coral); color:var(--white); font-weight:700; font-size:12px; padding:9px 16px; border-radius:999px; }
+  .pv-btn-ghost{ display:inline-flex; align-items:center; gap:7px; background:transparent; color:var(--foresty); border:2px solid var(--foresty); font-weight:700; font-size:12px; padding:7px 15px; border-radius:999px; }
+  .pv-badge{ display:inline-flex; background:var(--goldy); color:var(--foresty); font-size:11px; font-weight:800; text-transform:uppercase; padding:4px 11px; border-radius:999px; }
+  .pv-tag{ display:inline-flex; background:var(--sage-soft); color:var(--foresty); font-size:11px; font-weight:700; padding:5px 12px; border-radius:999px; }
+
+  .pv-author{ display:flex; gap:10px; align-items:center; }
+  .pv-author .av{ width:34px; height:34px; border-radius:50%; background:var(--foresty); color:var(--goldy); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; font-size:12px; }
+  .pv-author .name{ font-size:12px; font-weight:700; color:var(--ink); }
+  .pv-author .role{ font-size:10.5px; color:var(--ink-soft); }
+
+  .pv-toc{ border-left:2px solid var(--line); padding-left:12px; }
+  .pv-toc .item{ font-size:11.5px; font-weight:600; color:var(--ink-soft); padding:4px 0; }
+  .pv-toc .item.active{ color:var(--foresty); }
+
+  .pv-status{ display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; }
+  .pv-status .d{ width:9px; height:9px; border-radius:50%; }
+
+  .footnote{ background:var(--goldy-soft); border-radius:var(--radius-md); padding:18px 22px; font-size:13px; color:var(--ink); margin-top:8px; }
+  .footnote b{ color:var(--foresty); }
+
+  /* ===== KARTU ===== */
+  .pv-progcard{ background:var(--white); border:1px solid var(--line); border-radius:14px; padding:18px; text-align:center; }
+  .pv-progcard .ic{ width:42px; height:42px; border-radius:12px; background:var(--sage-soft); color:var(--foresty); display:flex; align-items:center; justify-content:center; margin:0 auto 10px; }
+  .pv-progcard .ic svg{ width:20px; height:20px; }
+  .pv-progcard .t{ font-size:13px; font-weight:700; color:var(--foresty); font-family:'Fraunces',serif; }
+  .pv-progcard .d{ font-size:11.5px; color:var(--ink-soft); margin-top:5px; }
+
+  .pv-statcard{ background:var(--white); border:1px solid var(--line); border-radius:14px; padding:18px; text-align:center; }
+  .pv-statcard .n{ font-family:'Fraunces',serif; font-weight:700; font-size:1.7rem; color:var(--coral); }
+  .pv-statcard .l{ font-size:11px; color:var(--ink-soft); margin-top:4px; text-transform:uppercase; letter-spacing:0.04em; font-weight:700; }
+
+  .pv-mitracard{ background:var(--white); border:1px solid var(--line); border-radius:14px; padding:18px; display:flex; align-items:center; gap:12px; }
+  .pv-mitracard .logo{ width:44px; height:44px; border-radius:50%; background:var(--goldy-soft); color:var(--foresty); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; font-size:14px; flex-shrink:0; }
+  .pv-mitracard .t{ font-size:13px; font-weight:700; color:var(--ink); }
+  .pv-mitracard .d{ font-size:11px; color:var(--ink-soft); margin-top:2px; }
+
+  .pv-testicard{ background:var(--white); border-left:4px solid var(--goldy); border-radius:0 14px 14px 0; padding:18px; box-shadow:var(--shadow); }
+  .pv-testicard .q{ font-size:12.5px; color:var(--ink); font-style:italic; margin-bottom:12px; }
+  .pv-testicard .who{ display:flex; align-items:center; gap:9px; }
+  .pv-testicard .av{ width:30px; height:30px; border-radius:50%; background:var(--foresty); color:var(--goldy); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; font-size:11px; }
+  .pv-testicard .name{ font-size:12px; font-weight:700; color:var(--ink); }
+  .pv-testicard .role{ font-size:10.5px; color:var(--ink-soft); }
+
+  /* ===== TIMELINE ===== */
+  .pv-timeline{ position:relative; padding-left:34px; }
+  .pv-timeline::before{ content:''; position:absolute; left:9px; top:6px; bottom:6px; width:3px; background:linear-gradient(var(--foresty), var(--goldy)); border-radius:3px; }
+  .tl-item{ position:relative; padding-bottom:22px; }
+  .tl-item:last-child{ padding-bottom:0; }
+  .tl-item::before{ content:''; position:absolute; left:-34px; top:2px; width:21px; height:21px; border-radius:50%; background:var(--foresty); border:3px solid var(--paper); box-shadow:0 0 0 2px var(--foresty); }
+  .tl-item.current::before{ background:var(--coral); box-shadow:0 0 0 2px var(--coral); }
+  .tl-year{ font-family:'Fraunces',serif; font-weight:700; font-size:12.5px; color:var(--foresty); }
+  .tl-item.current .tl-year{ color:var(--coral-dark); }
+  .tl-text{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .tl-text b{ color:var(--ink); font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="page-head">
+    <span class="eyebrow">Rujukan Desain</span>
+    <h1>Palet Warna untuk Elemen Blok</h1>
+    <p>Disusun dari warna yang sudah benar-benar terpakai di seluruh halaman dan komponen CMS — bukan palet baru. Tujuannya supaya penambahan blok baru ke depan konsisten tanpa perlu menebak lagi warna mana untuk bagian apa.</p>
+  </div>
+
+  <!-- ============ BAGIAN 1: TOKEN INTI ============ -->
+  <div class="section">
+    <div class="section-head"><div class="n">1</div><h2>Token Inti</h2></div>
+    <p class="section-note">Sembilan warna dasar yang menjadi sumber seluruh elemen blok di bawah. Dua pasang (Foresty/Forest, Goldy/Goldy Soft, Coral/Coral Dark) sengaja punya varian gelap-terang untuk kondisi default vs hover/aktif.</p>
+
+    <div class="token-grid">
+      <div class="token-card">
+        <div class="token-swatch" style="background:var(--foresty);"></div>
+        <div class="token-info"><div class="token-name">Foresty</div><div class="token-hex mono">#064F3B</div><div class="token-use">Warna utama — judul, latar blok statistik, latar gelap sidebar</div></div>
+      </div>
+      <div class="token-card">
+        <div class="token-swatch" style="background:var(--forest);"></div>
+        <div class="token-info"><div class="token-name">Forest</div><div class="token-hex mono">#043328</div><div class="token-use">Varian lebih gelap — footer, sidebar admin, latar overlay modal</div></div>
+      </div>
+      <div class="token-card">
+        <div class="token-swatch" style="background:var(--goldy);"></div>
+        <div class="token-info"><div class="token-name">Goldy</div><div class="token-hex mono">#EBCC26</div><div class="token-use">Aksen utama — angka pada blok statistik, badge, tombol "Gunakan"</div></div>
+      </div>
+      <div class="token-card">
+        <div class="token-swatch" style="background:var(--goldy-soft);"></div>
+        <div class="token-info"><div class="token-name">Goldy Soft</div><div class="token-hex mono">#F7EBAF</div><div class="token-use">Latar lembut — blok Kutipan, Kotak Penutup, highlight non-mendesak</div></div>
+      </div>
+      <div class="token-card">
+        <div class="token-swatch" style="background:var(--coral);"></div>
+        <div class="token-info"><div class="token-name">Coral</div><div class="token-hex mono">#E42326</div><div class="token-use">Aksi utama — tombol CTA, peringkat tersorot, aksi hapus</div></div>
+      </div>
+      <div class="token-card">
+        <div class="token-swatch" style="background:var(--coral-dark);"></div>
+        <div class="token-info"><div class="token-name">Coral Dark</div><div class="token-hex mono">#BE1417</div><div class="token-use">Kondisi hover/tekan untuk semua elemen ber-Coral</div></div>
+      </div>
+      <div class="token-card">
+        <div class="token-swatch" style="background:var(--sage-soft);"></div>
+        <div class="token-info"><div class="token-name">Sage Soft</div><div class="token-hex mono">#E9F1EB</div><div class="token-use">Latar permukaan — nomor bulat pada daftar, tag, latar halaman admin</div></div>
+      </div>
+      <div class="token-card">
+        <div class="token-swatch" style="background:var(--paper); border-bottom:1px solid var(--line);"></div>
+        <div class="token-info"><div class="token-name">Paper</div><div class="token-hex mono">#FBF7EA</div><div class="token-use">Latar halaman publik &amp; pratinjau blok</div></div>
+      </div>
+      <div class="token-card">
+        <div class="token-swatch" style="background:var(--ink);"></div>
+        <div class="token-info"><div class="token-name">Ink</div><div class="token-hex mono">#12241C</div><div class="token-use">Teks utama — judul kartu, nama berkas, isi kutipan</div></div>
+      </div>
+      <div class="token-card">
+        <div class="token-swatch" style="background:var(--ink-soft);"></div>
+        <div class="token-info"><div class="token-name">Ink Soft</div><div class="token-hex mono">#4B5D53</div><div class="token-use">Teks sekunder — paragraf isi, keterangan, meta data</div></div>
+      </div>
+      <div class="token-card">
+        <div class="token-swatch" style="background:var(--white); border-bottom:1px solid var(--line);"></div>
+        <div class="token-info"><div class="token-name">White</div><div class="token-hex mono">#FFFFFF</div><div class="token-use">Latar kartu &amp; kontainer di atas Paper/Sage Soft</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BAGIAN 2: BLOK TEKS ============ -->
+  <div class="section">
+    <div class="section-head"><div class="n">2</div><h2>Blok Teks</h2></div>
+    <p class="section-note">Heading, Paragraph, Eyebrow dari sistem blok awal — plus Paragraf Pembuka, Kutipan, dan Kotak Penutup dari pustaka blok artikel.</p>
+
+    <div class="block-grid">
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-eyebrow">Program Kesehatan</div>
+          <div class="pv-heading" style="margin-top:6px;">Judul Blok</div>
+          <div class="pv-paragraph">Teks paragraf isi menggunakan warna sekunder supaya hierarki dengan judul tetap jelas.</div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Heading · Eyebrow · Paragraph</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--coral-dark);"></span>Eyebrow — <span class="tok mono">Coral Dark</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Heading — <span class="tok mono">Foresty</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--ink-soft);"></span>Paragraph — <span class="tok mono">Ink Soft</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <p class="pv-lead">Tanah Papua dengan <b>6 provinsi mandiri</b> menyumbang 90% kasus malaria nasional.</p>
+        </div>
+        <div class="block-legend">
+          <div class="name">Paragraf Pembuka (Lead)</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--ink);"></span>Teks dasar — <span class="tok mono">Ink</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Frasa ditekankan — <span class="tok mono">Foresty</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-quote">"Eliminasi malaria bukan cuma soal angka, tapi melindungi generasi masa depan."</div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Kutipan</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--goldy);"></span>Garis aksen kiri — <span class="tok mono">Goldy</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--goldy-soft);"></span>Latar — <span class="tok mono">Goldy Soft</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Teks — <span class="tok mono">Foresty</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-closing"><h4>Tidak Ada yang Seharusnya Normal</h4><p>Setiap anak berhak tumbuh tanpa risiko sakit berulang.</p></div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Kotak Penutup</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--goldy-soft);"></span>Latar — <span class="tok mono">Goldy Soft</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Judul — <span class="tok mono">Foresty</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--ink);"></span>Isi — <span class="tok mono">Ink</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BAGIAN 3: BLOK STRUKTUR ============ -->
+  <div class="section">
+    <div class="section-head"><div class="n">3</div><h2>Blok Struktur</h2></div>
+    <p class="section-note">Card Builder (row/column/element), Daftar Bernomor, dan Section Divider — elemen yang membentuk kerangka tata letak.</p>
+
+    <div class="block-grid">
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-card"><div class="num">1</div><div class="t">Penguatan Tata Kelola</div><div class="d">Koordinasi lintas pemangku kepentingan</div></div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Kartu / Daftar Bernomor</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--white); border:1px solid var(--line);"></span>Latar kartu — <span class="tok mono">White</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--sage-soft);"></span>Lingkaran nomor — <span class="tok mono">Sage Soft</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Angka &amp; judul — <span class="tok mono">Foresty</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview" style="display:flex; align-items:center; height:100%;">
+          <div class="pv-divider">Bagian Berikutnya</div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Section Divider</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--line); border-color:var(--line);"></span>Garis — <span class="tok mono">Line (Foresty 12%)</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--ink-soft);"></span>Label — <span class="tok mono">Ink Soft</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BAGIAN 4: BLOK DATA & STATISTIK ============ -->
+  <div class="section">
+    <div class="section-head"><div class="n">4</div><h2>Blok Data &amp; Statistik</h2></div>
+    <p class="section-note">Satu-satunya kategori yang memakai Foresty sebagai latar (bukan cuma teks) — sengaja dibuat kontras tinggi supaya angka jadi fokus utama halaman.</p>
+
+    <div class="block-grid">
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-stat"><div class="n">204rb</div><div class="t">Kasus malaria Papua Tengah 2025</div></div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Angka Sorotan / Grid Statistik</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Latar — <span class="tok mono">Foresty</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--goldy);"></span>Angka — <span class="tok mono">Goldy</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--white);"></span>Keterangan — <span class="tok mono">White 85% opak</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <table class="pv-table"><thead><tr><th>Kabupaten</th><th>Kasus</th></tr></thead><tbody><tr><td>Mimika</td><td>190.597</td></tr></tbody></table>
+        </div>
+        <div class="block-legend">
+          <div class="name">Tabel Data / Tabel dengan Bar</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Header — <span class="tok mono">Foresty</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--white); border:1px solid var(--line);"></span>Baris — <span class="tok mono">White</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--coral);"></span>Bar proporsional — <span class="tok mono">Coral</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-compare"><div class="box"><div class="arrow">326→65</div></div><div class="box"><div class="arrow">94→6</div></div></div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Perbandingan Sebelum → Sesudah</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Latar — <span class="tok mono">Foresty</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--goldy);"></span>Angka panah — <span class="tok mono">Goldy</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview" style="display:flex; align-items:center; height:100%;">
+          <div class="pv-rank"><div class="n">#1</div><div class="n hl">#2</div></div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Peringkat</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Posisi standar — <span class="tok mono">Foresty</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--coral);"></span>Posisi ditekankan — <span class="tok mono">Coral</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BAGIAN 5: BLOK MEDIA ============ -->
+  <div class="section">
+    <div class="section-head"><div class="n">5</div><h2>Blok Media</h2></div>
+    <p class="section-note">Gambar + Keterangan, Foto Berdampingan, Galeri, Foto Penuh Lebar — kategori yang paling sedikit memakai warna, karena foto asli sudah jadi fokus visual utama.</p>
+
+    <div class="block-grid">
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-fig"><div class="img"></div><div class="cap">Keterangan foto dalam gaya italic.</div></div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Gambar + Keterangan</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--sage-soft);"></span>Placeholder kosong — <span class="tok mono">Sage Soft → Goldy Soft</span> (gradien)</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--ink-soft);"></span>Keterangan — <span class="tok mono">Ink Soft</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-badge">Malaria</div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Tag Kategori pada Foto</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--goldy);"></span>Latar — <span class="tok mono">Goldy</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Teks — <span class="tok mono">Foresty</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BAGIAN 6: BLOK INTERAKTIF & SOSIAL ============ -->
+  <div class="section">
+    <div class="section-head"><div class="n">6</div><h2>Blok Interaktif &amp; Sosial</h2></div>
+    <p class="section-note">Button Group, Badge Group, Tag Topik, Kartu Penulis, Daftar Isi — satu-satunya kategori yang memakai Coral sebagai latar (bukan cuma aksen), karena ini elemen yang memang minta diklik.</p>
+
+    <div class="block-grid">
+      <div class="block-card">
+        <div class="block-preview" style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div class="pv-btn">Donasi</div>
+          <div class="pv-btn-ghost">Pelajari</div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Button Group</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--coral);"></span>Tombol utama — <span class="tok mono">Coral</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:transparent; border:2px solid var(--foresty);"></span>Tombol kedua — garis <span class="tok mono">Foresty</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview" style="display:flex; gap:8px; flex-wrap:wrap;">
+          <div class="pv-tag">Malaria</div><div class="pv-tag">Papua Tengah</div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Tag Topik / Badge Group</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--sage-soft);"></span>Latar — <span class="tok mono">Sage Soft</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Teks — <span class="tok mono">Foresty</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-author"><div class="av">YS</div><div><div class="name">Tim Program</div><div class="role">YSBH · Penulis</div></div></div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Kartu Penulis</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Avatar — <span class="tok mono">Foresty</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--goldy);"></span>Inisial — <span class="tok mono">Goldy</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-toc"><div class="item active">Beban Kasus</div><div class="item">Dampak</div></div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Daftar Isi Otomatis</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--line); border-color:var(--line);"></span>Garis &amp; item pasif — <span class="tok mono">Line / Ink Soft</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Item aktif — <span class="tok mono">Foresty</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BAGIAN 7: INDIKATOR STATUS (ADMIN) ============ -->
+  <div class="section">
+    <div class="section-head"><div class="n">7</div><h2>Indikator Status — Khusus Admin</h2></div>
+    <p class="section-note"><b>Bukan bagian dari warna konten blok.</b> Dua warna ini (Amber, Green) cuma dipakai di sisi admin file manager — titik status "sedang dipakai/belum dipakai" dan label terkait. Sengaja dipisah dari token inti supaya tidak tercampur dipakai di halaman publik.</p>
+
+    <div class="block-grid">
+      <div class="block-card">
+        <div class="block-preview" style="display:flex; flex-direction:column; gap:10px;">
+          <div class="pv-status"><span class="d" style="background:var(--amber);"></span>Sedang dipakai</div>
+          <div class="pv-status"><span class="d" style="background:var(--green);"></span>Belum dipakai</div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Status Berkas (File Manager)</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--amber);"></span>Dipakai — <span class="tok mono">Amber #B8860B</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--amber-soft);"></span>Latar peringatan — <span class="tok mono">Amber Soft #FBF0D9</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--green);"></span>Aman — <span class="tok mono">Green #1F7A4D</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--green-soft);"></span>Latar aman — <span class="tok mono">Green Soft #E3F3EA</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footnote">
+      <b>Kenapa dipisah:</b> Coral sudah dipakai untuk aksi destruktif (tombol Hapus), jadi Amber/Green dipilih khusus supaya status "boleh/tidak boleh dihapus" tidak ambigu dengan warna tombol aksinya sendiri. Kalau nanti ada blok publik yang butuh makna "berhasil/peringatan" (misal status formulir), dua warna ini bisa dipakai juga — tapi sejauh ini belum ada kasusnya di halaman publik.
+    </div>
+  </div>
+
+  <!-- ============ BAGIAN 8: KARTU ============ -->
+  <div class="section">
+    <div class="section-head"><div class="n">8</div><h2>Kartu</h2></div>
+    <p class="section-note">Empat varian kartu yang berulang di halaman program &amp; mitra — semua memakai latar <span class="mono">White</span> dengan garis tipis <span class="mono">Line</span>, beda dari kartu statistik gelap di Bagian 4. Yang membedakan tiap varian cuma aksen dan susunan, bukan palet baru.</p>
+
+    <div class="block-grid">
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-progcard">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></div>
+            <div class="t">Program Malaria</div>
+            <div class="d">Eliminasi penyakit di wilayah beban tinggi</div>
+          </div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Kartu Program</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--sage-soft);"></span>Latar ikon — <span class="tok mono">Sage Soft</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Ikon &amp; judul — <span class="tok mono">Foresty</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--ink-soft);"></span>Deskripsi — <span class="tok mono">Ink Soft</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-statcard">
+            <div class="n">90%</div>
+            <div class="l">Kasus Nasional</div>
+          </div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Kartu Statistik (varian terang)</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--white); border:1px solid var(--line);"></span>Latar — <span class="tok mono">White</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--coral);"></span>Angka — <span class="tok mono">Coral</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--ink-soft);"></span>Label — <span class="tok mono">Ink Soft</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-mitracard">
+            <div class="logo">UN</div>
+            <div><div class="t">UNICEF</div><div class="d">Mitra sejak 2014</div></div>
+          </div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Kartu Mitra</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--goldy-soft);"></span>Latar logo — <span class="tok mono">Goldy Soft</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Inisial &amp; nama — <span class="tok mono">Foresty</span></div>
+        </div>
+      </div>
+
+      <div class="block-card">
+        <div class="block-preview">
+          <div class="pv-testicard">
+            <div class="q">"Pendampingan YSBH membantu kami memahami data kampung secara langsung."</div>
+            <div class="who"><div class="av">SK</div><div><div class="name">Kepala Puskesmas</div><div class="role">Wanggar Sari</div></div></div>
+          </div>
+        </div>
+        <div class="block-legend">
+          <div class="name">Kartu Testimoni</div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--goldy);"></span>Garis aksen kiri — <span class="tok mono">Goldy</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Avatar — <span class="tok mono">Foresty</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:var(--ink);"></span>Kutipan — <span class="tok mono">Ink</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BAGIAN 9: TIMELINE ============ -->
+  <div class="section">
+    <div class="section-head"><div class="n">9</div><h2>Timeline</h2></div>
+    <p class="section-note">Satu pola, dua kondisi. Titik berwarna Foresty untuk riwayat yang sudah selesai, titik Coral untuk entri yang masih berjalan — supaya pembaca langsung tahu mana program aktif tanpa harus baca tanggalnya. Datanya dari riwayat 12 tahun kemitraan yang sudah dipakai di halaman Program Kerja.</p>
+
+    <div class="block-card">
+      <div class="block-preview">
+        <div class="pv-timeline">
+          <div class="tl-item"><div class="tl-year">2014</div><div class="tl-text"><b>UNICEF</b> — Program Malaria Terintegrasi, 16 kabupaten endemis</div></div>
+          <div class="tl-item"><div class="tl-year">2015</div><div class="tl-text"><b>UNICEF</b> — KIA, Gizi, Imunisasi &amp; STBM, IDR 3,02 M</div></div>
+          <div class="tl-item"><div class="tl-year">2016–2017</div><div class="tl-text"><b>UNICEF</b> — Tiga program: Malaria, MNCH, Integrated Micro-Planning</div></div>
+          <div class="tl-item"><div class="tl-year">2018–2019</div><div class="tl-text"><b>USAID</b> (PACT–FHI 360) — Fast Track HIV 90-90-90</div></div>
+          <div class="tl-item"><div class="tl-year">2020</div><div class="tl-text"><b>WHO</b> — Surveilans resistensi insektisida, 4 kabupaten</div></div>
+          <div class="tl-item current"><div class="tl-year">2026</div><div class="tl-text"><b>Dinkes Daerah</b> — 3 program aktif: Peg. Bintang, Papua Tengah, Sarmi</div></div>
+        </div>
+      </div>
+      <div class="block-legend">
+        <div class="name">Timeline Riwayat</div>
+        <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Garis &amp; titik selesai — <span class="tok mono">Foresty → Goldy</span> (gradien)</div>
+        <div class="legend-row"><span class="legend-dot" style="background:var(--coral);"></span>Titik entri aktif/terkini — <span class="tok mono">Coral</span></div>
+        <div class="legend-row"><span class="legend-dot" style="background:var(--foresty);"></span>Tahun — <span class="tok mono">Foresty</span> (<span class="tok mono">Coral Dark</span> untuk entri aktif)</div>
+        <div class="legend-row"><span class="legend-dot" style="background:var(--ink-soft);"></span>Deskripsi — <span class="tok mono">Ink Soft</span>, nama lembaga ditekankan <span class="tok mono">Ink</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

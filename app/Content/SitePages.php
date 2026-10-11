@@ -80,7 +80,8 @@ final class SitePages
             if ($kind !== 'p') {
                 $data['level'] = $kind;
             }
-            $blocks[$id] = ['id' => $id, 'type' => $kind === 'p' ? 'paragraph' : 'heading', 'data' => $data];
+            $block = ['id' => $id, 'type' => $kind === 'p' ? 'paragraph' : 'heading', 'data' => $data];
+            $blocks[$id] = self::photoToImage($block, $locales) ?? $block; // rilis 37: tempat foto = blok Gambar kosong (bukan paragraf penanda)
             $order[] = $id;
         }
         if ($blocks === []) {
@@ -100,6 +101,67 @@ final class SitePages
         }
 
         return ['blocks' => $blocks, 'order' => $order, 'settings' => []];
+    }
+
+    /**
+     * Paragraf penanda foto ("[ISI-DULU] <em>Photo|Foto: keterangan</em>", rilis 25/26) -> blok Gambar KOSONG (rilis 37): url kosong, keterangan
+     * dua bahasa terisi (tanpa awalan "Foto:" dan tanpa tag), tata letak bawaan yang sah di registri. Penulis tinggal memilih berkas di panel
+     * Properti (Jelajahi File Manager). Gambar tanpa berkas tidak dicetak di situs (renderer) dan dilaporkan cms:audit-placeholders.
+     * Mengembalikan null bila blok BUKAN paragraf penanda foto (tidak disentuh). Setiap bahasa yang berisi teks harus berpola foto; murni.
+     *
+     * @param array<string,mixed> $block
+     * @param string[] $locales
+     * @return array<string,mixed>|null
+     */
+    public static function photoToImage(array $block, array $locales): ?array
+    {
+        if (($block['type'] ?? '') !== 'paragraph' || !is_array($block['data']['text'] ?? null)) {
+            return null;
+        }
+        $caption = [];
+        $n = 0;
+        foreach ($locales as $l) {
+            $t = trim((string) ($block['data']['text'][$l] ?? ''));
+            if ($t === '') {
+                $caption[$l] = '';
+                continue;
+            }
+            if (!preg_match('~^(?:<p>)?\s*' . preg_quote(Placeholders::TOKEN, '~') . '\s*<em>\s*(?:Photo|Foto)\s*:\s*(.*?)\s*</em>\s*(?:</p>)?$~su', $t, $m)) {
+                return null;
+            }
+            $caption[$l] = trim(html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $n++;
+        }
+        if ($n === 0) {
+            return null;
+        }
+
+        return ['id' => (string) ($block['id'] ?? ''), 'type' => 'image', 'data' => [
+            'url' => '', 'alt_text' => '', 'caption' => $caption,
+            'width' => 'w-full', 'align' => 'mx-auto', 'radius' => 'rounded-lg', 'height' => 'h-auto', 'max_height' => 'max-h-[32rem]', 'object_fit' => 'object-cover',
+            'margin_bottom' => Blocks\Spacing::DEFAULT,
+        ]];
+    }
+
+    /**
+     * Ganti paragraf penanda foto di dokumen yang SUDAH dibuat (cms:convert-photos). Hanya blok yang masih berupa paragraf penanda
+     * utuh yang diganti (id dan urutan sama); blok yang sudah Anda sunting tidak disentuh.
+     *
+     * @param array<string,mixed> $doc dokumen {blocks, order, settings}
+     * @param string[] $locales
+     * @return array{0:array<string,mixed>,1:int} [dokumen baru, jumlah diganti]
+     */
+    public static function convertPhotos(array $doc, array $locales): array
+    {
+        $n = 0;
+        foreach (is_array($doc['blocks'] ?? null) ? $doc['blocks'] : [] as $id => $block) {
+            if (is_array($block) && ($img = self::photoToImage($block + ['id' => (string) $id], $locales)) !== null) {
+                $doc['blocks'][$id] = $img;
+                $n++;
+            }
+        }
+
+        return [$doc, $n];
     }
 
     /** Dokumen isi snippet NPWP/rekening: satu paragraf per baris. */

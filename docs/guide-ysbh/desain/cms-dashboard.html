@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard CMS — Yayasan Sinar Bhakti Husada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          forest: '#064F3B',
+          'forest-dark': '#043328',
+          gold: '#EBCC26',
+          'gold-soft': '#F7EBAF',
+          coral: '#E42326',
+          'coral-dark': '#BE1417',
+          paper: '#FBF7EA',
+          ink: '#12241C',
+          'ink-soft': '#4B5D53',
+          mist: '#E9F1EB',
+        },
+        fontFamily: {
+          display: ['Fraunces', 'serif'],
+          body: ['"Plus Jakarta Sans"', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+</head>
+<body class="m-0 bg-mist text-ink font-body antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 shrink-0 bg-forest-dark text-white flex flex-col">
+    <div class="flex items-center gap-3 px-6 py-6 border-b border-white/10">
+      <svg viewBox="0 0 60 60" class="w-9 h-9" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="29" fill="#EBCC26"/>
+        <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="#064F3B"/>
+        <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+        <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+      </svg>
+      <div>
+        <div class="font-display font-bold text-sm leading-tight">Sinar Bhakti Husada</div>
+        <div class="text-[11px] text-gold uppercase tracking-wider font-semibold">Admin CMS</div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-5 px-3 space-y-6">
+      <div>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/10 text-white font-semibold text-sm">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          Dashboard
+        </a>
+      </div>
+
+      <div>
+        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/40 mb-2">Konten Program</div>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.6-9.3-9.2C1.4 8.6 3 5 6.6 5c2 0 3.4 1.1 4.4 2.6C12 6.1 13.4 5 15.4 5 19 5 20.6 8.6 19.3 11.8 17 16.4 12 21 12 21z"/></svg>
+          Program Kesehatan
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.4-4 8-9 8a9.7 9.7 0 0 1-4-.8L3 20l1.3-3.9A7.9 7.9 0 0 1 3 12c0-4.4 4-8 9-8s9 3.6 9 8Z"/></svg>
+          Testimoni
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Statistik Dampak
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg>
+          Galeri Dokumentasi
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 1.8-2 3.5M12 17h.01"/></svg>
+          FAQ
+        </a>
+      </div>
+
+      <div>
+        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/40 mb-2">Berita &amp; Cerita</div>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+          Artikel
+        </a>
+      </div>
+
+      <div>
+        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/40 mb-2">Yayasan</div>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21h16M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg>
+          Mitra
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.4-4 8-9 8a9.7 9.7 0 0 1-4-.8L3 20l1.3-3.9A7.9 7.9 0 0 1 3 12c0-4.4 4-8 9-8s9 3.6 9 8Z"/></svg>
+          Tim &amp; Pengurus
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+          Pengaturan Situs
+        </a>
+      </div>
+    </nav>
+
+    <div class="px-4 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-gold text-forest flex items-center justify-center font-display font-bold text-sm">AR</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold truncate">Andreas Rumbewas</div>
+          <div class="text-xs text-white/50 truncate">Admin Konten</div>
+        </div>
+        <button class="text-white/50 hover:text-white" aria-label="Keluar">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <!-- TOPBAR -->
+    <header class="bg-white border-b border-forest/10 px-8 py-4 flex items-center justify-between gap-6 sticky top-0 z-10">
+      <div>
+        <h1 class="font-display font-bold text-xl text-forest">Dashboard</h1>
+        <p class="text-xs text-ink-soft mt-0.5">Selamat datang kembali, Andreas 👋</p>
+      </div>
+      <div class="flex items-center gap-3 flex-1 max-w-md">
+        <div class="relative flex-1">
+          <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" placeholder="Cari konten..." class="w-full pl-9 pr-4 py-2 rounded-full border border-forest/15 text-sm focus:outline-none focus:border-forest bg-mist/60">
+        </div>
+      </div>
+      <a href="#" class="inline-flex items-center gap-2 bg-coral text-white text-sm font-bold px-5 py-2.5 rounded-full hover:bg-coral-dark transition-colors whitespace-nowrap">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Tulis Artikel
+      </a>
+    </header>
+
+    <main class="flex-1 p-8 space-y-8">
+
+      <!-- STAT CARDS -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="bg-white rounded-2xl border border-forest/10 p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-gold-soft text-forest flex items-center justify-center">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.6-9.3-9.2C1.4 8.6 3 5 6.6 5c2 0 3.4 1.1 4.4 2.6C12 6.1 13.4 5 15.4 5 19 5 20.6 8.6 19.3 11.8 17 16.4 12 21 12 21z"/></svg>
+            </div>
+            <span class="text-xs font-bold text-forest bg-mist px-2 py-1 rounded-full">3 Aktif</span>
+          </div>
+          <div class="font-display font-bold text-3xl text-forest">3</div>
+          <div class="text-sm text-ink-soft mt-1">Program Kesehatan</div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-forest/10 p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-mist text-forest flex items-center justify-center">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+            </div>
+            <span class="text-xs font-bold text-gold-soft bg-forest px-2 py-1 rounded-full">2 Draf</span>
+          </div>
+          <div class="font-display font-bold text-3xl text-forest">14</div>
+          <div class="text-sm text-ink-soft mt-1">Artikel Dipublikasikan</div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-forest/10 p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-[#FBE6E6] text-coral flex items-center justify-center">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.4-4 8-9 8a9.7 9.7 0 0 1-4-.8L3 20l1.3-3.9A7.9 7.9 0 0 1 3 12c0-4.4 4-8 9-8s9 3.6 9 8Z"/></svg>
+            </div>
+          </div>
+          <div class="font-display font-bold text-3xl text-forest">9</div>
+          <div class="text-sm text-ink-soft mt-1">Testimoni Terkumpul</div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-forest/10 p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-gold-soft text-forest flex items-center justify-center">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg>
+            </div>
+          </div>
+          <div class="font-display font-bold text-3xl text-forest">47</div>
+          <div class="text-sm text-ink-soft mt-1">Foto Galeri</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- ARTIKEL TERBARU -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-forest/10 shadow-sm overflow-hidden">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-forest/10">
+            <h2 class="font-display font-bold text-forest">Artikel Terbaru</h2>
+            <a href="#" class="text-xs font-bold text-coral-dark hover:underline">Lihat Semua →</a>
+          </div>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs text-ink-soft uppercase tracking-wide bg-mist/50">
+                <th class="px-6 py-3 font-semibold">Judul</th>
+                <th class="px-6 py-3 font-semibold">Kategori</th>
+                <th class="px-6 py-3 font-semibold">Status</th>
+                <th class="px-6 py-3 font-semibold">Tanggal</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-forest/5">
+              <tr class="hover:bg-mist/30">
+                <td class="px-6 py-3.5 font-semibold text-ink">Menembus Medan Sulit: Kisah Tim Fasilitator Menuju Puncak Jaya</td>
+                <td class="px-6 py-3.5"><span class="text-xs font-bold bg-[#FBE6E6] text-coral-dark px-2.5 py-1 rounded-full">Cerita Lapangan</span></td>
+                <td class="px-6 py-3.5"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-forest"><span class="w-1.5 h-1.5 rounded-full bg-forest"></span>Terbit</span></td>
+                <td class="px-6 py-3.5 text-ink-soft">12 Jun 2026</td>
+              </tr>
+              <tr class="hover:bg-mist/30">
+                <td class="px-6 py-3.5 font-semibold text-ink">Cerita dari Waghete: Pelatihan Fasilitator Imunisasi di Deiyai</td>
+                <td class="px-6 py-3.5"><span class="text-xs font-bold bg-gold-soft text-forest px-2.5 py-1 rounded-full">Kegiatan</span></td>
+                <td class="px-6 py-3.5"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-forest"><span class="w-1.5 h-1.5 rounded-full bg-forest"></span>Terbit</span></td>
+                <td class="px-6 py-3.5 text-ink-soft">28 Mei 2026</td>
+              </tr>
+              <tr class="hover:bg-mist/30">
+                <td class="px-6 py-3.5 font-semibold text-ink">Laporan Semester I: Progres Program KIA di 9 Kabupaten</td>
+                <td class="px-6 py-3.5"><span class="text-xs font-bold bg-mist text-forest px-2.5 py-1 rounded-full">Laporan</span></td>
+                <td class="px-6 py-3.5"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-ink-soft"><span class="w-1.5 h-1.5 rounded-full bg-ink-soft/40"></span>Draf</span></td>
+                <td class="px-6 py-3.5 text-ink-soft">15 Mei 2026</td>
+              </tr>
+              <tr class="hover:bg-mist/30">
+                <td class="px-6 py-3.5 font-semibold text-ink">Satu Hari Bersama Kader Posyandu di Sarmi</td>
+                <td class="px-6 py-3.5"><span class="text-xs font-bold bg-[#FBE6E6] text-coral-dark px-2.5 py-1 rounded-full">Cerita Lapangan</span></td>
+                <td class="px-6 py-3.5"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-ink-soft"><span class="w-1.5 h-1.5 rounded-full bg-ink-soft/40"></span>Draf</span></td>
+                <td class="px-6 py-3.5 text-ink-soft">29 Mar 2026</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- QUICK ACTIONS + PERLU PERHATIAN -->
+        <div class="space-y-6">
+          <div class="bg-white rounded-2xl border border-forest/10 shadow-sm p-6">
+            <h2 class="font-display font-bold text-forest mb-4">Aksi Cepat</h2>
+            <div class="space-y-2.5">
+              <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-mist hover:bg-gold-soft transition-colors text-sm font-semibold text-forest">
+                <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                Tulis Artikel Baru
+              </a>
+              <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-mist hover:bg-gold-soft transition-colors text-sm font-semibold text-forest">
+                <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                Tambah Program
+              </a>
+              <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-mist hover:bg-gold-soft transition-colors text-sm font-semibold text-forest">
+                <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                Tambah Testimoni
+              </a>
+              <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-mist hover:bg-gold-soft transition-colors text-sm font-semibold text-forest">
+                <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                Unggah Foto Galeri
+              </a>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-forest/10 shadow-sm p-6">
+            <h2 class="font-display font-bold text-forest mb-4 flex items-center gap-2">
+              <svg class="w-[18px] h-[18px] text-coral" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+              Perlu Perhatian
+            </h2>
+            <ul class="space-y-3 text-sm">
+              <li class="flex items-start gap-2.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-coral mt-1.5 shrink-0"></span>
+                <span class="text-ink-soft"><b class="text-ink">2 artikel</b> masih berstatus draf lebih dari 14 hari</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-coral mt-1.5 shrink-0"></span>
+                <span class="text-ink-soft"><b class="text-ink">Program Imunisasi</b> belum punya foto galeri</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-coral mt-1.5 shrink-0"></span>
+                <span class="text-ink-soft"><b class="text-ink">3 FAQ</b> belum diberi kategori</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHART -->
+      <div class="bg-white rounded-2xl border border-forest/10 shadow-sm p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-display font-bold text-forest">Artikel Dipublikasikan per Bulan</h2>
+          <span class="text-xs text-ink-soft">6 bulan terakhir</span>
+        </div>
+        <div class="flex items-end gap-4 h-40">
+          <div class="flex-1 flex flex-col items-center gap-2">
+            <div class="w-full bg-mist rounded-t-lg" style="height:40%"></div>
+            <span class="text-xs text-ink-soft">Jan</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center gap-2">
+            <div class="w-full bg-mist rounded-t-lg" style="height:55%"></div>
+            <span class="text-xs text-ink-soft">Feb</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center gap-2">
+            <div class="w-full bg-gold-soft rounded-t-lg" style="height:35%"></div>
+            <span class="text-xs text-ink-soft">Mar</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center gap-2">
+            <div class="w-full bg-mist rounded-t-lg" style="height:70%"></div>
+            <span class="text-xs text-ink-soft">Apr</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center gap-2">
+            <div class="w-full bg-mist rounded-t-lg" style="height:50%"></div>
+            <span class="text-xs text-ink-soft">Mei</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center gap-2">
+            <div class="w-full bg-forest rounded-t-lg" style="height:85%"></div>
+            <span class="text-xs font-bold text-forest">Jun</span>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

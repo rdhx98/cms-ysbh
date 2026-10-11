@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor Blok — Contoh Visual (Halaman Program Malaria)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          forest: '#064F3B', 'forest-dark': '#043328',
+          gold: '#EBCC26', 'gold-soft': '#F7EBAF',
+          coral: '#E42326', 'coral-dark': '#BE1417',
+          paper: '#FBF7EA', ink: '#12241C', 'ink-soft': '#4B5D53',
+          mist: '#E9F1EB',
+        },
+        fontFamily: {
+          display: ['Fraunces', 'serif'],
+          body: ['"Plus Jakarta Sans"', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+<style>
+  /* Kedalaman nesting ditandai lewat warna garis kiri yang makin pekat -
+     supaya "seberapa dalam" langsung terasa tanpa perlu menghitung indentasi. */
+  .depth-0 { border-left: 3px solid transparent; }
+  .depth-1 { border-left: 3px solid #EBCC26; background: #FBF9F0; }
+  .depth-2 { border-left: 3px solid #E42326; background: #FDF5F0; }
+  .depth-3 { border-left: 3px solid #064F3B; background: #F3F7F4; }
+</style>
+</head>
+<body class="m-0 bg-mist text-ink font-body antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 shrink-0 bg-forest-dark text-white flex flex-col">
+    <div class="flex items-center gap-3 px-6 py-6 border-b border-white/10">
+      <svg viewBox="0 0 60 60" class="w-9 h-9" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="29" fill="#EBCC26"/>
+        <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="#064F3B"/>
+        <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+        <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+      </svg>
+      <div>
+        <div class="font-display font-bold text-sm leading-tight">Sinar Bhakti Husada</div>
+        <div class="text-[11px] text-gold uppercase tracking-wider font-semibold">Admin CMS</div>
+      </div>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-5 px-3 space-y-6">
+      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 text-sm font-medium">
+        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Dashboard
+      </a>
+      <div>
+        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/40 mb-2">Berita &amp; Cerita</div>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/10 text-white font-semibold text-sm">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+          Artikel &amp; Halaman
+        </a>
+      </div>
+    </nav>
+    <div class="px-4 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-gold text-forest flex items-center justify-center font-display font-bold text-sm">AR</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold truncate">Andreas Rumbewas</div>
+          <div class="text-xs text-white/50 truncate">Admin Konten</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <header class="bg-white border-b border-forest/10 px-8 py-4 flex items-center justify-between gap-6 sticky top-0 z-20">
+      <div>
+        <h1 class="font-display font-bold text-xl text-forest">Edit Halaman: Program Malaria</h1>
+        <p class="text-xs text-ink-soft mt-0.5">Contoh visual — struktur blok sesuai docs/usage-guide.md §4</p>
+      </div>
+      <button class="text-sm font-bold px-5 py-2.5 rounded-full bg-coral text-white hover:bg-coral-dark">Simpan</button>
+    </header>
+
+    <main class="flex-1 p-8">
+      <div class="max-w-3xl mx-auto">
+
+        <!-- TOOLBAR -->
+        <div class="flex flex-wrap items-center gap-2 mb-5 sticky top-[73px] bg-mist/95 backdrop-blur py-3 z-10 -mx-2 px-2">
+          <span class="text-[10px] font-bold uppercase text-ink-soft tracking-wide mr-1">Komponen:</span>
+          <button class="text-xs font-bold px-3 py-2 rounded-full bg-white border border-forest/15 text-forest">+ Heading</button>
+          <button class="text-xs font-bold px-3 py-2 rounded-full bg-white border border-forest/15 text-forest">+ Paragraf</button>
+          <button class="text-xs font-bold px-3 py-2 rounded-full bg-white border border-forest/15 text-forest">+ Eyebrow</button>
+          <button class="text-xs font-bold px-3 py-2 rounded-full bg-white border border-forest/15 text-forest">+ Gambar</button>
+          <span class="text-[10px] font-bold uppercase text-ink-soft tracking-wide ml-3 mr-1">Kontainer:</span>
+          <button class="text-xs font-bold px-3 py-2 rounded-full bg-forest text-white">+ Section</button>
+          <button class="text-xs font-bold px-3 py-2 rounded-full bg-forest text-white">+ Row</button>
+          <button class="text-xs font-bold px-3 py-2 rounded-full bg-forest text-white">+ Column</button>
+          <button class="text-xs font-bold px-3 py-2 rounded-full bg-forest text-white">+ Grid</button>
+          <button class="text-xs font-bold px-3 py-2 rounded-full bg-forest text-white">+ Kartu</button>
+        </div>
+
+        <!-- BLOCK LIST -->
+        <div class="space-y-2">
+
+          <!-- ================= BLOK 1: SECTION HERO (expanded) ================= -->
+          <div class="depth-0 border border-forest/15 rounded-xl bg-white overflow-hidden">
+            <div class="flex items-center gap-2 px-3 py-2.5">
+              <span class="text-ink-soft/40 cursor-grab select-none" title="Seret untuk urutkan">⠿</span>
+              <span class="text-[10px] font-bold uppercase bg-forest text-white px-2 py-1 rounded-full shrink-0">Section</span>
+              <span class="text-[10px] text-ink-soft italic shrink-0">kontainer · latar paper</span>
+              <span class="flex-1 text-sm text-ink-soft truncate">3 anak</span>
+              <button class="text-xs font-bold px-3 py-1.5 rounded-full bg-forest text-white shrink-0">Tutup</button>
+              <button class="w-7 h-7 rounded-lg border border-forest/15 text-ink-soft shrink-0" title="Duplikat">⧉</button>
+              <button class="w-7 h-7 rounded-lg border border-forest/15 text-coral-dark shrink-0" title="Hapus">✕</button>
+            </div>
+
+            <div class="px-4 py-4 border-t border-forest/10 bg-mist/40 space-y-3">
+              <div class="grid grid-cols-2 gap-3 mb-2">
+                <div><label class="text-[10px] font-bold text-ink-soft uppercase">Latar</label>
+                  <div class="text-xs bg-white border border-forest/15 rounded-lg px-3 py-2 mt-1">Polos (paper)</div></div>
+                <div><label class="text-[10px] font-bold text-ink-soft uppercase">Jarak</label>
+                  <div class="text-xs bg-white border border-forest/15 rounded-lg px-3 py-2 mt-1">Normal</div></div>
+              </div>
+
+              <label class="text-[10px] font-bold text-ink-soft uppercase block mb-1">Isi</label>
+
+              <!-- anak 1: eyebrow -->
+              <div class="depth-1 rounded-lg overflow-hidden">
+                <div class="flex items-center gap-1.5 px-2.5 py-2">
+                  <span class="text-ink-soft/40 cursor-grab select-none text-xs">⠿</span>
+                  <span class="text-[9px] font-bold uppercase bg-forest text-white px-1.5 py-0.5 rounded-full shrink-0">Eyebrow</span>
+                  <span class="flex-1 text-xs text-ink-soft truncate">Program Kesehatan · Tanah Papua</span>
+                  <button class="text-[10px] font-bold text-forest shrink-0">Edit</button>
+                  <button class="text-[10px] font-bold text-coral-dark shrink-0">✕</button>
+                </div>
+              </div>
+
+              <!-- anak 2: heading -->
+              <div class="depth-1 rounded-lg overflow-hidden">
+                <div class="flex items-center gap-1.5 px-2.5 py-2">
+                  <span class="text-ink-soft/40 cursor-grab select-none text-xs">⠿</span>
+                  <span class="text-[9px] font-bold uppercase bg-forest text-white px-1.5 py-0.5 rounded-full shrink-0">Heading</span>
+                  <span class="flex-1 text-xs text-ink-soft truncate">H1 · Percepatan Eliminasi Malaria di Tanah Papua</span>
+                  <button class="text-[10px] font-bold text-forest shrink-0">Edit</button>
+                  <button class="text-[10px] font-bold text-coral-dark shrink-0">✕</button>
+                </div>
+              </div>
+
+              <!-- anak 3: paragraph -->
+              <div class="depth-1 rounded-lg overflow-hidden">
+                <div class="flex items-center gap-1.5 px-2.5 py-2">
+                  <span class="text-ink-soft/40 cursor-grab select-none text-xs">⠿</span>
+                  <span class="text-[9px] font-bold uppercase bg-forest text-white px-1.5 py-0.5 rounded-full shrink-0">Paragraf</span>
+                  <span class="flex-1 text-xs text-ink-soft truncate">Eliminasi malaria di Tanah Papua memerlukan pendekatan...</span>
+                  <button class="text-[10px] font-bold text-forest shrink-0">Edit</button>
+                  <button class="text-[10px] font-bold text-coral-dark shrink-0">✕</button>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-1 pt-1">
+                <button class="text-[10px] font-bold px-2 py-1 rounded-full bg-white border border-forest/15 text-forest">+ Heading</button>
+                <button class="text-[10px] font-bold px-2 py-1 rounded-full bg-white border border-forest/15 text-forest">+ Paragraf</button>
+                <button class="text-[10px] font-bold px-2 py-1 rounded-full bg-white border border-forest/15 text-forest">+ Eyebrow</button>
+                <button class="text-[10px] font-bold px-2 py-1 rounded-full bg-white border border-forest/15 text-forest">+ Gambar</button>
+                <button class="text-[10px] font-bold px-2 py-1 rounded-full bg-forest/10 border border-forest/15 text-forest">+ Grid</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= BLOK 2: SECTION 5 KOMPONEN (expanded, nested dalam) ================= -->
+          <div class="depth-0 border border-forest/15 rounded-xl bg-white overflow-hidden">
+            <div class="flex items-center gap-2 px-3 py-2.5">
+              <span class="text-ink-soft/40 cursor-grab select-none">⠿</span>
+              <span class="text-[10px] font-bold uppercase bg-forest text-white px-2 py-1 rounded-full shrink-0">Section</span>
+              <span class="text-[10px] text-ink-soft italic shrink-0">kontainer · latar mist</span>
+              <span class="flex-1 text-sm text-ink-soft truncate">1 anak</span>
+              <button class="text-xs font-bold px-3 py-1.5 rounded-full bg-forest text-white shrink-0">Tutup</button>
+              <button class="w-7 h-7 rounded-lg border border-forest/15 text-ink-soft shrink-0">⧉</button>
+              <button class="w-7 h-7 rounded-lg border border-forest/15 text-coral-dark shrink-0">✕</button>
+            </div>
+
+            <div class="px-4 py-4 border-t border-forest/10 bg-mist/40 space-y-3">
+              <label class="text-[10px] font-bold text-ink-soft uppercase block mb-1">Isi</label>
+
+              <!-- anak: grid (kontainer, expanded) -->
+              <div class="depth-1 rounded-lg overflow-hidden">
+                <div class="flex items-center gap-1.5 px-2.5 py-2">
+                  <span class="text-ink-soft/40 cursor-grab select-none text-xs">⠿</span>
+                  <span class="text-[9px] font-bold uppercase bg-forest text-white px-1.5 py-0.5 rounded-full shrink-0">Grid</span>
+                  <span class="text-[9px] text-ink-soft italic shrink-0">kontainer</span>
+                  <span class="flex-1 text-xs text-ink-soft truncate">5 anak</span>
+                  <button class="text-[10px] font-bold text-forest shrink-0">Tutup</button>
+                  <button class="text-[10px] font-bold text-coral-dark shrink-0">✕</button>
+                </div>
+
+                <div class="px-3 py-3 border-t border-forest/10 space-y-2">
+                  <!-- card 1: expanded penuh sampai heading/paragraph -->
+                  <div class="depth-2 rounded-lg overflow-hidden">
+                    <div class="flex items-center gap-1.5 px-2.5 py-2">
+                      <span class="text-ink-soft/40 cursor-grab select-none text-xs">⠿</span>
+                      <span class="text-[9px] font-bold uppercase bg-forest text-white px-1.5 py-0.5 rounded-full shrink-0">Kartu</span>
+                      <span class="text-[9px] text-ink-soft italic shrink-0">kontainer</span>
+                      <span class="flex-1 text-xs text-ink-soft truncate">Bentuk: default · 2 anak</span>
+                      <button class="text-[10px] font-bold text-forest shrink-0">Tutup</button>
+                      <button class="text-[10px] font-bold text-coral-dark shrink-0">✕</button>
+                    </div>
+                    <div class="px-3 py-3 border-t border-forest/10 space-y-2.5">
+                      <div class="grid grid-cols-3 gap-2 mb-2">
+                        <div><label class="text-[9px] font-bold text-ink-soft uppercase">Bentuk</label>
+                          <div class="text-[11px] bg-white border border-forest/15 rounded px-2 py-1.5 mt-0.5">Default</div></div>
+                        <div><label class="text-[9px] font-bold text-ink-soft uppercase">Aksen</label>
+                          <div class="text-[11px] bg-white border border-forest/15 rounded px-2 py-1.5 mt-0.5">Hijau tua</div></div>
+                        <div><label class="text-[9px] font-bold text-ink-soft uppercase">Ikon</label>
+                          <div class="text-[11px] bg-white border border-forest/15 rounded px-2 py-1.5 mt-0.5">Tanpa ikon</div></div>
+                      </div>
+                      <div class="depth-3 rounded overflow-hidden">
+                        <div class="flex items-center gap-1.5 px-2 py-1.5">
+                          <span class="text-[8px] font-bold uppercase bg-forest text-white px-1.5 py-0.5 rounded-full shrink-0">Heading</span>
+                          <span class="flex-1 text-[11px] text-ink-soft truncate">H3 · Penguatan Tata Kelola Program</span>
+                          <button class="text-[9px] font-bold text-forest shrink-0">Edit</button>
+                        </div>
+                      </div>
+                      <div class="depth-3 rounded overflow-hidden">
+                        <div class="flex items-center gap-1.5 px-2 py-1.5">
+                          <span class="text-[8px] font-bold uppercase bg-forest text-white px-1.5 py-0.5 rounded-full shrink-0">Paragraf</span>
+                          <span class="flex-1 text-[11px] text-ink-soft truncate">Memastikan perencanaan, koordinasi, dan pemantauan...</span>
+                          <button class="text-[9px] font-bold text-forest shrink-0">Edit</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- card 2-5: collapsed, biar terasa realistis (tidak semua dibuka sekaligus) -->
+                  <div class="depth-2 rounded-lg overflow-hidden">
+                    <div class="flex items-center gap-1.5 px-2.5 py-2">
+                      <span class="text-ink-soft/40 cursor-grab select-none text-xs">⠿</span>
+                      <span class="text-[9px] font-bold uppercase bg-forest text-white px-1.5 py-0.5 rounded-full shrink-0">Kartu</span>
+                      <span class="text-[9px] text-ink-soft italic shrink-0">kontainer</span>
+                      <span class="flex-1 text-xs text-ink-soft truncate">Bentuk: default · 2 anak</span>
+                      <button class="text-[10px] font-bold text-forest shrink-0">Edit</button>
+                      <button class="text-[10px] font-bold text-coral-dark shrink-0">✕</button>
+                    </div>
+                  </div>
+                  <div class="depth-2 rounded-lg overflow-hidden">
+                    <div class="flex items-center gap-1.5 px-2.5 py-2">
+                      <span class="text-ink-soft/40 cursor-grab select-none text-xs">⠿</span>
+                      <span class="text-[9px] font-bold uppercase bg-forest text-white px-1.5 py-0.5 rounded-full shrink-0">Kartu</span>
+                      <span class="text-[9px] text-ink-soft italic shrink-0">kontainer</span>
+                      <span class="flex-1 text-xs text-ink-soft truncate">Bentuk: default · 2 anak</span>
+                      <button class="text-[10px] font-bold text-forest shrink-0">Edit</button>
+                      <button class="text-[10px] font-bold text-coral-dark shrink-0">✕</button>
+                    </div>
+                  </div>
+                  <div class="text-center text-[11px] text-ink-soft py-1">⋯ 2 kartu lain (disederhanakan untuk contoh ini) ⋯</div>
+
+                  <div class="flex flex-wrap gap-1 pt-1">
+                    <button class="text-[10px] font-bold px-2 py-1 rounded-full bg-white border border-forest/15 text-forest">+ Kartu</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-1 pt-1">
+                <button class="text-[10px] font-bold px-2 py-1 rounded-full bg-forest/10 border border-forest/15 text-forest">+ Grid</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= BLOK 3: SECTION STATISTIK (collapsed) ================= -->
+          <div class="depth-0 border border-forest/15 rounded-xl bg-white overflow-hidden">
+            <div class="flex items-center gap-2 px-3 py-2.5">
+              <span class="text-ink-soft/40 cursor-grab select-none">⠿</span>
+              <span class="text-[10px] font-bold uppercase bg-forest text-white px-2 py-1 rounded-full shrink-0">Section</span>
+              <span class="text-[10px] text-ink-soft italic shrink-0">kontainer · latar forest</span>
+              <span class="flex-1 text-sm text-ink-soft truncate">1 anak</span>
+              <button class="text-xs font-bold px-3 py-1.5 rounded-full bg-mist text-forest shrink-0">Edit</button>
+              <button class="w-7 h-7 rounded-lg border border-forest/15 text-ink-soft shrink-0">⧉</button>
+              <button class="w-7 h-7 rounded-lg border border-forest/15 text-coral-dark shrink-0">✕</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

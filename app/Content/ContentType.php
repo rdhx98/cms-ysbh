@@ -116,9 +116,10 @@ enum ContentType: string
     }
 
     /**
-     * Status yang boleh DIPILIH pengguna. Artikel: penulis biasa hanya draft dan review (mengajukan tinjauan); admin/editor semuanya.
+     * Status yang SAH disimpan (validasi). Artikel: penulis biasa hanya draft dan review; admin/editor semuanya.
      * Status artikel saat ini tetap sah, supaya menyimpan tanpa mengubah status tidak ditolak.
-     * (Editor lama: penulis hanya bisa menyimpan draf dan mengajukan tinjauan; hapus hanya untuk draft/rejected.)
+     * Sejak rilis 38 artikel TIDAK lagi memilih status bebas: status berubah hanya lewat App\Content\ArticleWorkflow (builder::transition);
+     * aturan ini tinggal jaring pengaman di jalur simpan. Halaman dan snippet tetap memilih offline/online.
      *
      * @return string[]
      */

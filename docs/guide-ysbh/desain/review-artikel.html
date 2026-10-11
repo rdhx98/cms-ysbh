@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review &amp; Kelola Artikel — Dashboard CMS Yayasan Sinar Bhakti Husada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          forest: '#064F3B', 'forest-dark': '#043328',
+          gold: '#EBCC26', 'gold-soft': '#F7EBAF',
+          coral: '#E42326', 'coral-dark': '#BE1417',
+          paper: '#FBF7EA', ink: '#12241C', 'ink-soft': '#4B5D53',
+          mist: '#E9F1EB',
+        },
+        fontFamily: {
+          display: ['Fraunces', 'serif'],
+          body: ['"Plus Jakarta Sans"', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+</head>
+<body class="m-0 bg-mist text-ink font-body antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 shrink-0 bg-forest-dark text-white flex flex-col">
+    <div class="flex items-center gap-3 px-6 py-6 border-b border-white/10">
+      <svg viewBox="0 0 60 60" class="w-9 h-9" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="29" fill="#EBCC26"/>
+        <path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="#064F3B"/>
+        <rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/>
+        <rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/>
+      </svg>
+      <div>
+        <div class="font-display font-bold text-sm leading-tight">Sinar Bhakti Husada</div>
+        <div class="text-[11px] text-gold uppercase tracking-wider font-semibold">Admin CMS</div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-5 px-3 space-y-6">
+      <div>
+        <a href="cms-dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          Dashboard
+        </a>
+      </div>
+
+      <div>
+        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/40 mb-2">Konten Program</div>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.6-9.3-9.2C1.4 8.6 3 5 6.6 5c2 0 3.4 1.1 4.4 2.6C12 6.1 13.4 5 15.4 5 19 5 20.6 8.6 19.3 11.8 17 16.4 12 21 12 21z"/></svg>
+          Program Kesehatan
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.4-4 8-9 8a9.7 9.7 0 0 1-4-.8L3 20l1.3-3.9A7.9 7.9 0 0 1 3 12c0-4.4 4-8 9-8s9 3.6 9 8Z"/></svg>
+          Testimoni
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+          Statistik Dampak
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg>
+          Galeri Dokumentasi
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 1.8-2 3.5M12 17h.01"/></svg>
+          FAQ
+        </a>
+      </div>
+
+      <div>
+        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/40 mb-2">Berita &amp; Cerita</div>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/10 text-white font-semibold text-sm">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Review Artikel
+          <span class="ml-auto text-[10px] font-bold bg-coral text-white w-5 h-5 rounded-full flex items-center justify-center">2</span>
+        </a>
+      </div>
+
+      <div>
+        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-white/40 mb-2">Yayasan</div>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21h16M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg>
+          Mitra
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.4-4 8-9 8a9.7 9.7 0 0 1-4-.8L3 20l1.3-3.9A7.9 7.9 0 0 1 3 12c0-4.4 4-8 9-8s9 3.6 9 8Z"/></svg>
+          Tim &amp; Pengurus <span class="ml-auto text-[10px] text-white/40">(publik)</span>
+        </a>
+        <a href="kelola-pengguna.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Kelola Pengguna
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/75 hover:bg-white/5 hover:text-white text-sm font-medium">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+          Pengaturan Situs
+        </a>
+      </div>
+    </nav>
+
+    <div class="px-4 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-gold text-forest flex items-center justify-center font-display font-bold text-sm">YS</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold truncate">Yuliana Sroyer</div>
+          <div class="text-xs text-white/50 truncate">Editor</div>
+        </div>
+        <button class="text-white/50 hover:text-white" aria-label="Keluar">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <header class="bg-white border-b border-forest/10 px-8 py-4 flex items-center justify-between gap-6 sticky top-0 z-10">
+      <div>
+        <h1 class="font-display font-bold text-xl text-forest">Review &amp; Kelola Artikel</h1>
+        <p class="text-xs text-ink-soft mt-0.5">2 artikel menunggu ditinjau sebelum terbit</p>
+      </div>
+    </header>
+
+    <main class="flex-1 p-8 space-y-6">
+
+      <!-- FILTER TABS -->
+      <div class="flex gap-2 flex-wrap" id="filterTabs">
+        <button data-filter="all" class="filter-tab active px-4 py-2 rounded-full text-xs font-bold bg-forest text-white">Semua (6)</button>
+        <button data-filter="draf" class="filter-tab px-4 py-2 rounded-full text-xs font-bold bg-white border border-forest/15 text-ink-soft hover:border-forest">Draf (1)</button>
+        <button data-filter="review" class="filter-tab px-4 py-2 rounded-full text-xs font-bold bg-white border border-forest/15 text-ink-soft hover:border-forest">Menunggu Review (1)</button>
+        <button data-filter="revisi" class="filter-tab px-4 py-2 rounded-full text-xs font-bold bg-white border border-forest/15 text-ink-soft hover:border-forest">Revisi Diminta (1)</button>
+        <button data-filter="terjadwal" class="filter-tab px-4 py-2 rounded-full text-xs font-bold bg-white border border-forest/15 text-ink-soft hover:border-forest">Terjadwal (1)</button>
+        <button data-filter="terbit" class="filter-tab px-4 py-2 rounded-full text-xs font-bold bg-white border border-forest/15 text-ink-soft hover:border-forest">Terbit (2)</button>
+      </div>
+
+      <!-- TABLE -->
+      <div class="bg-white rounded-2xl border border-forest/10 shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs text-ink-soft uppercase tracking-wide bg-mist/50">
+              <th class="px-6 py-3 font-semibold">Judul Artikel</th>
+              <th class="px-6 py-3 font-semibold">Penulis</th>
+              <th class="px-6 py-3 font-semibold">Kategori</th>
+              <th class="px-6 py-3 font-semibold">Status</th>
+              <th class="px-6 py-3 font-semibold">Diperbarui</th>
+              <th class="px-6 py-3 font-semibold text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-forest/5">
+
+            <tr class="hover:bg-mist/30" data-status="review">
+              <td class="px-6 py-4 font-semibold text-ink max-w-xs">Laporan Semester I: Progres Program KIA di 9 Kabupaten</td>
+              <td class="px-6 py-4 text-ink-soft">Sarah Kaisiepo</td>
+              <td class="px-6 py-4"><span class="text-xs font-bold bg-mist text-forest px-2.5 py-1 rounded-full">Laporan</span></td>
+              <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-gold-soft bg-forest px-2.5 py-1 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-gold"></span>Menunggu Review</span></td>
+              <td class="px-6 py-4 text-ink-soft">2 hari lalu</td>
+              <td class="px-6 py-4 text-right">
+                <button onclick="openReview('kia')" class="text-xs font-bold text-white bg-coral hover:bg-coral-dark px-4 py-2 rounded-full">Tinjau</button>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-mist/30" data-status="revisi">
+              <td class="px-6 py-4 font-semibold text-ink max-w-xs">Mengapa Angka Zero-Dose di Papua Tengah Masih Tinggi?</td>
+              <td class="px-6 py-4 text-ink-soft">Fitri Amelia</td>
+              <td class="px-6 py-4"><span class="text-xs font-bold bg-mist text-forest px-2.5 py-1 rounded-full">Laporan</span></td>
+              <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-coral-dark bg-[#FBE6E6] px-2.5 py-1 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-coral"></span>Revisi Diminta</span></td>
+              <td class="px-6 py-4 text-ink-soft">4 hari lalu</td>
+              <td class="px-6 py-4 text-right">
+                <button onclick="openReview('zerodose')" class="text-xs font-bold text-forest border border-forest/20 hover:bg-mist px-4 py-2 rounded-full">Lihat Detail</button>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-mist/30" data-status="draf">
+              <td class="px-6 py-4 font-semibold text-ink max-w-xs">Satu Hari Bersama Kader Posyandu di Sarmi</td>
+              <td class="px-6 py-4 text-ink-soft">Petrus Kambu</td>
+              <td class="px-6 py-4"><span class="text-xs font-bold bg-[#FBE6E6] text-coral-dark px-2.5 py-1 rounded-full">Cerita Lapangan</span></td>
+              <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-ink-soft bg-mist px-2.5 py-1 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-ink-soft/40"></span>Draf</span></td>
+              <td class="px-6 py-4 text-ink-soft">5 hari lalu</td>
+              <td class="px-6 py-4 text-right">
+                <button class="text-xs font-bold text-ink-soft border border-forest/15 px-4 py-2 rounded-full cursor-not-allowed" disabled title="Belum diajukan penulis">Belum Diajukan</button>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-mist/30" data-status="terjadwal">
+              <td class="px-6 py-4 font-semibold text-ink max-w-xs">Kolaborasi Lintas Sektor: Ketika Tokoh Adat Bicara Soal Imunisasi</td>
+              <td class="px-6 py-4 text-ink-soft">Petrus Kambu</td>
+              <td class="px-6 py-4"><span class="text-xs font-bold bg-gold-soft text-forest px-2.5 py-1 rounded-full">Kegiatan</span></td>
+              <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-forest bg-gold-soft px-2.5 py-1 rounded-full"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Terjadwal · 25 Jul</span></td>
+              <td class="px-6 py-4 text-ink-soft">1 minggu lalu</td>
+              <td class="px-6 py-4 text-right">
+                <button class="text-xs font-bold text-forest border border-forest/20 hover:bg-mist px-4 py-2 rounded-full">Ubah Jadwal</button>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-mist/30" data-status="terbit">
+              <td class="px-6 py-4 font-semibold text-ink max-w-xs">Menembus Medan Sulit: Kisah Tim Fasilitator Menuju Puncak Jaya</td>
+              <td class="px-6 py-4 text-ink-soft">Tim YSBH</td>
+              <td class="px-6 py-4"><span class="text-xs font-bold bg-[#FBE6E6] text-coral-dark px-2.5 py-1 rounded-full">Cerita Lapangan</span></td>
+              <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-forest px-2.5 py-1 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-gold"></span>Terbit</span></td>
+              <td class="px-6 py-4 text-ink-soft">12 Jun 2026</td>
+              <td class="px-6 py-4 text-right">
+                <button class="text-xs font-bold text-ink-soft hover:text-forest px-4 py-2 rounded-full">Arsipkan</button>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-mist/30" data-status="terbit">
+              <td class="px-6 py-4 font-semibold text-ink max-w-xs">Cerita dari Waghete: Pelatihan Fasilitator Imunisasi di Deiyai</td>
+              <td class="px-6 py-4 text-ink-soft">Tim YSBH</td>
+              <td class="px-6 py-4"><span class="text-xs font-bold bg-gold-soft text-forest px-2.5 py-1 rounded-full">Kegiatan</span></td>
+              <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-forest px-2.5 py-1 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-gold"></span>Terbit</span></td>
+              <td class="px-6 py-4 text-ink-soft">28 Mei 2026</td>
+              <td class="px-6 py-4 text-right">
+                <button class="text-xs font-bold text-ink-soft hover:text-forest px-4 py-2 rounded-full">Arsipkan</button>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bg-white rounded-xl border border-dashed border-forest/20 p-4 text-xs text-ink-soft">
+        <b class="text-forest">Alur status:</b> Draf → Menunggu Review → (Revisi Diminta ↺ Draf) atau Disetujui → Terjadwal / Terbit → Diarsipkan.
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- REVIEW MODAL -->
+<div id="reviewModal" class="hidden fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between px-7 py-5 border-b border-forest/10">
+      <h3 class="font-display font-bold text-lg text-forest">Tinjau Artikel</h3>
+      <button onclick="closeReview()" class="text-ink-soft hover:text-forest">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="px-7 py-6 space-y-5">
+      <div>
+        <span id="modalCategory" class="text-xs font-bold bg-mist text-forest px-2.5 py-1 rounded-full">Laporan</span>
+        <h4 id="modalTitle" class="font-display font-bold text-xl text-forest mt-3 leading-snug">Laporan Semester I: Progres Program KIA di 9 Kabupaten</h4>
+        <div class="flex items-center gap-2 text-xs text-ink-soft mt-2">
+          <span id="modalAuthor">Diajukan oleh Sarah Kaisiepo</span><span>·</span><span id="modalDate">2 hari lalu</span>
+        </div>
+      </div>
+
+      <div class="aspect-video bg-mist rounded-xl border-2 border-dashed border-forest/15 flex items-center justify-center text-ink-soft">
+        <svg class="w-7 h-7 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.5"/></svg>
+      </div>
+
+      <p id="modalExcerpt" class="text-sm text-ink-soft leading-relaxed">
+        Sepanjang Januari hingga Juni 2026, Program KIA YSBH mencatat kemajuan berarti di sembilan kabupaten dampingan — mulai dari bertambahnya jumlah bidan desa yang mengikuti pelatihan kegawatdaruratan neonatal, hingga penguatan lima Puskesmas Model sebagai pusat pembelajaran bagi tenaga kesehatan dari wilayah sekitarnya. Laporan lengkap ini merangkum capaian, kendala di lapangan, dan rencana tindak lanjut untuk semester berikutnya.
+      </p>
+
+      <div>
+        <label class="text-xs font-bold text-ink-soft uppercase tracking-wide mb-1.5 block">Catatan untuk Penulis (opsional)</label>
+        <textarea rows="3" placeholder="Mis. Tolong tambahkan data pembanding semester sebelumnya..." class="w-full px-4 py-3 rounded-xl border border-forest/15 text-sm focus:outline-none focus:border-forest resize-none"></textarea>
+      </div>
+    </div>
+
+    <div class="px-7 py-5 border-t border-forest/10 flex flex-col sm:flex-row gap-2.5">
+      <button class="flex-1 bg-forest text-white font-bold text-sm py-3 rounded-xl hover:bg-forest-dark transition-colors">Setujui &amp; Terbitkan</button>
+      <button class="flex-1 bg-gold-soft text-forest font-bold text-sm py-3 rounded-xl hover:bg-gold transition-colors">Minta Revisi</button>
+      <button class="text-coral-dark font-bold text-sm py-3 px-4 rounded-xl hover:bg-[#FBE6E6] transition-colors">Tolak</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openReview() {
+    document.getElementById('reviewModal').classList.remove('hidden');
+  }
+  function closeReview() {
+    document.getElementById('reviewModal').classList.add('hidden');
+  }
+
+  const tabs = document.querySelectorAll('.filter-tab');
+  const rows = document.querySelectorAll('tbody tr');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active', 'bg-forest', 'text-white'));
+      tabs.forEach(t => t.classList.add('bg-white', 'text-ink-soft'));
+      tab.classList.add('active', 'bg-forest', 'text-white');
+      tab.classList.remove('bg-white', 'text-ink-soft');
+
+      const filter = tab.dataset.filter;
+      rows.forEach(row => {
+        row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

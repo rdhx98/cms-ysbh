@@ -10,6 +10,8 @@
   'statuses' => null, // label status yang BOLEH dipilih pengguna ini (value => label); null = semua
   'categories' => [], // artikel: id => nama
   'tags' => [], // artikel: [['id' => 1, 'name' => '…'], …]
+  'workflow' => [], // artikel: panel alur persetujuan (builder->workflow); kosong untuk halaman/snippet
+  'featured' => [], // artikel: thumbnail terpilih (builder->featuredPreview): kind none|media|legacy|missing, id, url, name
 ])
 
 @php
@@ -54,19 +56,27 @@
       <x-editor.tags path="tags" :options="$tags" label="Tag" />
     </div>
 
+    {{-- Thumbnail (rilis 40): dari gambar yang dipasang di isi artikel; bila tidak ada, dari File Manager --}}
+    <x-content.thumbnail-picker :featured="$featured" :editable="$workflow['canEdit'] ?? true" />
+
     <p class="rounded-md bg-amber-50 px-2.5 py-2 text-[10px] leading-relaxed text-amber-800">
       Builder menyimpan isi artikel sebagai <b>blok</b>. Pakai artikel percobaan sampai halaman publik artikel mendukung blok.
     </p>
   @endif
 
-  <div class="flex flex-col gap-2">
-    <span class="{{ $section }}">Status</span>
-    @if (count($statuses) <= 3 && $ct !== \App\Content\ContentType::Article)
-      <x-editor.segmented path="status" :options="$statuses" :live="true" />
-    @else
-      <x-editor.select path="status" :options="$statuses" :live="true" width="w-full" />
-    @endif
-  </div>
+  @if ($ct === \App\Content\ContentType::Article && $workflow !== [])
+    {{-- Artikel: status TIDAK dipilih bebas; berubah lewat alur persetujuan (ajukan -> tinjau -> terbit/jadwal/kembali/tolak). --}}
+    <x-content.article-workflow :workflow="$workflow" />
+  @else
+    <div class="flex flex-col gap-2">
+      <span class="{{ $section }}">Status</span>
+      @if (count($statuses) <= 3 && $ct !== \App\Content\ContentType::Article)
+        <x-editor.segmented path="status" :options="$statuses" :live="true" />
+      @else
+        <x-editor.select path="status" :options="$statuses" :live="true" width="w-full" />
+      @endif
+    </div>
+  @endif
 
   @if ($ct->usesKey())
     <div class="flex flex-col gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3">

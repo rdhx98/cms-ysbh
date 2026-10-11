@@ -1,0 +1,454 @@
+<meta charset="utf-8">
+<title>Galeri Desain YSBH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+  /* Tata letak: bilah samping daftar halaman + panel pratinjau (iframe berskala) dan satu panel "Dasar desain" berisi token. Di ponsel bilah samping menjadi daftar lipat. */
+  :root {
+    --bg: #F6F4EA;
+    --surface: #FFFFFF;
+    --surface-2: #EDF1EA;
+    --line: #D9DED3;
+    --fg: #12241C;
+    --fg-soft: #4B5D53;
+    --brand: #064F3B;
+    --brand-fg: #FFFFFF;
+    --gold: #EBCC26;
+    --coral: #E42326;
+    --focus: #0E6A4F;
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0B1A13; --surface: #132A20; --surface-2: #1A3327; --line: #2A4638;
+      --fg: #F3EFE2; --fg-soft: #B9C4BB; --brand: #EBCC26; --brand-fg: #12241C; --focus: #EBCC26;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B1A13; --surface: #132A20; --surface-2: #1A3327; --line: #2A4638;
+    --fg: #F3EFE2; --fg-soft: #B9C4BB; --brand: #EBCC26; --brand-fg: #12241C; --focus: #EBCC26;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 var(--font-body); }
+  a { color: inherit; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .shell { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh; }
+  .side { background: var(--surface); border-right: 1px solid var(--line); padding: 20px 14px 28px; position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; max-height: 100vh; overflow-y: auto; }
+  .brand { display: flex; align-items: center; gap: 12px; padding: 0 6px 18px; }
+  .brand img { width: 44px; height: 44px; flex: none; }
+  .brand h1 { margin: 0; font: 700 18px/1.2 var(--font-display); text-wrap: balance; }
+  .brand p { margin: 2px 0 0; font-size: 12px; color: var(--fg-soft); }
+  .area { margin: 22px 6px 0; padding-top: 14px; border-top: 1px solid var(--line); font: 700 14px/1.2 var(--font-display); color: var(--brand); }
+  .group { margin: 14px 0 0; }
+  .group h2 { margin: 0 6px 6px; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--fg-soft); font-weight: 700; }
+  .nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .nav button { width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 8px 10px; cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
+  .nav button:hover { background: var(--surface-2); }
+  .nav button[aria-current="true"] { background: var(--brand); color: var(--brand-fg); }
+  .nav .t { font-weight: 600; font-size: 14px; }
+  .nav .s { font-size: 12px; opacity: .75; }
+
+  .main { padding: 24px clamp(16px, 3vw, 36px) 48px; min-width: 0; }
+  .bar { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; }
+  .bar h2 { margin: 0; font: 700 clamp(22px, 3vw, 30px)/1.15 var(--font-display); text-wrap: balance; }
+  .bar p { margin: 6px 0 0; max-width: 62ch; color: var(--fg-soft); }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+  .seg button { border: 0; background: none; padding: 7px 12px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .seg button[aria-pressed="true"] { background: var(--brand); color: var(--brand-fg); }
+  .open { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 7px 12px; font-size: 13px; font-weight: 600; text-decoration: none; }
+  .open:hover { background: var(--surface-2); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; padding: 0; list-style: none; }
+  .chips li { font-size: 12px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 10px; color: var(--fg-soft); }
+
+  .stage { border: 1px solid var(--line); background: var(--surface-2); border-radius: 14px; padding: 14px; overflow: hidden; }
+  .viewport { margin: 0 auto; position: relative; overflow: hidden; border-radius: 10px; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 10px 30px rgb(0 0 0 / .10); }
+  .viewport iframe { border: 0; display: block; transform-origin: 0 0; background: #fff; }
+  .note { margin: 12px 2px 0; font-size: 12.5px; color: var(--fg-soft); max-width: 78ch; }
+
+  /* Dasar desain */
+  .base { display: grid; gap: 32px; }
+  .base section { min-width: 0; }
+  .base h3 { margin: 0 0 4px; font: 700 20px/1.2 var(--font-display); }
+  .base .lead { margin: 0 0 14px; color: var(--fg-soft); max-width: 70ch; }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .sw { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+  .sw .c { height: 64px; }
+  .sw .m { padding: 8px 10px 10px; font-size: 12px; line-height: 1.35; }
+  .sw b { display: block; font-size: 13px; }
+  .sw code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px; color: var(--fg-soft); font-variant-numeric: tabular-nums; }
+  .fonts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .font { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 16px; min-width: 0; }
+  .font .role { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--fg-soft); font-weight: 700; }
+  .font .spec { margin: 6px 0 4px; font-size: 30px; line-height: 1.15; overflow-wrap: anywhere; }
+  .font p { margin: 0; font-size: 13px; color: var(--fg-soft); }
+  .marks { display: flex; flex-wrap: wrap; gap: 16px; }
+  .mark { border: 1px solid var(--line); border-radius: 12px; background: #FBF7EA; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; width: 200px; }
+  .mark img { width: 140px; height: 140px; }
+  .mark span { font-size: 12.5px; color: #4B5D53; text-align: center; }
+  .rules { margin: 0; padding-left: 18px; display: grid; gap: 6px; max-width: 74ch; }
+
+  .toggle { position: fixed; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 5; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 16px rgb(0 0 0 / .15); }
+  .menu-btn { display: none; }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .side { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line); padding-block: 14px; }
+    .menu-btn { display: inline-flex; margin: 0 6px 8px; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 8px 12px; font-weight: 600; cursor: pointer; }
+    .side .groups { display: none; }
+    .side.open .groups { display: block; }
+    .brand { padding-bottom: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="shell">
+  <aside class="side" id="side">
+    <div class="brand">
+      <img src="emblem-sinar-bhakti-husada.svg" alt="Lambang Yayasan Sinar Bhakti Husada" width="44" height="44">
+      <div>
+        <h1>Galeri Desain</h1>
+        <p>Yayasan Sinar Bhakti Husada</p>
+      </div>
+    </div>
+    <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="groups">Daftar halaman</button>
+    <div class="groups" id="groups"></div>
+  </aside>
+
+  <main class="main">
+    <div id="view"></div>
+  </main>
+</div>
+
+<button class="toggle" id="themeBtn" type="button" aria-label="Ganti tema galeri">Tema</button>
+
+<script>
+(function () {
+  // Daftar desain. file = jalur relatif di folder desain/. "sections" = bagian halaman menurut judul pada berkasnya.
+  var PAGES = [
+    { id: 'beranda-klasik', group: 'Beranda', title: 'Klasik', sub: 'CSS tulisan tangan', file: 'sinar-bhakti-husada-landing.html',
+      note: 'Beranda awal: Fraunces untuk judul, Plus Jakarta Sans untuk teks, kertas krem, hijau hutan, emas, dan koral. Semua gaya ditulis sebagai CSS biasa.',
+      sections: ['Hero: Menyalakan Sinar Sehat di Setiap Rumah', 'Tiga pilar', 'Dampak sejak 2014', 'Suara warga dampingan', 'Donasi', 'Kontak'] },
+    { id: 'beranda-tailwind', group: 'Beranda', title: 'Tailwind', sub: 'Desain yang sama, kelas utilitas', file: 'sinar-bhakti-husada-landing-tailwind.html',
+      note: 'Tampilan yang sama dengan versi Klasik, ditulis ulang dengan kelas Tailwind (token warna dan font dipasang di konfigurasi).',
+      sections: ['Hero', 'Tiga pilar', 'Dampak (latar hijau)', 'Suara warga', 'Donasi (latar koral)', 'Kontak'] },
+    { id: 'beranda-modern', group: 'Beranda', title: 'Modern', sub: 'Mode gelap, tab program, FAQ', file: 'sinar-bhakti-husada-landing-modern.html',
+      note: 'Arah yang lebih modern: judul Manrope, mode gelap dengan palet malam hijau, tab untuk memilih program, dan bagian pertanyaan umum. Tombol ganti tema ada di bilah atas halamannya.',
+      sections: ['Hero', 'Pilih program untuk melihat detail', 'Dampak', 'Suara warga', 'Yang sering ditanyakan', 'Donasi', 'Kontak'] },
+
+    { id: 'program-malaria', group: 'Halaman program', title: 'Malaria', sub: 'Percepatan eliminasi di Tanah Papua', file: 'malaria-program-sinar-bhakti-husada.html',
+      note: 'Halaman program dengan bagian kerja sama lintas pemangku kepentingan, lima komponen program, wilayah dengan beban kasus tertinggi, dan galeri lapangan.',
+      sections: ['Hero', 'Bekerja sama lintas pemangku kepentingan', 'Lima komponen program', 'Wilayah dengan beban tertinggi', 'Galeri kegiatan lapangan', 'Donasi dan kontak'] },
+    { id: 'program-imunisasi', group: 'Halaman program', title: 'Imunisasi', sub: 'Dua bahasa, foto sendiri', file: 'imunisasi-program-sinar-bhakti-husada.html',
+      note: 'Judul dan isi dalam Indonesia dan Inggris. Memakai foto yang ikut dalam berkas (folder images).',
+      sections: ['Hero: Melindungi masa depan generasi Papua Tengah', 'Bertindak di tengah krisis imunisasi', 'Lima pilar intervensi'] },
+    { id: 'program-kia', group: 'Halaman program', title: 'Ibu dan Anak (KIA)', sub: 'Dua bahasa, foto sendiri', file: 'kia-program-sinar-bhakti-husada.html',
+      note: 'Halaman program Kesehatan Ibu dan Anak dalam dua bahasa, dengan foto bayi baru lahir dan anak.',
+      sections: ['Hero', 'Program KIA di wilayah ini', 'Tersebar di Tanah Papua'] },
+
+    { id: 'hal-dampak', group: 'Halaman tambahan', title: 'Dampak', sub: 'Perjalanan sejak 2014', file: 'dampak-sinar-bhakti-husada.html',
+      note: 'Halaman perjalanan dampak yayasan sejak 2014.', sections: ['Perjalanan dampak sejak 2014'] },
+    { id: 'hal-kredibilitas', group: 'Halaman tambahan', title: 'Kredibilitas', sub: 'Dipercaya pemerintah, mitra, komunitas', file: 'kredibilitas-sinar-bhakti-husada.html',
+      note: 'Legalitas, mitra lintas sektor, kepemimpinan, penghargaan, dan liputan media.',
+      sections: ['Terdaftar dan diawasi sesuai hukum', 'Bekerja sama lintas sektor', 'Dipimpin praktisi berpengalaman', 'Diakui atas kerja nyata', 'Diliput sebagai rujukan'] },
+    { id: 'hal-transparansi', group: 'Halaman tambahan', title: 'Transparansi', sub: 'Ke mana donasi pergi', file: 'transparansi-sinar-bhakti-husada.html',
+      note: 'Penggunaan dana, laporan resmi untuk diunduh, status hukum, dan sumber dana. Nomor NPWP dan rekening di galeri ini diganti [ISI-DULU].',
+      sections: ['Ke mana setiap rupiah donasi pergi', 'Unduh laporan resmi', 'Status hukum yayasan', 'Dari mana dana kami berasal'] },
+    { id: 'hal-artikel', group: 'Halaman tambahan', title: 'Artikel dan cerita', sub: 'Kisah dari lapangan', file: 'artikel-sinar-bhakti-husada.html',
+      note: 'Halaman ringkasan artikel dan cerita lapangan.', sections: ['Kisah dan catatan dari lapangan'] },
+
+    { id: 'artikel-daftar', group: 'Templat artikel', title: 'Daftar artikel', sub: 'Cerita dari lapangan', file: 'artikel-listing.html',
+      note: 'Halaman daftar artikel: satu artikel unggulan besar di atas, lalu kartu artikel lainnya.', sections: ['Artikel unggulan', 'Kartu artikel'] },
+    { id: 'artikel-malaria', group: 'Templat artikel', title: 'Detail: Malaria', sub: 'Papua bebas malaria', file: 'artikel-detail-malaria.html',
+      note: 'Artikel panjang dengan empat bagian bernomor dan artikel terkait.', sections: ['Beban kasus', 'Kelompok rentan', 'Lima komponen intervensi', 'Warisan yang perlu diakhiri', 'Artikel terkait'] },
+    { id: 'artikel-imunisasi', group: 'Templat artikel', title: 'Detail: Imunisasi', sub: 'Generasi Papua Tengah', file: 'artikel-detail-imunisasi.html',
+      note: 'Artikel dengan dua bagian bernomor.', sections: ['Krisis di balik angka 12%', 'Lima pilar intervensi', 'Artikel terkait'] },
+    { id: 'artikel-kia', group: 'Templat artikel', title: 'Detail: 28 hari pertama', sub: 'Merawat awal kehidupan', file: 'artikel-detail-kia.html',
+      note: 'Artikel kesehatan ibu dan anak.', sections: ['28 hari paling kritis', 'Pneumonia dan diare', 'Artikel terkait'] },
+    { id: 'artikel-tbc', group: 'Templat artikel', title: 'Detail: TBC', sub: 'Peringkat kedua dunia', file: 'artikel-detail-tbc.html',
+      note: 'Artikel tentang TBC.', sections: ['Peringkat kedua dunia', 'Dua kelompok sasaran', 'Artikel terkait'] },
+    { id: 'artikel-hiv', group: 'Templat artikel', title: 'Detail: HIV-IMS dan PPIA', sub: 'Layanan terpadu', file: 'artikel-detail-hiv.html',
+      note: 'Artikel tentang skrining, dukungan, dan pengobatan terpadu.', sections: ['Tak satu daerah bebas HIV', 'Tiga tahap layanan terpadu', 'Artikel terkait'] },
+    { id: 'artikel-blok', group: 'Templat artikel', title: 'Pustaka blok', sub: 'Teks, data, media, sosial', file: 'pustaka-blok.html',
+      note: 'Contoh semua blok yang bisa dipakai di isi artikel, dikelompokkan menurut jenisnya.', sections: ['Teks', 'Data dan statistik', 'Media', 'Sosial dan navigasi'] },
+
+    { id: 'palet-blok', group: 'Dasar visual', title: 'Palet warna blok', sub: 'Token inti dan warna per jenis blok', file: 'palet-warna-blok.html',
+      note: 'Rujukan warna untuk elemen blok: token inti, lalu blok teks, struktur, data, dan media.', sections: ['Token inti', 'Blok teks', 'Blok struktur', 'Blok data dan statistik', 'Blok media'] },
+
+    // ----- Sisi CMS (area: 'cms'). Halaman-halaman ini berukuran desktop (bilah samping + isi); hanya editor blok yang dirancang responsif.
+    { id: 'cms-dashboard', area: 'cms', group: 'Dasbor dan manajemen', title: 'Dashboard', sub: 'Halaman terbaru, aksi cepat, perlu perhatian', file: 'cms-dashboard-v2.html',
+      note: 'Dashboard terbaru: ringkasan halaman, aksi cepat, hal yang perlu perhatian, dan grafik halaman diterbitkan per bulan. Bilah samping terhubung ke Kelola Pengguna dan Pengaturan Situs.',
+      sections: ['Halaman terbaru', 'Aksi cepat', 'Perlu perhatian', 'Halaman diterbitkan per bulan'] },
+    { id: 'cms-dashboard-awal', area: 'cms', group: 'Dasbor dan manajemen', title: 'Dashboard (versi awal)', sub: 'Berfokus pada artikel', file: 'cms-dashboard.html',
+      note: 'Versi awal dashboard, masih berfokus pada artikel (artikel terbaru, artikel dipublikasikan per bulan). Disimpan sebagai pembanding.',
+      sections: ['Artikel terbaru', 'Aksi cepat', 'Perlu perhatian', 'Artikel dipublikasikan per bulan'] },
+    { id: 'cms-pengguna', area: 'cms', group: 'Dasbor dan manajemen', title: 'Kelola pengguna', sub: 'Daftar pengguna, peran, tambah pengguna', file: 'kelola-pengguna.html',
+      note: 'Daftar pengguna dengan status akun, empat tingkatan peran (Super Admin, Editor, Penulis, Peninjau), dan formulir undang pengguna baru. Isian di halaman ini adalah data rancangan; alur persetujuan artikel yang kemudian diputuskan (penulis hanya menulis dan mengajukan) ada di docs/ARTIKEL-ALUR.md.',
+      sections: ['Ringkasan akun', 'Tingkatan peran', 'Daftar pengguna', 'Tambah pengguna baru'] },
+    { id: 'cms-pengaturan', area: 'cms', group: 'Dasbor dan manajemen', title: 'Pengaturan situs', sub: 'Bahasa aktif, informasi situs, SEO', file: 'pengaturan-situs.html',
+      note: 'Pengaturan yang berlaku di seluruh halaman: bahasa aktif (Indonesia sebagai bahasa utama, English), tampilan editor bawaan (satu bahasa atau dua berdampingan), informasi situs, dan SEO bawaan.',
+      sections: ['Bahasa aktif', 'Informasi situs', 'SEO default'] },
+    { id: 'cms-review', area: 'cms', group: 'Dasbor dan manajemen', title: 'Review artikel', sub: 'Tinjau dan kelola artikel', file: 'review-artikel.html',
+      note: 'Daftar artikel dengan tab status (Semua, Draf, Menunggu Review, Revisi Diminta, Terjadwal, Terbit) dan tindakan per baris. Tautan "Dashboard" di bilah sampingnya menuju dashboard versi awal.',
+      sections: ['Tab status', 'Daftar artikel dan tindakan'] },
+
+    { id: 'cms-editor-responsif', area: 'cms', group: 'Editor blok', title: 'Editor blok (responsif)', sub: 'Satu mesin, banyak bentuk', file: 'editor-blok-responsif.html',
+      note: 'Rancangan editor blok terbaru: blok dasar (Teks, Eyebrow, Ikon, Gambar, Tombol) dirakit lewat wadah (Kartu, Kolom, Langkah, Step Group); hanya node yang difokus menjadi editor. Tata letak menyesuaikan lebar (coba Tablet dan Ponsel). Interaktif: buka langkah, tambah blok, ganti jumlah kolom.',
+      sections: ['Struktur', 'Kanvas', 'Properti'] },
+    { id: 'cms-editor-primitif', area: 'cms', group: 'Editor blok', title: 'Editor blok (versi awal)', sub: 'Primitif yang dirakit', file: 'editor-blok-primitif.html',
+      note: 'Versi awal rancangan yang sama, sebelum tata letak responsif.', sections: ['Struktur', 'Kanvas', 'Properti'] },
+    { id: 'cms-editor-malaria', area: 'cms', group: 'Editor blok', title: 'Contoh: edit halaman Malaria', sub: 'Contoh visual pertama', file: 'editor-blok-contoh-malaria.html',
+      note: 'Contoh visual pertama editor blok dengan halaman program Malaria sebagai isi. Dipertahankan sebagai riwayat desain.', sections: ['Komponen dan wadah', 'Section dengan Eyebrow, Heading, Paragraf', 'Grid kartu'] },
+    { id: 'cms-step-builder', area: 'cms', group: 'Editor blok', title: 'Step builder', sub: 'Sebelum dan sesudah', file: 'step-builder-mockup.html',
+      note: 'Kartu di dalam blok bertahap: tampilan lama (semua lapis terbuka, bingkai bertumpuk) dibandingkan dengan usulan (satu lapis terbuka, sisanya ringkasan, dengan inspektur di samping). Data contoh: alur layanan HIV-PPIA.',
+      sections: ['Sebelum: inline bersarang', 'Sesudah: drill-in + inspektur', 'Kenapa terasa berantakan'] },
+
+    { id: 'cms-berkas', area: 'cms', group: 'File manager', title: 'Berkas', sub: 'Folder, unggah, mode pemilih, sampah', file: 'file-manager-v2.html',
+      note: 'File manager terbaru: pohon folder, unggah seret-dan-lepas dengan peringatan berkas duplikat, mode pemilih (dipakai editor untuk memilih gambar), filter Belum Terpakai, dan Sampah.',
+      sections: ['Pohon folder', 'Unggah dan peringatan duplikat', 'Mode pemilih', 'Daftar berkas', 'Sampah'] },
+    { id: 'cms-berkas-awal', area: 'cms', group: 'File manager', title: 'Berkas (versi awal)', sub: 'Tanpa mode pemilih dan sampah', file: 'file-manager.html',
+      note: 'Versi awal file manager: folder, unggah, dan daftar berkas, sebelum mode pemilih, peringatan duplikat, dan Sampah.',
+      sections: ['Pohon folder', 'Unggah berkas', 'Daftar berkas'] },
+  ];
+
+  var DEVICES = { desktop: { label: 'Desktop', w: 1280 }, tablet: { label: 'Tablet', w: 820 }, ponsel: { label: 'Ponsel', w: 390 } };
+  var COLORS = [
+    ['Forest', '--forest', '#064F3B', 'Hijau utama; latar bagian dampak'],
+    ['Forest gelap', '--forest-dark', '#043328', 'Hijau paling tua'],
+    ['Forest muda', '--forest-tint', '#0E6A4F', 'Hijau lebih terang'],
+    ['Emas', '--gold', '#EBCC26', 'Aksen cahaya'],
+    ['Emas lembut', '--gold-soft', '#F7EBAF', 'Emas pucat'],
+    ['Koral', '--coral', '#E42326', 'Latar bagian donasi'],
+    ['Koral gelap', '--coral-dark', '#BE1417', 'Koral lebih tua'],
+    ['Kertas', '--paper', '#FBF7EA', 'Latar halaman'],
+    ['Kertas redup', '--paper-dim', '#F3ECD6', 'Krem lebih gelap'],
+    ['Tinta', '--ink', '#12241C', 'Teks utama'],
+    ['Tinta lembut', '--ink-soft', '#4B5D53', 'Teks sekunder'],
+    ['Kabut', '--mist', '#E9F1EB', 'Latar bagian program']
+  ];
+  var CMSCOL = [
+    ['Hijau status', '#1F7A4D', 'Lencana "Aktif" / terbit di file manager'],
+    ['Hijau status muda', '#E3F3EA', 'Latar lencana hijau'],
+    ['Ambar', '#B8860B', 'Peringatan, menunggu, terjadwal'],
+    ['Ambar muda', '#FBF0D9', 'Latar lencana ambar']
+  ];
+  var NIGHT = [
+    ['Malam', '#0B1A13', 'Latar halaman mode gelap'],
+    ['Permukaan malam', '#132A20', 'Kartu dan bagian'],
+    ['Permukaan malam 2', '#1A3327', 'Lapisan kedua'],
+    ['Krem', '#F3EFE2', 'Teks di mode gelap'],
+    ['Krem lembut', '#B9C4BB', 'Teks sekunder di mode gelap'],
+    ['Emas cerah', '#F5DB4A', 'Aksen di mode gelap']
+  ];
+
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var el = function (tag, attrs, kids) {
+    var n = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === 'class') n.className = attrs[k];
+      else if (k === 'text') n.textContent = attrs[k];
+      else n.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return n;
+  };
+
+  var state = { id: 'dasar', device: 'desktop' };
+  var resizeObs = null;
+
+  // ---------- bilah samping
+  function buildNav() {
+    var root = $('#groups');
+    root.textContent = '';
+    var base = el('div', { class: 'group' }, [
+      el('h2', { text: 'Mulai' }),
+      el('ul', { class: 'nav' }, [navItem({ id: 'dasar', title: 'Dasar desain', sub: 'Warna, huruf, lambang, aturan' })])
+    ]);
+    root.appendChild(base);
+    var AREAS = [['landing', 'Situs publik (landing)'], ['cms', 'Sisi CMS']];
+    AREAS.forEach(function (a) {
+      var inArea = PAGES.filter(function (p) { return (p.area || 'landing') === a[0]; });
+      if (!inArea.length) return;
+      root.appendChild(el('div', { class: 'area', text: a[1] }));
+      var groups = [];
+      inArea.forEach(function (p) { if (groups.indexOf(p.group) < 0) groups.push(p.group); });
+      groups.forEach(function (g) {
+        var ul = el('ul', { class: 'nav' });
+        inArea.filter(function (p) { return p.group === g; }).forEach(function (p) { ul.appendChild(navItem(p)); });
+        root.appendChild(el('div', { class: 'group' }, [el('h2', { text: g + ' (' + ul.children.length + ')' }), ul]));
+      });
+    });
+  }
+  function navItem(p) {
+    var b = el('button', { type: 'button', 'data-id': p.id }, [el('span', { class: 't', text: p.title }), el('span', { class: 's', text: p.sub })]);
+    b.addEventListener('click', function () { go(p.id); $('#side').classList.remove('open'); $('#menuBtn').setAttribute('aria-expanded', 'false'); });
+    return el('li', {}, [b]);
+  }
+  function markNav() {
+    document.querySelectorAll('.nav button').forEach(function (b) {
+      if (b.getAttribute('data-id') === state.id) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+    });
+  }
+
+  // ---------- panel
+  function go(id) {
+    state.id = id;
+    try { history.replaceState(null, '', '#' + id); } catch (e) { location.hash = id; }
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  function render() {
+    if (resizeObs) { resizeObs.disconnect(); resizeObs = null; }
+    markNav();
+    var view = $('#view');
+    view.textContent = '';
+    var page = PAGES.filter(function (p) { return p.id === state.id; })[0];
+    if (!page) { renderBase(view); return; }
+    renderPage(view, page);
+  }
+
+  function renderPage(view, p) {
+    var link = el('a', { class: 'open', href: 'desain/' + p.file, target: '_blank', rel: 'noopener' }, ['Buka halaman penuh \u2197']);
+    var seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Lebar pratinjau' });
+    Object.keys(DEVICES).forEach(function (k) {
+      var b = el('button', { type: 'button', text: DEVICES[k].label, 'aria-pressed': String(state.device === k) });
+      b.addEventListener('click', function () { state.device = k; render(); });
+      seg.appendChild(b);
+    });
+    view.appendChild(el('div', { class: 'bar' }, [
+      el('div', {}, [el('h2', { text: (p.group === 'Beranda' ? 'Beranda \u00b7 ' : '') + p.title }), el('p', { text: p.note })]),
+      el('div', { class: 'tools' }, [seg, link])
+    ]));
+    var chips = el('ul', { class: 'chips', 'aria-label': 'Bagian halaman' });
+    p.sections.forEach(function (s) { chips.appendChild(el('li', { text: s })); });
+    view.appendChild(chips);
+
+    var vp = el('div', { class: 'viewport' });
+    var frame = el('iframe', { title: 'Pratinjau: ' + p.title, src: 'desain/' + p.file, loading: 'lazy' });
+    vp.appendChild(frame);
+    var stage = el('div', { class: 'stage' }, [vp]);
+    view.appendChild(stage);
+    view.appendChild(el('p', { class: 'note', text: 'Pratinjau ini berskala dari lebar ' + DEVICES[state.device].w + ' px. Tautan di dalam halaman bekerja antarhalaman galeri. ' + (p.area === 'cms' ? 'Halaman CMS dirancang untuk layar desktop (kecuali editor blok responsif); datanya hanya contoh rancangan dan tombolnya belum menyimpan apa pun.' : 'Foto dari Unsplash di beberapa halaman hanya tampil bila berkas dibuka di luar galeri ini.') }));
+
+    var fit = function () {
+      var avail = stage.clientWidth - 28;
+      var logical = DEVICES[state.device].w;
+      var scale = Math.min(1, avail / logical);
+      var h = Math.max(520, Math.round((window.innerHeight * 0.78) / scale));
+      frame.style.width = logical + 'px';
+      frame.style.height = h + 'px';
+      frame.style.transform = 'scale(' + scale + ')';
+      vp.style.width = Math.round(logical * scale) + 'px';
+      vp.style.height = Math.round(h * scale) + 'px';
+    };
+    fit();
+    if (window.ResizeObserver) { resizeObs = new ResizeObserver(fit); resizeObs.observe(stage); }
+    // bila pengguna berpindah halaman di dalam iframe (tautan antarhalaman), ikuti di bilah samping
+    frame.addEventListener('load', function () {
+      try {
+        var name = frame.contentWindow.location.pathname.split('/').pop();
+        var hit = PAGES.filter(function (x) { return x.file === name; })[0];
+        if (hit && hit.id !== state.id) { state.id = hit.id; try { history.replaceState(null, '', '#' + hit.id); } catch (e) {} markNav(); }
+      } catch (e) { /* lintas asal: abaikan */ }
+    });
+  }
+
+  function renderBase(view) {
+    view.appendChild(el('div', { class: 'bar' }, [el('div', {}, [
+      el('h2', { text: 'Dasar desain' }),
+      el('p', { text: 'Halaman landing dan halaman CMS memakai token yang sama: kertas krem, hijau hutan, emas, dan koral, dengan Fraunces untuk judul dan Plus Jakarta Sans untuk teks. Tambahan khusus CMS ada di bagian Warna.' })
+    ])]));
+    var base = el('div', { class: 'base' });
+
+    // warna
+    var sw = el('div', { class: 'swatches' });
+    COLORS.forEach(function (c) {
+      sw.appendChild(el('div', { class: 'sw' }, [
+        el('div', { class: 'c', style: 'background:' + c[2] }),
+        el('div', { class: 'm' }, [el('b', { text: c[0] }), el('code', { text: c[2] + '  ' + c[1] }), el('div', { text: c[3] })])
+      ]));
+    });
+    var nsw = el('div', { class: 'swatches' });
+    NIGHT.forEach(function (c) {
+      nsw.appendChild(el('div', { class: 'sw' }, [
+        el('div', { class: 'c', style: 'background:' + c[1] }),
+        el('div', { class: 'm' }, [el('b', { text: c[0] }), el('code', { text: c[1] }), el('div', { text: c[2] })])
+      ]));
+    });
+    base.appendChild(el('section', {}, [el('h3', { text: 'Warna' }), el('p', { class: 'lead', text: 'Dua belas token dari konfigurasi Tailwind dan variabel CSS pada beranda.' }), sw]));
+    var csw = el('div', { class: 'swatches' });
+    CMSCOL.forEach(function (c) {
+      csw.appendChild(el('div', { class: 'sw' }, [
+        el('div', { class: 'c', style: 'background:' + c[1] }),
+        el('div', { class: 'm' }, [el('b', { text: c[0] }), el('code', { text: c[1] }), el('div', { text: c[2] })])
+      ]));
+    });
+    base.appendChild(el('section', {}, [el('h3', { text: 'Tambahan untuk sisi CMS' }),
+      el('p', { class: 'lead', text: 'Halaman CMS memakai palet yang sama dengan landing (Fraunces dan Plus Jakarta Sans juga sama), dengan bilah samping hijau tua #043328 dan latar kabut #E9F1EB. Empat warna status di bawah hanya ada di CMS. Peringatan penamaan: di berkas CMS, "foresty" = #064F3B (hijau utama) dan "forest" = #043328 (hijau tua), kebalikan dari landing yang memakai "forest" untuk #064F3B. Samakan nama saat memindahkannya ke tema Tailwind proyek.' }), csw]));
+    base.appendChild(el('section', {}, [el('h3', { text: 'Mode gelap (beranda Modern)' }), el('p', { class: 'lead', text: 'Palet malam hijau yang dipakai versi Modern; emas tetap menjadi aksen.' }), nsw]));
+
+    // huruf
+    var fonts = el('div', { class: 'fonts' }, [
+      fontCard('Judul · beranda Klasik dan Tailwind, halaman program', 'Fraunces', 'Menyalakan Sinar Sehat', 'font-family:var(--font-display);font-weight:700', 'Berserif, hangat, berbobot 500 sampai 900 dan miring.'),
+      fontCard('Judul · beranda Modern', 'Manrope', 'Menyalakan Sinar Sehat', 'font-family:Manrope,system-ui,sans-serif;font-weight:800', 'Tanpa serif, tegas, bobot 500 sampai 800.'),
+      fontCard('Teks · semua halaman', 'Plus Jakarta Sans', 'Sejak 2014, bersama warga dampingan di Tanah Papua.', 'font-family:var(--font-body);font-size:20px;font-weight:500', 'Bobot 400 sampai 800.')
+    ]);
+    base.appendChild(el('section', {}, [el('h3', { text: 'Huruf' }), el('p', { class: 'lead', text: 'Satu pasangan utama dan satu judul alternatif untuk arah Modern.' }), fonts]));
+
+    // lambang
+    base.appendChild(el('section', {}, [el('h3', { text: 'Lambang' }), el('p', { class: 'lead', text: 'Berkas lambang yayasan dan segel sinar yang dibuat bersama halaman-halaman ini.' }),
+      el('div', { class: 'marks' }, [
+        el('div', { class: 'mark' }, [el('img', { src: 'emblem-sinar-bhakti-husada.svg', alt: 'Lambang Yayasan Sinar Bhakti Husada' }), el('span', { text: 'Lambang' })]),
+        el('div', { class: 'mark' }, [el('img', { src: 'sunburst-seal-sinar-bhakti-husada.svg', alt: 'Segel sinar matahari' }), el('span', { text: 'Segel sinar' })])
+      ])]));
+
+    // aturan
+    var rules = el('ul', { class: 'rules' });
+    ['Bagian halaman memakai jarak vertikal py-16 di ponsel dan py-24 di layar lebar; isi dibatasi sekitar 1180 px.',
+     'Latar bagian bergantian: kertas, kabut (hijau muda), hijau hutan untuk dampak, koral untuk donasi.',
+     'Beranda dan halaman program berakhir dengan bagian donasi dan kontak.',
+     'Halaman program Imunisasi dan KIA menampilkan judul dalam dua bahasa (Indonesia dan Inggris).',
+     'Animasi sinar pada lambang berhenti bila pengguna memilih mengurangi gerakan.'].forEach(function (t) { rules.appendChild(el('li', { text: t })); });
+    base.appendChild(el('section', {}, [el('h3', { text: 'Aturan yang dipakai' }), rules]));
+
+    view.appendChild(base);
+  }
+  function fontCard(role, name, sample, style, desc) {
+    return el('div', { class: 'font' }, [el('div', { class: 'role', text: role }), el('div', { class: 'spec', style: style, text: sample }), el('p', { text: name + '. ' + desc })]);
+  }
+
+  // ---------- tema galeri
+  function applyTheme(t) {
+    if (t) document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme');
+  }
+  var theme = null;
+  try { theme = localStorage.getItem('galeri-tema') || null; } catch (e) {}
+  applyTheme(theme);
+  $('#themeBtn').addEventListener('click', function () {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+      (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    theme = dark ? 'light' : 'dark';
+    applyTheme(theme);
+    try { localStorage.setItem('galeri-tema', theme); } catch (e) {}
+  });
+
+  $('#menuBtn').addEventListener('click', function () {
+    var open = $('#side').classList.toggle('open');
+    this.setAttribute('aria-expanded', String(open));
+  });
+  $('#groups').id = 'groups';
+
+  var initial = (location.hash || '').replace('#', '');
+  if (initial && (initial === 'dasar' || PAGES.some(function (p) { return p.id === initial; }))) state.id = initial;
+  buildNav();
+  render();
+})();
+</script>

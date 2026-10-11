@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Step Builder — Sebelum &amp; Sesudah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --foresty:#064F3B; --forest:#043328;
+    --goldy:#EBCC26; --goldy-soft:#F7EBAF;
+    --coral:#E42326; --coral-dark:#BE1417;
+    --paper:#FBF7EA; --ink:#12241C; --ink-soft:#4B5D53;
+    --sage-soft:#E9F1EB; --white:#FFFFFF;
+    --line: rgba(6,79,59,0.14);
+    --shadow: 0 18px 40px -26px rgba(6,45,35,0.35);
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  body{ margin:0; background:var(--sage-soft); color:var(--ink); font-family:'Plus Jakarta Sans',sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:'Fraunces',serif; color:var(--foresty); margin:0; }
+  button{ font-family:inherit; cursor:pointer; }
+  input,select,textarea{ font-family:inherit; }
+  svg{ display:block; }
+
+  .page{ max-width:1320px; margin:0 auto; padding:28px 28px 60px; }
+  .head{ display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:20px; }
+  .head .eyebrow{ font-size:11.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--coral-dark); }
+  .head h1{ font-size:1.7rem; margin-top:6px; }
+  .head p{ font-size:13.5px; color:var(--ink-soft); max-width:560px; margin:6px 0 0; }
+  .tabs{ display:flex; background:var(--white); border:1px solid var(--line); border-radius:999px; padding:4px; }
+  .tabs button{ border:none; background:none; padding:9px 18px; border-radius:999px; font-weight:700; font-size:13px; color:var(--ink-soft); }
+  .tabs button.active{ background:var(--foresty); color:var(--white); }
+
+  /* ============ SESUDAH ============ */
+  .editor{ background:var(--white); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; height:690px; }
+  .e-top{ display:flex; align-items:center; gap:14px; padding:12px 18px; border-bottom:1px solid var(--line); background:var(--paper); flex-shrink:0; }
+  .crumbs{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; flex:1; font-size:13px; font-weight:600; color:var(--ink-soft); }
+  .crumbs a{ cursor:pointer; color:var(--ink-soft); }
+  .crumbs a:hover{ color:var(--foresty); text-decoration:underline; }
+  .crumbs .sep{ opacity:.4; }
+  .crumbs .cur{ color:var(--foresty); font-weight:800; }
+  .e-top .pill{ font-size:11px; font-weight:800; background:var(--goldy-soft); color:var(--foresty); padding:5px 11px; border-radius:999px; }
+  .btn-save{ background:var(--coral); color:#fff; border:none; font-weight:800; font-size:12.5px; padding:9px 18px; border-radius:999px; }
+  .e-body{ flex:1; display:grid; grid-template-columns:230px 1fr 300px; min-height:0; }
+
+  .outline{ border-right:1px solid var(--line); padding:16px 12px; overflow-y:auto; background:#fff; }
+  .outline h4, .inspector h4{ margin:0 0 10px; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); padding:0 6px; }
+  .ol{ list-style:none; margin:0; padding:0; font-size:12.5px; }
+  .ol ul{ list-style:none; margin:0; padding:0 0 0 14px; border-left:1px solid var(--line); margin-left:9px; }
+  .ol li > a{ display:flex; align-items:center; gap:7px; padding:6px 8px; border-radius:7px; color:var(--ink-soft); font-weight:600; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ol li > a:hover{ background:var(--sage-soft); color:var(--foresty); }
+  .ol li > a.on{ background:var(--sage-soft); color:var(--foresty); font-weight:800; }
+  .ol li > a .t{ font-size:9.5px; font-weight:800; background:var(--sage-soft); color:var(--foresty); border-radius:5px; padding:1px 5px; flex-shrink:0; }
+  .ol li > a.on .t{ background:#fff; }
+
+  .work{ overflow-y:auto; padding:22px 24px 30px; background:var(--paper); }
+  .work-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+  .work-head h3{ font-size:1.15rem; }
+  .work-head .sub{ font-size:12.5px; color:var(--ink-soft); margin-top:3px; }
+  .btn{ display:inline-flex; align-items:center; gap:7px; border:none; border-radius:999px; font-weight:800; font-size:12.5px; padding:9px 16px; }
+  .btn svg{ width:14px; height:14px; }
+  .btn-primary{ background:var(--foresty); color:#fff; }
+  .btn-primary:hover{ background:var(--forest); }
+  .btn-soft{ background:var(--sage-soft); color:var(--foresty); }
+  .btn-soft:hover{ background:var(--foresty); color:#fff; }
+  .btn-ghost{ background:#fff; color:var(--foresty); border:1.5px solid var(--line); }
+
+  .srow{ display:grid; grid-template-columns:auto auto 1fr 180px auto; align-items:center; gap:14px; background:#fff; border:2px solid transparent; border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin-bottom:12px; cursor:pointer; }
+  .srow.sel{ border-color:var(--foresty); }
+  .srow .grip{ color:#a9b7ae; width:16px; }
+  .srow .num{ width:34px; height:34px; border-radius:50%; background:var(--foresty); color:var(--goldy); font-family:'Fraunces',serif; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .srow .txt{ min-width:0; }
+  .srow input.ti{ width:100%; border:none; outline:none; font-weight:800; font-size:14.5px; color:var(--ink); background:transparent; padding:2px 0; border-bottom:1px dashed transparent; }
+  .srow input.de{ width:100%; border:none; outline:none; font-size:12.5px; color:var(--ink-soft); background:transparent; padding:2px 0; border-bottom:1px dashed transparent; }
+  .srow input:focus{ border-bottom-color:var(--foresty); }
+  .miniwrap{ height:74px; overflow:hidden; border-radius:10px; background:var(--paper); border:1px solid var(--line); padding:6px; pointer-events:none; }
+  .mini{ zoom:.42; }
+
+  .hint-box{ margin-top:6px; font-size:12px; color:var(--ink-soft); background:var(--goldy-soft); border-radius:10px; padding:10px 14px; }
+
+  .colbar{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:14px; }
+  .colbar .lbl{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); }
+  .seg{ display:flex; background:var(--sage-soft); border-radius:9px; padding:3px; }
+  .seg button{ border:none; background:none; padding:6px 14px; border-radius:7px; font-weight:800; font-size:12.5px; color:var(--ink-soft); }
+  .seg button.on{ background:var(--foresty); color:#fff; }
+  .colbar .ratio{ font-size:12px; color:var(--ink-soft); }
+  .colbar .ratio b{ color:var(--foresty); }
+
+  .canvas{ display:grid; gap:12px; margin-bottom:18px; }
+  .ccol{ background:#fff; border:2px dashed var(--line); border-radius:14px; padding:10px; min-width:0; }
+  .ccol.sel{ border-color:var(--foresty); border-style:solid; }
+  .ccol-h{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; cursor:pointer; }
+  .ccol-h span{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); }
+  .ccol-h em{ font-style:normal; font-size:10.5px; font-weight:800; background:var(--sage-soft); color:var(--foresty); padding:2px 8px; border-radius:999px; }
+  .cel{ display:flex; align-items:center; gap:9px; padding:9px 10px; border:2px solid transparent; background:var(--paper); border-radius:10px; margin-bottom:6px; cursor:pointer; font-size:12.5px; }
+  .cel:hover{ border-color:var(--line); }
+  .cel.sel{ border-color:var(--coral); background:#fff; }
+  .cel .k{ font-size:9.5px; font-weight:800; text-transform:uppercase; padding:2px 7px; border-radius:5px; background:var(--foresty); color:#fff; flex-shrink:0; }
+  .cel .k.pill{ background:var(--goldy); color:var(--foresty); }
+  .cel .k.ico{ background:var(--coral); }
+  .cel .v{ color:var(--ink); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .addrow{ display:flex; gap:6px; margin-top:6px; }
+  .addrow button{ flex:1; border:1.5px dashed var(--line); background:#fff; border-radius:9px; padding:7px; font-size:11.5px; font-weight:800; color:var(--ink-soft); }
+  .addrow button:hover{ border-color:var(--foresty); color:var(--foresty); }
+
+  .pv-label{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:8px; }
+  .cardpv{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:20px; box-shadow:var(--shadow); display:grid; gap:16px; align-items:start; }
+  .cardpv .pc{ display:flex; flex-direction:column; min-width:0; }
+
+  .inspector{ border-left:1px solid var(--line); padding:16px 16px 24px; overflow-y:auto; background:#fff; }
+  .ctx{ display:inline-flex; font-size:10.5px; font-weight:800; background:var(--goldy-soft); color:var(--foresty); padding:4px 10px; border-radius:999px; margin-bottom:14px; }
+  .fld{ margin-bottom:13px; }
+  .fld label{ display:block; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-bottom:6px; }
+  .fld textarea, .fld input[type=text], .fld select{ width:100%; border:1.5px solid var(--line); border-radius:9px; padding:8px 10px; font-size:12.5px; color:var(--ink); background:#fff; outline:none; }
+  .fld textarea{ resize:vertical; min-height:70px; }
+  .fld textarea:focus, .fld input:focus, .fld select:focus{ border-color:var(--foresty); }
+  .grp{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--foresty); margin:18px 0 10px; padding-top:14px; border-top:1px solid var(--line); }
+  .two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .toggle{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:var(--ink); cursor:pointer; }
+  .danger{ width:100%; margin-top:10px; background:#FDEAEA; color:var(--coral-dark); border:none; border-radius:9px; padding:9px; font-weight:800; font-size:12.5px; }
+  .danger:hover{ background:var(--coral); color:#fff; }
+  .empty{ font-size:12.5px; color:var(--ink-soft); background:var(--paper); border-radius:12px; padding:16px; line-height:1.6; }
+
+  /* ============ SEBELUM ============ */
+  .before-wrap{ display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:22px; align-items:start; }
+  @media (max-width:1100px){ .before-wrap{ grid-template-columns:1fr; } }
+  .bf{ position:relative; border:1px solid #cfd8d2; border-radius:12px; background:#fff; margin-bottom:12px; }
+  .bf-h{ display:flex; align-items:center; gap:8px; padding:8px 10px; background:#eef0ee; border-bottom:1px solid #cfd8d2; border-radius:12px 12px 0 0; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#6b7a72; }
+  .bf-h .sp{ flex:1; }
+  .bf-h .ib{ width:22px; height:22px; border-radius:5px; background:#dfe4e0; display:flex; align-items:center; justify-content:center; }
+  .bf-h .ib svg{ width:12px; height:12px; }
+  .bf-h select{ font-size:11px; padding:3px 6px; border:1px solid #cfd8d2; border-radius:5px; background:#fff; font-weight:700; color:var(--foresty); }
+  .bf-b{ padding:12px; }
+  .bf .bf{ background:#fafbfa; }
+  .bf .bf .bf{ background:#f4f6f4; }
+  .b-step-item{ border:1px solid #cfd8d2; border-radius:10px; margin-bottom:10px; background:#fff; }
+  .b-step-h{ display:flex; align-items:center; gap:10px; padding:9px 12px; font-size:13px; font-weight:700; }
+  .b-step-h input{ border:1px solid #cfd8d2; border-radius:6px; padding:5px 8px; font-size:12.5px; flex:1; }
+  .b-cols{ display:grid; gap:10px; }
+  .b-col{ border:1px dashed #b9c4bd; border-radius:8px; padding:8px; background:#fff; }
+  .b-col > .cap{ font-size:10px; font-weight:800; text-transform:uppercase; color:#8a978f; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; }
+  .b-el{ border:1px solid #d6ddd8; border-radius:8px; padding:8px; margin-bottom:8px; background:#fff; }
+  .b-el .top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .b-el .badge{ font-size:9.5px; font-weight:800; text-transform:uppercase; background:#e3e8e5; color:#4B5D53; padding:2px 7px; border-radius:4px; }
+  .b-el textarea{ width:100%; border:1px solid #d6ddd8; border-radius:6px; font-size:11.5px; padding:5px 7px; resize:none; }
+  .b-el .row{ display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; padding:5px; background:#f4f6f4; border-radius:6px; }
+  .b-el .row select{ font-size:9.5px; padding:2px 3px; border:1px solid #d6ddd8; border-radius:4px; max-width:100%; }
+  .b-add{ display:flex; gap:5px; }
+  .b-add span{ flex:1; text-align:center; border:1px dashed #b9c4bd; border-radius:6px; font-size:10px; font-weight:800; color:#6b7a72; padding:5px; }
+  .b-preview{ border-top:1px solid #cfd8d2; background:#f4f6f4; border-radius:0 0 11px 11px; }
+  .b-preview .lb{ padding:6px 12px; background:#e3e8e5; font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#6b7a72; }
+  .b-preview .bd{ padding:12px; }
+  .b-collapsed{ opacity:.9; }
+  .pin{ position:absolute; top:-10px; right:-8px; width:24px; height:24px; border-radius:50%; background:var(--coral); color:#fff; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(228,35,38,.4); z-index:3; }
+  .notes{ position:sticky; top:16px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:var(--shadow); }
+  .notes h3{ font-size:1.05rem; margin-bottom:12px; }
+  .note{ display:flex; gap:10px; font-size:12.5px; color:var(--ink-soft); margin-bottom:12px; line-height:1.55; }
+  .note .n{ width:22px; height:22px; border-radius:50%; background:var(--coral); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+  .note b{ color:var(--ink); }
+  .stat{ display:flex; gap:10px; margin-top:6px; }
+  .stat div{ flex:1; background:var(--paper); border-radius:10px; padding:10px; text-align:center; }
+  .stat .big{ font-family:'Fraunces',serif; font-weight:700; font-size:1.5rem; color:var(--coral); }
+  .stat .sm{ font-size:10.5px; color:var(--ink-soft); font-weight:700; }
+  .view{ display:none; }
+  .view.on{ display:block; }
+  .compare{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .compare div{ font-size:12px; padding:10px 12px; border-radius:10px; }
+  .compare .bad{ background:#FDEAEA; color:var(--coral-dark); }
+  .compare .good{ background:#E3F3EA; color:#1F7A4D; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="head">
+    <div>
+      <div class="eyebrow">Mockup · Step Builder</div>
+      <h1>Boneka Rusia, Dibuat Lebih Bersih</h1>
+      <p>Card-builder di dalam step-builder: satu kartu, pengaturan kolom tetap terbuka. Data contoh dari alur layanan HIV-PPIA yang sudah kita buat.</p>
+    </div>
+    <div class="tabs">
+      <button id="tabBefore">Sebelum · inline bersarang</button>
+      <button id="tabAfter" class="active">Sesudah · drill-in + inspektur</button>
+    </div>
+  </div>
+
+  <!-- ===== SEBELUM ===== -->
+  <div class="view" id="viewBefore">
+    <div class="before-wrap">
+      <div id="beforeMount"></div>
+      <aside class="notes">
+        <h3>Kenapa terasa berantakan</h3>
+        <div class="note"><span class="n">1</span><span><b>Bingkai bertumpuk.</b> Step Builder → Langkah → Card Builder → Kolom → Elemen. Tiap lapis punya border, header, dan latar sendiri.</span></div>
+        <div class="note"><span class="n">2</span><span><b>Header ikut ter-nesting.</b> Card Builder di dalam langkah membawa header lengkap (kolom, jarak, kode bahasa, pin, collapse) padahal cuma mengatur satu kartu.</span></div>
+        <div class="note"><span class="n">3</span><span><b>Kontrol gaya selalu terlihat.</b> Setiap elemen memamerkan deretan dropdown meski yang sedang diedit cuma satu.</span></div>
+        <div class="note"><span class="n">4</span><span><b>Pratinjau ikut di dalam.</b> Pratinjau kartu menempel di dalam langkah, di bawah pratinjau step-builder sendiri.</span></div>
+        <div class="stat">
+          <div><div class="big" id="statSel">0</div><div class="sm">dropdown tampil sekaligus</div></div>
+          <div><div class="big" id="statFrame">0</div><div class="sm">bingkai bertumpuk</div></div>
+        </div>
+        <div class="compare">
+          <div class="bad"><b>Sekarang</b><br>Semua lapis terbuka sekaligus</div>
+          <div class="good"><b>Usulan</b><br>Satu lapis terbuka, sisanya ringkasan</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ===== SESUDAH ===== -->
+  <div class="view on" id="viewAfter">
+    <div class="editor">
+      <div class="e-top">
+        <div class="crumbs" id="crumbs"></div>
+        <span class="pill">ID · Draf</span>
+        <button class="btn-save">Simpan</button>
+      </div>
+      <div class="e-body">
+        <nav class="outline"><h4>Struktur</h4><div id="outline"></div></nav>
+        <section class="work" id="work"></section>
+        <aside class="inspector"><h4>Properti</h4><div id="inspector"></div></aside>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ================= DATA ================= */
+const ICONS = {
+  search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  pill:'<path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',
+  heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8Z"/>',
+  file:'<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l6 6v12a2 2 0 0 1-2 2z"/><path d="M14 2v6h6"/>'
+};
+const OPT = {
+  font:[['font-sans','Sistem Font'],['font-display','Display Font']],
+  size:[['13','Kecil'],['15','Normal'],['21','Besar (H3)']],
+  weight:[['400','Reguler'],['600','Semi Bold']],
+  color:[['#4B5D53','Abu Gelap'],['#064F3B','Foresty'],['#E42326','Coral']],
+  margin:[['0','Jarak Bawah: 0'],['8','Jarak Bawah: Kecil'],['16','Jarak Bawah: Sedang']],
+  pillbg:[['#F7EBAF','Bg Goldy'],['#E9F1EB','Bg Sage']],
+  pillr:[['6','Sedikit Bulat'],['999','Bulat Penuh']],
+  ibg:[['#F7EBAF','Latar Goldy'],['#E9F1EB','Latar Sage'],['transparent','Transparan']],
+  icolor:[['#064F3B','Foresty'],['#E42326','Coral']],
+  isize:[['40','Standar'],['64','Besar']],
+  iradius:[['14','Agak Bulat'],['999','Lingkaran']]
+};
+let uid = 100;
+const T = (o)=>Object.assign({id:++uid,type:'text',text:'',pill:false,font:'font-sans',size:'15',weight:'400',color:'#4B5D53',margin:'8',pillbg:'#F7EBAF',pillr:'999'},o);
+const I = (o)=>Object.assign({id:++uid,type:'icon',icon:'search',ibg:'#F7EBAF',icolor:'#064F3B',isize:'40',iradius:'14'},o);
+
+const steps = [
+  { id:1, title:'Skrining', desc:'HIV, Sifilis, Hepatitis B & TBC lewat One Stop Services',
+    ratios:[1,3], cols:[
+      [ I({icon:'search'}) ],
+      [ T({text:'Skrining terpadu di kunjungan ANC pertama', font:'font-display', size:'21', weight:'600', color:'#064F3B', margin:'8'}),
+        T({text:'Setiap ibu hamil diskrining HIV, Sifilis, Hepatitis B, TBC dan Malaria memakai Rapid Diagnostic Test.', size:'15'}),
+        T({text:'Wajib di K1', pill:true, size:'13', color:'#064F3B', margin:'0'}) ]
+    ]},
+  { id:2, title:'Dukungan', desc:'Konseling dan dukungan sebaya bagi ODHIV',
+    ratios:[1,3], cols:[
+      [ I({icon:'users'}) ],
+      [ T({text:'Konseling & dukungan berjejaring', font:'font-display', size:'21', weight:'600', color:'#064F3B'}),
+        T({text:'Dukungan mental oleh konselor terlatih, jejaring sesama penderita, dan rujukan sesuai kebutuhan.'}) ]
+    ]},
+  { id:3, title:'Pengobatan', desc:'Terapi rutin seumur hidup, tercatat di SIHA',
+    ratios:[1,3], cols:[
+      [ I({icon:'pill', ibg:'#E9F1EB'}) ],
+      [ T({text:'Terapi ARV sedini mungkin', font:'font-display', size:'21', weight:'600', color:'#064F3B'}),
+        T({text:'Ibu hamil positif HIV memulai pengobatan minimal 6 bulan sebelum persalinan.'}) ]
+    ]}
+];
+
+let view = {mode:'steps', s:0};
+let sel = null; // {type:'step'|'col'|'el', s, c, e}
+
+/* ================= UTIL ================= */
+const $ = (id)=>document.getElementById(id);
+const esc = (s)=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const svg = (n,sz=20)=>`<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]||ICONS.file}</svg>`;
+const opts = (list,val)=>list.map(([v,l])=>`<option value="${v}" ${String(v)===String(val)?'selected':''}>${l}</option>`).join('');
+
+function elHtml(e){
+  if(e.type==='icon'){
+    return `<div style="width:${e.isize}px;height:${e.isize}px;border-radius:${e.iradius}px;background:${e.ibg};color:${e.icolor};display:flex;align-items:center;justify-content:center;flex-shrink:0">${svg(e.icon, e.isize==='64'?30:20)}</div>`;
+  }
+  const ff = e.font==='font-display' ? "'Fraunces',serif" : "'Plus Jakarta Sans',sans-serif";
+  if(e.pill){
+    return `<div style="margin-bottom:${e.margin}px"><span style="display:inline-block;background:${e.pillbg};border-radius:${e.pillr}px;padding:4px 12px;font-size:${e.size}px;font-weight:800;color:${e.color};font-family:${ff}">${esc(e.text||'—')}</span></div>`;
+  }
+  return `<div style="font-family:${ff};font-size:${e.size}px;font-weight:${e.weight};color:${e.color};margin-bottom:${e.margin}px;line-height:1.4">${esc(e.text||'—')}</div>`;
+}
+function cardHtml(st){
+  const tpl = st.ratios.map(r=>r+'fr').join(' ');
+  return `<div class="cardpv" style="grid-template-columns:${tpl}">${st.cols.map(c=>`<div class="pc">${c.map(elHtml).join('')}</div>`).join('')}</div>`;
+}
+function presetRatios(n){ return n===1?[1]:n===2?[1,3]:[1,2,1]; }
+function elLabel(e){ return e.type==='icon' ? 'Ikon · '+e.icon : (e.pill?'Pill · ':'Teks · ')+(e.text||'(kosong)'); }
+
+/* ================= SESUDAH: render ================= */
+function renderCrumbs(){
+  const parts = [`<a data-act="go-steps">Halaman: Alur Layanan HIV</a>`, `<a data-act="go-steps">Step Builder</a>`];
+  if(view.mode==='steps'){
+    if(sel && sel.type==='step') parts.push(`<span class="cur">Langkah ${sel.s+1}</span>`);
+    else parts[1] = `<span class="cur">Step Builder</span>`;
+  } else {
+    parts.push(`<a data-act="go-steps" data-s="${view.s}">Langkah ${view.s+1}</a>`);
+    const base = `<a data-act="go-card" data-s="${view.s}">Kartu</a>`;
+    if(sel && sel.type==='col'){ parts.push(base, `<span class="cur">Kolom ${sel.c+1}</span>`); }
+    else if(sel && sel.type==='el'){ const el = steps[sel.s].cols[sel.c][sel.e]; parts.push(base, `<a data-act="sel-col" data-s="${sel.s}" data-c="${sel.c}">Kolom ${sel.c+1}</a>`, `<span class="cur">${el.type==='icon'?'Ikon':el.pill?'Pill':'Teks'}</span>`); }
+    else parts.push(`<span class="cur">Kartu</span>`);
+  }
+  $('crumbs').innerHTML = parts.join('<span class="sep">›</span>');
+}
+
+function renderOutline(){
+  let h = `<ul class="ol"><li><a data-act="go-steps">Halaman</a><ul><li><a data-act="go-steps" class="${view.mode==='steps'&&!sel?'on':''}">Step Builder</a><ul>`;
+  steps.forEach((st,i)=>{
+    const onStep = (sel && sel.type==='step' && sel.s===i);
+    h += `<li><a data-act="sel-step" data-s="${i}" class="${onStep?'on':''}"><span class="t">${i+1}</span>${esc(st.title)}</a>`;
+    if(view.mode==='card' && view.s===i){
+      h += `<ul><li><a data-act="go-card" data-s="${i}" class="${!sel?'on':''}">Kartu</a><ul>`;
+      st.cols.forEach((col,c)=>{
+        const onCol = sel && sel.type==='col' && sel.c===c;
+        h += `<li><a data-act="sel-col" data-s="${i}" data-c="${c}" class="${onCol?'on':''}">Kolom ${c+1}</a><ul>`;
+        col.forEach((e,k)=>{
+          const onEl = sel && sel.type==='el' && sel.c===c && sel.e===k;
+          h += `<li><a data-act="sel-el" data-s="${i}" data-c="${c}" data-e="${k}" class="${onEl?'on':''}">${e.type==='icon'?'Ikon':e.pill?'Pill':'Teks'}</a></li>`;
+        });
+        h += `</ul></li>`;
+      });
+      h += `</ul></li></ul>`;
+    }
+    h += `</li>`;
+  });
+  h += `</ul></li></ul></li></ul>`;
+  $('outline').innerHTML = h;
+}
+
+function renderWork(){
+  if(view.mode==='steps'){
+    let h = `<div class="work-head"><div><h3>Step Builder</h3><div class="sub">${steps.length} langkah · klik “Edit Kartu” untuk membuka kartu satu langkah</div></div>
+      <button class="btn btn-primary" data-act="add-step"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Tambah Langkah</button></div>`;
+    steps.forEach((st,i)=>{
+      const on = sel && sel.type==='step' && sel.s===i;
+      h += `<div class="srow ${on?'sel':''}" data-act="sel-step" data-s="${i}">
+        <svg class="grip" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+        <div class="num">${i+1}</div>
+        <div class="txt"><input class="ti" data-f="title" data-s="${i}" value="${esc(st.title)}"><input class="de" data-f="desc" data-s="${i}" value="${esc(st.desc)}"></div>
+        <div class="miniwrap"><div class="mini">${cardHtml(st)}</div></div>
+        <button class="btn btn-soft" data-act="go-card" data-s="${i}">Edit Kartu
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </div>`;
+    });
+    h += `<div class="hint-box">Di level ini hanya ringkasan yang tampil. Kontrol gaya elemen tidak ikut dirender di sini — baru muncul di panel Properti saat sebuah elemen dipilih.</div>`;
+    $('work').innerHTML = h;
+  } else {
+    const st = steps[view.s];
+    const n = st.cols.length;
+    let h = `<div class="work-head"><div><h3>Kartu · Langkah ${view.s+1}: ${esc(st.title)}</h3><div class="sub">Satu kartu per langkah. Pengaturan kolom ada di bawah; gaya elemen ada di panel Properti.</div></div>
+      <button class="btn btn-ghost" data-act="go-steps" data-s="${view.s}">← Kembali ke Langkah</button></div>`;
+    h += `<div class="colbar"><span class="lbl">Jumlah kolom</span>
+      <div class="seg">${[1,2,3].map(k=>`<button class="${n===k?'on':''}" data-act="set-cols" data-n="${k}">${k}</button>`).join('')}</div>
+      <span class="ratio">Lebar relatif: <b>${st.ratios.join(' : ')}</b> — ubah per kolom lewat panel Properti</span></div>`;
+    h += `<div class="canvas" style="grid-template-columns:${st.ratios.map(r=>r+'fr').join(' ')}">`;
+    st.cols.forEach((col,c)=>{
+      const onCol = sel && sel.type==='col' && sel.c===c;
+      h += `<div class="ccol ${onCol?'sel':''}"><div class="ccol-h" data-act="sel-col" data-s="${view.s}" data-c="${c}"><span>Kolom ${c+1}</span><em>lebar ${st.ratios[c]}</em></div>`;
+      col.forEach((e,k)=>{
+        const onEl = sel && sel.type==='el' && sel.c===c && sel.e===k;
+        h += `<div class="cel ${onEl?'sel':''}" data-act="sel-el" data-s="${view.s}" data-c="${c}" data-e="${k}">
+          <span class="k ${e.type==='icon'?'ico':e.pill?'pill':''}">${e.type==='icon'?'Ikon':e.pill?'Pill':'Teks'}</span><span class="v">${esc(e.type==='icon'?e.icon:(e.text||'(kosong)'))}</span></div>`;
+      });
+      h += `<div class="addrow"><button data-act="add-el" data-c="${c}" data-t="text">+ Teks</button><button data-act="add-el" data-c="${c}" data-t="icon">+ Ikon</button></div></div>`;
+    });
+    h += `</div><div class="pv-label">Pratinjau Kartu</div>${cardHtml(st)}`;
+    $('work').innerHTML = h;
+  }
+}
+
+function fld(label, inner){ return `<div class="fld"><label>${label}</label>${inner}</div>`; }
+function sf(prop,list,val,label){ return fld(label, `<select data-p="${prop}">${opts(list,val)}</select>`); }
+
+function renderInspector(){
+  let h = '';
+  if(!sel){
+    h = `<div class="empty">${view.mode==='steps'
+      ? 'Pilih sebuah langkah untuk mengubah urutan atau menghapusnya.'
+      : 'Pilih sebuah <b>elemen</b> pada kartu untuk mengubah isi dan gayanya, atau pilih <b>kolom</b> untuk mengatur lebarnya.'}</div>`;
+  } else if(sel.type==='step'){
+    h = `<span class="ctx">Langkah ${sel.s+1}</span>
+      <div class="fld"><label>Urutan</label><div class="two"><button class="btn btn-soft" data-act="move-step" data-d="-1">↑ Naik</button><button class="btn btn-soft" data-act="move-step" data-d="1">↓ Turun</button></div></div>
+      <button class="danger" data-act="del-step">Hapus Langkah Ini</button>`;
+  } else if(sel.type==='col'){
+    const st = steps[sel.s];
+    h = `<span class="ctx">Kolom ${sel.c+1} · ${st.cols[sel.c].length} elemen</span>
+      ${fld('Lebar relatif', `<select data-p="ratio">${[1,2,3,4].map(r=>`<option value="${r}" ${st.ratios[sel.c]===r?'selected':''}>${r}</option>`).join('')}</select>`)}
+      <div class="empty">Lebar dihitung relatif terhadap kolom lain, sama seperti nilai <b>fr</b> pada grid CSS.</div>`;
+  } else {
+    const e = steps[sel.s].cols[sel.c][sel.e];
+    h = `<span class="ctx">${e.type==='icon'?'Ikon':e.pill?'Pill':'Teks'} · Kolom ${sel.c+1}</span>`;
+    if(e.type==='text'){
+      h += `<div class="grp" style="margin-top:0;border-top:none;padding-top:0">Isi</div>`;
+      h += fld('Teks', `<textarea data-p="text">${esc(e.text)}</textarea>`);
+      h += `<div class="fld"><label class="toggle"><input type="checkbox" data-p="pill" ${e.pill?'checked':''}> Mode pill (lencana)</label></div>`;
+      h += `<div class="grp">Gaya</div>`;
+      if(!e.pill){
+        h += `<div class="two">${sf('font',OPT.font,e.font,'Font')}${sf('size',OPT.size,e.size,'Ukuran')}</div>`;
+        h += `<div class="two">${sf('weight',OPT.weight,e.weight,'Bobot')}${sf('color',OPT.color,e.color,'Warna')}</div>`;
+      } else {
+        h += `<div class="two">${sf('pillbg',OPT.pillbg,e.pillbg,'Latar pill')}${sf('pillr',OPT.pillr,e.pillr,'Sudut')}</div>`;
+        h += `<div class="two">${sf('size',OPT.size,e.size,'Ukuran')}${sf('color',OPT.color,e.color,'Warna')}</div>`;
+      }
+      h += sf('margin',OPT.margin,e.margin,'Jarak bawah');
+    } else {
+      h += `<div class="grp" style="margin-top:0;border-top:none;padding-top:0">Ikon</div>`;
+      h += sf('icon', Object.keys(ICONS).map(k=>[k,k]), e.icon, 'Pilih ikon');
+      h += `<div class="grp">Gaya</div>`;
+      h += `<div class="two">${sf('ibg',OPT.ibg,e.ibg,'Latar')}${sf('icolor',OPT.icolor,e.icolor,'Warna')}</div>`;
+      h += `<div class="two">${sf('isize',OPT.isize,e.isize,'Ukuran')}${sf('iradius',OPT.iradius,e.iradius,'Sudut')}</div>`;
+    }
+    h += `<button class="danger" data-act="del-el">Hapus Elemen</button>`;
+  }
+  $('inspector').innerHTML = h;
+}
+
+function renderAll(){ renderCrumbs(); renderOutline(); renderWork(); renderInspector(); }
+
+/* ================= SESUDAH: events ================= */
+document.addEventListener('click', (ev)=>{
+  if(ev.target.closest('input,textarea,select')) return;
+  const a = ev.target.closest('[data-act]'); if(!a) return;
+  const act = a.dataset.act, s = +a.dataset.s, c = +a.dataset.c, e = +a.dataset.e;
+  if(act==='go-steps'){ view = {mode:'steps', s:isNaN(s)?view.s:s}; sel = isNaN(s)?null:{type:'step',s}; }
+  else if(act==='go-card'){ view = {mode:'card', s}; sel = null; }
+  else if(act==='sel-step'){ view.mode==='steps' ? (sel={type:'step',s}) : (view={mode:'steps',s}, sel={type:'step',s}); }
+  else if(act==='sel-col'){ view = {mode:'card', s}; sel = {type:'col', s, c}; }
+  else if(act==='sel-el'){ view = {mode:'card', s}; sel = {type:'el', s, c, e}; }
+  else if(act==='add-step'){
+    steps.push({id:++uid,title:'Langkah Baru',desc:'Deskripsi singkat langkah',ratios:[1,3],cols:[[I({icon:'shield'})],[T({text:'Judul kartu',font:'font-display',size:'21',weight:'600',color:'#064F3B'})]]});
+    sel = {type:'step', s:steps.length-1};
+  }
+  else if(act==='del-step'){ if(steps.length>1){ steps.splice(sel.s,1); sel=null; } }
+  else if(act==='move-step'){ const d=+a.dataset.d, i=sel.s, j=i+d; if(j>=0&&j<steps.length){ [steps[i],steps[j]]=[steps[j],steps[i]]; sel={type:'step',s:j}; } }
+  else if(act==='set-cols'){
+    const n = +a.dataset.n, st = steps[view.s];
+    while(st.cols.length>n){ const last = st.cols.pop(); st.cols[st.cols.length-1].push(...last); }
+    while(st.cols.length<n){ st.cols.push([]); }
+    st.ratios = presetRatios(n); sel = null;
+  }
+  else if(act==='add-el'){
+    const st = steps[view.s]; const el = a.dataset.t==='icon' ? I({icon:'heart'}) : T({text:'Teks baru'});
+    st.cols[c].push(el); sel = {type:'el', s:view.s, c, e:st.cols[c].length-1};
+  }
+  else if(act==='del-el'){ steps[sel.s].cols[sel.c].splice(sel.e,1); sel = {type:'col', s:sel.s, c:sel.c}; }
+  renderAll();
+});
+
+document.addEventListener('input', (ev)=>{
+  const t = ev.target;
+  if(t.dataset.f){ steps[+t.dataset.s][t.dataset.f] = t.value; renderOutline(); renderCrumbs(); return; }
+  if(t.dataset.p && sel && sel.type==='el' && t.tagName==='TEXTAREA'){
+    steps[sel.s].cols[sel.c][sel.e][t.dataset.p] = t.value; renderWork(); renderOutline(); }
+});
+document.addEventListener('change', (ev)=>{
+  const t = ev.target; if(!t.dataset.p || !sel) return;
+  if(t.dataset.p==='ratio'){ steps[sel.s].ratios[sel.c] = +t.value; }
+  else if(sel.type==='el'){ steps[sel.s].cols[sel.c][sel.e][t.dataset.p] = t.type==='checkbox' ? t.checked : t.value; }
+  renderAll();
+});
+
+/* ================= SEBELUM: generator ================= */
+function bSel(list,val){ return `<select>${opts(list,val)}</select>`; }
+function bEl(e){
+  if(e.type==='icon') return `<div class="b-el"><div class="top"><span class="badge">Ikon</span><span style="color:#c44;font-size:11px">✕</span></div>
+    <button style="width:100%;text-align:left;border:1px solid #d6ddd8;border-radius:6px;background:#fff;padding:5px 8px;font-size:11px">${svg(e.icon,14)} ${e.icon}</button>
+    <div class="row">${bSel(OPT.ibg,e.ibg)}${bSel(OPT.icolor,e.icolor)}${bSel(OPT.isize,e.isize)}${bSel(OPT.iradius,e.iradius)}</div></div>`;
+  const selects = e.pill
+    ? bSel(OPT.pillbg,e.pillbg)+bSel(OPT.pillr,e.pillr)+bSel(OPT.color,e.color)+bSel(OPT.margin,e.margin)
+    : bSel(OPT.font,e.font)+bSel(OPT.size,e.size)+bSel(OPT.weight,e.weight)+bSel(OPT.color,e.color)+bSel(OPT.margin,e.margin);
+  return `<div class="b-el"><div class="top"><span class="badge">${e.pill?'Lencana (Pill)':'Teks'}</span><label style="font-size:10px;font-weight:700"><input type="checkbox" ${e.pill?'checked':''}> Mode Pill</label></div>
+    <textarea rows="2">${esc(e.text)}</textarea><div class="row">${selects}</div></div>`;
+}
+function bBtns(){ const ic=(p)=>`<span class="ib"><svg viewBox="0 0 24 24" fill="none" stroke="#6b7a72" stroke-width="2.4">${p}</svg></span>`;
+  return ic('<rect x="3" y="3" width="18" height="18" rx="2"/>')+ic('<path d="M12 3v18M3 12h18"/>')+ic('<path d="m6 9 6 6 6-6"/>'); }
+function buildBefore(){
+  const st = steps[0];
+  const tpl = st.ratios.map(r=>r+'fr').join(' ');
+  const card = `
+    <div class="bf" style="margin-top:10px"><span class="pin" style="top:-10px;left:-8px;right:auto">3</span>
+      <div class="bf-h">▦ Card Builder <span class="sp"></span>${bSel([['3','3 Kolom'],['2','2 Kolom']],'2')}${bSel([['mb-8','Bawah: Normal']],'mb-8')}<span style="background:#dfe4e0;border-radius:4px;padding:2px 6px">ID</span>${bBtns()}</div>
+      <div class="bf-b">
+        <div class="b-cols" style="grid-template-columns:${tpl}">
+          ${st.cols.map((col,c)=>`<div class="b-col"><div class="cap"><span>Kolom ${c+1}</span><span>${bSel([['1','Lebar 1'],['3','Lebar 3']],String(st.ratios[c]))}</span></div>
+            ${col.map(bEl).join('')}<div class="b-add"><span>+ Teks</span><span>+ Ikon</span></div></div>`).join('')}
+        </div>
+      </div>
+      <div class="b-preview" style="position:relative"><span class="pin" style="top:-10px;left:-8px;right:auto">4</span><div class="lb">Live Preview (ID)</div><div class="bd">${cardHtml(st)}</div></div>
+    </div>`;
+  const collapsed = (i)=>`<div class="b-step-item b-collapsed"><div class="b-step-h"><b>Langkah ${i+1}</b><input value="${esc(steps[i].title)}"><span style="color:#6b7a72">▾</span></div></div>`;
+  return `<div class="bf"><span class="pin">1</span>
+    <div class="bf-h">▤ Step Builder <span class="sp"></span>${bSel([['v','Vertikal']],'v')}<span style="background:#dfe4e0;border-radius:4px;padding:2px 6px">ID</span>${bBtns()}</div>
+    <div class="bf-b">
+      <div class="b-step-item" style="position:relative"><span class="pin" style="top:-10px;left:-8px;right:auto">2</span>
+        <div class="b-step-h"><b>Langkah 1</b><input value="${esc(st.title)}"><input value="${esc(st.desc)}" style="flex:2"><span style="color:#6b7a72">▴</span></div>
+        <div style="padding:0 12px 12px">${card}</div>
+      </div>
+      ${collapsed(1)}${collapsed(2)}
+      <div class="b-preview" style="border:1px solid #cfd8d2;border-radius:10px"><div class="lb">Live Preview Step Builder (ID)</div><div class="bd" style="padding:10px"><div style="font-size:11px;color:#6b7a72">…pratinjau semua langkah lagi di sini…</div></div></div>
+    </div></div>`;
+}
+function initBefore(){
+  $('beforeMount').innerHTML = buildBefore();
+  const mount = $('beforeMount');
+  $('statSel').textContent = mount.querySelectorAll('select').length;
+  // hitung kedalaman bingkai bersarang terdalam
+  let max = 0; mount.querySelectorAll('.bf, .b-step-item, .b-col, .b-el').forEach(n=>{
+    let d=0, p=n; while(p && p!==mount){ if(p.matches && p.matches('.bf, .b-step-item, .b-col, .b-el')) d++; p=p.parentElement; } if(d>max) max=d; });
+  $('statFrame').textContent = max;
+}
+
+/* ================= TABS ================= */
+function show(which){
+  $('viewBefore').classList.toggle('on', which==='before');
+  $('viewAfter').classList.toggle('on', which==='after');
+  $('tabBefore').classList.toggle('active', which==='before');
+  $('tabAfter').classList.toggle('active', which==='after');
+}
+$('tabBefore').addEventListener('click', ()=>show('before'));
+$('tabAfter').addEventListener('click', ()=>show('after'));
+
+initBefore();
+renderAll();
+</script>
+</body>
+</html>

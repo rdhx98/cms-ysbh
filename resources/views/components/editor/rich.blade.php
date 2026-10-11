@@ -10,28 +10,72 @@
       tidak dipasang ke editor: tampil hanya-baca + tombol "Sunting juga" yang meminta konfirmasi.
 
   Toolbar: <x-editor.toolbars> milik proyek (bila ada). Judul = satu baris, jadi toolbar menyembunyikan
-  rata teks/indentasi, daftar, kutipan, dan kode lewat `single` (lihat proyek-anda/toolbars.blade.php).
+  daftar, kutipan, kode, dan indentasi lewat `single` (lihat proyek-anda/toolbars.blade.php). Rata teks Judul tetap ada bila `align`
+  (rilis 33): ditulis ke data.align milik blok, bukan ke HTML.
 --}}
-@props([
-  'path' => null,
-  'rel' => null,
-  'relExpr' => null,
-  'label' => null,
-  'locales' => ['id', 'en'],
-  'multi' => false,
-  'live' => null,
+@props ([
+  "path" => null,
+  "rel" => null,
+  "relExpr" => null,
+  "label" => null,
+  "locales" => ["id", "en"],
+  "multi" => false,
+  "live" => null,
+  "align" => false,
 ])
 
 @php
-  $isLive = $live ?? ! config('cms.editor.defer_style_sync', false);
+  $isLive = $live ?? !config("cms.editor.defer_style_sync", false);
   // Tampilan kotak editor + nilai bawaan yang dibaca toolbar (menu font/ukuran/warna "Bawaan Blok")
   $look = $multi
-    ? ['font' => 'Plus Jakarta Sans', 'size' => 'default', 'color' => '#4b5d53', 'label' => 'Paragraf - Normal', 'classes' => 'font-sans text-sm leading-relaxed']
-    : ['font' => 'Fraunces', 'size' => 'default', 'color' => '#064f3b', 'label' => 'H2 - Judul', 'classes' => 'font-serif text-lg leading-snug font-semibold'];
-  $hasToolbar = view()->exists('components.editor.toolbars');
+    ? [
+      "font" => "Plus Jakarta Sans",
+      "size" => "default",
+      "color" => "#4b5d53",
+      "label" => "Normal",
+      "classes" => "font-sans text-sm leading-relaxed",
+      "align" => false,
+    ]
+    : [
+      "font" => "Fraunces",
+      "size" => "default",
+      "color" => "#064f3b",
+      "label" => "Judul H2",
+      "classes" => "font-serif text-lg leading-snug font-semibold",
+      "align" => (bool) $align,
+    ];
+  $hasToolbar = view()->exists("components.editor.toolbars");
 @endphp
 
-<div {{ $attributes->class('flex flex-col gap-1.5') }}>
+{{-- Tampilan di editor saja (rilis 35); HTML yang disimpan tidak berubah:
+     - ukuran besar (Sub-judul H3 / Judul H2 / Raksasa H1) memakai clamp(...vw...) milik situs; di panel selebar ~300 px ukuran itu memecah kata
+       huruf demi huruf, jadi pratinjau di panel diperkecil. Ukuran sebenarnya terlihat di kanvas dan di situs.
+     - teks berwarna terang (putih, kuning emas, abu sangat muda) tenggelam di kotak putih: diberi latar abu gelap oleh kelas rte-light
+       (dipasang rich-field.js lewat dekorasi, bukan ke data). Aturan yang sama tidak berbahaya bila tercetak lebih dari sekali. --}}
+<style>
+  [data-rich-editor] [style*="clamp(2.5rem"] {
+    font-size: 1.75rem !important;
+  }
+  [data-rich-editor] [style*="clamp(1.8rem"] {
+    font-size: 1.5rem !important;
+  }
+  [data-rich-editor] [style*="clamp(1.5rem"] {
+    font-size: 1.25rem !important;
+  }
+  [data-rich-editor] .rte-light {
+    background: #374151;
+    border-radius: 3px;
+    box-shadow: 0 0 0 2px #374151;
+  }
+</style>
+
+<div
+  {{
+    $attributes->class(
+      "flex flex-col gap-1",
+    )
+  }}
+>
   @if ($label)
     <span class="text-xxs font-bold text-gray-700 uppercase">{{ $label }}</span>
   @endif
@@ -42,15 +86,26 @@
       x-show="$store.editor.showLang(@js($lang))"
       x-data="richField(@js($path), {!! \App\Editor\Rel::js($rel, $relExpr ?? null) !!}, @js($lang), @js((bool) $multi), @js($isLive), @js($look))"
     >
-      <span class="bg-sage-soft text-foresty mb-1 inline-block rounded px-1.5 text-[9px] font-bold uppercase">{{ $lang }}</span>
+      <span
+        class="bg-sage-soft text-foresty mb-0.5 inline-block rounded px-1.5 text-[9px] font-bold uppercase"
+        >{{ $lang }}</span
+      >
 
       {{-- Belum ada blok yang difokus --}}
-      <div x-show="mode === 'off'" class="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-2 py-2 text-[11px] text-gray-400">
+      <div
+        x-show="mode === 'off'"
+        class="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-1.5 py-1 text-[11px] text-gray-400"
+      >
         Pilih sebuah blok untuk menyunting teksnya.
       </div>
 
       {{-- Tiptap terpasang --}}
-      <div x-show="mode === 'edit'" x-cloak class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm focus-within:border-foresty">
+      {{-- tanpa overflow-hidden: panel warna/lainnya di toolbar muncul di bawah toolbar dan melewati kotak --}}
+      <div
+        x-show="mode === 'edit'"
+        x-cloak
+        class="focus-within:border-foresty rounded-lg border border-gray-200 bg-white shadow-sm"
+      >
         @if ($hasToolbar)
           <x-editor.toolbars />
         @endif
@@ -58,20 +113,18 @@
           x-ref="editorElement"
           data-rich-editor
           data-placeholder="Ketik di sini..."
-          class="{{ $multi ? 'min-h-24' : 'min-h-10' }} px-3 py-2 [&_.ProseMirror]:outline-none [&_a]:text-blue-700 [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_p.is-editor-empty:first-child::before]:pointer-events-none [&_p.is-editor-empty:first-child::before]:float-left [&_p.is-editor-empty:first-child::before]:h-0 [&_p.is-editor-empty:first-child::before]:text-gray-400 [&_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_ul]:list-disc [&_ul]:pl-5"
+          class="{{ $multi ? 'min-h-16' : 'min-h-8' }} rounded-b-[7px] px-1 py-0.5 [&_.ProseMirror]:m-0 [&_.ProseMirror]:p-0 [&_.ProseMirror]:outline-none [&_h1]:m-0 [&_h2]:m-0 [&_h3]:m-0 [&_p]:m-0 [&_p+p]:mt-1 [&_a]:text-blue-700 [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-4 [&_p.is-editor-empty:first-child::before]:pointer-events-none [&_p.is-editor-empty:first-child::before]:float-left [&_p.is-editor-empty:first-child::before]:h-0 [&_p.is-editor-empty:first-child::before]:text-gray-400 [&_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_ul]:list-disc [&_ul]:pl-4"
         ></div>
       </div>
 
       {{-- Isi tidak aman diedit di Tiptap: hanya-baca --}}
-      <div x-show="mode === 'locked'" x-cloak class="flex flex-col gap-1.5">
+      <div x-show="mode === 'locked'" x-cloak class="flex flex-col gap-1">
         <div
           data-rich-readonly
-          class="{{ $multi ? 'min-h-16' : '' }} rounded-lg border border-dashed border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-600"
+          class="{{ $multi ? 'min-h-16' : '' }} rounded-lg border border-dashed border-gray-300 bg-gray-50 px-1.5 py-1 text-sm text-gray-600"
           x-text="lockedText"
         ></div>
-        <p class="rounded-md bg-amber-50 px-2 py-1.5 text-[10px] leading-relaxed text-amber-800">
-          Teks ini memuat format khusus (mis. tabel, gambar, atau judul) yang tidak didukung editor ini, jadi tidak dibuka agar tidak rusak.
-        </p>
+        <p class="rounded-md bg-amber-50 px-1.5 py-1 text-[10px] leading-relaxed text-amber-800">Teks ini memuat format khusus (mis. tabel, gambar, atau judul) yang tidak didukung editor ini, jadi tidak dibuka agar tidak rusak.</p>
         <button
           type="button"
           x-on:click="forceEdit()"
@@ -90,11 +143,49 @@
           class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
           data-rich-link-modal
         >
-          <div class="w-full max-w-md rounded-xl bg-white p-4 shadow-xl" x-on:click.outside="cancelLink()">
-            <div class="mb-3 flex gap-1 rounded-md bg-gray-100 p-0.5 text-xs font-semibold">
-              <button type="button" x-on:click="setTab('url')" x-bind:class="linkTab === 'url' ? 'bg-white shadow-sm text-forest' : 'text-gray-500'" class="flex-1 rounded px-2 py-1">Alamat</button>
-              <button type="button" x-on:click="setTab('page')" x-bind:class="linkTab === 'page' ? 'bg-white shadow-sm text-forest' : 'text-gray-500'" class="flex-1 rounded px-2 py-1">Halaman</button>
-              <button type="button" x-on:click="setTab('article')" x-bind:class="linkTab === 'article' ? 'bg-white shadow-sm text-forest' : 'text-gray-500'" class="flex-1 rounded px-2 py-1">Artikel</button>
+          <div
+            class="w-full max-w-md rounded-xl bg-white p-4 shadow-xl"
+            x-on:click.outside="cancelLink()"
+          >
+            <div
+              class="mb-3 flex gap-1 rounded-md bg-gray-100 p-0.5 text-xs font-semibold"
+            >
+              <button
+                type="button"
+                x-on:click="setTab('url')"
+                x-bind:class="
+                  linkTab === 'url'
+                    ? 'bg-white shadow-sm text-forest'
+                    : 'text-gray-500'
+                "
+                class="flex-1 rounded px-2 py-1"
+              >
+                Alamat
+              </button>
+              <button
+                type="button"
+                x-on:click="setTab('page')"
+                x-bind:class="
+                  linkTab === 'page'
+                    ? 'bg-white shadow-sm text-forest'
+                    : 'text-gray-500'
+                "
+                class="flex-1 rounded px-2 py-1"
+              >
+                Halaman
+              </button>
+              <button
+                type="button"
+                x-on:click="setTab('article')"
+                x-bind:class="
+                  linkTab === 'article'
+                    ? 'bg-white shadow-sm text-forest'
+                    : 'text-gray-500'
+                "
+                class="flex-1 rounded px-2 py-1"
+              >
+                Artikel
+              </button>
             </div>
 
             <div x-show="linkTab === 'url'" class="flex flex-col gap-2">
@@ -107,11 +198,30 @@
               />
               <p class="text-[10px] text-gray-500">Tanpa awalan, otomatis memakai https://. Kosongkan lalu simpan untuk melepas tautan.</p>
               <div class="flex items-center justify-between gap-2">
-                <button type="button" x-show="hasLink" x-on:click="removeLink()" class="text-xs font-semibold text-red-600 hover:underline">Lepas tautan</button>
-                <span x-show="! hasLink"></span>
+                <button
+                  type="button"
+                  x-show="hasLink"
+                  x-on:click="removeLink()"
+                  class="text-xs font-semibold text-red-600 hover:underline"
+                >
+                  Lepas tautan
+                </button>
+                <span x-show="!hasLink"></span>
                 <div class="flex gap-2">
-                  <button type="button" x-on:click="cancelLink()" class="rounded-md border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600">Batal</button>
-                  <button type="button" x-on:click="saveLink()" class="rounded-md bg-forest px-3 py-1 text-xs font-semibold text-white">Simpan</button>
+                  <button
+                    type="button"
+                    x-on:click="cancelLink()"
+                    class="rounded-md border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    x-on:click="saveLink()"
+                    class="bg-forest rounded-md px-3 py-1 text-xs font-semibold text-white"
+                  >
+                    Simpan
+                  </button>
                 </div>
               </div>
             </div>
@@ -121,25 +231,59 @@
                 type="text"
                 x-model="linkQuery"
                 x-on:input.debounce.300ms="searchLinks()"
-                x-bind:placeholder="linkTab === 'page' ? 'Cari halaman…' : 'Cari artikel…'"
+                x-bind:placeholder="
+                  linkTab === 'page' ? 'Cari halaman…' : 'Cari artikel…'
+                "
                 class="w-full rounded-lg border-gray-200 text-sm shadow-sm"
               />
-              <ul class="max-h-56 overflow-y-auto rounded-lg border border-gray-100">
+              <ul
+                class="max-h-56 overflow-y-auto rounded-lg border border-gray-100"
+              >
                 <template x-for="r in linkResults" x-bind:key="r.id">
                   <li>
-                    <button type="button" x-on:click="pickInternal(r)" class="flex w-full flex-col items-start px-3 py-1.5 text-left hover:bg-sage-soft">
-                      <span class="text-sm font-semibold text-gray-800" x-text="r.label"></span>
-                      <span class="text-[10px] text-gray-500" x-text="r.hint"></span>
+                    <button
+                      type="button"
+                      x-on:click="pickInternal(r)"
+                      class="hover:bg-sage-soft flex w-full flex-col items-start px-3 py-1.5 text-left"
+                    >
+                      <span
+                        class="text-sm font-semibold text-gray-800"
+                        x-text="r.label"
+                      ></span>
+                      <span
+                        class="text-[10px] text-gray-500"
+                        x-text="r.hint"
+                      ></span>
                     </button>
                   </li>
                 </template>
-                <li x-show="linkBusy" class="px-3 py-2 text-xs text-gray-400">Mencari…</li>
-                <li x-show="! linkBusy && linkResults.length === 0" class="px-3 py-2 text-xs text-gray-400">Ketik minimal 2 huruf.</li>
+                <li x-show="linkBusy" class="px-3 py-2 text-xs text-gray-400">
+                  Mencari…
+                </li>
+                <li
+                  x-show="!linkBusy && linkResults.length === 0"
+                  class="px-3 py-2 text-xs text-gray-400"
+                >
+                  Ketik minimal 2 huruf.
+                </li>
               </ul>
               <div class="flex items-center justify-between gap-2">
-                <button type="button" x-show="hasLink" x-on:click="removeLink()" class="text-xs font-semibold text-red-600 hover:underline">Lepas tautan</button>
-                <span x-show="! hasLink"></span>
-                <button type="button" x-on:click="cancelLink()" class="rounded-md border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600">Batal</button>
+                <button
+                  type="button"
+                  x-show="hasLink"
+                  x-on:click="removeLink()"
+                  class="text-xs font-semibold text-red-600 hover:underline"
+                >
+                  Lepas tautan
+                </button>
+                <span x-show="!hasLink"></span>
+                <button
+                  type="button"
+                  x-on:click="cancelLink()"
+                  class="rounded-md border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600"
+                >
+                  Batal
+                </button>
               </div>
             </div>
           </div>

@@ -17,13 +17,35 @@ final class PublicLookup
     /** Ingatan sibling() per permintaan (kind|slug|bahasa => hasil). Kosongkan dengan flush() (pengujian, proses panjang). @var array<string,?array> */
     private static array $siblings = [];
 
+    /** Penanda: baca ulang kategori pada pemanggilan berikut (flush). */
+    private static bool $categoriesStale = false;
+
     public static function flush(): void
     {
         self::$siblings = [];
+        self::$categoriesStale = true;
     }
 
     public const PAGE_STATUS = 'online';
     public const ARTICLE_STATUS = 'published';
+    /** Artikel terjadwal yang waktunya (published_at) sudah tiba tampil seperti yang terbit (rilis 38). */
+    public const ARTICLE_SCHEDULED = 'scheduled';
+
+    /**
+     * Saring ke baris yang tampil di situs: halaman = status 'online'; artikel = 'published', ATAU 'scheduled' yang published_at-nya sudah lewat
+     * (tanpa menunggu perintah cms:publish-scheduled berjalan).
+     */
+    public static function visible(\Illuminate\Database\Eloquent\Builder $query, string $status): \Illuminate\Database\Eloquent\Builder
+    {
+        if ($status !== self::ARTICLE_STATUS) {
+            return $query->where('status', $status);
+        }
+
+        return $query->where(function ($w) {
+            $w->where('status', self::ARTICLE_STATUS)
+                ->orWhere(fn ($due) => $due->where('status', self::ARTICLE_SCHEDULED)->whereNotNull('published_at')->where('published_at', '<=', \Illuminate\Support\Carbon::now()));
+        });
+    }
 
     /**
      * Halaman online untuk alamat "{bahasa}/{slug}". KETAT per bahasa (rilis 24): slug dicari HANYA di bahasa alamat itu.
@@ -77,7 +99,7 @@ final class PublicLookup
     {
         $expression = JsonSql::locale((new $model())->getConnection()->getDriverName(), 'slug') . ' = ?';
 
-        return $model::query()->where('status', $status)
+        return self::visible($model::query(), $status)
             ->where(function ($where) use ($locales, $expression, $slug) {
                 foreach ($locales as $candidate) {
                     $where->orWhereRaw($expression, [JsonSql::path($candidate), $slug]);
@@ -179,11 +201,13 @@ final class PublicLookup
      * Artikel terbit terbaru (paling baru dulu), sebagai nilai MENTAH kolom untuk App\Content\Blocks\ArticleCards::prepare().
      * $locale (rilis 24): hanya artikel yang punya slug DAN judul di bahasa itu (situs berbahasa itu tidak menampilkan kartu yang tautannya 404).
      *
+     * $categoryId (rilis 42): hanya artikel kategori itu (null = semua).
+     *
      * @return array{rows:list<array<string,mixed>>,categories:array<int,mixed>}
      */
-    public static function latestArticles(int $limit, ?int $excludeId = null, ?string $locale = null): array
+    public static function latestArticles(int $limit, ?int $excludeId = null, ?string $locale = null, ?int $categoryId = null): array
     {
-        $query = self::publishedArticles($locale)->limit(max(1, min(12, $limit)));
+        $query = self::publishedArticles($locale, $categoryId)->limit(max(1, min(12, $limit)));
         if ($excludeId !== null) {
             $query->where('id', '!=', $excludeId);
         }
@@ -192,23 +216,171 @@ final class PublicLookup
     }
 
     /**
-     * Satu halaman daftar artikel terbit (paling baru dulu), untuk halaman indeks artikel. $locale: lihat latestArticles().
+     * Satu halaman daftar artikel terbit (paling baru dulu), untuk halaman indeks artikel. $locale dan $categoryId: lihat latestArticles().
      *
      * @return array{rows:list<array<string,mixed>>,categories:array<int,mixed>,total:int,page:int,perPage:int}
      */
-    public static function articlesPage(int $page, int $perPage = 9, ?string $locale = null): array
+    public static function articlesPage(int $page, int $perPage = 9, ?string $locale = null, ?int $categoryId = null): array
     {
         $perPage = max(1, min(24, $perPage));
         $page = max(1, $page);
-        $total = self::inLocale(\App\Models\Post::query()->where('status', self::ARTICLE_STATUS), $locale)->count();
+        $total = self::inCategory(self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale), $categoryId)->count();
 
-        return self::feed(self::publishedArticles($locale)->offset(($page - 1) * $perPage)->limit($perPage)) + ['total' => $total, 'page' => $page, 'perPage' => $perPage];
+        return self::feed(self::publishedArticles($locale, $categoryId)->offset(($page - 1) * $perPage)->limit($perPage)) + ['total' => $total, 'page' => $page, 'perPage' => $perPage];
+    }
+
+    /**
+     * Bahan blok Artikel Terbaru yang dinamis (rilis 48): bagian UNGGULAN (artikel yang disematkan di blok, lalu dilengkapi artikel terbaru
+     * yang sesuai saringan blok sampai jumlah unggulan terpenuhi) dan DAFTAR di bawahnya (artikel sisanya, paling baru dulu).
+     *
+     * Opsi $o: locale ?string; source 'all'|'categories'; categoryIds list<int>; pinnedIds list<int>; featured 0-6; paging 'limit'|'pages';
+     * perPage (limit: 1-12, pages: 3-24); page (mode pages; diratakan ke 1..jumlah halaman); excludeId (artikel yang sedang dibuka).
+     *
+     * - Sematan TIDAK ikut saringan kategori (keputusan produk), tetapi harus terbit dan punya terjemahan di $locale.
+     * - Sumber 'categories' tanpa kategori satu pun = hasil kosong (`noCategories`), bukan semua artikel.
+     * - Artikel unggulan tidak muncul lagi di daftar; $excludeId tidak muncul di mana pun.
+     *
+     * @param  array<string,mixed> $o
+     * @return array{featured:list<array<string,mixed>>,rows:list<array<string,mixed>>,categories:array<int,mixed>,total:int,page:int,pages:int,perPage:int,noCategories:bool}
+     */
+    public static function blockArticles(array $o): array
+    {
+        $locale = isset($o['locale']) && is_string($o['locale']) && $o['locale'] !== '' ? $o['locale'] : null;
+        $exclude = isset($o['excludeId']) && (int) $o['excludeId'] > 0 ? (int) $o['excludeId'] : null;
+        $paged = ($o['paging'] ?? 'limit') === 'pages';
+        $perPage = $paged ? max(3, min(24, (int) ($o['perPage'] ?? 9))) : max(1, min(12, (int) ($o['perPage'] ?? 3)));
+        $featuredCount = max(0, min(6, (int) ($o['featured'] ?? 0)));
+        $ids = null;
+        if (($o['source'] ?? 'all') === 'categories') {
+            $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($o['categoryIds'] ?? [])), fn (int $id) => $id > 0)));
+        }
+        $empty = ['featured' => [], 'rows' => [], 'categories' => [], 'total' => 0, 'page' => 1, 'pages' => 1, 'perPage' => $perPage, 'noCategories' => false];
+        if ($ids === []) {
+            return ['noCategories' => true] + $empty;
+        }
+
+        $base = function () use ($locale, $ids, $exclude): \Illuminate\Database\Eloquent\Builder {
+            $q = self::inCategories(self::publishedArticles($locale), $ids);
+
+            return $exclude === null ? $q : $q->where('id', '!=', $exclude);
+        };
+
+        $featured = [];
+        $categories = [];
+        if ($featuredCount > 0) {
+            $pinned = array_values(array_unique(array_filter(array_map('intval', (array) ($o['pinnedIds'] ?? [])), fn (int $id) => $id > 0 && $id !== $exclude)));
+            if ($pinned) {
+                $found = self::feed(self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale)->whereIn('id', $pinned));
+                $byId = [];
+                foreach ($found['rows'] as $row) {
+                    $byId[(int) $row['id']] = $row;
+                }
+                foreach ($pinned as $id) {          // urutan sesuai pilihan di inspektur
+                    if (isset($byId[$id]) && count($featured) < $featuredCount) {
+                        $featured[] = $byId[$id];
+                    }
+                }
+                $categories += $found['categories'];
+            }
+            $need = $featuredCount - count($featured);
+            if ($need > 0) {
+                $query = $base()->limit($need);
+                if ($featured) {
+                    $query->whereNotIn('id', array_map(fn ($r) => (int) $r['id'], $featured));
+                }
+                $fill = self::feed($query);
+                $featured = array_merge($featured, $fill['rows']);
+                $categories += $fill['categories'];
+            }
+        }
+        $featuredIds = array_map(fn ($r) => (int) $r['id'], $featured);
+
+        $listQuery = fn () => $featuredIds ? $base()->whereNotIn('id', $featuredIds) : $base();
+        $total = 0;
+        $page = 1;
+        $pages = 1;
+        if ($paged) {
+            $total = (int) $listQuery()->count();
+            $pages = max(1, (int) ceil($total / $perPage));
+            $page = max(1, min($pages, (int) ($o['page'] ?? 1)));
+            $list = self::feed($listQuery()->offset(($page - 1) * $perPage)->limit($perPage));
+        } else {
+            $list = self::feed($listQuery()->limit($perPage));
+            $total = count($list['rows']);
+        }
+
+        return [
+            'featured' => $featured,
+            'rows' => $list['rows'],
+            'categories' => $categories + $list['categories'],
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'perPage' => $perPage,
+            'noCategories' => false,
+        ];
+    }
+
+    /** Menyaring ke beberapa kategori (null = tanpa saringan; larik kosong = tidak ada hasil). */
+    private static function inCategories(\Illuminate\Database\Eloquent\Builder $query, ?array $ids): \Illuminate\Database\Eloquent\Builder
+    {
+        return $ids === null ? $query : $query->whereIn('category_id', $ids);
     }
 
     /** Artikel terbit, paling baru dulu; urutan tetap pasti walau tanggalnya sama (id menurun). */
-    private static function publishedArticles(?string $locale = null): \Illuminate\Database\Eloquent\Builder
+    private static function publishedArticles(?string $locale = null, ?int $categoryId = null): \Illuminate\Database\Eloquent\Builder
     {
-        return self::inLocale(\App\Models\Post::query()->where('status', self::ARTICLE_STATUS), $locale)->orderByDesc('published_at')->orderByDesc('id');
+        return self::inCategory(self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale), $categoryId)->orderByDesc('published_at')->orderByDesc('id');
+    }
+
+    /** Menyaring ke satu kategori (null = tanpa saringan). Id <= 0 = kategori yang mustahil ada: hasil kosong, bukan semua artikel. */
+    private static function inCategory(\Illuminate\Database\Eloquent\Builder $query, ?int $categoryId): \Illuminate\Database\Eloquent\Builder
+    {
+        return $categoryId === null ? $query : $query->where('category_id', max(0, $categoryId));
+    }
+
+    /**
+     * Kategori untuk halaman "artikel per kategori" (rilis 42). Tabel kecil: semua baris dibaca sekali per permintaan lalu dicocokkan di PHP
+     * (App\Content\CategoryLookup), supaya bentuk kolom slug/name apa pun (peta bahasa, teks polos, kosong) terbaca sama. Kolom `slug` boleh
+     * tidak ada: dibaca ulang tanpanya (slug dibentuk dari nama).
+     *
+     * @return list<array{id:mixed,name:mixed,slug:mixed}>
+     */
+    private static function categoryRows(): array
+    {
+        static $rows = null;
+        if ($rows !== null && !self::$categoriesStale) {
+            return $rows;
+        }
+        self::$categoriesStale = false;
+        try {
+            $query = \App\Models\Category::query()->orderBy('id')->limit(500);
+            try {
+                $found = $query->get(['id', 'name', 'slug']);
+            } catch (\Throwable) {
+                $found = \App\Models\Category::query()->orderBy('id')->limit(500)->get(['id', 'name']);
+            }
+            $rows = [];
+            foreach ($found as $category) {
+                $rows[] = ['id' => $category->getKey(), 'name' => $category->getRawOriginal('name'), 'slug' => $category->getRawOriginal('slug')];
+            }
+        } catch (\Throwable) {
+            $rows = [];
+        }
+
+        return $rows;
+    }
+
+    /** Kategori untuk alamat "{bahasa}/…/{slug}" (aturan: CategoryLookup::find). */
+    public static function findCategory(string $slug, string $locale, array $locales = ['en', 'id']): ?array
+    {
+        return CategoryLookup::find(self::categoryRows(), $slug, $locale, $locales);
+    }
+
+    /** Padanan slug kategori pada bahasa $locale untuk tautan menu (aturan: CategoryLookup::sibling). */
+    public static function categorySibling(string $slug, string $locale, array $locales = ['en', 'id'], ?string $default = null): ?array
+    {
+        return CategoryLookup::sibling(self::categoryRows(), $slug, $locale, $locales, $default);
     }
 
     /** Menyaring ke baris yang slug DAN judulnya terisi di $locale (null = tanpa saringan). */
@@ -278,7 +450,7 @@ final class PublicLookup
         foreach (\App\Models\Page::query()->where('status', self::PAGE_STATUS)->orderBy('id')->limit($limit)->get(['id', 'title', 'slug', 'updated_at']) as $page) {
             $add('page', $page->getRawOriginal('slug'), $page->getRawOriginal('title'), Sitemap::date($page->getRawOriginal('updated_at')));
         }
-        foreach (\App\Models\Post::query()->where('status', self::ARTICLE_STATUS)->orderBy('id')->limit($limit)->get(['id', 'title', 'slug', 'published_at', 'updated_at']) as $post) {
+        foreach (self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS)->orderBy('id')->limit($limit)->get(['id', 'title', 'slug', 'published_at', 'updated_at']) as $post) {
             $add('article', $post->getRawOriginal('slug'), $post->getRawOriginal('title'), Sitemap::date($post->getRawOriginal('updated_at')) ?? Sitemap::date($post->getRawOriginal('published_at')));
         }
 

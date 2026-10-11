@@ -19,11 +19,13 @@
 @php
   $canvas = $mode === 'canvas';
   view()->share('canvasMode', $canvas); // komponen render yang butuh tahu (mis. FAQ: semua terbuka di kanvas) membacanya sebagai $canvasMode
+  $blocks = \App\Content\Blocks\MediaUrls::resolve((array) $blocks); // alamat gambar dibentuk ulang dari media_id (rilis 45): tidak tergantung host saat konten disimpan
   $grouped = \App\Content\SectionBuilder::group($blocks, $order, $settings, $lang);
   $sections = $grouped['sections'];
   $tocItems = $grouped['toc'];
   $tocPosition = $grouped['tocPosition'];
   $topBannerId = \App\Content\SectionBuilder::topBanner($sections, $blocks); // gambar w-screen sebagai blok pertama halaman, atau null
+  $marginChoices = array_column(config('cms.design.margin_bottom', []), 'value'); // jarak bawah yang sah (rilis 32, lihat Spacing)
 @endphp
 
 <div class="bg-paper relative w-full">
@@ -110,6 +112,10 @@
             $hasView = $type !== '' && view()->exists('components.' . $componentName);
             $delay = min($index * 150, 750);
             $isFullScreen = isset($block['data']['width']) && $block['data']['width'] === 'w-screen';
+            // Jarak bawah: blok yang rendernya mengurus margin sendiri (judul, paragraf, eyebrow, gambar, kartu) menghasilkan ''; lainnya dari data.margin_bottom
+            $spacing = \App\Content\Blocks\Spacing::wrapperClass($block, $marginChoices);
+            // Rata teks Judul (rilis 33): data.align, dicetak pembungkus karena Judul tidak punya <p>; kiri = tidak mencetak apa pun
+            $textAlign = \App\Content\Blocks\Align::wrapperClass($block);
           @endphp
 
           <div
@@ -123,7 +129,7 @@
               :class="shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
               style="transition-delay: {{ $delay }}ms"
             @endunless
-            class="{{ $canvas ? '' : 'transition-all duration-700 ease-out' }} {{ $isFullScreen ? 'w-full px-0' : 'mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8' }}"
+            class="{{ $canvas ? '' : 'transition-all duration-700 ease-out' }} {{ $isFullScreen ? 'w-full px-0' : 'mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8' }} {{ $spacing }} {{ $textAlign }}"
           >
             @if ($hasView && $canvas)
               {{-- Kanvas: tangkap keluaran; blok yang TIDAK mencetak apa pun (mis. FAQ tanpa pertanyaan) diberi penanda supaya tetap bisa dipilih --}}

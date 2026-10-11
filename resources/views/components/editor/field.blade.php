@@ -19,7 +19,7 @@
       [$whenKey, $whenVal] = $field->when;
       $whenExpr = is_bool($whenVal)
           ? ($whenVal ? '!! v' : '! v')
-          : 'is(' . \Illuminate\Support\Js::from($whenVal) . ')';
+          : (is_array($whenVal) ? 'isAny(' . \Illuminate\Support\Js::from(array_values($whenVal)) . ')' : 'is(' . \Illuminate\Support\Js::from($whenVal) . ')');
       $whenRelJs = \App\Editor\Rel::js($whenKey, \App\Editor\Rel::item($prefix, $whenKey));
   }
 @endphp
@@ -58,7 +58,7 @@
       @break
 
     @case('rich')
-      <x-editor.rich :rel="$key" :rel-expr="$relExpr" :label="$field->label" :locales="$locales" :multi="$x['multi'] ?? false" class="w-full" />
+      <x-editor.rich :rel="$key" :rel-expr="$relExpr" :label="$field->label" :locales="$locales" :multi="$x['multi'] ?? false" :align="$x['align'] ?? false" class="w-full" />
       @break
 
     @case('text')
@@ -71,6 +71,14 @@
 
     @case('link')
       <x-editor.link :rel="$key" :rel-expr="$relExpr" :label="$field->label" class="w-full" />
+      @break
+
+    @case('urllink')
+      <x-editor.url-link :rel="$key" :rel-expr="$relExpr" :label="$field->label" class="w-full" />
+      @break
+
+    @case('picker')
+      <x-editor.picker :rel="$key" :rel-expr="$relExpr" :label="$field->label" :kind="$x['kind'] ?? 'article'" :max="$x['max'] ?? 6" :placeholder="$x['placeholder'] ?? 'Cari…'" :hint="$x['hint'] ?? ''" class="w-full" />
       @break
 
     @case('repeater')

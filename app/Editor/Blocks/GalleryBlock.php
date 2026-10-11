@@ -34,7 +34,7 @@ final class GalleryBlock implements BlockModule
             Field::segmented('data.mode', 'Jenis', ['photos' => 'Foto', 'logos' => 'Logo mitra'], 'photos'),
             Field::segmented('data.layout', 'Tampilan', ['grid' => 'Grid', 'carousel' => 'Carousel'], 'grid'),
             // bentuk DAFTAR: nilai tetap teks ('5'); bentuk peta ['5' => '5'] membuat PHP mengubah kunci menjadi angka dan inspektur menulis 5
-            Field::segmented('data.columns', 'Kolom (desktop)', ['2', '3', '4', '5', '6'], '3'),
+            Field::segmented('data.columns', 'Kolom (desktop)', ['1', '2', '3', '4', '5', '6'], '3'),
             Field::segmented('data.ratio', 'Rasio foto', ['1:1' => '1:1', '4:3' => '4:3', '3:2' => '3:2', '16:9' => '16:9'], '4:3'),
             Field::toggle('data.grayscale', 'Logo hitam-putih (berwarna saat disorot)'),
             Field::toggle('data.lightbox', 'Foto bisa diperbesar saat diklik'),

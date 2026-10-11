@@ -11,7 +11,9 @@ namespace App\Content;
  *   "/id" (awalan bahasa saja)   -> beranda bahasa pembaca
  *   "/articles", "/artikel"      -> daftar artikel bahasa pembaca (slug kepala daftar bahasa mana pun)
  *   "/{slug}" atau "/id/{slug}"  -> halaman dengan slug itu di bahasa mana pun, dialamatkan pada bahasa pembaca (bahasa lain bila belum diterjemahkan)
- *   selain itu (http(s), mailto:, tel:, #anchor, jalur bersegmen banyak, halaman tak dikenal) -> apa adanya
+ *   "/articles/category/{slug}", "/id/artikel/kategori/{slug}" (rilis 42: artikel per kategori; awalan bahasa, kata "category"/"kategori" dan slug bahasa
+ *   mana pun) -> halaman kategori itu dalam bahasa pembaca (bahasa lain bila kategori belum punya slug di bahasa pembaca); kategori tak dikenal -> apa adanya
+ *   selain itu (http(s), mailto:, tel:, #anchor, jalur bersegmen banyak lainnya, halaman tak dikenal) -> apa adanya
  * Query (?x) dan fragmen (#x) dipertahankan.
  */
 final class NavLinks
@@ -23,8 +25,9 @@ final class NavLinks
      * @param callable(string,string):?string                   $pageAddress (slug, bahasa) -> alamat halaman, atau null
      * @param callable(string):?string                          $homeAddress (bahasa) -> alamat beranda
      * @param callable(string):?string                          $indexAddress (bahasa) -> alamat daftar artikel
+     * @param callable(string,string):?string|null              $categoryAddress (slug kategori bahasa mana pun, bahasa pembaca) -> alamat halaman kategori, atau null; tanpa ini jalur kategori tidak diubah
      */
-    public static function localize(string $url, string $locale, array $locales, string $default, array $indexSlugs, callable $sibling, callable $pageAddress, callable $homeAddress, callable $indexAddress): string
+    public static function localize(string $url, string $locale, array $locales, string $default, array $indexSlugs, callable $sibling, callable $pageAddress, callable $homeAddress, callable $indexAddress, ?callable $categoryAddress = null): string
     {
         if ($url === '' || $url[0] !== '/' || str_starts_with($url, '//')) {
             return $url;
@@ -44,6 +47,9 @@ final class NavLinks
             $home = $homeAddress($locale);
 
             return $home !== null ? $home . $suffix : $url . $suffix;
+        }
+        if ($categoryAddress !== null && count($segments) === 3 && in_array($segments[0], $indexSlugs, true) && in_array($segments[1], CategoryLookup::SEGMENTS, true) && Slug::isValid($segments[2])) {
+            return ($categoryAddress($segments[2], $locale) ?? $url) . $suffix;
         }
         if (count($segments) !== 1 || !Slug::isValid($segments[0])) {
             return $url . $suffix;

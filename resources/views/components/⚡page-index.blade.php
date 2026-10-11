@@ -163,7 +163,7 @@ new class extends Component {
         <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
           <!-- Kode Tombol Anda -->
           <a
-            href="{{ route('page.menu-builder') }}"
+            href="{{ route('navigation.index') }}"
             wire:navigate
             class="group hover:bg-foresty hover:text-goldy inline-flex cursor-pointer items-center gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-600 shadow-sm transition-colors"
           >
@@ -180,7 +180,7 @@ new class extends Component {
           </a>
           <a
             {{-- href="{{ route('page.create') }}" --}}
-            href="{{ route('v2.page.create') }}"
+            href="{{ route('page.create') }}"
             wire:navigate
             class="group hover:bg-foresty hover:text-goldy inline-flex cursor-pointer items-center gap-2 overflow-hidden rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-600 shadow-sm transition-colors"
           >
@@ -418,8 +418,7 @@ new class extends Component {
                       <a
                         wire:navigate
                         {{-- href="{{ route('page.edit', ['pageSlug' => $slugCantik]) }}" --}}
-                        {{-- href="{{ route('v2.page.edit', ['page' => $slugCantik]) }}" --}}
-                        href="{{ route('v2.page.edit', $page->id) }}"
+                        href="{{ route('page.edit', $page->id) }}"
                         class="group bg-forest/90 dark:bg-forest/80 hover:bg-forest/70 relative flex cursor-pointer items-center justify-center rounded-md p-1.5 text-white transition-colors"
                       >
                         <flux:icon
@@ -441,7 +440,7 @@ new class extends Component {
                       <a
                         wire:navigate
                         {{-- href="{{ route('page.preview', ['pageSlug' => $slugCantik]) }}" --}}
-                        href="{{ route('v2.preview.record', ['type' => 'page', 'id' => $page->id ]) }}"
+                        href="{{ route('preview.record', ['type' => 'page', 'id' => $page->id ]) }}"
                         class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
                       >
                         <flux:icon

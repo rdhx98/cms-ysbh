@@ -2,6 +2,9 @@
 
 namespace App\Editor;
 
+use App\Content\Blocks\LayoutStyle;
+use App\Content\Blocks\Spacing;
+
 /**
  * Registri tipe blok/elemen: satu-satunya tempat yang menyatakan "properti apa saja yang bisa diubah,
  * pilihannya apa, dan bentuknya di data". Menggambarkan data yang SUDAH ADA (content.{id}.data.*),
@@ -84,7 +87,7 @@ final class BlockRegistry
         $defs = [
             // ========================= BLOK =========================
             new BlockType('heading', 'Judul', 'heading', 'block', [
-                Field::rich('data.text', 'Teks Judul'),
+                Field::rich('data.text', 'Teks Judul', align: true),
                 Field::segmented('data.level', 'Level', ['h1' => 'H1', 'h2' => 'H2', 'h3' => 'H3'], 'h2'),
                 Field::segmented('data.margin_bottom', 'Jarak Bawah', self::marginBottom(), 'mb-4 md:mb-6'),
             ]),
@@ -107,6 +110,9 @@ final class BlockRegistry
                 ], 'py-16 sm:py-24'),
             ]),
 
+            // Kolom. Tinggi baris grid = kolom TERTINGGI; kolom lain diregangkan sebesar itu, lalu isinya disejajarkan pada sumbu Y
+            // (Atas / Tengah / Bawah / Bagi rata). Nilai bawaan ada di sini (rilis 35): blok baru langsung punya enam zona kosong,
+            // sehingga kanvas bisa menggambar kolom kosongnya (sebelumnya memakai bawaan trait lama yang memberi gap-2).
             new BlockType('multi-columns', 'Kolom', 'columns-4', 'block', [
                 // live=true: jumlah kolom mengubah zona di outline, yang dirender server — harus langsung dikirim
                 Field::segmented('data.col_count', 'Jumlah Kolom', [
@@ -114,10 +120,17 @@ final class BlockRegistry
                     ['value' => 5, 'label' => '5'], ['value' => 6, 'label' => '6'],
                 ], 2, null, ['live' => true]),
                 Field::toggle('data.mobile_reverse', 'Kolom kanan di atas (urutan HP)', ['data.col_count', 2]),
+                Field::segmented('data.align_y', 'Rata Vertikal (terhadap kolom tertinggi)', LayoutStyle::ALIGN_Y, LayoutStyle::ALIGN_Y_DEFAULT),
                 Field::segmented('data.align_x', 'Rata Horizontal', ['items-start' => 'Kiri', 'items-center' => 'Tengah', 'items-end' => 'Kanan'], 'items-start'),
-                Field::segmented('data.align_y', 'Rata Vertikal', ['justify-start' => 'Atas', 'justify-center' => 'Tengah', 'justify-end' => 'Bawah'], 'justify-start'),
-                // Blade lama menawarkan gap-0/4/8 dengan bawaan tampilan gap-4 (trait menulis gap-2: lihat audit)
-                Field::segmented('data.gap', 'Jarak Antar Kolom', ['gap-0' => '0px', 'gap-4' => '16px', 'gap-8' => '32px'], 'gap-4'),
+                // Kelas gap dipasang renderer pada tiap kolom: ini jarak antar BLOK di dalam satu kolom (jarak antar kolom tetap)
+                Field::segmented('data.gap', 'Jarak Antar Blok di Kolom', ['gap-0' => '0px', 'gap-4' => '16px', 'gap-8' => '32px'], 'gap-4'),
+            ], defaults: [
+                'col_count' => 2,
+                'mobile_reverse' => false,
+                'align_x' => 'items-start',
+                'align_y' => LayoutStyle::ALIGN_Y_DEFAULT,
+                'gap' => 'gap-4',
+                'col_1_zone' => [], 'col_2_zone' => [], 'col_3_zone' => [], 'col_4_zone' => [], 'col_5_zone' => [], 'col_6_zone' => [],
             ]),
 
             new BlockType('step-group', 'Grup Langkah (Timeline)', 'list-ordered', 'block', [
@@ -126,6 +139,45 @@ final class BlockRegistry
                 Field::segmented('data.orientation', 'Orientasi', ['vertical' => 'Vertikal', 'horizontal-top' => 'Horiz. Atas', 'horizontal-bottom' => 'Horiz. Bawah'], 'vertical'),
                 Field::segmented('data.gap', 'Jarak', ['gap-4' => 'Rapat', 'gap-8' => 'Sedang', 'gap-12' => 'Renggang', 'gap-16' => 'Jauh'], 'gap-8'),
             ]),
+
+            // Eyebrow: label kecil berikon di atas judul. Data: text{id,en}, icon, color (hex), margin_bottom. Renderer: bawaan editor lama.
+            new BlockType('eyebrow', 'Eyebrow', 'crosshair', 'block', [
+                Field::i18n('data.text', 'Teks Eyebrow'),
+                Field::icon('data.icon', 'Ikon', 'newspaper'),
+                Field::swatches('data.color', 'Warna', config('cms.design.eyebrow_colors', []), '#E42326', 'hex'),
+                Field::segmented('data.margin_bottom', 'Jarak Bawah', self::marginBottom(), Spacing::DEFAULT),
+            ]),
+
+            // Gambar. Berkas dipilih lewat File Manager (menulis data.url, data.media_id, data.alt_text). Pilihan tata letak adalah kelas Tailwind
+            // yang dicetak renderer gambar; "w-screen" = banner layar penuh (dikenali daftar isi di sections.blade.php).
+            new BlockType('image', 'Gambar', 'image-plus', 'block', [
+                Field::media('data', 'Pilih gambar dari File Manager'),
+                Field::text('data.alt_text', 'Teks Alternatif (SEO dan pembaca layar)', ['placeholder' => 'Jelaskan isi gambar']),
+                Field::i18n('data.caption', 'Keterangan Gambar (opsional)'),
+                Field::segmented('data.width', 'Lebar', [
+                    'w-full' => 'Penuh', 'w-screen' => 'Layar penuh (banner)', 'w-3/4' => '3/4', 'w-1/2' => '1/2', 'w-1/3' => '1/3',
+                ], 'w-full'),
+                Field::segmented('data.align', 'Posisi', ['mr-auto' => 'Kiri', 'mx-auto' => 'Tengah', 'ml-auto' => 'Kanan'], 'mx-auto'),
+                Field::segmented('data.radius', 'Sudut', [
+                    'rounded-none' => 'Siku', 'rounded-lg' => 'Halus', 'rounded-2xl' => 'Bulat', 'rounded-3xl' => 'Sangat bulat',
+                ], 'rounded-none'),
+                // Tinggi (rilis 35): Otomatis = mengikuti rasio gambar; Penuh = mengisi tinggi kolom (di dalam Kolom yang diregangkan ke
+                // kolom tertinggi); angka = tinggi tetap, gambar dipotong/diletakkan sesuai "Pemotongan".
+                Field::segmented('data.height', 'Tinggi (angka = rem)', LayoutStyle::IMAGE_HEIGHT, LayoutStyle::IMAGE_HEIGHT_DEFAULT),
+                Field::segmented('data.max_height', 'Tinggi Maksimum (bila Tinggi = Auto)', [
+                    'max-h-none' => 'Bebas', 'max-h-64' => '16rem', 'max-h-96' => '24rem', 'max-h-[32rem]' => '32rem', 'max-h-[40rem]' => '40rem',
+                ], 'max-h-none'),
+                Field::segmented('data.object_fit', 'Pemotongan', ['object-cover' => 'Penuhi (potong)', 'object-contain' => 'Utuh'], 'object-cover'),
+                Field::segmented('data.margin_bottom', 'Jarak Bawah', self::marginBottom(), Spacing::DEFAULT),
+            ]),
+
+            // Kartu Builder: kartu → kolom → elemen. Kontrol blok di sini; daftar kartu, kolom, dan elemen digambar <x-editor.cards>
+            // (komponen tambahan), yang memanggil aksi trait (addCardItem, addColumnToCard, ...) dan membuka panel elemen (element:*) bila diklik.
+            new BlockType('card-builder', 'Kartu Builder', 'playing-cards-fan', 'block',
+                CardPanel::gridFields(self::marginBottom(), Spacing::DEFAULT),
+                defaults: [],
+                component: 'editor.cards',
+            ),
 
             // Tombol / ajakan bertindak. Tautan internal memakai ID (bukan slug) supaya mengganti slug tidak mematahkan tombol.
             new BlockType('button-builder', 'Tombol', 'mouse-pointer-click', 'block', [
@@ -183,6 +235,12 @@ final class BlockRegistry
                     self::dot('text-aurum', 'Aurum', 'bg-aurum'),
                 ], 'text-ink-soft'),
                 Field::segmented('data.style.margin', 'Jarak Bawah', ['mb-0' => '0px', 'mb-2' => 'Kecil', 'mb-4' => 'Sedang'], 'mb-0'),
+            ], defaults: [
+                'content' => '@locales',
+                'style' => [
+                    'is_pill' => false, 'font' => 'font-jakarta', 'weight' => 'font-normal', 'size' => 'text-[15px]', 'text_transform' => 'normal-case',
+                    'pill_bg' => 'bg-goldy-soft', 'pill_radius' => 'rounded-md', 'color' => 'text-ink-soft', 'margin' => 'mb-2',
+                ],
             ]),
 
             new BlockType('icon', 'Ikon', 'shapes', 'element', [
@@ -205,6 +263,9 @@ final class BlockRegistry
                     'rounded-[14px]' => ['Agak Bulat', 'rounded-md'],
                     'rounded-full' => ['Lingkaran', 'rounded-full'],
                 ]), 'rounded-[14px]', null, ['compact' => true]),
+            ], defaults: [
+                'content' => ['icon' => 'box'],
+                'style' => ['bg' => 'bg-goldy-soft', 'color' => 'text-foresty', 'size' => 'w-10 h-10 md:w-12 md:h-12', 'radius' => 'rounded-[14px]'],
             ]),
 
             new BlockType('initials', 'Inisial Nama', 'a-large-small', 'element', [
@@ -228,6 +289,12 @@ final class BlockRegistry
                 Field::swatches('data.style.border_color', 'Warna Tepian', array_merge([
                     ['name' => 'Transparan', 'value' => 'border-transparent', 'preview' => 'bg-transparent', 'is_transparent' => true],
                 ], config('cms.design.avatar_border_colors', [])), 'border-transparent', 'preview'),
+            ], defaults: [
+                'content' => ['text' => ''],
+                'style' => [
+                    'size' => 'w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl', 'radius' => 'rounded-full', 'bg_color' => 'bg-forest',
+                    'text_color' => 'text-white', 'border' => 'border-0', 'border_color' => 'border-transparent',
+                ],
             ]),
 
             new BlockType('profile_photo', 'Foto Profil', 'image', 'element', [
@@ -251,6 +318,9 @@ final class BlockRegistry
                     self::dot('border-coral', 'Coral', 'bg-coral'),
                     self::dot('border-gray-200', 'Abu-abu', 'bg-gray-200', true),
                 ], 'border-transparent'),
+            ], defaults: [
+                'content' => ['url' => '', 'media_id' => null, 'alt' => ''],
+                'style' => ['size' => 'w-16 h-16 md:w-20 md:h-20', 'radius' => 'rounded-full', 'border' => 'border-0', 'border_color' => 'border-transparent'],
             ]),
 
             new BlockType('accordion', 'FAQ / Akordion', 'list-chevrons-up-down', 'element', [
@@ -261,6 +331,9 @@ final class BlockRegistry
                     self::dot('coral', 'Coral', 'bg-coral'),
                     self::dot('dark', 'Gelap', 'bg-gray-800'),
                 ], 'foresty'),
+            ], defaults: [
+                'content' => ['question' => '@locales', 'answer' => '@locales'],
+                'style' => ['theme' => 'foresty'],
             ]),
         ];
 
@@ -273,6 +346,14 @@ final class BlockRegistry
         foreach (class_exists(Modules::class) ? Modules::all() : [] as $module) {
             $def = $module::definition();
             $all[$def->panelKey()] ??= $def;
+        }
+
+        // Jarak bawah untuk SEMUA blok tingkat atas (rilis 32). Blok yang sudah punya kontrolnya sendiri (judul, paragraf, eyebrow, gambar:
+        // data.margin_bottom; kartu: data.grid.margin_bottom) dibiarkan. Pemisah seksi tidak punya margin (ia mengatur padding seksi).
+        foreach ($all as $key => $def) {
+            if ($def->kind === 'block' && $def->type !== 'section-divider' && ! $def->hasField('data.margin_bottom', 'data.grid.margin_bottom')) {
+                $all[$key] = $def->withFields([Field::segmented('data.margin_bottom', 'Jarak Bawah', self::marginBottom(), Spacing::DEFAULT)]);
+            }
         }
 
         return $all;

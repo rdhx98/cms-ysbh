@@ -17,7 +17,7 @@ final class Field
         public readonly string $label,
         public readonly array $options = [],
         public readonly mixed $default = null,
-        /** [key, nilai]: kontrol hanya tampil bila nilai di `key` cocok (bool = truthy/falsy). */
+        /** [key, nilai]: kontrol hanya tampil bila nilai di `key` cocok (bool = truthy/falsy; larik = salah satu dari nilai-nilai itu). */
         public readonly ?array $when = null,
         public readonly array $extra = [],
     ) {
@@ -61,6 +61,16 @@ final class Field
         return new self('link', $key, $label);
     }
 
+    /**
+     * Tautan yang disimpan sebagai SATU teks (bukan objek): `internal://page|article/{slug}` atau alamat luar (https://…, /jalur).
+     * Dipakai tempat yang sudah menyimpan teks (mis. tautan seluruh kartu di Kartu Builder), jadi data lama tetap terbaca.
+     * Nama tujuan yang dipilih disimpan di saudaranya "{key}_label" (hanya tampilan; tidak pernah dipakai sebagai href).
+     */
+    public static function urlLink(string $key, string $label): self
+    {
+        return new self('urllink', $key, $label);
+    }
+
     /** Teks per bahasa: key menunjuk ke objek {id, en}. */
     public static function i18n(string $key, string $label, bool $multi = false, int $rows = 3, ?array $when = null): self
     {
@@ -72,9 +82,10 @@ final class Field
      * (resources/js/rich-field.js, rilis 31). multi = false: judul satu baris (disimpan tanpa <p>); true: paragraf (HTML Tiptap).
      * HTML tersimpan yang tidak bisa diwakili Tiptap tanpa kehilangan isi (tabel, gambar, ...) tetap hanya-baca.
      */
-    public static function rich(string $key, string $label, bool $multi = false): self
+    public static function rich(string $key, string $label, bool $multi = false, bool $align = false): self
     {
-        return new self('rich', $key, $label, [], null, null, ['multi' => $multi]);
+        // align (rilis 33): toolbar Judul menampilkan rata teks, ditulis ke data.align milik blok (Judul tidak punya <p> untuk menyimpannya)
+        return new self('rich', $key, $label, [], null, null, ['multi' => $multi, 'align' => $align]);
     }
 
     public static function toggle(string $key, string $label, ?array $when = null): self
@@ -91,6 +102,15 @@ final class Field
     public static function media(string $key, string $label, string $accept = 'image'): self
     {
         return new self('media', $key, $label, [], null, null, ['accept' => $accept]);
+    }
+
+    /**
+     * Daftar pilihan dari basis data (kategori / artikel) yang dicari dengan mengetik. Nilai: [{id, label}] (urut sesuai pilihan).
+     * $kind = "category" | "article" (aksi server searchLinkTargets); $max = jumlah pilihan paling banyak.
+     */
+    public static function picker(string $key, string $label, string $kind, int $max = 6, ?array $when = null, string $placeholder = 'Cari…', string $hint = ''): self
+    {
+        return new self('picker', $key, $label, [], [], $when, ['kind' => $kind, 'max' => $max, 'placeholder' => $placeholder, 'hint' => $hint]);
     }
 
     public function isInline(): bool

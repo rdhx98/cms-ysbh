@@ -24,6 +24,8 @@
  *     sekali (defer_style_sync).
  */
 import { Editor, Extension, Node } from '@tiptap/core'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
 const BLOCK_START = /^\s*<(?:p|ul|ol|blockquote|pre|h[1-6]|table|div|hr|figure)[\s>/]/i
 
@@ -186,6 +188,56 @@ export function prepareExtensions(exts) {
 
 /** Dokumen satu paragraf + Enter dimatikan: bentuk "judul satu baris". */
 const SingleDoc = Node.create({ name: 'doc', topNode: true, content: 'paragraph' })
+/**
+ * Warna teks yang nyaris tak terbaca di atas kotak editor yang PUTIH (kontras terhadap putih < 2,5:1)? (rilis 35)
+ * Menerima #rgb, #rgba, #rrggbb, #rrggbbaa, rgb()/rgba(), dan "white". Selain itu (nama warna lain, var(), kosong) = false.
+ */
+export function isLightColor(value) {
+  const v = String(value ?? '').trim().toLowerCase()
+  let r, g, b
+  let m = /^#([0-9a-f]{3,8})$/.exec(v)
+  if (m && [3, 4, 6, 8].includes(m[1].length)) {
+    let h = m[1]
+    if (h.length <= 4) h = h.split('').map((c) => c + c).join('')
+    r = parseInt(h.slice(0, 2), 16); g = parseInt(h.slice(2, 4), 16); b = parseInt(h.slice(4, 6), 16)
+  } else if ((m = /^rgba?\(\s*(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})/.exec(v))) {
+    r = +m[1]; g = +m[2]; b = +m[3]
+  } else if (v === 'white') {
+    r = g = b = 255
+  } else {
+    return false
+  }
+  const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4) }
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+  return 1.05 / (L + 0.05) < 2.5
+}
+
+/**
+ * Teks berwarna terang di kotak editor putih tenggelam (putih di atas putih). Hanya TAMPILAN di editor: teks yang warnanya terang diberi
+ * kelas `rte-light` (latar abu gelap, gaya di rich.blade.php) lewat dekorasi ProseMirror; HTML yang disimpan tidak disentuh.
+ */
+const LightTextHint = Extension.create({
+  name: 'lightTextHint',
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey('lightTextHint'),
+        props: {
+          decorations(state) {
+            const decos = []
+            state.doc.descendants((node, pos) => {
+              if (!node.isText) return
+              const mark = node.marks.find((m) => m.type.name === 'textStyle' && m.attrs.color)
+              if (mark && isLightColor(mark.attrs.color)) decos.push(Decoration.inline(pos, pos + node.nodeSize, { class: 'rte-light' }))
+            })
+            return DecorationSet.create(state.doc, decos)
+          },
+        },
+      }),
+    ]
+  },
+})
+
 const NoNewline = Extension.create({
   name: 'noNewline',
   priority: 1000,
@@ -216,7 +268,7 @@ export function registerRich(Alpine, { wireFieldFactory, extend, extensions }) {
   Alpine.data('richField', (fixed = null, rel = null, lang = 'id', multi = false, live = true, look = {}) => {
     let editor = null // non-reaktif: Alpine tidak boleh membungkus Tiptap dengan proxy
     let silent = false // true saat kita sendiri yang mengisi editor: onUpdate diabaikan
-    const base = prepareExtensions(extensions)
+    const base = [...prepareExtensions(extensions), LightTextHint]
     const exts = multi ? base : singleLineExtensions(base)
 
     return extend(wireFieldFactory(fixed, rel, null, live), {
@@ -233,6 +285,7 @@ export function registerRich(Alpine, { wireFieldFactory, extend, extensions }) {
       baseFontSize: look.size || 'default',
       baseFontColor: look.color || '#000000',
       labelUkuran: look.label || 'Bawaan Blok',
+      alignable: !!look.align && !multi, // Judul: toolbar menampilkan rata teks (data.align milik blok)
 
       // dialog tautan
       showLinkModal: false,
@@ -414,6 +467,25 @@ export function registerRich(Alpine, { wireFieldFactory, extend, extensions }) {
       getCurrentColor() {
         this.updatedAt
         return (editor && editor.getAttributes('textStyle').color) || this.baseFontColor
+      },
+
+      // ------------------------------------------------------------------ rata teks Judul (rilis 33)
+      // Judul disimpan sebagai satu baris TANPA <p>, jadi perataan tidak bisa hidup di HTML. Ia disimpan di data.align (kiri|tengah|kanan)
+      // pada blok yang sama (saudara dari rel, mis. data.text -> data.align) dan dicetak oleh pembungkus blok (Align::wrapperClass).
+      alignPath() {
+        const p = this.p
+        if (!p || !this.alignable) return null
+        const i = p.lastIndexOf('.')
+        return i < 0 ? null : p.slice(0, i) + '.align'
+      },
+      blockAlignIs(v) {
+        const p = this.alignPath()
+        const cur = p ? this.$wire.$get(p) : null
+        return (['left', 'center', 'right'].includes(cur) ? cur : 'left') === v
+      },
+      setBlockAlign(v) {
+        const p = this.alignPath()
+        if (p && ['left', 'center', 'right'].includes(v)) this.$wire.$set(p, v, true)
       },
 
       // ------------------------------------------------------------------ tautan

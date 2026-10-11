@@ -52,6 +52,12 @@ final class FaqText
         return $html;
     }
 
+    /** Satu baris teks biasa -> HTML aman (escape, lalu tautan https). Dipakai sel tabel (TableStyle::cell). */
+    public static function line(string $text): string
+    {
+        return self::inline($text);
+    }
+
     /** Escape lalu tautan; urutan ini yang menjamin tidak ada HTML dari penulis. */
     private static function inline(string $line): string
     {

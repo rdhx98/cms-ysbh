@@ -44,10 +44,10 @@ final class BlockSanitizer
     {
         $type = str_replace('_', '-', strtolower($type));
         if ($type === 'button-builder') {
-            return self::buttonBuilder($data, $locales);
+            return Spacing::keep($data, self::buttonBuilder($data, $locales));
         }
         if (class_exists(\App\Editor\Modules::class) && ($module = \App\Editor\Modules::for($type))) {
-            return $module::sanitize($data, $locales);
+            return Spacing::keep($data, $module::sanitize($data, $locales));
         }
         if (CoreBlocks::handles($type)) {
             return CoreBlocks::clean($type, $data);   // tujuh blok inti: hanya kolom berisiko; non-destruktif

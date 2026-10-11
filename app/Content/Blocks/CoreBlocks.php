@@ -74,6 +74,14 @@ final class CoreBlocks
         return RichText::url($v, null) ?? '';
     }
 
+    /** Teks polos pendek: tanpa tag, spasi dirapikan, dipotong. */
+    private static function plain(mixed $value, int $max): string
+    {
+        $s = is_scalar($value) ? trim(strip_tags((string) $value)) : '';
+
+        return mb_substr(preg_replace('/\s+/u', ' ', $s) ?? '', 0, $max);
+    }
+
     /** Alamat gambar: hanya http(s) atau jalur relatif. */
     public static function imageUrl(mixed $value): string
     {
@@ -178,6 +186,10 @@ final class CoreBlocks
             }
             if (isset($card['container']) && is_array($card['container']) && array_key_exists('url', $card['container'])) {
                 $d['cards'][$i]['container']['url'] = self::link($card['container']['url'], $internal);
+            }
+            // nama tujuan yang dipilih di panel (rilis 39): hanya tampilan, teks polos; tanpa tautan tidak ada nama
+            if (isset($card['container']) && is_array($card['container']) && array_key_exists('url_label', $card['container'])) {
+                $d['cards'][$i]['container']['url_label'] = ($d['cards'][$i]['container']['url'] ?? '') === '' ? '' : self::plain($card['container']['url_label'], 120);
             }
             if (!isset($card['layout']['children']) || !is_array($card['layout']['children'])) {
                 continue;

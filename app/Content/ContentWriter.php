@@ -48,9 +48,14 @@ final class ContentWriter
         if ($type === ContentType::Article) {
             $record->category_id = $state['category_id'];
             $record->user_id ??= $state['user_id'];
+            // Thumbnail (rilis 40): state['featured_image'] = "" (belum ada) | ID media | nama berkas lama, SUDAH dinormalkan pemanggil
+            // (ArticleCover::normalize). Kunci tidak ada = jangan sentuh pilihan yang tersimpan.
+            if (array_key_exists('featured_image', $state)) {
+                $record->featured_image = ArticleCover::columnFromState((string) $state['featured_image']);
+            }
             // Kolom gambar sampul wajib terisi; editor lama memakai berkas bawaan bila belum ada pilihan
             if (empty($record->featured_image)) {
-                $record->featured_image = 'default.webp';
+                $record->featured_image = ArticleCover::DEFAULT;
             }
         }
 

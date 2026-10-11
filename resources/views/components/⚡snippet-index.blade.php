@@ -159,25 +159,10 @@ new class extends Component {
         <!-- Group Tombol Navigasi/Aksi -->
         <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
           <!-- Kode Tombol Anda -->
-          <a
-            href="{{ route('page.menu-builder') }}"
-            wire:navigate
-            class="group hover:bg-foresty hover:text-goldy inline-flex cursor-pointer items-center gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-600 shadow-sm transition-colors"
-          >
-            <x-dynamic-component
-              :component="'lucide-menu'"
-              class="group-hover:animate-stroke h-5 w-5 origin-bottom-left"
-              stroke-width="2"
-            />
-            {{
-              __(
-                "Sort Navigation",
-              )
-            }}
-          </a>
+
           <a
             {{-- href="{{ route('page.create') }}" --}}
-            href="{{ route('v2.snippet.create') }}"
+            href="{{ route('snippet.create') }}"
             wire:navigate
             class="group hover:bg-foresty hover:text-goldy inline-flex cursor-pointer items-center gap-2 overflow-hidden rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-600 shadow-sm transition-colors"
           >
@@ -384,8 +369,7 @@ new class extends Component {
                       <a
                         wire:navigate
                         {{-- href="{{ route('page.edit', ['pageSlug' => $slugCantik]) }}" --}}
-                        {{-- href="{{ route('v2.page.edit', ['page' => $slugCantik]) }}" --}}
-                        href="{{ route('v2.snippet.edit', $item->id) }}"
+                        href="{{ route('snippet.edit', $item->id) }}"
                         class="group bg-forest/90 dark:bg-forest/80 hover:bg-forest/70 relative flex cursor-pointer items-center justify-center rounded-md p-1.5 text-white transition-colors"
                       >
                         <flux:icon
@@ -407,7 +391,7 @@ new class extends Component {
                       <a
                         wire:navigate
                         {{-- href="{{ route('page.preview', ['pageSlug' => $slugCantik]) }}" --}}
-                        href="{{ route('v2.preview.record', ['type' => 'snippet', 'id' => $item->id ]) }}"
+                        href="{{ route('preview.record', ['type' => 'snippet', 'id' => $item->id ]) }}"
                         class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
                       >
                         <flux:icon

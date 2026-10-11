@@ -36,16 +36,16 @@ new class extends Component {
       (object) ["id" => "rejected", "name" => "Ditolak", "icon" => "file-x"],
     ]);
   }
-  #[Computed]
-  public function tagList()
-  {
-    return \App\Models\Tag::all();
-  }
-  #[Computed]
-  public function categoryList()
-  {
-    return \App\Models\Category::all();
-  }
+  // #[Computed]
+  // public function tagList()
+  // {
+  //   return \App\Models\Tag::all();
+  // }
+  // #[Computed]
+  // public function categoryList()
+  // {
+  //   return \App\Models\Category::all();
+  // }
   //
   #[Url]
   public $titleSearch = "";
@@ -190,66 +190,66 @@ new class extends Component {
 
     $this->notify("Artikel berhasil dihapus.", "success");
   }
-  public function deleteCategory($categoryId)
-  {
-    $category = \App\Models\Category::find($categoryId);
-    if ($category) {
-      $category->delete();
-      $this->notify("Kategori dihapus.", "success");
-    } else {
-      $this->notify("Kategori tidak ditemukan.", "error");
-    }
-  }
-  public function deleteTag($tagId)
-  {
-    $tag = \App\Models\Tag::find($tagId);
-    if ($tag) {
-      $tag->delete();
-      $this->notify("Tag dihapus.", "success");
-    } else {
-      $this->notify("Tag tidak ditemukan.", "error");
-    }
-  }
-  public function createCategory($name)
-  {
-    if (empty(trim($name))) {
-      $this->notify("Kategori tidak boleh kosong.", "error");
-      return;
-    }
+  // public function deleteCategory($categoryId)
+  // {
+  //   $category = \App\Models\Category::find($categoryId);
+  //   if ($category) {
+  //     $category->delete();
+  //     $this->notify("Kategori dihapus.", "success");
+  //   } else {
+  //     $this->notify("Kategori tidak ditemukan.", "error");
+  //   }
+  // }
+  // public function deleteTag($tagId)
+  // {
+  //   $tag = \App\Models\Tag::find($tagId);
+  //   if ($tag) {
+  //     $tag->delete();
+  //     $this->notify("Tag dihapus.", "success");
+  //   } else {
+  //     $this->notify("Tag tidak ditemukan.", "error");
+  //   }
+  // }
+  // public function createCategory($name)
+  // {
+  //   if (empty(trim($name))) {
+  //     $this->notify("Kategori tidak boleh kosong.", "error");
+  //     return;
+  //   }
 
-    // Cek apakah sudah ada (opsional)
-    if (Category::where("name", $name)->exists()) {
-      $this->notify("Kategori sudah ada.", "error");
-      return;
-    }
+  //   // Cek apakah sudah ada (opsional)
+  //   if (Category::where("name", $name)->exists()) {
+  //     $this->notify("Kategori sudah ada.", "error");
+  //     return;
+  //   }
 
-    Category::create([
-      "name" => $name,
-      "slug" => Str::slug($name),
-    ]);
+  //   Category::create([
+  //     "name" => $name,
+  //     "slug" => Str::slug($name),
+  //   ]);
 
-    $this->notify("Kategori berhasil ditambahkan.", "success");
-  }
-  public function createTag($name)
-  {
-    if (empty(trim($name))) {
-      $this->notify("Tag tidak boleh kosong.", "error");
-      return;
-    }
+  //   $this->notify("Kategori berhasil ditambahkan.", "success");
+  // }
+  // public function createTag($name)
+  // {
+  //   if (empty(trim($name))) {
+  //     $this->notify("Tag tidak boleh kosong.", "error");
+  //     return;
+  //   }
 
-    // Cek apakah sudah ada (opsional)
-    if (Tag::where("name", $name)->exists()) {
-      $this->notify("Tag sudah ada.", "error");
-      return;
-    }
+  //   // Cek apakah sudah ada (opsional)
+  //   if (Tag::where("name", $name)->exists()) {
+  //     $this->notify("Tag sudah ada.", "error");
+  //     return;
+  //   }
 
-    Tag::create([
-      "name" => $name,
-      "slug" => Str::slug($name),
-    ]);
+  //   Tag::create([
+  //     "name" => $name,
+  //     "slug" => Str::slug($name),
+  //   ]);
 
-    $this->notify("Kategori berhasil ditambahkan.", "success");
-  }
+  //   $this->notify("Kategori berhasil ditambahkan.", "success");
+  // }
 };
 ?>
 
@@ -268,7 +268,7 @@ new class extends Component {
       showDeleteModal: false,
       deleteType: '',
       deleteId: null,
-      newItemName: '',
+      {{-- newItemName: '', --}}
     }"
     class="flex w-full flex-col items-start gap-4 lg:flex-row"
   >
@@ -285,11 +285,10 @@ new class extends Component {
       <div
         class="flex flex-col items-start justify-between gap-3 px-2 pb-4 sm:flex-row sm:items-center"
       >
-        <span class="text-foresty text-2xl font-bold dark:text-zinc-100">{{
-          __(
-            "ui.articles.index",
-          )
-        }}</span>
+        <span
+          class="text-foresty text-2xl font-bold dark:text-zinc-100"
+          >{{ __("Index") }}</span
+        >
 
         <!-- Group Tombol Navigasi/Aksi -->
         <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
@@ -378,7 +377,7 @@ new class extends Component {
 
           <!-- Kode Tombol Anda -->
           <a
-            href="{{ route('v2.article.write') }}"
+            href="{{ route('article.write') }}"
             wire:navigate
             class="group hover:bg-foresty hover:text-goldy inline-flex cursor-pointer items-center gap-2 overflow-hidden rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-600 shadow-sm transition-colors"
           >
@@ -665,7 +664,7 @@ new class extends Component {
                       <a
                         wire:navigate
                         {{-- href="{{ route('article.edit', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" --}}
-                        href="{{ route('v2.article.edit',  $article->id) }}"
+                        href="{{ route('article.edit',  $article->id) }}"
                         class="group bg-forest/90 dark:bg-forest/80 hover:bg-forest/70 relative flex cursor-pointer items-center justify-center rounded-md p-1.5 text-white transition-colors"
                       >
                         <flux:icon
@@ -687,7 +686,7 @@ new class extends Component {
                       <a
                         wire:navigate
                         href="{{ 
-                          route('v2.preview.record', ['type' => 'article', 'id'=> $article->id]) }}"
+                          route('preview.record', ['type' => 'article', 'id'=> $article->id]) }}"
                         {{-- href="{{ route('article.preview', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" --}}
                         class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
                       >
@@ -755,7 +754,7 @@ new class extends Component {
     </div>
 
     <!-- SECONDARY UX (KONTAINER KEDUA - PANEL/POPUP) -->
-    <div x-show="activeSubPanel !== 'none'" class="contents">
+    {{-- <div x-show="activeSubPanel !== 'none'" class="contents">
       <!-- 1. BACKDROP HITAM MOBILE -->
       <div
         x-show="activeSubPanel !== 'none'"
@@ -789,7 +788,7 @@ new class extends Component {
           class="flex items-center justify-between border-b border-zinc-200 pb-2 dark:border-zinc-800"
         >
           <div class="text-sbh-green flex items-center gap-2">
-            {{-- REVISI: Mengubah dari :icon menjadi x-bind:icon --}}
+            {{-- REVISI: Mengubah dari :icon menjadi x-bind:icon --}
             <flux:icon.folder
               x-show="activeSubPanel === 'categories'"
               variant="solid"
@@ -918,7 +917,7 @@ new class extends Component {
                       />
                     </button>
                   </div>
-                @endforeach --}}
+                @endforeach --}
               </div>
             </template>
 
@@ -958,11 +957,79 @@ new class extends Component {
                       />
                     </button>
                   </div>
-                @endforeach --}}
+                @endforeach --}
               </div>
             </template>
           </div>
         </div>
+      </div>
+    </div> --}}
+    <div x-show="activeSubPanel !== 'none'" x-cloak class="contents">
+      <!-- latar gelap (ponsel) -->
+      <div
+        x-show="activeSubPanel !== 'none'"
+        x-transition.opacity
+        x-on:click="activeSubPanel = 'none'"
+        class="fixed inset-0 z-40 bg-black/40 lg:hidden"
+      ></div>
+
+      <!-- badan panel -->
+      <div
+        x-show="activeSubPanel !== 'none'"
+        x-transition
+        class="fixed right-0 bottom-0 left-0 z-50 max-h-[85vh] space-y-4 overflow-y-auto rounded-t-3xl border border-zinc-200 bg-white p-5 shadow-xl lg:relative lg:right-auto lg:bottom-auto lg:left-auto lg:z-10 lg:max-h-none lg:w-1/3 lg:rounded-2xl lg:shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+      >
+        <div
+          class="mx-auto mb-2 h-1 w-12 rounded-full bg-zinc-300 lg:hidden dark:bg-zinc-700"
+        ></div>
+
+        <div
+          class="flex items-center justify-between border-b border-zinc-200 pb-2 dark:border-zinc-800"
+        >
+          <div class="text-sbh-green flex items-center gap-2">
+            <flux:icon.folder
+              x-show="activeSubPanel === 'categories'"
+              variant="solid"
+              class="size-4"
+            />
+            <flux:icon.tag
+              x-show="activeSubPanel === 'tags'"
+              variant="solid"
+              class="size-4"
+            />
+            <h3
+              class="text-md font-bold text-zinc-900 dark:text-white"
+              x-text="
+                activeSubPanel === 'categories'
+                  ? 'Kelola Kategori'
+                  : 'Kelola Tag'
+              "
+            ></h3>
+          </div>
+          <button
+            type="button"
+            x-on:click="activeSubPanel = 'none'"
+            aria-label="Tutup panel"
+            class="cursor-pointer rounded-lg p-2 text-red-500 transition-colors hover:bg-red-600 hover:text-white"
+          >
+            <flux:icon variant="outline" icon="x-mark" class="size-6" />
+          </button>
+        </div>
+
+        {{-- x-if: komponen baru dimuat saat panelnya dibuka, dan dibuang saat berpindah antara Kategori dan Tag --}}
+        <template x-if="activeSubPanel === 'categories'">
+          <div>
+            <livewire:content.taxonomy
+              kind="category"
+              wire:key="taxonomy-category"
+            />
+          </div>
+        </template>
+        <template x-if="activeSubPanel === 'tags'">
+          <div>
+            <livewire:content.taxonomy kind="tag" wire:key="taxonomy-tag" />
+          </div>
+        </template>
       </div>
     </div>
 

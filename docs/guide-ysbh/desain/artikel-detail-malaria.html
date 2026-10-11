@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bersama Mewujudkan Tanah Papua Bebas Malaria — Sinar Bhakti Husada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#064F3B; --forest-dark:#043328;
+    --goldy:#EBCC26; --goldy-soft:#F7EBAF;
+    --coral:#E42326; --coral-dark:#BE1417;
+    --paper:#FBF7EA; --ink:#12241C; --ink-soft:#4B5D53;
+    --sage-soft:#E9F1EB; --white:#FFFFFF;
+    --line: rgba(6,79,59,0.13);
+    --shadow: 0 22px 50px -26px rgba(6,45,35,0.35);
+    --radius-lg: 26px; --radius-md: 16px;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Plus Jakarta Sans', sans-serif; line-height:1.65; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:'Fraunces', serif; color:var(--forest); margin:0; letter-spacing:-0.01em; }
+  a{ color:inherit; }
+  img{ max-width:100%; display:block; }
+  .wrap{ max-width:1160px; margin:0 auto; padding:0 32px; }
+  @media (max-width:640px){ .wrap{ padding:0 20px; } }
+
+  header{ position:sticky; top:0; z-index:100; background:rgba(251,247,234,0.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 32px; max-width:1160px; margin:0 auto; gap:20px; }
+  .brand{ display:flex; align-items:center; gap:11px; text-decoration:none; }
+  .brand svg{ width:38px; height:38px; }
+  .brand-name{ font-family:'Fraunces', serif; font-weight:700; font-size:16px; color:var(--forest); }
+  .brand-name span{ display:block; font-family:'Plus Jakarta Sans', sans-serif; font-weight:600; font-size:10px; letter-spacing:0.13em; color:var(--coral); text-transform:uppercase; margin-top:1px; }
+  .nav-links{ display:flex; gap:24px; }
+  .nav-links a{ font-weight:600; font-size:14px; color:var(--ink-soft); text-decoration:none; }
+  .nav-links a:hover{ color:var(--forest); }
+  @media (max-width:900px){ .nav-links{ display:none; } }
+  .share-btn{ display:flex; align-items:center; gap:8px; background:var(--forest); color:var(--white); font-weight:700; font-size:13px; padding:10px 18px; border-radius:999px; border:none; cursor:pointer; }
+  .share-btn svg{ width:14px; height:14px; }
+
+  .progress-bar{ position:fixed; top:0; left:0; height:3px; background:var(--coral); z-index:200; width:0%; transition:width .1s ease; }
+
+  .breadcrumb{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-soft); padding:28px 0 0; }
+  .breadcrumb a{ font-weight:600; text-decoration:none; color:var(--ink-soft); }
+  .breadcrumb a:hover{ color:var(--forest); }
+  .breadcrumb .current{ color:var(--forest); font-weight:700; }
+
+  .article-header{ max-width:820px; margin:0 auto; padding:24px 0 32px; text-align:center; }
+  .cat-pill{ display:inline-block; background:var(--goldy); color:var(--forest); font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; padding:6px 16px; border-radius:999px; margin-bottom:20px; }
+  .article-header h1{ font-size:clamp(2rem, 4.5vw, 3.1rem); font-weight:600; line-height:1.18; margin-bottom:20px; }
+  .article-header .subtitle{ font-size:17px; color:var(--ink-soft); max-width:640px; margin:0 auto 26px; }
+  .author-row{ display:flex; align-items:center; justify-content:center; gap:14px; }
+  .author-avatar{ width:44px; height:44px; border-radius:50%; background:var(--sage-soft); color:var(--forest); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; font-size:15px; }
+  .author-info{ text-align:left; }
+  .author-info .name{ font-weight:700; font-size:14px; color:var(--ink); }
+  .author-info .meta{ font-size:12.5px; color:var(--ink-soft); }
+
+  .hero-img{ max-width:1160px; margin:0 auto; padding:0 32px 48px; }
+  .hero-img img{ width:100%; height:460px; object-fit:cover; border-radius:var(--radius-lg); box-shadow:var(--shadow); }
+  @media (max-width:640px){ .hero-img img{ height:280px; } }
+  .hero-cap{ text-align:center; font-size:12.5px; color:var(--ink-soft); font-style:italic; margin-top:12px; }
+
+  .article-layout{ display:grid; grid-template-columns:200px 1fr; gap:48px; max-width:1160px; margin:0 auto; padding:0 32px 80px; align-items:start; }
+  @media (max-width:900px){ .article-layout{ grid-template-columns:1fr; } }
+
+  .toc{ position:sticky; top:96px; }
+  .toc-label{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--coral-dark); margin-bottom:14px; }
+  .toc ul{ list-style:none; margin:0; padding:0; border-left:2px solid var(--line); }
+  .toc li{ margin-bottom:4px; }
+  .toc a{ display:block; padding:7px 0 7px 16px; font-size:13px; font-weight:600; color:var(--ink-soft); text-decoration:none; border-left:2px solid transparent; margin-left:-2px; }
+  .toc a:hover, .toc a.active{ color:var(--forest); border-left-color:var(--forest); }
+  @media (max-width:900px){ .toc{ display:none; } }
+
+  .article-body{ max-width:700px; }
+  .lead-para{ font-size:19px; color:var(--ink); font-weight:500; line-height:1.6; margin-bottom:32px; }
+  .article-body p{ font-size:16px; color:var(--ink-soft); margin:0 0 22px; line-height:1.8; }
+  .article-body h2{ font-size:1.65rem; font-weight:600; margin:48px 0 18px; scroll-margin-top:100px; }
+  .article-body h2 .num{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:50%; background:var(--sage-soft); color:var(--forest); font-size:15px; margin-right:12px; vertical-align:middle; }
+
+  .stat-callout{ display:flex; gap:20px; background:var(--forest); border-radius:var(--radius-md); padding:28px 30px; margin:36px 0; }
+  .stat-callout .num{ font-family:'Fraunces',serif; font-weight:700; font-size:2.6rem; color:var(--goldy); line-height:1; flex-shrink:0; }
+  .stat-callout .txt{ color:rgba(255,255,255,0.88); font-size:14px; display:flex; align-items:center; }
+
+  blockquote{ border-left:4px solid var(--goldy); background:var(--goldy-soft); border-radius:0 var(--radius-md) var(--radius-md) 0; padding:22px 28px; margin:32px 0; font-family:'Fraunces',serif; font-style:italic; font-size:19px; color:var(--forest); line-height:1.5; }
+
+  .region-table{ width:100%; border-collapse:collapse; margin:28px 0; border-radius:var(--radius-md); overflow:hidden; box-shadow:var(--shadow); }
+  .region-table th{ background:var(--forest); color:var(--white); text-align:left; padding:12px 16px; font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; }
+  .region-table td{ padding:13px 16px; border-bottom:1px solid var(--line); font-size:14px; background:var(--white); }
+  .region-table .num{ font-weight:700; color:var(--forest); text-align:right; }
+
+  .component-list{ list-style:none; margin:28px 0; padding:0; counter-reset:comp; }
+  .component-list li{ counter-increment:comp; display:flex; gap:16px; padding:16px 0; border-bottom:1px solid var(--line); }
+  .component-list li:last-child{ border-bottom:none; }
+  .component-list li::before{ content:counter(comp); flex-shrink:0; width:32px; height:32px; border-radius:50%; background:var(--sage-soft); color:var(--forest); font-family:'Fraunces',serif; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  .component-list .ctext{ font-size:14.5px; color:var(--ink-soft); padding-top:4px; }
+  .component-list .ctext b{ color:var(--ink); display:block; margin-bottom:2px; font-size:15px; }
+
+  .fig{ margin:36px 0; }
+  .fig img{ width:100%; border-radius:var(--radius-md); }
+  .fig figcaption{ font-size:12.5px; color:var(--ink-soft); font-style:italic; margin-top:10px; text-align:center; }
+
+  .closing-note{ background:var(--goldy-soft); border-radius:var(--radius-lg); padding:32px 34px; margin:44px 0; }
+  .closing-note h3{ font-size:1.2rem; margin-bottom:12px; }
+  .closing-note p{ margin-bottom:0; }
+
+  .tag-row{ display:flex; gap:10px; flex-wrap:wrap; margin:36px 0; padding-top:28px; border-top:1px solid var(--line); }
+  .tag-chip{ font-size:12.5px; font-weight:700; color:var(--forest); background:var(--sage-soft); padding:7px 15px; border-radius:999px; }
+
+  .share-row{ display:flex; align-items:center; gap:14px; margin:32px 0; }
+  .share-row .lbl{ font-size:13px; font-weight:700; color:var(--ink-soft); }
+  .share-row .icons{ display:flex; gap:10px; }
+  .share-row .icons a{ width:38px; height:38px; border-radius:50%; background:var(--sage-soft); color:var(--forest); display:flex; align-items:center; justify-content:center; transition:background .2s ease, color .2s ease; }
+  .share-row .icons a:hover{ background:var(--forest); color:var(--white); }
+  .share-row .icons svg{ width:16px; height:16px; }
+
+  .author-box{ display:flex; gap:18px; background:var(--white); border-radius:var(--radius-lg); padding:26px; box-shadow:var(--shadow); margin:36px 0; align-items:center; }
+  .author-box .av{ width:60px; height:60px; border-radius:50%; background:var(--forest); color:var(--goldy); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; font-size:20px; flex-shrink:0; }
+  .author-box h4{ font-size:15px; font-weight:700; color:var(--ink); margin-bottom:4px; }
+  .author-box p{ font-size:13.5px; color:var(--ink-soft); margin:0; }
+
+  .related-section{ background:var(--white); padding:64px 0; margin-top:20px; }
+  .related-section .wrap{ max-width:1000px; }
+  .related-head{ text-align:center; margin-bottom:36px; }
+  .related-head span{ font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; color:var(--coral-dark); }
+  .related-head h2{ font-size:1.8rem; margin-top:10px; }
+  .related-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; }
+  @media (max-width:760px){ .related-grid{ grid-template-columns:1fr; } }
+  .related-card{ text-decoration:none; }
+  .related-card .rimg{ height:150px; border-radius:var(--radius-md); background-size:cover; background-position:center; margin-bottom:14px; position:relative; }
+  .related-card .rimg .tag{ position:absolute; top:12px; left:12px; background:rgba(255,255,255,0.92); color:var(--forest); font-size:10px; font-weight:800; text-transform:uppercase; padding:4px 10px; border-radius:999px; }
+  .related-card h4{ font-size:14.5px; font-weight:600; color:var(--ink); line-height:1.4; }
+
+  footer{ background:var(--forest-dark); color:rgba(255,255,255,0.7); padding:44px 0; text-align:center; font-size:13px; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<header>
+  <div class="nav">
+    <a href="artikel-listing.html" class="brand">
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="29" fill="var(--goldy)"/><path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/><rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/><rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/></svg>
+      <div class="brand-name">Sinar Bhakti Husada<span>Artikel &amp; Cerita</span></div>
+    </a>
+    <nav class="nav-links">
+      <a href="#">Beranda</a>
+      <a href="artikel-listing.html">Artikel</a>
+      <a href="#">Program</a>
+      <a href="#">Transparansi</a>
+    </nav>
+    <button class="share-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-3.9M8.6 13.5l6.8 3.9"/></svg>Bagikan</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="breadcrumb"><a href="artikel-listing.html">Artikel</a><span>/</span><a href="artikel-listing.html">Malaria</a><span>/</span><span class="current">Tanah Papua Bebas Malaria</span></div>
+</div>
+
+<article>
+  <div class="article-header">
+    <span class="cat-pill">Malaria</span>
+    <h1>Bersama Mewujudkan Tanah Papua Bebas Malaria</h1>
+    <p class="subtitle">Tanah Papua menyumbang 90% kasus malaria di Indonesia. Eliminasi bukan cuma soal menurunkan angka — tapi memutus warisan risiko yang membatasi satu generasi ke generasi berikutnya.</p>
+    <div class="author-row">
+      <div class="author-avatar">YS</div>
+      <div class="author-info">
+        <div class="name">Tim Program Malaria YSBH</div>
+        <div class="meta">18 September 2026 · 12 min baca</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-img">
+    <img src="https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=1400&q=85" alt="Program Malaria YSBH">
+    <p class="hero-cap">Penandatanganan perjanjian kerja sama dana swakelola antara YSBH dan Dinas Kesehatan Kabupaten Sarmi.</p>
+  </div>
+
+  <div class="article-layout">
+
+    <nav class="toc">
+      <div class="toc-label">Daftar Isi</div>
+      <ul>
+        <li><a href="#beban-kasus">Beban Kasus</a></li>
+        <li><a href="#dampak">Dampak pada Kelompok Rentan</a></li>
+        <li><a href="#lima-komponen">Lima Komponen</a></li>
+        <li><a href="#warisan">Warisan yang Diakhiri</a></li>
+      </ul>
+    </nav>
+
+    <div class="article-body">
+      <p class="lead-para">Tanah Papua dengan 6 provinsi mandiri dan 42 kabupatennya merupakan wilayah penyumbang 90% kasus malaria di Indonesia. Tingginya beban kasus ini menunjukkan malaria masih menjadi tantangan kesehatan masyarakat yang memerlukan perhatian dan upaya pengendalian berkelanjutan.</p>
+
+      <div class="stat-callout">
+        <div class="num">204rb</div>
+        <div class="txt">Kasus malaria tercatat di Papua Tengah sepanjang 2025 — Kabupaten Mimika menjadi penyumbang terbesar dengan 190.597 kasus.</div>
+      </div>
+
+      <h2 id="beban-kasus"><span class="num">1</span>Beban Kasus yang Tak Merata</h2>
+      <p>Menurut laporan E-SISMAL Tahun 2025, Papua Tengah mencatat ada 204.068 kasus malaria. Kabupaten Mimika menjadi penyumbang terbesar di provinsi ini, diikuti oleh Kabupaten Nabire sebanyak 8.744 kasus dan beberapa kabupaten lainnya.</p>
+
+      <table class="region-table">
+        <thead><tr><th>Kabupaten</th><th style="text-align:right;">Kasus (2025)</th></tr></thead>
+        <tbody>
+          <tr><td>Mimika</td><td class="num">190.597</td></tr>
+          <tr><td>Nabire</td><td class="num">8.744</td></tr>
+          <tr><td>Papua Tengah (total)</td><td class="num">204.068</td></tr>
+        </tbody>
+      </table>
+
+      <p>Sedangkan di wilayah provinsi dan kabupaten lainnya, angka kasus bervariasi — termasuk di kabupaten pesisir seperti Sarmi, Provinsi Papua, maupun di pegunungan seperti Yahukimo, Provinsi Papua Pegunungan.</p>
+
+      <h2 id="dampak"><span class="num">2</span>Dampak pada Kelompok Rentan</h2>
+      <p>Di balik tingginya jumlah kasus, malaria memberikan dampak lebih besar pada kelompok rentan seperti ibu hamil, bayi dan balita. Infeksi malaria pada kelompok tersebut dapat meningkatkan risiko gangguan kesehatan yang berdampak pada kualitas hidup dan tumbuh kembang anak.</p>
+
+      <blockquote>"Eliminasi malaria bukan hanya tentang menurunkan angka kasus, tetapi juga melindungi generasi masa depan Papua secara keseluruhan."</blockquote>
+
+      <p>Yayasan Sinar Bhakti Husada (YSBH) berkomitmen membantu pemerintah daerah dan pemangku kepentingan lain dalam upaya percepatan eliminasi malaria melalui pengembangan strategi dan pendampingan teknis. Kerja sama YSBH untuk program Malaria dengan pemerintah daerah diikat dalam mekanisme swakelola tipe-3.</p>
+
+      <div class="fig">
+        <img src="https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=900&q=80" alt="Tenaga kesehatan">
+        <figcaption>On the job training di Kabupaten Paniai, distrik tak langsung dari Kabupaten Deiyai, untuk program Malaria di Provinsi Papua Tengah.</figcaption>
+      </div>
+
+      <h2 id="lima-komponen"><span class="num">3</span>Lima Komponen Intervensi</h2>
+      <p>Program Malaria YSBH mengembangkan lima komponen penting yang menjadi landasan pelaksanaan program — difokuskan pada wilayah dengan beban tinggi seperti Mimika dan Nabire, serta wilayah beban sedang seperti Paniai, Deiyai, Dogiyai, Puncak Jaya, Yahukimo, dan Sarmi.</p>
+
+      <ul class="component-list">
+        <li><div class="ctext"><b>Penguatan Tata Kelola Program</b>Koordinasi kuat antara pemerintah daerah, sektor kesehatan, dan pemangku kepentingan lain, lewat Tim Assessment Eliminasi Malaria tingkat Provinsi.</div></li>
+        <li><div class="ctext"><b>Penguatan Surveilans &amp; Respons Kasus</b>Deteksi kasus, penyelidikan epidemiologi, contact survey, serta strategi 1-2-5 sebagai respons cepat.</div></li>
+        <li><div class="ctext"><b>Penguatan Kapasitas Tenaga Kesehatan</b>Pelatihan, workshop, dan pendampingan teknis berkelanjutan yang disesuaikan kebutuhan daerah.</div></li>
+        <li><div class="ctext"><b>Penguatan Mutu Layanan Malaria</b>Quality assurance serta monitoring dan evaluasi berkala untuk memastikan standar diagnosis dan pengobatan.</div></li>
+        <li><div class="ctext"><b>Puskesmas Model &amp; OJT Center</b>Ruang pembelajaran praktik baik yang bisa direplikasi fasilitas kesehatan lain.</div></li>
+      </ul>
+
+      <h2 id="warisan"><span class="num">4</span>Warisan yang Perlu Diakhiri</h2>
+      <p>Bagi sebagian masyarakat, malaria telah menjadi penyakit yang diwariskan dari satu generasi ke generasi berikutnya. Kehadirannya begitu lama sehingga sering dianggap bagian dari kehidupan sehari-hari.</p>
+
+      <div class="closing-note">
+        <h3>Tidak Ada yang Seharusnya Normal</h3>
+        <p>Padahal, tidak ada anak yang seharusnya tumbuh dengan risiko sakit berulang akibat malaria, dan tidak ada keluarga yang seharusnya menerima penyakit yang dapat dicegah sebagai sesuatu yang normal. Mewujudkan wilayah bebas malaria bukan hanya tentang menghilangkan penyakit, tetapi juga memutus warisan risiko yang selama ini membatasi kesempatan masyarakat Papua untuk hidup lebih sehat dan sejahtera.</p>
+      </div>
+
+      <div class="tag-row">
+        <span class="tag-chip">Malaria</span>
+        <span class="tag-chip">Papua Tengah</span>
+        <span class="tag-chip">Eliminasi Penyakit</span>
+        <span class="tag-chip">Puskesmas Model</span>
+      </div>
+
+      <div class="share-row">
+        <span class="lbl">Bagikan artikel ini</span>
+        <div class="icons">
+          <a href="#" aria-label="Bagikan ke WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.5A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .9.9-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.7.8-.8.9-.1.2-.3.2-.5.1-.2-.1-1-.4-1.9-1.2-.7-.6-1.2-1.4-1.3-1.6-.1-.2 0-.4.1-.5l.4-.5c.1-.1.2-.3.2-.4.1-.1 0-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.2 1.6 2.4 3.8 3.4.5.2 1 .4 1.3.5.5.2 1 .1 1.4.1.4-.1 1.3-.5 1.5-1 .2-.5.2-.9.1-1Z"/></svg></a>
+          <a href="#" aria-label="Bagikan ke Facebook"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12Z"/></svg></a>
+          <a href="#" aria-label="Salin tautan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.5-1.5"/></svg></a>
+        </div>
+      </div>
+
+      <div class="author-box">
+        <div class="av">YS</div>
+        <div>
+          <h4>Tim Program Malaria YSBH</h4>
+          <p>Mendampingi pemerintah daerah di Papua Tengah, Papua Pegunungan dan Papua dalam percepatan eliminasi malaria sejak 2014.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</article>
+
+<section class="related-section">
+  <div class="wrap">
+    <div class="related-head">
+      <span>Baca Juga</span>
+      <h2>Artikel Terkait</h2>
+    </div>
+    <div class="related-grid">
+      <a href="#" class="related-card">
+        <div class="rimg" style="background-image:url('https://images.unsplash.com/photo-1632053002424-0b53a1ec4d55?w=500&q=80');"><span class="tag">Imunisasi</span></div>
+        <h4>Melindungi Masa Depan Generasi Papua Tengah</h4>
+      </a>
+      <a href="#" class="related-card">
+        <div class="rimg" style="background-image:url('https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=500&q=80');"><span class="tag">HIV</span></div>
+        <h4>HIV-IMS dan PPIA: Skrining, Dukungan, Pengobatan Terpadu</h4>
+      </a>
+      <a href="#" class="related-card">
+        <div class="rimg" style="background-image:url('https://images.unsplash.com/photo-1584515933487-779824d29309?w=500&q=80');"><span class="tag">TBC</span></div>
+        <h4>Peringkat Kedua Dunia: Perjuangan Melawan TBC</h4>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>© 2026 Yayasan Sinar Bhakti Husada</footer>
+
+<script>
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const scrolled = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+    document.getElementById('progressBar').style.width = scrolled + '%';
+  });
+  const sections = document.querySelectorAll('.article-body h2[id]');
+  const tocLinks = document.querySelectorAll('.toc a');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        tocLinks.forEach(a => a.classList.remove('active'));
+        const link = document.querySelector(`.toc a[href="#${e.target.id}"]`);
+        if(link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-100px 0px -70% 0px' });
+  sections.forEach(s => io.observe(s));
+</script>
+
+</body>
+</html>

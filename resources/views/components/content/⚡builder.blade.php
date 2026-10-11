@@ -1,8 +1,13 @@
 <?php
 
+use App\Content\ArticleCover;
+use App\Content\AuditTrail;
+use App\Content\ArticleTransitions;
+use App\Content\ArticleWorkflow;
 use App\Content\ContentDocument;
 use App\Content\ContentRules;
 use App\Content\ContentType;
+use App\Content\Blocks\MediaUrls;
 use App\Content\ContentWriter;
 use App\Content\LocaleMap;
 use App\Content\Names;
@@ -12,8 +17,12 @@ use App\Livewire\Traits\ManagesBlockStructure;
 use App\Livewire\Traits\SearchesInternalPages;
 use App\Livewire\Traits\SearchesLinkTargets;
 use App\Livewire\Traits\WithNotifications;
+use App\Models\ArticleReview;
+use App\Models\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -40,11 +49,11 @@ new class extends Component {
 
   /** Jenis konten. Ditentukan SEKALI di mount() dari nama rute; request update Livewire tidak punya rute aslinya. */
   #[Locked]
-  public string $type = 'page';
+  public string $type = "page";
 
   /** Nama rute saat mount, mis. "v2.page.create". Dipakai agar redirect mempertahankan awalan ("v2.page.edit"). */
   #[Locked]
-  public string $routeName = '';
+  public string $routeName = "";
 
   public ?Model $record = null;
 
@@ -64,14 +73,16 @@ new class extends Component {
   // Khusus artikel. tags = larik campuran: angka = ID tag lama, teks = nama tag baru (lihat TagResolver)
   public ?int $category_id = null;
   public array $tags = [];
+  /** Thumbnail artikel (rilis 40): "" = belum ada | ID media (angka) | nama berkas lama. Dinormalkan server sebelum disimpan (ArticleCover). */
+  public string $featured_image = "";
 
   /** true bila isi dokumen BARU dibentuk dari HTML lama (artikel editor lama) dan belum pernah disimpan sebagai blok. */
   #[Locked]
   public bool $importedLegacy = false;
 
   // Khusus snippet (ContentType::usesKey()). Tak dipakai untuk halaman/artikel.
-  public string $key = '';
-  public string $description = '';
+  public string $key = "";
+  public string $description = "";
   public bool $is_closing = false;
   public int $sort_order = 0;
 
@@ -81,19 +92,35 @@ new class extends Component {
   {
     // Hapus & duplikat di outline memakai removeBlock()/duplicateBlock() dari trait. Versi asli menyisakan anak
     // yatim (hapus) dan berbagi anak dengan salinannya (duplikat): hentikan dengan pesan jelas, bukan merusak data.
-    if (!method_exists($this, 'deleteBlockTree') || !method_exists($this, 'cloneBlockTree')) {
-      throw new \LogicException('HasContentBlocks belum di-patch (deleteBlockTree/cloneBlockTree tidak ada). Pasang patch trait dulu.');
+    if (
+      !method_exists($this, "deleteBlockTree") ||
+      !method_exists($this, "cloneBlockTree")
+    ) {
+      throw new \LogicException(
+        "HasContentBlocks belum di-patch (deleteBlockTree/cloneBlockTree tidak ada). Pasang patch trait dulu.",
+      );
     }
 
     $this->routeName = (string) request()->route()?->getName();
     $type = ContentType::fromRouteName($this->routeName);
     $this->type = $type->value;
 
-    $this->activeLocales = config('app.supported_locales', ['id', 'en']);
+    $this->activeLocales = config("app.supported_locales", ["id", "en"]);
 
     $this->record = $this->resolveRecord($type);
 
-    // TODO: $this->authorize($this->record->exists ? 'update' : 'create', $this->record);
+    // Artikel: penulis hanya membuka artikelnya sendiri (admin/editor: semua). Pengecekan SERVER; menyembunyikan tombol di daftar saja tidak cukup.
+    if (
+      $type === ContentType::Article &&
+      $this->record->exists &&
+      !ArticleWorkflow::canView(
+        $this->workflowActor(),
+        $this->record->user_id ?: null,
+      )
+    ) {
+      abort(403, "Artikel ini milik penulis lain.");
+    }
+    // TODO: $this->authorize($this->record->exists ? 'update' : 'create', $this->record) untuk halaman dan snippet
 
     $this->fillFromRecord($type);
   }
@@ -119,7 +146,7 @@ new class extends Component {
     if ($param instanceof Model) {
       return $param;
     }
-    if ($param === null || $param === '') {
+    if ($param === null || $param === "") {
       return new $class();
     }
 
@@ -132,43 +159,69 @@ new class extends Component {
    */
   private function raw(string $column): mixed
   {
-    return $this->record->exists ? $this->record->getRawOriginal($column) : null;
+    return $this->record->exists
+      ? $this->record->getRawOriginal($column)
+      : null;
   }
 
   private function fillFromRecord(ContentType $type): void
   {
-    $this->titles = LocaleMap::from($this->raw('title'), $this->activeLocales);
+    $this->titles = LocaleMap::from($this->raw("title"), $this->activeLocales);
     if ($type->usesSlug()) {
-      $this->slug = LocaleMap::from($this->raw('slug'), $this->activeLocales);
+      $this->slug = LocaleMap::from($this->raw("slug"), $this->activeLocales);
     }
     if ($type->usesMeta()) {
-      $this->meta_title = LocaleMap::from($this->raw('meta_title'), $this->activeLocales);
-      $this->meta_description = LocaleMap::from($this->raw('meta_description'), $this->activeLocales);
+      $this->meta_title = LocaleMap::from(
+        $this->raw("meta_title"),
+        $this->activeLocales,
+      );
+      $this->meta_description = LocaleMap::from(
+        $this->raw("meta_description"),
+        $this->activeLocales,
+      );
     }
     if ($type->usesKey()) {
-      $this->key = (string) ($this->record->key ?? '');
-      $this->description = (string) ($this->record->description ?? '');
+      $this->key = (string) ($this->record->key ?? "");
+      $this->description = (string) ($this->record->description ?? "");
       $this->is_closing = (bool) ($this->record->is_closing ?? false);
       $this->sort_order = (int) ($this->record->sort_order ?? 0);
     }
     $this->status = $this->record->status ?: $type->defaultStatus();
 
     if ($type === ContentType::Article) {
-      $this->category_id = $this->record->category_id ? (int) $this->record->category_id : null;
-      $this->tags = $this->record->exists ? $this->record->tags()->pluck('tags.id')->map(fn ($id) => (int) $id)->all() : [];
+      $this->category_id = $this->record->category_id
+        ? (int) $this->record->category_id
+        : null;
+      $this->tags = $this->record->exists
+        ? $this->record
+          ->tags()
+          ->pluck("tags.id")
+          ->map(fn($id) => (int) $id)
+          ->all()
+        : [];
+      $this->featured_image = ArticleCover::stateFromColumn(
+        $this->record->featured_image ?? null,
+      );
     }
 
     // Satu-satunya pembaca `content`. HTML lama (artikel) diimpor sebagai satu blok Paragraf, bukan dibuang.
-    $doc = ContentDocument::fromRaw($this->raw('content'), $this->activeLocales);
-    $this->content = $doc->blocks;
+    $doc = ContentDocument::fromRaw(
+      $this->raw("content"),
+      $this->activeLocales,
+    );
+    $this->content = MediaUrls::resolve($doc->blocks); // alamat gambar disegarkan dari media_id (rilis 45)
     $this->blockOrder = $doc->order;
     $this->settings = $doc->settings;
     $this->importedLegacy = $doc->imported;
 
     // Konten baru: mulai dengan satu Judul, memakai satu-satunya sumber nilai bawaan
     if (!$this->record->exists && empty($this->content)) {
-      $id = 'blk_' . uniqid();
-      $this->content[$id] = ['id' => $id, 'type' => 'heading', 'data' => $this->getDefaultDataForType('heading')];
+      $id = "blk_" . uniqid();
+      $this->content[$id] = [
+        "id" => $id,
+        "type" => "heading",
+        "data" => $this->getDefaultDataForType("heading"),
+      ];
       $this->blockOrder = [$id];
     }
   }
@@ -178,10 +231,146 @@ new class extends Component {
   {
     $user = auth()->user();
 
-    return $user && method_exists($user, 'hasRole') && $user->hasRole(['admin', 'editor']);
+    return $user &&
+      method_exists($user, "hasRole") &&
+      $user->hasRole(["admin", "editor"]);
   }
 
-  /** Status yang BOLEH dipilih pengguna ini (label), dipakai panel Halaman. */
+  /** Pengguna saat ini untuk ArticleWorkflow. */
+  private function workflowActor(): array
+  {
+    return ["id" => auth()->id(), "reviewer" => $this->canPublish()];
+  }
+
+  /** Boleh admin/editor menyetujui artikel yang ia tulis sendiri? Bawaan ya; matikan lewat config('cms.article_self_review'). */
+  private function workflowSelfReview(): bool
+  {
+    return (bool) config("cms.article_self_review", true);
+  }
+
+  /** Artikel: boleh menyimpan perubahan isi sekarang? (penulis: hanya draf miliknya; ditolak: tidak seorang pun). Halaman/snippet: ya. */
+  private function workflowCanEdit(): bool
+  {
+    if ($this->contentType !== ContentType::Article) {
+      return true;
+    }
+
+    return ArticleWorkflow::canEdit(
+      $this->record->exists ? $this->record->status : ArticleWorkflow::DRAFT,
+      $this->workflowActor(),
+      $this->record->exists ? ($this->record->user_id ?: null) : null,
+    );
+  }
+
+  /**
+   * Bahan panel alur artikel (kosong untuk halaman/snippet): status, aksi yang tersedia bagi pengguna ini, catatan terakhir peninjau,
+   * riwayat. Semua keputusan diambil ArticleWorkflow; tampilan hanya menampilkan.
+   */
+  #[Computed]
+  public function workflow(): array
+  {
+    if ($this->contentType !== ContentType::Article) {
+      return [];
+    }
+
+    $exists = (bool) $this->record->exists;
+    $status = $exists
+      ? ArticleWorkflow::normalize($this->record->status)
+      : ArticleWorkflow::DRAFT;
+    $owner = $exists ? ($this->record->user_id ?: null) : null;
+    $actor = $this->workflowActor();
+    // Aturan empat mata (rilis 41): pengaju terakhir dibaca hanya bila aturannya menyala (tanpa kueri tambahan bila tidak)
+    $submitter = $this->workflowSelfReview()
+      ? null
+      : ArticleTransitions::submitterOf($this->record);
+
+    $history = [];
+    $ready = true;
+    if ($exists) {
+      try {
+        $rows = ArticleReview::query()
+          ->where("post_id", $this->record->getKey())
+          ->orderByDesc("id")
+          ->limit(12)
+          ->get();
+        $names = \App\Models\User::query()
+          ->whereIn("id", $rows->pluck("user_id")->filter()->unique()->all())
+          ->pluck("name", "id");
+        foreach ($rows as $row) {
+          $history[] = [
+            "who" => $row->user_id
+              ? (string) ($names[$row->user_id] ?? "#" . $row->user_id)
+              : "Sistem",
+            "verb" => ArticleWorkflow::verb((string) $row->action),
+            "to" => ArticleWorkflow::normalize($row->to_status),
+            "note" => (string) ($row->note ?? ""),
+            "at" => $row->created_at?->format("d M Y H:i") ?? "",
+            "for" => $row->scheduled_for?->format("d M Y H:i") ?? "",
+            "action" => (string) $row->action,
+          ];
+        }
+      } catch (\Throwable) {
+        $ready = false; // tabel article_reviews belum ada: php artisan migrate
+      }
+    }
+
+    // catatan peninjau yang HARUS dibaca penulis: alasan pengembalian (status draf) atau penolakan
+    $feedback = null;
+    foreach ($history as $h) {
+      if (
+        in_array($h["action"], ["return", "reject"], true) &&
+        $h["note"] !== ""
+      ) {
+        $feedback = $h;
+        break;
+      }
+    }
+    if (
+      $status !== ArticleWorkflow::REJECTED &&
+      $status !== ArticleWorkflow::DRAFT
+    ) {
+      $feedback = null;
+    }
+
+    $publishedAt = $exists
+      ? ArticleTransitions::publishedAt($this->record, Carbon::now())
+      : null;
+
+    return [
+      "exists" => $exists,
+      "status" => $status,
+      "label" => ContentType::Article->statusLabels()[$status] ?? $status,
+      "tone" => ArticleWorkflow::tone($status),
+      "hint" => ArticleWorkflow::hint(
+        $status,
+        $actor,
+        $owner,
+        $this->workflowSelfReview(),
+        $submitter,
+      ),
+      "canEdit" => $this->workflowCanEdit(),
+      "final" => ArticleWorkflow::isFinal($status),
+      "actions" => ArticleWorkflow::actionsFor(
+        $status,
+        $actor,
+        $owner,
+        $this->workflowSelfReview(),
+        $submitter,
+      ),
+      "feedback" => $feedback,
+      "history" => $history,
+      "historyReady" => $ready,
+      "scheduledFor" =>
+        $status === ArticleWorkflow::SCHEDULED
+          ? $publishedAt?->format("Y-m-d\TH:i")
+          : null,
+      "publishedAt" => $publishedAt?->format("d M Y H:i"),
+      "timezone" => (string) config("app.timezone"),
+      "noteMax" => ArticleWorkflow::NOTE_MAX,
+    ];
+  }
+
+  /** Status yang BOLEH dipilih pengguna ini (label), dipakai panel Halaman. Artikel tidak memakai ini: statusnya lewat workflowAction(). */
   #[Computed]
   public function statusOptions(): array
   {
@@ -202,7 +391,8 @@ new class extends Component {
     $locale = app()->getLocale();
     $out = [];
     foreach (\App\Models\Category::query()->get() as $category) {
-      $out[(int) $category->id] = Names::of($category->name, $locale) ?: '#' . $category->id;
+      $out[(int) $category->id] =
+        Names::of($category->name, $locale) ?: "#" . $category->id;
     }
     asort($out, SORT_NATURAL | SORT_FLAG_CASE);
 
@@ -219,9 +409,15 @@ new class extends Component {
 
     $locale = app()->getLocale();
 
-    return \App\Models\Tag::query()->get()
-      ->map(fn ($t) => ['id' => (int) $t->id, 'name' => Names::of($t->name, $locale) ?: '#' . $t->id])
-      ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+    return \App\Models\Tag::query()
+      ->get()
+      ->map(
+        fn($t) => [
+          "id" => (int) $t->id,
+          "name" => Names::of($t->name, $locale) ?: "#" . $t->id,
+        ],
+      )
+      ->sortBy("name", SORT_NATURAL | SORT_FLAG_CASE)
       ->values()
       ->all();
   }
@@ -239,7 +435,7 @@ new class extends Component {
       return $this->contentType->titleFallback($editing, $this->displayTitle());
     }
 
-    return $editing ? __($key, ['title' => $this->displayTitle()]) : __($key);
+    return $editing ? __($key, ["title" => $this->displayTitle()]) : __($key);
   }
 
   /** Judul di header editor; memakai teks cadangan bila kunci terjemahan belum ditambahkan. */
@@ -249,7 +445,9 @@ new class extends Component {
     $editing = (bool) $this->record?->exists;
     $key = $this->contentType->headerKey($editing);
 
-    return trans()->has($key) ? __($key) : $this->contentType->headerFallback($editing);
+    return trans()->has($key)
+      ? __($key)
+      : $this->contentType->headerFallback($editing);
   }
 
   private function displayTitle(): string
@@ -259,7 +457,7 @@ new class extends Component {
         return $this->titles[$locale];
       }
     }
-    return '…';
+    return "…";
   }
 
   // ------------------------------------------------------------------ menyimpan
@@ -267,7 +465,13 @@ new class extends Component {
   /** Aturan & nama atribut ada di ContentRules (diuji terhadap validator Laravel + SQLite). */
   protected function rules(): array
   {
-    return ContentRules::for($this->contentType, $this->activeLocales, $this->record?->getKey(), $this->canPublish(), $this->record?->status);
+    return ContentRules::for(
+      $this->contentType,
+      $this->activeLocales,
+      $this->record?->getKey(),
+      $this->canPublish(),
+      $this->record?->status,
+    );
   }
 
   protected function validationAttributes(): array
@@ -277,7 +481,39 @@ new class extends Component {
 
   public function save(): void
   {
+    $wasNew = !$this->record->exists;
+    if (!$this->persistRecord()) {
+      return;
+    }
+
+    // Editor lama memakai ui.notification.page_saved; jenis lain memakai pola yang sama bila kuncinya ada.
+    $notice = "ui.notification." . $this->type . "_saved";
+    $this->notify(
+      trans()->has($notice) ? __($notice) : "Berhasil disimpan",
+      "success",
+    );
+
+    $this->redirectToEditIfNew($wasNew);
+  }
+
+  /**
+   * Validasi + isi record + simpan. false bila ditolak (galat sudah ditampilkan). Artikel: STATUS TIDAK PERNAH diubah di sini
+   * (nilai kiriman klien diabaikan); status hanya berubah lewat workflowAction(). Penulis tidak bisa menyimpan artikel yang terkunci.
+   */
+  private function persistRecord(): bool
+  {
     $type = $this->contentType;
+
+    if ($type === ContentType::Article) {
+      if (!$this->workflowCanEdit()) {
+        $this->notify("Artikel ini terkunci dan tidak bisa diubah.", "error");
+
+        return false;
+      }
+      $this->status = $this->record->exists
+        ? ArticleWorkflow::normalize($this->record->status)
+        : ArticleWorkflow::DRAFT;
+    }
 
     try {
       $this->validate();
@@ -287,87 +523,455 @@ new class extends Component {
       throw $e;
     }
 
-    ContentWriter::fill($this->record, $type, [
-      'locales' => $this->activeLocales,
-      'titles' => $this->titles,
-      'slug' => $this->slug,
-      'meta_title' => $this->meta_title,
-      'meta_description' => $this->meta_description,
-      'status' => $this->status,
-      'blocks' => $this->content,
-      'order' => $this->blockOrder,
-      'settings' => $this->settings,
-      'key' => $this->key,
-      'description' => $this->description,
-      'is_closing' => $this->is_closing,
-      'sort_order' => $this->sort_order,
-      'category_id' => $this->category_id,
-      'tags' => $this->tags,
-      'user_id' => auth()->id(),
-    ]);
+    if ($type === ContentType::Article) {
+      // Nilai dari browser tidak dipercaya: hanya "", ID media gambar yang ADA, atau nama berkas lama yang tidak diubah
+      $before = $this->featured_image;
+      $this->featured_image = ArticleCover::normalize(
+        $this->featured_image,
+        $this->record->getOriginal("featured_image"),
+        fn(int $id) => $this->imageExists($id),
+      );
+      if ($before !== "" && $this->featured_image === "") {
+        $this->notify(
+          "Thumbnail yang dipilih tidak ditemukan atau bukan gambar; dikosongkan.",
+          "error",
+        );
+      }
+    }
 
-    $wasNew = !$this->record->exists;
+    ContentWriter::fill($this->record, $type, [
+      "locales" => $this->activeLocales,
+      "titles" => $this->titles,
+      "slug" => $this->slug,
+      "meta_title" => $this->meta_title,
+      "meta_description" => $this->meta_description,
+      "status" => $this->status,
+      "blocks" => $this->content,
+      "order" => $this->blockOrder,
+      "settings" => $this->settings,
+      "key" => $this->key,
+      "description" => $this->description,
+      "is_closing" => $this->is_closing,
+      "sort_order" => $this->sort_order,
+      "category_id" => $this->category_id,
+      "tags" => $this->tags,
+      "featured_image" => $this->featured_image,
+      "user_id" => auth()->id(),
+    ]);
 
     try {
       $this->record->save();
     } catch (UniqueConstraintViolationException $e) {
       // Jaring pengaman untuk indeks unik yang tidak kita periksa sendiri (mis. unik pada seluruh kolom JSON judul/slug)
-      $this->addError('titles.' . ($this->activeLocales[0] ?? 'id'), 'Judul atau slug ini sudah dipakai konten lain.');
+      $this->addError(
+        "titles." . ($this->activeLocales[0] ?? "id"),
+        "Judul atau slug ini sudah dipakai konten lain.",
+      );
       $this->js("Alpine.store('editor').tab = 'page'");
 
-      return;
+      return false;
     }
 
     // Tag baru dibuat dan relasi disinkron SETELAH record punya id; state memakai ID-nya sejak sekarang
-    $tagIds = ContentWriter::syncRelations($this->record, $type, ['tags' => $this->tags], $this->activeLocales);
+    $tagIds = ContentWriter::syncRelations(
+      $this->record,
+      $type,
+      ["tags" => $this->tags],
+      $this->activeLocales,
+    );
     if ($tagIds !== null) {
       $this->tags = $tagIds;
     }
     $this->importedLegacy = false;
 
-    // Editor lama memakai ui.notification.page_saved; jenis lain memakai pola yang sama bila kuncinya ada.
-    $notice = 'ui.notification.' . $this->type . '_saved';
-    $this->notify(trans()->has($notice) ? __($notice) : 'Berhasil disimpan', 'success');
+    return true;
+  }
 
+  private function redirectToEditIfNew(bool $wasNew): void
+  {
     if ($wasNew) {
       // Pindah ke rute edit PADA AWALAN YANG SAMA ("v2.page.edit", bukan "page.edit" = editor lama). Kirim ID eksplisit
       // (getRouteKey() model ini = slug, bukan id).
-      $this->redirect(route($type->routeNameFor($this->routeName, 'edit'), [$type->routeParam() => $this->record->getKey()]), navigate: true);
+      $this->redirect(
+        route($this->contentType->routeNameFor($this->routeName, "edit"), [
+          $this->contentType->routeParam() => $this->record->getKey(),
+        ]),
+        navigate: true,
+      );
     }
+  }
+
+  /**
+   * Alur persetujuan artikel (rilis 38): ajukan / tarik / terbitkan / jadwalkan / kembalikan / tolak / dst. Satu-satunya jalan mengubah
+   * status artikel. Wewenang, catatan wajib, dan waktu jadwal diperiksa di SERVER oleh ArticleWorkflow::plan(); tombol di tampilan hanya
+   * kemudahan. Mengembalikan true bila berhasil (dipakai tampilan untuk menutup formulir).
+   */
+  public function workflowAction(
+    string $action,
+    ?string $note = null,
+    ?string $at = null,
+  ): bool {
+    if ($this->contentType !== ContentType::Article) {
+      return false;
+    }
+
+    $exists = (bool) $this->record->exists;
+    $owner = $exists ? ($this->record->user_id ?: null) : null;
+    $status = $exists ? $this->record->status : ArticleWorkflow::DRAFT;
+    $now = Carbon::now();
+
+    // Periksa DULU, sebelum menyimpan apa pun: aksi yang ditolak tidak boleh meninggalkan simpanan setengah jalan
+    $check = ArticleWorkflow::plan(
+      $status,
+      $action,
+      $this->workflowActor(),
+      $owner,
+      $note,
+      $at,
+      $now,
+      $exists ? ArticleTransitions::publishedAt($this->record, $now) : null,
+      $this->workflowSelfReview(),
+      $this->workflowSelfReview()
+        ? null
+        : ArticleTransitions::submitterOf($this->record),
+    );
+    if (!$check["ok"]) {
+      $this->notify((string) $check["error"], "error");
+
+      return false;
+    }
+
+    // Diajukan / diterbitkan / dijadwalkan = isi yang dilihat peninjau HARUS isi yang tersimpan: simpan dulu (dan wajib lolos validasi)
+    $wasNew = !$exists;
+    if (
+      in_array($action, ["submit", "publish", "schedule"], true) &&
+      $this->workflowCanEdit() &&
+      !$this->persistRecord()
+    ) {
+      return false;
+    }
+    if (!$this->record->exists) {
+      $this->notify("Simpan artikel dulu.", "error");
+
+      return false;
+    }
+
+    try {
+      $result = ArticleTransitions::apply(
+        $this->record,
+        $action,
+        $this->workflowActor(),
+        $note,
+        $at,
+        $this->workflowSelfReview(),
+        $now,
+      );
+    } catch (\Illuminate\Database\QueryException $e) {
+      report($e);
+      $this->notify(
+        "Riwayat tinjauan belum bisa dicatat. Jalankan: php artisan migrate",
+        "error",
+      );
+
+      return false;
+    }
+    if (!$result["ok"]) {
+      $this->notify((string) $result["error"], "error");
+
+      return false;
+    }
+
+    $this->status = $this->record->status;
+    $this->notify(
+      ArticleWorkflow::done(
+        $action,
+        $result["publishedAt"] instanceof \DateTimeInterface
+          ? $result["publishedAt"]
+          : null,
+      ),
+      "success",
+    );
+    $this->redirectToEditIfNew($wasNew);
+
+    return true;
   }
 
   /** Tautan kembali ke daftar: rute "<awalan>.<jenis>.index" bila ada, jika tidak "<jenis>.index" (editor lama). */
   #[Computed]
   public function indexUrl(): string
   {
-    foreach ([$this->contentType->routeNameFor($this->routeName, 'index'), $this->contentType->indexRoute()] as $name) {
+    foreach (
+      [
+        $this->contentType->routeNameFor($this->routeName, "index"),
+        $this->contentType->indexRoute(),
+      ]
+      as $name
+    ) {
       if (Route::has($name)) {
         return route($name);
       }
     }
 
-    return url('/');
+    return url("/");
   }
 
   // ------------------------------------------------------------------ media dari File Manager
 
-  #[On('mediaSelected')]
+  #[On("mediaSelected")]
   public function handleMediaSelection(array $data): void
   {
-    $basePath = (string) ($data['componentId'] ?? '');
+    $basePath = (string) ($data["componentId"] ?? "");
 
-    // Path datang dari browser: hanya terima bentuk content.{idBlok}.data.… untuk blok yang ada
-    if (!preg_match('/^content\.([A-Za-z0-9_]+)(\.[A-Za-z0-9_]+)*$/', $basePath, $m) || !isset($this->content[$m[1]]) || !str_contains($basePath, '.data')) {
+    // Thumbnail artikel (rilis 40): bukan blok, jadi bukan path content.*. Hanya ID gambar yang ADA yang diterima.
+    if ($basePath === "featured_image") {
+      $id = (int) ($data["id"] ?? 0);
+      if (
+        $this->contentType === ContentType::Article &&
+        $this->workflowCanEdit() &&
+        $id > 0 &&
+        $this->imageExists($id)
+      ) {
+        $this->featured_image = (string) $id;
+      }
+
       return;
     }
-    $path = preg_replace('/^content\./', '', $basePath);
 
-    // TODO: ambil url & alt dari model Media berdasarkan id, jangan percaya url/alt kiriman klien
-    data_set($this->content, $path . '.url', (string) ($data['url'] ?? ''));
-    data_set($this->content, $path . '.media_id', $data['id'] ?? null);
-    data_set($this->content, $path . '.alt_text', (string) ($data['alt_text'] ?? ''));
+    // Path datang dari browser: hanya terima bentuk content.{idBlok}.data.… untuk blok yang ada
+    if (
+      !preg_match(
+        '/^content\.([A-Za-z0-9_]+)(\.[A-Za-z0-9_]+)*$/',
+        $basePath,
+        $m,
+      ) ||
+      !isset($this->content[$m[1]]) ||
+      !str_contains($basePath, ".data")
+    ) {
+      return;
+    }
+    $path = preg_replace("/^content\./", "", $basePath);
 
-    $this->dispatch('update-block-alt', componentId: $basePath, altText: $data['alt_text'] ?? '');
+    // Rilis 45: url & alt diambil dari model Media berdasarkan id; url/alt kiriman klien tidak dipercaya (alamat tidak terpanggang host)
+    $mediaId = (int) ($data["id"] ?? 0);
+    $media = $mediaId > 0 ? Media::query()->find($mediaId) : null;
+    if ($media === null) {
+      return;
+    }
+    $alt =
+      (string) ($media->alt_text ?:
+      mb_substr((string) ($data["alt_text"] ?? ""), 0, 255));
+    data_set($this->content, $path . ".url", $media->url());
+    data_set($this->content, $path . ".media_id", (int) $media->id);
+    data_set($this->content, $path . ".alt_text", $alt);
+
+    $this->dispatch("update-block-alt", componentId: $basePath, altText: $alt);
+  }
+
+  // ------------------------------------------------------------------ thumbnail artikel (rilis 40)
+
+  private function imageExists(int $id): bool
+  {
+    $m = Media::query()->find($id);
+
+    return $m !== null && $m->isImage();
+  }
+
+  /** Thumbnail terpilih untuk panel Halaman: ['kind' => none|media|legacy|missing, 'id', 'url', 'name']. */
+  #[Computed]
+  public function featuredPreview(): array
+  {
+    if ($this->contentType !== ContentType::Article) {
+      return ["kind" => "none", "id" => 0, "url" => "", "name" => ""];
+    }
+    $p = ArticleCover::parse($this->featured_image);
+    if ($p["kind"] === "media") {
+      $m = Media::query()->find($p["id"]);
+
+      return $m && $m->isImage()
+        ? [
+          "kind" => "media",
+          "id" => $p["id"],
+          "url" => $m->url(),
+          "name" => (string) $m->original_name,
+        ]
+        : ["kind" => "missing", "id" => $p["id"], "url" => "", "name" => ""];
+    }
+    if ($p["kind"] === "legacy") {
+      $tpl = (string) config("cms.public.cover", ""); // mis. "/storage/articles/{file}"; kosong di CMS yang tidak memasangnya
+
+      return [
+        "kind" => "legacy",
+        "id" => 0,
+        "url" =>
+          $tpl !== ""
+            ? str_replace("{file}", rawurlencode($p["name"]), $tpl)
+            : "",
+        "name" => $p["name"],
+      ];
+    }
+
+    return ["kind" => "none", "id" => 0, "url" => "", "name" => ""];
+  }
+
+  /**
+   * Gambar yang dipasang di isi artikel (state SAAT INI, belum perlu disimpan) sebagai pilihan thumbnail. Dipanggil panel hanya saat
+   * dibuka; tidak merender ulang builder. Hanya media gambar yang ada; maks. ArticleCover::MAX_CHOICES.
+   *
+   * @return list<array{id:int,url:string,name:string,alt:string}>
+   */
+  #[Renderless]
+  public function thumbnailChoices(): array
+  {
+    abort_unless(
+      auth()->check() && $this->contentType === ContentType::Article,
+      403,
+    );
+
+    $row = fn(Media $m): array => [
+      "id" => (int) $m->id,
+      "url" => $m->url(),
+      "name" => (string) $m->original_name,
+      "alt" => (string) $m->alt_text,
+      "image" => $m->isImage(),
+      "path" => (string) $m->path,
+    ];
+
+    return ArticleCover::choices(
+      ArticleCover::references($this->content, $this->blockOrder),
+      fn(array $ids) => Media::query()
+        ->whereIn("id", $ids)
+        ->get()
+        ->map($row)
+        ->all(),
+      fn(array $paths) => Media::query()
+        ->whereIn("path", $paths)
+        ->get()
+        ->map($row)
+        ->all(),
+    );
+  }
+
+  /** Lepas thumbnail (tombol di panel). */
+  public function clearThumbnail(): void
+  {
+    if (
+      $this->contentType === ContentType::Article &&
+      $this->workflowCanEdit()
+    ) {
+      $this->featured_image = "";
+    }
+  }
+
+  /** Pilih salah satu gambar artikel sebagai thumbnail. Hanya ID gambar yang ada. */
+  public function setThumbnail(int $id): void
+  {
+    if (
+      $this->contentType === ContentType::Article &&
+      $this->workflowCanEdit() &&
+      $id > 0 &&
+      $this->imageExists($id)
+    ) {
+      $this->featured_image = (string) $id;
+    }
+  }
+
+  // ------------------------------------------------------------------ riwayat perubahan (audit trail)
+
+  /** Tab "Riwayat" tampil bagi admin/editor pada record yang sudah tersimpan. Computed: method private tidak terjangkau dari view. */
+  #[Computed]
+  public function canViewAudit(): bool
+  {
+    return $this->canPublish() && (bool) $this->record?->exists;
+  }
+
+  /**
+   * Riwayat perubahan record ini dari tabel activity_log (spatie/laravel-activitylog), 20 per muatan, terbaru dulu (rilis 42).
+   * Subjek SELALU record yang sedang dibuka (tidak ada argumen subjek dari browser); hanya admin/editor, hanya record yang sudah tersimpan.
+   * #[Renderless]: dipanggil panel saat tab "Riwayat" dibuka dan tidak merender ulang builder. Kegagalan membaca (tabel belum ada, dsb.)
+   * dibalas ready=false, bukan galat. Format dan aturan penyaringan ada di App\Content\AuditTrail.
+   *
+   * @return array{ready:bool,entries:list<array<string,mixed>>,more:bool,next:int}
+   */
+  #[Renderless]
+  public function auditTrail(int $offset = 0): array
+  {
+    abort_unless(auth()->check() && $this->canViewAudit, 403);
+
+    try {
+      $query = DB::connection(config("activitylog.database_connection"))->table(
+        (string) config("activitylog.table_name", "activity_log"),
+      );
+      $page = AuditTrail::fetch(
+        $query,
+        array_values(
+          array_unique([$this->record->getMorphClass(), $this->record::class]),
+        ),
+        $this->record->getKey(),
+        20,
+        max(0, $offset),
+      );
+
+      // Nama pelaku, kategori, dan penulis dicari sekali untuk seluruh muatan (bukan satu kueri per baris)
+      $userTypes = [
+        new \App\Models\User()->getMorphClass(),
+        \App\Models\User::class,
+      ];
+      $userIds = [];
+      $categoryIds = [];
+      foreach ($page["rows"] as $row) {
+        if (
+          ($row["causer_id"] ?? null) &&
+          (blank($row["causer_type"] ?? null) ||
+            in_array($row["causer_type"], $userTypes, true))
+        ) {
+          $userIds[] = (int) $row["causer_id"];
+        }
+        $attrs = AuditTrail::attributes($row);
+        foreach ([$attrs["attributes"], $attrs["old"]] as $set) {
+          ctype_digit((string) ($set["user_id"] ?? "")) &&
+            ($userIds[] = (int) $set["user_id"]);
+          ctype_digit((string) ($set["category_id"] ?? "")) &&
+            ($categoryIds[] = (int) $set["category_id"]);
+        }
+      }
+      $names =
+        $userIds === []
+          ? []
+          : \App\Models\User::query()
+            ->whereIn("id", array_values(array_unique($userIds)))
+            ->pluck("name", "id")
+            ->all();
+      $categories = [];
+      if ($categoryIds !== []) {
+        foreach (
+          \App\Models\Category::query()
+            ->whereIn("id", array_values(array_unique($categoryIds)))
+            ->get()
+          as $category
+        ) {
+          $categories[(string) $category->getKey()] = Names::of(
+            $category->getRawOriginal("name"),
+            "id",
+          );
+        }
+      }
+      $lookups = [
+        "status" => $this->contentType->statusLabels(),
+        "category_id" => $categories,
+        "user_id" => array_map("strval", $names),
+      ];
+
+      $entries = AuditTrail::entries($page["rows"], $names, $lookups);
+    } catch (\Throwable) {
+      return ["ready" => false, "entries" => [], "more" => false, "next" => 0]; // tabel activity_log belum ada: php artisan migrate
+    }
+
+    return [
+      "ready" => true,
+      "entries" => $entries,
+      "more" => $page["more"],
+      "next" => max(0, $offset) + count($entries),
+    ];
   }
 
   // ------------------------------------------------------------------ pratinjau (kanvas)
@@ -383,13 +987,22 @@ new class extends Component {
   public function publishPreview(?string $token = null): array
   {
     if (!auth()->check()) {
-      return ['error' => 'Sesi berakhir. Muat ulang halaman.'];
+      return ["error" => "Sesi berakhir. Muat ulang halaman."];
     }
 
     try {
-      return PreviewStore::make()->publish($this->type, auth()->id(), $token, $this->content, $this->blockOrder, $this->settings, $this->activeLocales, $this->titles);
+      return PreviewStore::make()->publish(
+        $this->type,
+        auth()->id(),
+        $token,
+        $this->content,
+        $this->blockOrder,
+        $this->settings,
+        $this->activeLocales,
+        $this->titles,
+      );
     } catch (\LengthException $e) {
-      return ['error' => $e->getMessage()];
+      return ["error" => $e->getMessage()];
     }
   }
 
@@ -401,20 +1014,23 @@ new class extends Component {
   public function savedPreviewUrl(): string
   {
     if (!$this->record?->exists) {
-      return '';
+      return "";
     }
 
-    $segments = explode('.', $this->routeName);
+    $segments = explode(".", $this->routeName);
     $at = array_search($this->type, $segments, true);
-    $prefix = $at ? implode('.', array_slice($segments, 0, $at)) . '.' : '';
+    $prefix = $at ? implode(".", array_slice($segments, 0, $at)) . "." : "";
 
-    foreach ([$prefix . 'preview.record', 'preview.record'] as $name) {
+    foreach ([$prefix . "preview.record", "preview.record"] as $name) {
       if (Route::has($name)) {
-        return route($name, ['type' => $this->type, 'id' => $this->record->getKey()]);
+        return route($name, [
+          "type" => $this->type,
+          "id" => $this->record->getKey(),
+        ]);
       }
     }
 
-    return '';
+    return "";
   }
 
   /** Alamat bingkai kanvas dengan penanda __TOKEN__ (diisi di browser). Kosong bila rute pratinjau belum dipasang. */
@@ -422,48 +1038,80 @@ new class extends Component {
   public function previewFrameUrl(): string
   {
     // awalan rute saat ini ("v2." pada "v2.page.create") dipertahankan, lalu cadangan tanpa awalan
-    $segments = explode('.', $this->routeName);
+    $segments = explode(".", $this->routeName);
     $at = array_search($this->type, $segments, true);
-    $prefix = $at ? implode('.', array_slice($segments, 0, $at)) . '.' : '';
+    $prefix = $at ? implode(".", array_slice($segments, 0, $at)) . "." : "";
 
-    foreach ([$prefix . 'preview.frame', 'preview.frame'] as $name) {
+    foreach ([$prefix . "preview.frame", "preview.frame"] as $name) {
       if (Route::has($name)) {
-        return route($name, ['token' => '__TOKEN__']);
+        return route($name, ["token" => "__TOKEN__"]);
       }
     }
 
-    return '';
+    return "";
   }
 };
 ?>
 
 {{-- Harus berada DI LUAR elemen akar, dan view hanya boleh punya SATU elemen akar. --}}
-<x-slot:title>{{ $this->pageTitle }}</x-slot:title>
+<x-slot:title>
+  {{ $this->pageTitle }}
+</x-slot:title>
 
 {{-- x-effect: judul tab mengikuti ketikan (slot di atas hanya dievaluasi saat halaman dirender penuh). --}}
 <div
   x-data="fitViewport"
-  x-init="$store.editor.clear(); fit()"
+  x-init="
+    $store.editor.clear();
+    fit();
+  "
   x-on:resize.window.debounce.100ms="fit()"
   x-bind:style="h ? 'height:' + h + 'px' : ''"
   x-effect="
     const t = (($wire.titles || {})[@js(app()->getLocale())] || '').trim()
     document.title = (t || @js($this->pageTitle)) + ' — ' + @js(config('app.name'))
   "
-  class="flex h-dvh min-h-0 flex-col overflow-hidden"
+  class="flex h-dvh min-h-0 flex-col overflow-hidden rounded-xl bg-white"
 >
   {{-- ======= HEADER (atas-tengah) ======= --}}
   <header class="flex items-center gap-3 border-b px-4 py-2">
-    <a href="{{ $this->indexUrl }}" wire:navigate class="text-sm font-semibold">←</a>
-    <h1 class="flex-1 truncate text-sm font-extrabold">{{ $this->headerLabel }}</h1>
+    <a href="{{ $this->indexUrl }}" wire:navigate class="text-sm font-semibold"
+      >←</a
+    >
+    <h1 class="flex-1 truncate text-sm font-extrabold">
+      {{ $this->headerLabel }}
+    </h1>
     {{-- Bahasa kolom isian (Ganda / ID / EN). Tab Metadata/Konten = tab Halaman/Blok di kanan; Pratinjau = kanvas; Minimap = outline. --}}
     <x-editor.lang-tabs :locales="$activeLocales" />
-    <button type="button" wire:click="save" class="rounded-full bg-emerald-800 px-4 py-1.5 text-xs font-bold text-white">Simpan</button>
+    @if ($type === "article")
+      <x-content.status-badge
+        :tone="$this->workflow['tone']"
+        :label="$this->workflow['label']"
+      />
+    @endif
+    @if ($type !== "article" || $this->workflow["canEdit"])
+      <button
+        type="button"
+        wire:click="save"
+        class="rounded-full bg-emerald-800 px-4 py-1.5 text-xs font-bold text-white"
+      >
+        Simpan
+      </button>
+    @else
+      <span
+        class="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-500"
+        data-readonly
+        >Hanya baca</span
+      >
+    @endif
   </header>
 
   {{-- Ringkasan galat validasi: tanpa ini, Simpan yang gagal tidak menampilkan apa pun. --}}
   @if ($errors->any())
-    <div role="alert" class="border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">
+    <div
+      role="alert"
+      class="border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700"
+    >
       <p class="font-bold">Belum bisa disimpan:</p>
       <ul class="list-disc pl-4">
         @foreach ($errors->all() as $message)
@@ -473,9 +1121,27 @@ new class extends Component {
     </div>
   @endif
 
+  {{-- Artikel terkunci (dalam tinjauan untuk penulis, atau ditolak): jelaskan kenapa tidak ada tombol Simpan. --}}
+  @if ($type === "article" && !$this->workflow["canEdit"])
+    <div
+      role="status"
+      class="border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs text-gray-700"
+      data-readonly-note
+    >
+      <p><b>Hanya baca.</b> {{
+        $this->workflow[
+          "hint"
+        ]
+      }}</p>
+    </div>
+  @endif
+
   {{-- Isi lama (HTML dari editor artikel lama) diimpor sebagai satu blok Paragraf. --}}
   @if ($importedLegacy)
-    <div role="status" class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+    <div
+      role="status"
+      class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800"
+    >
       <p class="font-bold">Isi lama diimpor sebagai satu blok Paragraf.</p>
       <p>Periksa hasilnya. Isi baru berformat blok baru tersimpan setelah Anda menekan Simpan; sebelum itu data lama di database tidak berubah.</p>
     </div>
@@ -488,7 +1154,11 @@ new class extends Component {
     </div>
 
     {{-- ======= TENGAH: kanvas + pratinjau (Fase 2) ======= --}}
-    <x-content.canvas :frame-url="$this->previewFrameUrl" :saved-url="$this->savedPreviewUrl" :locales="$activeLocales" />
+    <x-content.canvas
+      :frame-url="$this->previewFrameUrl"
+      :saved-url="$this->savedPreviewUrl"
+      :locales="$activeLocales"
+    />
 
     {{-- ======= KANAN: tab "Halaman" (judul, slug, status, SEO) dan "Blok" (properti yang difokus) ======= --}}
     <aside class="flex min-h-0 flex-col border-l">
@@ -498,17 +1168,46 @@ new class extends Component {
           role="tab"
           x-on:click="$store.editor.tab = 'page'"
           x-bind:aria-selected="$store.editor.tab === 'page'"
-          x-bind:class="$store.editor.tab === 'page' ? 'border-foresty text-foresty border-b-2' : 'text-gray-500 hover:text-gray-700'"
+          x-bind:class="
+            $store.editor.tab === 'page'
+              ? 'border-foresty text-foresty border-b-2'
+              : 'text-gray-500 hover:text-gray-700'
+          "
           class="flex-1 px-3 py-2.5"
-        >Halaman</button>
+        >
+          Halaman
+        </button>
         <button
           type="button"
           role="tab"
           x-on:click="$store.editor.tab = 'block'"
           x-bind:aria-selected="$store.editor.tab === 'block'"
-          x-bind:class="$store.editor.tab === 'block' ? 'border-foresty text-foresty border-b-2' : 'text-gray-500 hover:text-gray-700'"
+          x-bind:class="
+            $store.editor.tab === 'block'
+              ? 'border-foresty text-foresty border-b-2'
+              : 'text-gray-500 hover:text-gray-700'
+          "
           class="flex-1 px-3 py-2.5"
-        >Blok</button>
+        >
+          Blok
+        </button>
+        @if ($this->canViewAudit)
+          <button
+            type="button"
+            role="tab"
+            x-on:click="$store.editor.tab = 'audit'"
+            x-bind:aria-selected="$store.editor.tab === 'audit'"
+            x-bind:class="
+              $store.editor.tab === 'audit'
+                ? 'border-foresty text-foresty border-b-2'
+                : 'text-gray-500 hover:text-gray-700'
+            "
+            class="flex-1 px-3 py-2.5"
+            data-tab-audit
+          >
+            Riwayat
+          </button>
+        @endif
       </div>
 
       <div class="min-h-0 flex-1 overflow-y-auto p-3">
@@ -516,15 +1215,22 @@ new class extends Component {
           <x-content.page-settings
             :type="$type"
             :locales="$activeLocales"
-            :is-new="! $record?->exists"
+            :is-new="!$record?->exists"
             :statuses="$this->statusOptions"
+            :workflow="$this->workflow"
             :categories="$this->categoryOptions"
             :tags="$this->tagOptions"
+            :featured="$this->featuredPreview"
           />
         </div>
         <div x-show="$store.editor.tab === 'block'" x-cloak>
           <x-editor.inspector :locales="$activeLocales" />
         </div>
+        @if ($this->canViewAudit)
+          <div x-show="$store.editor.tab === 'audit'" x-cloak>
+            <x-content.audit-panel />
+          </div>
+        @endif
       </div>
     </aside>
   </div>

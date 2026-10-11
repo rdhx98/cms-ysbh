@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artikel — Sinar Bhakti Husada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#064F3B; --forest-dark:#043328;
+    --goldy:#EBCC26; --goldy-soft:#F7EBAF;
+    --coral:#E42326; --coral-dark:#BE1417;
+    --paper:#FBF7EA; --ink:#12241C; --ink-soft:#4B5D53;
+    --sage-soft:#E9F1EB; --white:#FFFFFF;
+    --line: rgba(6,79,59,0.13);
+    --shadow: 0 22px 50px -26px rgba(6,45,35,0.35);
+    --radius-lg: 26px; --radius-md: 16px;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Plus Jakarta Sans', sans-serif; line-height:1.65; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:'Fraunces', serif; color:var(--forest); margin:0; letter-spacing:-0.01em; }
+  a{ color:inherit; text-decoration:none; }
+  img{ max-width:100%; display:block; }
+  .wrap{ max-width:1160px; margin:0 auto; padding:0 32px; }
+  @media (max-width:640px){ .wrap{ padding:0 20px; } }
+
+  header{ position:sticky; top:0; z-index:100; background:rgba(251,247,234,0.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 32px; max-width:1160px; margin:0 auto; gap:20px; }
+  .brand{ display:flex; align-items:center; gap:11px; }
+  .brand svg{ width:38px; height:38px; }
+  .brand-name{ font-family:'Fraunces', serif; font-weight:700; font-size:16px; color:var(--forest); }
+  .brand-name span{ display:block; font-family:'Plus Jakarta Sans', sans-serif; font-weight:600; font-size:10px; letter-spacing:0.13em; color:var(--coral); text-transform:uppercase; margin-top:1px; }
+  .nav-links{ display:flex; gap:24px; }
+  .nav-links a{ font-weight:600; font-size:14px; color:var(--ink-soft); }
+  .nav-links a:hover, .nav-links a.active{ color:var(--forest); }
+  @media (max-width:900px){ .nav-links{ display:none; } }
+  .search-box{ display:flex; align-items:center; gap:8px; background:var(--sage-soft); border-radius:999px; padding:9px 16px; min-width:200px; }
+  .search-box svg{ width:15px; height:15px; color:var(--ink-soft); flex-shrink:0; }
+  .search-box input{ border:none; background:none; outline:none; font-size:13.5px; font-family:inherit; color:var(--ink); width:100%; }
+  .search-box input::placeholder{ color:var(--ink-soft); }
+
+  .page-hero{ padding:56px 0 40px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:9px; font-size:12.5px; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; color:var(--coral-dark); }
+  .page-hero h1{ font-size:clamp(2rem, 4vw, 2.8rem); font-weight:600; margin:14px 0 12px; }
+  .page-hero p{ font-size:15.5px; color:var(--ink-soft); max-width:620px; }
+
+  .filter-row{ display:flex; gap:10px; flex-wrap:wrap; padding-bottom:36px; }
+  .filter-chip{ font-size:13px; font-weight:700; padding:9px 18px; border-radius:999px; border:1.5px solid var(--line); color:var(--ink-soft); background:var(--white); transition:all .2s ease; cursor:pointer; }
+  .filter-chip:hover{ border-color:var(--forest); color:var(--forest); }
+  .filter-chip.active{ background:var(--forest); border-color:var(--forest); color:var(--white); }
+
+  /* FEATURED */
+  .featured{ display:grid; grid-template-columns:1.15fr 0.85fr; gap:0; border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow); margin-bottom:56px; background:var(--white); }
+  @media (max-width:860px){ .featured{ grid-template-columns:1fr; } }
+  .featured-img{ position:relative; min-height:340px; background-size:cover; background-position:center; }
+  .featured-img .tag{ position:absolute; top:20px; left:20px; background:var(--goldy); color:var(--forest); font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; padding:6px 14px; border-radius:999px; }
+  .featured-body{ padding:38px 40px; display:flex; flex-direction:column; justify-content:center; }
+  @media (max-width:640px){ .featured-body{ padding:28px 26px; } }
+  .featured-body .meta{ display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--ink-soft); margin-bottom:14px; }
+  .featured-body .meta .dot{ width:4px; height:4px; border-radius:50%; background:var(--ink-soft); opacity:0.5; }
+  .featured-body h2{ font-size:1.7rem; font-weight:600; line-height:1.28; margin-bottom:14px; }
+  .featured-body p{ font-size:14.5px; color:var(--ink-soft); margin-bottom:22px; }
+  .read-more{ display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:14px; color:var(--forest); }
+  .read-more svg{ width:16px; height:16px; transition:transform .2s ease; }
+  .featured-body:hover .read-more svg, .article-card:hover .read-more svg{ transform:translateX(4px); }
+
+  /* GRID */
+  .grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:26px; margin-bottom:56px; }
+  @media (max-width:900px){ .grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:640px){ .grid{ grid-template-columns:1fr; } }
+  .article-card{ background:var(--white); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow); display:flex; flex-direction:column; transition:transform .25s ease, box-shadow .25s ease; }
+  .article-card:hover{ transform:translateY(-4px); box-shadow:0 30px 60px -26px rgba(6,45,35,0.42); }
+  .card-img{ height:180px; background-size:cover; background-position:center; position:relative; }
+  .card-img .tag{ position:absolute; top:14px; left:14px; background:rgba(255,255,255,0.92); color:var(--forest); font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; padding:5px 11px; border-radius:999px; }
+  .card-body{ padding:22px 22px 24px; display:flex; flex-direction:column; flex:1; }
+  .card-body .meta{ font-size:11.5px; color:var(--ink-soft); margin-bottom:10px; font-weight:600; }
+  .card-body h3{ font-size:1.08rem; font-weight:600; line-height:1.35; margin-bottom:10px; }
+  .card-body p{ font-size:13.5px; color:var(--ink-soft); margin-bottom:16px; flex:1; }
+  .read-more.sm{ font-size:13px; }
+  .read-more.sm svg{ width:14px; height:14px; }
+
+  /* SIDEBAR LAYOUT */
+  .content-layout{ display:grid; grid-template-columns:1fr 300px; gap:44px; align-items:start; }
+  @media (max-width:900px){ .content-layout{ grid-template-columns:1fr; } }
+  .sidebar-card{ background:var(--white); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:26px; margin-bottom:22px; }
+  .sidebar-card h4{ font-family:'Fraunces',serif; color:var(--forest); font-size:1.05rem; font-weight:600; margin-bottom:16px; }
+  .cat-list{ list-style:none; margin:0; padding:0; }
+  .cat-list li{ display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .cat-list li:last-child{ border-bottom:none; }
+  .cat-list a{ color:var(--ink-soft); font-weight:600; }
+  .cat-list a:hover{ color:var(--forest); }
+  .cat-list .count{ background:var(--sage-soft); color:var(--forest); font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; }
+  .newsletter-card{ background:var(--forest); color:var(--white); }
+  .newsletter-card h4{ color:var(--white); }
+  .newsletter-card p{ font-size:13px; color:rgba(255,255,255,0.78); margin-bottom:16px; }
+  .newsletter-card input{ width:100%; padding:11px 14px; border-radius:10px; border:none; font-family:inherit; font-size:13px; margin-bottom:10px; outline:none; }
+  .newsletter-card button{ width:100%; padding:11px; border-radius:10px; border:none; background:var(--goldy); color:var(--forest); font-weight:800; font-size:13px; cursor:pointer; }
+
+  footer{ background:var(--forest-dark); color:rgba(255,255,255,0.7); padding:44px 0; margin-top:40px; text-align:center; font-size:13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="#" class="brand">
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="29" fill="var(--goldy)"/><path d="M30 46C30 46 14 36.8 14 25.6C14 19.2 19 15 24 15C27 15 29 16.6 30 18.6C31 16.6 33 15 36 15C41 15 46 19.2 46 25.6C46 36.8 30 46 30 46Z" fill="var(--forest)"/><rect x="26.5" y="21" width="7" height="17" rx="1.5" fill="white"/><rect x="21.5" y="26" width="17" height="7" rx="1.5" fill="white"/></svg>
+      <div class="brand-name">Sinar Bhakti Husada<span>Artikel &amp; Cerita</span></div>
+    </a>
+    <nav class="nav-links">
+      <a href="#">Beranda</a>
+      <a href="#" class="active">Artikel</a>
+      <a href="#">Program</a>
+      <a href="#">Transparansi</a>
+    </nav>
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" placeholder="Cari artikel...">
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="page-hero">
+    <span class="eyebrow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M4 22V4a2 2 0 0 1 2-2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 2v5h5M8 13h8M8 17h5"/></svg>
+      Artikel
+    </span>
+    <h1>Cerita dari Lapangan</h1>
+    <p>Kisah, data, dan capaian dari program-program kesehatan yang kami jalankan bersama pemerintah daerah di seluruh Tanah Papua.</p>
+  </section>
+
+  <div class="filter-row">
+    <button class="filter-chip active">Semua</button>
+    <button class="filter-chip">Malaria</button>
+    <button class="filter-chip">Imunisasi</button>
+    <button class="filter-chip">HIV</button>
+    <button class="filter-chip">KIA</button>
+    <button class="filter-chip">TBC</button>
+  </div>
+
+  <div class="content-layout">
+    <div>
+
+      <!-- FEATURED -->
+      <a href="artikel-detail-malaria.html" class="featured">
+        <div class="featured-img" style="background-image:url('https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=900&q=80');">
+          <span class="tag">Malaria</span>
+        </div>
+        <div class="featured-body">
+          <div class="meta"><span>12 min baca</span><span class="dot"></span><span>Tim Program Malaria</span></div>
+          <h2>Bersama Mewujudkan Tanah Papua Bebas Malaria</h2>
+          <p>Tanah Papua menyumbang 90% kasus malaria nasional. Bagaimana lima komponen intervensi YSBH — dari penguatan tata kelola hingga Puskesmas Model — berupaya memutus warisan penyakit yang sudah terlalu lama dianggap normal.</p>
+          <span class="read-more">Baca selengkapnya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </div>
+      </a>
+
+      <!-- GRID -->
+      <div class="grid">
+
+        <a href="artikel-detail-imunisasi.html" class="article-card">
+          <div class="card-img" style="background-image:url('https://images.unsplash.com/photo-1632053002424-0b53a1ec4d55?w=500&q=80');"><span class="tag">Imunisasi</span></div>
+          <div class="card-body">
+            <div class="meta">8 min baca</div>
+            <h3>Melindungi Masa Depan Generasi Papua Tengah</h3>
+            <p>Cakupan Imunisasi Dasar Lengkap baru 12% — dan kembalinya wabah Campak, Polio, Difteri yang memicu tindakan darurat.</p>
+            <span class="read-more sm">Baca selengkapnya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </div>
+        </a>
+
+        <a href="artikel-detail-hiv.html" class="article-card">
+          <div class="card-img" style="background-image:url('https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=500&q=80');"><span class="tag">HIV</span></div>
+          <div class="card-body">
+            <div class="meta">7 min baca</div>
+            <h3>HIV-IMS dan PPIA: Skrining, Dukungan, Pengobatan Terpadu</h3>
+            <p>Prevalensi HIV Tanah Papua 1,4% menurut STBP 2025 — tak satu daerah pun bebas kasus. Tiga tahap layanan yang jadi kunci triple eliminasi 2030.</p>
+            <span class="read-more sm">Baca selengkapnya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </div>
+        </a>
+
+        <a href="artikel-detail-kia.html" class="article-card">
+          <div class="card-img" style="background-image:url('https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=500&q=80');"><span class="tag">KIA</span></div>
+          <div class="card-body">
+            <div class="meta">9 min baca</div>
+            <h3>28 Hari Pertama: Merawat Awal Kehidupan di Papua</h3>
+            <p>Mayoritas kematian balita terjadi di masa neonatal. Bagaimana POCQI dan Puskesmas Model mengubah peluang bertahan hidup bayi baru lahir.</p>
+            <span class="read-more sm">Baca selengkapnya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </div>
+        </a>
+
+        <a href="artikel-detail-tbc.html" class="article-card">
+          <div class="card-img" style="background-image:url('https://images.unsplash.com/photo-1584515933487-779824d29309?w=500&q=80');"><span class="tag">TBC</span></div>
+          <div class="card-body">
+            <div class="meta">10 min baca</div>
+            <h3>Peringkat Kedua Dunia: Perjuangan Melawan TBC</h3>
+            <p>Setelah India, Indonesia menempati posisi TBC tertinggi global — dan Tanah Papua termasuk provinsi dengan beban tertinggi secara nasional.</p>
+            <span class="read-more sm">Baca selengkapnya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </div>
+        </a>
+
+        <a href="#" class="article-card">
+          <div class="card-img" style="background-image:url('https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=500&q=80');"><span class="tag">Kemitraan</span></div>
+          <div class="card-body">
+            <div class="meta">6 min baca</div>
+            <h3>12 Tahun Kemitraan: UNICEF, USAID, dan WHO di Papua</h3>
+            <p>Dari program malaria 2014 hingga penguatan sistem kesehatan Papua Tengah 2026 — perjalanan kerja sama yang terus tumbuh.</p>
+            <span class="read-more sm">Baca selengkapnya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </div>
+        </a>
+
+        <a href="#" class="article-card">
+          <div class="card-img" style="background-image:url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=500&q=80');"><span class="tag">Transparansi</span></div>
+          <div class="card-body">
+            <div class="meta">5 min baca</div>
+            <h3>Di Balik Opini "Wajar": Audit Keuangan Yayasan</h3>
+            <p>Moore Stephens LLP memberi opini Unqualified pada 2016. Apa artinya bagi mitra dan donatur yang mempercayakan dana ke YSBH?</p>
+            <span class="read-more sm">Baca selengkapnya <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside>
+      <div class="sidebar-card">
+        <h4>Kategori</h4>
+        <ul class="cat-list">
+          <li><a href="#">Malaria</a><span class="count">4</span></li>
+          <li><a href="#">Imunisasi</a><span class="count">3</span></li>
+          <li><a href="#">HIV</a><span class="count">3</span></li>
+          <li><a href="#">KIA</a><span class="count">2</span></li>
+          <li><a href="#">TBC</a><span class="count">2</span></li>
+          <li><a href="#">Transparansi</a><span class="count">5</span></li>
+        </ul>
+      </div>
+      <div class="sidebar-card newsletter-card">
+        <h4>Ikuti Cerita Kami</h4>
+        <p>Kabar program &amp; dampak langsung ke email Anda, sebulan sekali.</p>
+        <input type="email" placeholder="Alamat email">
+        <button>Berlangganan</button>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<footer>© 2026 Yayasan Sinar Bhakti Husada</footer>
+
+</body>
+</html>
