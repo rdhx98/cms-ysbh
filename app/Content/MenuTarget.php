@@ -12,7 +12,7 @@ use App\Content\Links\LinkResolver;
  * Karena itu yang disimpan adalah slug SATU bahasa (bawaan), bukan alamat per bahasa. `route_name` TIDAK lagi diisi oleh formulir: rute statis lama
  * sudah dihapus (rilis 23); hanya `home` dan `articles` yang masih dikenali sebagai tujuan lama dan diubah menjadi "/" dan "/articles".
  *
- * Rilis 42: "category" = halaman artikel satu kategori. Disimpan "/{slug daftar artikel bahasa bawaan}/category/{slug kategori}" (mis. "/articles/category/malaria");
+ * Rilis 42: "category" = artikel satu kategori (rilis 52: daftar artikel tersaring "{daftar}?category={slug}"; bentuk simpanan tidak berubah). Disimpan "/{slug daftar artikel bahasa bawaan}/category/{slug kategori}" (mis. "/articles/category/malaria");
  * landing menerjemahkannya ke alamat bahasa pembaca ("/id/artikel/kategori/malaria"), lihat NavLinks dan CategoryLookup::SEGMENTS.
  *
  * Aturan keamanan sama dengan tombol (LinkResolver): hanya http(s), "/jalur", mailto:, tel:, dan #anchor; kolom `url` dibatasi 255 karakter.

@@ -2,6 +2,7 @@
 
 namespace App\Content;
 
+use App\Content\Blocks\ArticleCards;
 use App\Content\Blocks\BlockSanitizer;
 use App\Content\Links\LinkResolver;
 
@@ -254,6 +255,13 @@ final class PublicLookup
         if (($o['source'] ?? 'all') === 'categories') {
             $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($o['categoryIds'] ?? [])), fn (int $id) => $id > 0)));
         }
+        // Penyaring kategori dari alamat (rilis 52): SATU kategori, dipotongkan dengan pilihan blok. Saat menyaring, bagian unggulan dan sematan
+        // tidak tampil (artikel unggulan dari kategori lain akan muncul di tengah daftar yang sudah disaring).
+        $filterId = (int) ($o['filterCategoryId'] ?? 0);
+        if ($filterId > 0) {
+            $ids = $ids === null ? [$filterId] : array_values(array_intersect($ids, [$filterId]));
+            $featuredCount = 0;
+        }
         $empty = ['featured' => [], 'rows' => [], 'categories' => [], 'total' => 0, 'page' => 1, 'pages' => 1, 'perPage' => $perPage, 'noCategories' => false];
         if ($ids === []) {
             return ['noCategories' => true] + $empty;
@@ -319,6 +327,74 @@ final class PublicLookup
             'perPage' => $perPage,
             'noCategories' => false,
         ];
+    }
+
+    /**
+     * Daftar artikel SATU blok lengkap dengan penyaringnya (rilis 52). Satu pintu untuk renderer blok dan untuk pemeriksaan di halaman (SEO,
+     * 404, 301): keduanya memanggil ini dengan masukan yang sama dan mendapat jawaban yang sama.
+     *
+     * @param array<string,mixed> $clean data blok yang sudah dibersihkan (LatestArticlesBlock::sanitize)
+     * @param array<string,mixed> $query parameter alamat (request()->query())
+     * @param string[] $locales
+     * @return array{found:array<string,mixed>,chips:list<array<string,mixed>>,showFilter:bool,active:?array<string,mixed>,redirect:?string,pageParam:string,filterParam:string,requestedPage:?int}
+     */
+    public static function listing(array $clean, string $blockId, ?string $primaryId, string $lang, array $locales, array $query, ?int $excludeId = null): array
+    {
+        $pageParam = ArticleListing::pageParam($blockId, $primaryId);
+        $filterParam = ArticleListing::filterParam($blockId, $primaryId);
+        $pickIds = ($clean['source'] ?? 'all') === 'categories' ? ArticleCards::pickIds($clean['categories'] ?? []) : null;
+
+        // Parameter ?category= berlaku untuk blok UTAMA walau chip-nya tidak ditampilkan (menu "Artikel per kategori" dan alamat lama
+        // /articles/category/{slug} dialihkan ke sana); chip hanya tampil bila diaktifkan DAN ada dua kategori atau lebih.
+        $chips = [];
+        $active = null;
+        $redirect = null;
+        if ($pickIds !== [] && ($primaryId === $blockId || !empty($clean['show_filter']))) {
+            $chips = ArticleListing::chips(self::categoryRows(), self::categoryCounts($pickIds, $lang), $pickIds, $lang, $locales);
+            $picked = ArticleListing::pick($chips, $query[$filterParam] ?? null);
+            $active = $picked['chip'];
+            $redirect = $picked['redirect'];
+        }
+        $requested = ArticleListing::requestedPage($query[$pageParam] ?? null);
+
+        $found = self::blockArticles([
+            'locale' => $lang,
+            'source' => $clean['source'] ?? 'all',
+            'categoryIds' => $pickIds ?? [],
+            'pinnedIds' => ArticleCards::pickIds($clean['pinned'] ?? []),
+            'featured' => (int) ($clean['featured_count'] ?? 0),
+            'paging' => $clean['paging'] ?? 'limit',
+            'perPage' => (int) ($clean['limit'] ?? 3),
+            'page' => $requested ?? 1,
+            'excludeId' => $excludeId,
+            'filterCategoryId' => $active['id'] ?? 0,
+        ]);
+
+        return ['found' => $found, 'chips' => $chips, 'showFilter' => !empty($clean['show_filter']) && count($chips) >= 2, 'active' => $active, 'redirect' => $redirect, 'pageParam' => $pageParam, 'filterParam' => $filterParam, 'requestedPage' => $requested];
+    }
+
+    /**
+     * Jumlah artikel terbit per kategori di $locale (null $ids = semua kategori). id kategori => jumlah.
+     *
+     * @param int[]|null $ids
+     * @return array<int,int>
+     */
+    public static function categoryCounts(?array $ids, ?string $locale): array
+    {
+        try {
+            $q = self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale)->whereNotNull('category_id');
+            if ($ids !== null) {
+                $q->whereIn('category_id', $ids ?: [0]);
+            }
+            $out = [];
+            foreach ($q->toBase()->selectRaw('category_id, COUNT(*) as c')->groupBy('category_id')->get() as $r) {
+                $out[(int) $r->category_id] = (int) $r->c;
+            }
+
+            return $out;
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /** Menyaring ke beberapa kategori (null = tanpa saringan; larik kosong = tidak ada hasil). */

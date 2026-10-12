@@ -129,19 +129,31 @@ final class ContentDocument
      */
     public function reachableIds(): array
     {
+        return self::walk($this->blocks, $this->order);
+    }
+
+    /**
+     * Isi reachableIds() untuk larik mentah (rilis 52: dipakai juga App\Content\ArticleListing, yang bekerja pada larik hasil PublicLookup::document).
+     *
+     * @param array<string,mixed> $blocks
+     * @param array<int,mixed> $order
+     * @return string[]
+     */
+    public static function walk(array $blocks, array $order): array
+    {
         $seen = [];
-        $stack = array_reverse($this->order);
+        $stack = array_reverse($order);
 
         while ($stack) {
             $id = array_pop($stack);
-            if (!is_string($id) || isset($seen[$id]) || !isset($this->blocks[$id]) || !is_array($this->blocks[$id])) {
+            if (!is_string($id) || isset($seen[$id]) || !isset($blocks[$id]) || !is_array($blocks[$id])) {
                 continue;
             }
             $seen[$id] = true;
 
             // Kumpulkan anak sesuai urutan dokumen (zona demi zona), lalu dorong terbalik agar pop() menghasilkan urutan itu
             $children = [];
-            foreach (($this->blocks[$id]['data'] ?? []) as $key => $value) {
+            foreach (($blocks[$id]['data'] ?? []) as $key => $value) {
                 if (is_array($value) && ($key === 'children' || str_ends_with((string) $key, '_zone'))) {
                     array_push($children, ...array_values($value));
                 }

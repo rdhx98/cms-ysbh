@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
  * Dua hal yang tidak bisa dilakukan opsi `logOnly()` saja:
  *
  *  1. "Isi diubah" TANPA menyimpan isi. `content` sengaja tidak masuk `logOnly` (dokumen blok besar; menyimpannya penuh pada tiap simpan
- *     membengkakkan tabel). Akibatnya, simpan yang hanya mengubah isi tidak meninggalkan jejak sama sekali (dontSubmitEmptyLogs). Trait ini
+ *     membengkakkan tabel). Akibatnya, simpan yang hanya mengubah isi tidak meninggalkan jejak sama sekali (dontLogEmptyChanges). Trait ini
  *     menambah SATU baris log `content_updated` (siapa, kapan) setiap kali `content` benar-benar berubah, tanpa nilai lama/baru.
  *
  *  2. Label perubahan status. Bila `status` berubah, deskripsi baris log menjadi `status_<nilai>` (mis. `status_published`, `status_online`)

@@ -180,7 +180,7 @@ class Snippet extends Model
         return LogOptions::defaults()
             ->logOnly(['key', 'title', 'status', 'is_closing', 'sort_order', 'description'])   // `content` sengaja tidak dicatat
             ->logOnlyDirty()
-            ->dontSubmitEmptyLogs()
+            ->dontLogEmptyChanges()
             ->useLogName('snippet_updates');
     }
 }

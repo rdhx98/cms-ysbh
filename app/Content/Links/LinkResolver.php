@@ -149,24 +149,19 @@ final class LinkResolver
     }
 
     /**
-     * Alamat ARTIKEL PER KATEGORI bahasa $locale (rilis 42): templat config('cms.public.category') (teks atau peta bahasa, satu penanda {slug},
-     * mis. ['en' => '/articles/category/{slug}', 'id' => '/id/artikel/kategori/{slug}']); bila tidak diatur, rute bernama "articles.category"
-     * ("id.articles.category" untuk bahasa selain bawaan); bila tidak ada pula, null. $slug = slug kategori DI BAHASA itu. Tidak pernah galat.
+     * Alamat ARTIKEL PER KATEGORI bahasa $locale. Rilis 52: bukan lagi halaman sendiri, melainkan daftar artikel yang disaring,
+     * "{alamat daftar artikel}?category={slug}" (mis. "/articles?category=malaria", "/id/artikel?category=malaria"); alamat daftar dari
+     * config('cms.public.articles'). $slug = slug kategori DI BAHASA itu. null bila alamat daftar tidak diatur/rusak atau slug tidak sah.
+     * Tidak pernah galat. (Templat config('cms.public.category') rilis 42 tidak dipakai lagi.)
      */
     public static function categoryAddress(string $slug, ?string $locale = null): ?string
     {
-        $locale ??= self::currentLocale();
-        $template = Languages::setting(self::config('cms.public.category'), $locale);
-        if ($template !== '') {
-            return self::publicUrl($slug, $template, self::config('cms.public.base') ?? '');
-        }
-        $default = Languages::fromConfig()['default'];
-        $name = ($locale !== '' && $locale !== $default ? $locale . '.' : '') . 'articles.category';
-        try {
-            return function_exists('app') && \App\Content\Slug::isValid($slug) && app('router')->has($name) ? route($name, $slug) : null;
-        } catch (\Throwable) {
+        if (strlen($slug) > 190 || !\App\Content\Slug::isValid($slug)) {
             return null;
         }
+        $index = self::indexAddress($locale);
+
+        return $index === null ? null : $index . '?category=' . rawurlencode($slug);
     }
 
     private static function config(string $key): mixed

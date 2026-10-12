@@ -26,6 +26,7 @@
 ])
 
 @php
+  use App\Content\ArticleListing;
   use App\Content\Blocks\ArticleCards;
   use App\Content\Blocks\BlockSanitizer;
   use App\Content\Blocks\FileInfo;
@@ -36,7 +37,9 @@
   $clean = BlockSanitizer::forType('latest-articles-builder', is_array($data) ? $data : [], array_values(array_unique([$lang, 'en', 'id'])));
   $legacy = $feed !== null;   // halaman daftar artikel: hanya kartu, tanpa unggulan dan tanpa penomoran blok
 
-  $param = ArticleCards::pageParam($block['id'] ?? null);
+  // Rilis 52: nama parameter alamat. Blok UTAMA di halaman (dibagikan oleh <x-content.sections>) memakai "page" dan "category"; blok lain
+  // memakai nama berakhiran kode blok. Di luar <x-content.sections> (mis. pengujian) primaryId kosong: nama lama berakhiran kode blok.
+  $primaryId = $articlePrimaryId ?? null;
   $query = [];
   if (is_array($pageQuery)) {
       $query = $pageQuery;
@@ -47,25 +50,26 @@
           $query = [];
       }
   }
+  $param = ArticleListing::pageParam($block['id'] ?? null, $primaryId);
+  $filterParam = ArticleListing::filterParam($block['id'] ?? null, $primaryId);
   $paged = ! $legacy && $clean['paging'] === 'pages';
   $featuredWanted = $legacy ? 0 : (int) $clean['featured_count'];
 
   $empty = ['featured' => [], 'rows' => [], 'categories' => [], 'total' => 0, 'page' => 1, 'pages' => 1, 'perPage' => (int) $clean['limit'], 'noCategories' => false];
+  $chips = [];
+  $active = null;
   if ($legacy) {
       $found = ['rows' => $feed['rows'], 'categories' => $feed['categories']] + $empty;
   } else {
       try {
-          $found = PublicLookup::blockArticles([
-              'locale' => $lang,   // hanya artikel yang diterjemahkan ke bahasa halaman
-              'source' => $clean['source'],
-              'categoryIds' => ArticleCards::pickIds($clean['categories']),
-              'pinnedIds' => ArticleCards::pickIds($clean['pinned']),
-              'featured' => $featuredWanted,
-              'paging' => $clean['paging'],
-              'perPage' => (int) $clean['limit'],
-              'page' => ArticleCards::pageNumber($query[$param] ?? null, PHP_INT_MAX),
-              'excludeId' => (int) ($currentArticleId ?? 0) ?: null,
-          ]);
+          // halaman (page-show) boleh sudah menghitung daftar ini untuk SEO/404: pakai hasilnya, jangan bertanya dua kali
+          $pre = $articleListingPre ?? null;
+          $listing = is_array($pre) && ($pre['id'] ?? null) === ($block['id'] ?? null) && ! $inCanvas
+              ? $pre['result']
+              : PublicLookup::listing($clean, (string) ($block['id'] ?? ''), $primaryId, $lang, array_values(array_unique([$lang, 'en', 'id'])), $query, (int) ($currentArticleId ?? 0) ?: null);
+          $found = $listing['found'];
+          $chips = $listing['showFilter'] ? $listing['chips'] : [];
+          $active = $listing['active'];
       } catch (\Throwable $e) {
           if (function_exists('report')) {
               report($e);
@@ -119,16 +123,18 @@
   $page = (int) $found['page'];
   $pages = (int) $found['pages'];
   $pagerItems = $paged ? ArticleCards::pagerItems($page, $pages) : [];
-  $pageHref = function (int $n) use ($query, $param): string {
-      $q = $query;
-      unset($q[$param]);
-      if ($n > 1) {
-          $q[$param] = $n;
+  $basePath = '';
+  if (! $inCanvas && function_exists('request')) {
+      try {
+          $basePath = request()->getPathInfo();
+      } catch (\Throwable) {
+          $basePath = '';
       }
-      $qs = http_build_query($q);
-
-      return '?' . $qs . '#ula-' . $param;
-  };
+  }
+  $pageHref = fn (int $n): string => ArticleListing::href($query, [$param => $n], '#ula-' . $param, $basePath);
+  $chipHref = fn (?string $slug): string => $inCanvas ? '#' : ArticleListing::href($query, [$filterParam => $slug, $param => null], '#ula-' . $param, $basePath);
+  $allChip = $lang === 'id' ? 'Semua' : 'All';
+  $filterName = $lang === 'id' ? 'Saring menurut kategori' : 'Filter by category';
   $prevLabel = $lang === 'id' ? '← Sebelumnya' : '← Previous';
   $nextLabel = $lang === 'id' ? 'Berikutnya →' : 'Next →';
   $pagerName = $lang === 'id' ? 'Halaman artikel' : 'Article pages';
@@ -137,7 +143,7 @@
   $tileCat = fn (array $card) => $clean['show_category'] && $card['category'] !== '' ? $card['category'] : '';
 @endphp
 
-@if ($hasAny)
+@if ($hasAny || $chips)
   <section id="ula-{{ $param }}" data-latest-articles class="ula" @if ($title !== '') aria-label="{{ $title }}" @endif>
     <style>
       .ula{--ula-forest:#064F3B;--ula-gold:#EBCC26;--ula-paper:#FBF7EA;--ula-ink:#12241C;--ula-soft:#4B5D53;--ula-line:rgba(6,79,59,.18)}
@@ -177,6 +183,11 @@
       .ula-pic img,.ula-pic .ula-ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
       .ula-row h3{font-size:1.3rem;margin:6px 0 4px;color:var(--ula-ink)}
       .ula-row .ula-ex{color:var(--ula-soft);-webkit-line-clamp:3}
+      .ula-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 1.75rem}
+      .ula-chip{display:inline-flex;align-items:center;min-height:38px;padding:0 16px;border-radius:99px;border:1.5px solid var(--ula-line);font-size:13.5px;font-weight:700;color:var(--ula-forest)}
+      a.ula-chip:hover{background:rgba(6,79,59,.07)}
+      a.ula-chip:focus-visible{outline:3px solid var(--ula-gold);outline-offset:2px}
+      .ula-chip[aria-current="true"]{background:var(--ula-forest);border-color:var(--ula-forest);color:var(--ula-paper)}
       .ula-pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin-top:3rem}
       .ula-pg{display:inline-grid;place-items:center;min-width:42px;height:42px;padding:0 16px;border-radius:99px;font-weight:700;font-size:14px;color:var(--ula-forest)}
       a.ula-pg:hover{background:rgba(6,79,59,.07)}
@@ -195,6 +206,15 @@
 
     @if ($title !== '')
       <h2 class="mb-6 text-2xl font-bold text-gray-900">{{ $title }}</h2>
+    @endif
+
+    @if ($chips)
+      <nav class="ula-chips" aria-label="{{ $filterName }}" data-ula-filter>
+        <a class="ula-chip" href="{{ $chipHref(null) }}" @if ($active === null) aria-current="true" @endif data-ula-chip="">{{ $allChip }}</a>
+        @foreach ($chips as $chip)
+          <a class="ula-chip" href="{{ $chipHref($chip['slug']) }}" @if ($active !== null && $active['id'] === $chip['id']) aria-current="true" @endif data-ula-chip="{{ $chip['slug'] }}">{{ $chip['name'] }}</a>
+        @endforeach
+      </nav>
     @endif
 
     @if ($bento)

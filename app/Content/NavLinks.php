@@ -49,7 +49,16 @@ final class NavLinks
             return $home !== null ? $home . $suffix : $url . $suffix;
         }
         if ($categoryAddress !== null && count($segments) === 3 && in_array($segments[0], $indexSlugs, true) && in_array($segments[1], CategoryLookup::SEGMENTS, true) && Slug::isValid($segments[2])) {
-            return ($categoryAddress($segments[2], $locale) ?? $url) . $suffix;
+            $to = $categoryAddress($segments[2], $locale);
+            if ($to === null) {
+                return $url . $suffix;
+            }
+            // Rilis 52: alamat kategori sudah memuat "?category=...", jadi parameter lama (mis. "?page=2") disambung dengan "&".
+            if (str_contains($to, '?') && str_starts_with($suffix, '?')) {
+                $suffix = '&' . substr($suffix, 1);
+            }
+
+            return $to . $suffix;
         }
         if (count($segments) !== 1 || !Slug::isValid($segments[0])) {
             return $url . $suffix;
