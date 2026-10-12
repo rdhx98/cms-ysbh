@@ -65,12 +65,30 @@
   @endif
 
   @if ($ct === \App\Content\ContentType::Article && $workflow !== [])
-    {{-- Artikel: status TIDAK dipilih bebas; berubah lewat alur persetujuan (ajukan -> tinjau -> terbit/jadwal/kembali/tolak). --}}
-    <x-content.article-workflow :workflow="$workflow" />
+    {{-- Artikel: status TIDAK dipilih bebas; berubah lewat alur persetujuan (ajukan -> tinjau -> terbit/jadwal/kembali/tolak), yang kini
+         ada di tab Review (rilis 49 rev 3). Di sini hanya ringkasan status dengan tautan ke tab itu. --}}
+    <div class="flex flex-col gap-2" data-status-line>
+      <span class="{{ $section }}">Status</span>
+      <div class="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
+        <x-content.status-badge :tone="$workflow['tone']" :label="$workflow['label']" />
+        @if ($workflow['status'] === 'scheduled' && $workflow['publishedAt'])
+          <span class="text-[11px] font-semibold text-sky-800">Terbit {{ $workflow['publishedAt'] }}</span>
+        @elseif ($workflow['status'] === 'published' && $workflow['publishedAt'])
+          <span class="text-[11px] text-gray-500">sejak {{ $workflow['publishedAt'] }}</span>
+        @endif
+        <button type="button" x-on:click="$store.editor.tab = 'review'" class="ml-auto text-[11px] font-bold text-emerald-800 underline" data-open-review-link>Buka tab Review</button>
+      </div>
+    </div>
   @else
     <div class="flex flex-col gap-2">
       <span class="{{ $section }}">Status</span>
-      @if (count($statuses) <= 3 && $ct !== \App\Content\ContentType::Article)
+      @if (count($statuses) <= 1 && $ct !== \App\Content\ContentType::Article)
+        {{-- Rilis 49 rev 4: online/offline halaman dan snippet hanya diubah admin/editor; yang lain melihat status saja. --}}
+        <div class="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3" data-status-readonly>
+          <span class="text-[12px] font-bold text-gray-700">{{ reset($statuses) }}</span>
+        </div>
+        <p class="text-[10px] leading-relaxed text-gray-400">Hanya admin atau editor yang dapat mengubah status online/offline.</p>
+      @elseif (count($statuses) <= 3 && $ct !== \App\Content\ContentType::Article)
         <x-editor.segmented path="status" :options="$statuses" :live="true" />
       @else
         <x-editor.select path="status" :options="$statuses" :live="true" width="w-full" />

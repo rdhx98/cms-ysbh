@@ -87,28 +87,54 @@
       x-transition:leave="transition ease-in duration-150"
       x-transition:leave-start="opacity-100 scale-100 translate-y-0"
       x-transition:leave-end="opacity-0 scale-95 translate-y-[-10px]"
-      class="border-foresty absolute right-0 mt-3 w-64 overflow-hidden rounded-3xl border bg-white py-2 shadow-xl"
+      class="border-forest absolute right-1 mt-3 w-64 overflow-hidden rounded-xl border bg-white/60 p-2 shadow-lg shadow-black/5 backdrop-blur-xl backdrop-saturate-150"
+      {{-- class="rounded-2xl border border-white/40 bg-white/60 shadow-lg shadow-black/5 backdrop-blur-xl backdrop-saturate-150" --}}
     >
       <!-- Header Info -->
-      <div class="mb-1 border-b border-zinc-100 px-4 py-3">
-        <p class="mb-1 text-xs font-medium tracking-wider text-zinc-400 uppercase">Akun Saya</p>
+      <div class="mb-1 flex flex-col gap-2 border-b border-zinc-100 p-2">
+        {{-- <p class="mb-1 text-xs font-medium tracking-wider text-zinc-400 uppercase">Akun Saya</p> --}}
         <div
-          class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5"
+          class="flex items-center justify-between gap-x-2 gap-y-1 border-b pb-2"
         >
-          <p class="text-forest max-w-full truncate text-sm font-bold">
+          <span
+            title="{{ auth()->user()->name ??
+            "nama" }}"
+            class="text-forest max-w-full truncate text-sm font-bold"
+          >
             {{
               auth()->user()->name ??
-                "Administrator"
+                "nama"
             }}
-          </p>
+          </span>
           <span
-            class="bg-goldy shrink-0 rounded-4xl px-2 py-0.5 text-center text-xs whitespace-nowrap"
+            class="bg-mist text-forest shrink-0 rounded-4xl px-2 py-0.5 text-center text-xs whitespace-nowrap"
           >
             {{
               auth()->user()->handle() ??
                 ""
             }}
           </span>
+        </div>
+        <div class="flex flex-wrap items-center justify-start gap-x-2 gap-y-1">
+          @forelse (auth()->user()->getRoleNames() as $item)
+            <div
+              class="inline-flex items-center px-1.5 py-1 rounded-full text-xxs font-semibold border gap-2 {{ auth()->user()->getRoleColor($item) }}"
+            >
+              <x-dynamic-component
+                component="{{ auth()->user()->getRoleIcon($item) }}"
+                class="h-3 w-3"
+                stroke-width="2.5"
+              />
+              {{ ucfirst($item) }}
+            </div>
+          @empty
+            <!-- Jika user tidak punya role sama sekali -->
+            <span
+              class="inline-flex items-center rounded-full border border-zinc-700 bg-zinc-50 px-2.5 py-0.5 text-xs font-semibold text-zinc-700"
+            >
+              Tanpa Wewenang
+            </span>
+          @endforelse
         </div>
       </div>
 

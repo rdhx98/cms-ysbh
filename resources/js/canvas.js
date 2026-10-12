@@ -29,6 +29,7 @@ export function registerCanvas(Alpine) {
     srcRev: 0,
     lastRev: 0,
     handler: null,
+    pins: {}, // penanda pesan review (rilis 50): id blok => {open, total}; digambar oleh bingkai sebagai lencana di pojok blok
 
     // Bila lebar yang diminta (px) melebihi panel, bingkai TETAP berjendela selebar itu (titik putus Tailwind benar) lalu DIPERKECIL agar muat.
     get px() {
@@ -78,6 +79,9 @@ export function registerCanvas(Alpine) {
 
       this.handler = (e) => this.onMessage(e)
       window.addEventListener('message', this.handler)
+
+      // pesan berpenanda berubah (dikirim, ditandai selesai): server menyiarkan 'review-pins'; muat ulang lencananya. Halaman/snippet: pinsNow() tidak ada.
+      if (typeof this.$wire.pinsNow === 'function' && typeof this.$wire.$on === 'function') this.$wire.$on('review-pins', () => this.loadPins())
 
       if (cfg.frameUrl) this.publish()
     },
@@ -151,6 +155,18 @@ export function registerCanvas(Alpine) {
       if (this.widths[d]) this.device = d
     },
 
+    async loadPins() {
+      if (typeof this.$wire.pinsNow !== 'function') return
+      try {
+        const r = await this.$wire.pinsNow()
+        this.pins = r && typeof r === 'object' && !Array.isArray(r) ? r : {}
+      } catch (e) {
+        this.pins = {}
+      }
+      // salinan polos: objek reaktif Alpine (Proxy) tidak bisa dikloning postMessage
+      this.post({ type: 'canvas-pins', pins: JSON.parse(JSON.stringify(this.pins)) })
+    },
+
     sendFocus(id, scroll) {
       this.post({ type: 'canvas-focus', id: typeof id === 'string' ? id : null, scroll: !!scroll })
     },
@@ -165,6 +181,7 @@ export function registerCanvas(Alpine) {
       if (m.type === 'canvas-ready') {
         this.ready = true
         this.sendFocus(Alpine.store('editor').id, true)
+        this.loadPins()
         // ada perubahan yang terjadi selagi bingkai memuat: susul
         if (this.lastRev > this.srcRev) this.post({ type: 'canvas-refresh' })
       } else if (m.type === 'canvas-select') {
@@ -173,6 +190,11 @@ export function registerCanvas(Alpine) {
         if (!type) return
         this.fromCanvas = true
         Alpine.store('editor').focusBlock(m.id, type)
+      } else if (m.type === 'canvas-pin') {
+        // lencana penanda diklik: buka tab Review dan loncat ke pesannya (id diperiksa; yang tidak sah dibuang)
+        if (typeof m.id !== 'string' || !ID.test(m.id)) return
+        Alpine.store('editor').tab = 'review'
+        window.dispatchEvent(new CustomEvent('review-goto', { detail: { id: m.id } }))
       } else if (m.type === 'canvas-expired') {
         this.token = null
         this.publish()

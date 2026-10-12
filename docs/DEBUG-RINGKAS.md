@@ -19,12 +19,21 @@ Daftar lengkap tiap bagian ada di `DEBUG.md`; ini urutan dan butir **wajib** saj
 | 6n | Peta situs dan robots.txt (rilis 17) | belum |
 | 6o | Penyaring isi publik: HTML, tautan internal, ikon (rilis 18) | belum |
 | 6p | Daftar isi dan anchor (rilis 20) | belum |
+| 6q | Dua bahasa: /id, hreflang, pengalih, menu, peta situs (rilis 24) | belum |
+| 6r | Halaman situs dan penanda [ISI-DULU] (rilis 25, isi rilis 26) | belum |
+| 6s | Footer dua bahasa dan saran rute hilang (rilis 26) | belum |
+| 6t | Daftar isi: tengah saat dimuat, menempel saat gulir; banner pertama (rilis 29) | belum |
+| 6u | Menu Builder (rilis 28) | belum |
+| 6v | Teks kaya: Tiptap tunggal di panel Properti (rilis 31) | belum |
+| 6w | Panel Eyebrow, Gambar, Kartu Builder + jarak bawah semua blok dasar (rilis 32) | belum |
+| 6x | Toolbar Tiptap dua baris + rata teks Judul (rilis 33) | belum |
+| 6y | Blok Tabel (rilis 34) | belum |
 
 ## A. Pemasangan (sekali)
 1. Rilis 6: salin 10 berkas **dan tambahkan satu baris rute** `preview.record` di grup `v2` (ada di `PERUBAHAN.md`). Tanpa baris itu tombol "pratinjau tersimpan" tidak muncul dan 6f gagal.
 2. Rilis 7 (4 berkas), rilis 8 (4 berkas), rilis 9 (1 berkas: `accordion-builder.blade.php`). Urutan bebas; nama berkasnya tidak bentrok, kecuali rilis 9 yang menggantikan versi sebelumnya.
 3. `php artisan optimize:clear`, `php artisan view:clear`.
-4. **Pemindai direktif** (baru): `php tests\blade-scan.php C:\jalur\ke\proyek`. Harus berakhir `tidak ada tabrakan direktif`. Ia juga memeriksa Blade Anda sendiri (mis. JSON-LD di layout).
+4. **Pemindai direktif** (baru): `php tests\blade-scan.php D:\Herd\cms-ysbh`. Harus berakhir `tidak ada tabrakan direktif`. Ia juga memeriksa Blade Anda sendiri (mis. JSON-LD di layout).
 
 ## B. Satu halaman uji
 Buat halaman **"Uji Blok"** (boleh offline) berisi, berurutan:

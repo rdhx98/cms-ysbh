@@ -11,7 +11,7 @@ Kit editor dan kit konten kini **satu pohon folder**. Salin **semuanya**: kompon
 | `app/Editor/*.php` (**5**) | `app/Editor/` | `Options`, `Field`, `BlockType`, `BlockRegistry`, **`BlockPalette`** (tipe blok yang bisa ditambah, zona kontainer, tipe anak yang diizinkan) |
 | `resources/js/editor.js` | `resources/js/editor.js` | store `editor`, `wireField`, dan `outline` |
 | `resources/views/components/editor/*.blade.php` (**17**) | `resources/views/components/editor/` | `inspector`, `icon-picker-modal`, `icon-sprite`, `outline`, `outline-node`, `add-menu`, `debug` (hanya tampil bila `APP_DEBUG=true`), `field`, `segmented`, `swatches`, `select`, `icon-picker`, `i18n`, `toggle`, `text`, `media`, `rich` |
-| `app/Livewire/Traits/ManagesBlockStructure.php` | `app/Livewire/Traits/` | aksi `addBlockAt()` dan `moveBlock()` |
+| `app/Livewire/Traits/ManagesBlockStructure.php` | `app/Livewire/Traits/` | aksi `addBlockAt()`, `moveBlock()`, dan (rilis 43) `moveBlockTo()`, `indentBlock()`, `outdentBlock()`, `moveTargets()`; lihat `OUTLINE.md` |
 
 **Hapus** `outline-sementara.blade.php` bila sudah pernah Anda salin: digantikan `outline`.
 
@@ -39,6 +39,7 @@ Tambahkan isi `snippets/lang-ui.php` ke `lang/id/ui.php` (dan `lang/en/ui.php`).
 | `+ Tambah blok` → Judul | **1** request `addBlockAt`; blok baru muncul dan **langsung terfokus** |
 | `+ Tambah ke Kolom 2` pada blok Kolom | anak masuk ke kolom itu; menu tidak menawarkan Kolom/Step/Pemisah/Kartu Builder |
 | ↑ ↓ pada baris | blok bertukar tempat dengan tetangganya (di zonanya sendiri) |
+| ⋯ pada baris (rilis 43) | sisipkan di atas/bawah, pindahkan ke kolom/langkah/tingkat atas, keluar/masuk kontainer (`OUTLINE.md`, `DEBUG.md` 6zi) |
 | Duplikat blok Kolom yang berisi anak | salinan punya anak dengan ID baru |
 | Hapus blok yang berisi anak | konfirmasi menyebut jumlah blok di dalamnya |
 | Ketik di kolom teks Judul yang kosong | label baris di outline ikut berubah seketika |
@@ -53,10 +54,13 @@ Grup tombol, lencana, statistik, kartu, dan testimoni **ditiadakan** dari menu. 
 
 ## 5b. Yang sengaja dibatasi
 
-- **Teks Judul/Paragraf**: kosong atau polos = bisa diisi (yang diketik di-escape: `<` `>` `&`). Berisi HTML dari Tiptap = **hanya-baca**,
-  dengan catatan kuning. Pemformatan tidak mungkin rusak lewat kotak ini. Tiptap tunggal untuk teks berformat = Fase 3.
-- **Tipe tanpa panel** (eyebrow, image, multi-columns, step-group, ...) menampilkan catatan kuning di inspektur: daftarkan di
-  `BlockRegistry` satu per satu.
+- **Teks Judul/Paragraf**: satu Tiptap aktif per bahasa untuk blok yang difokus (rilis 31). Isi yang tidak bisa diwakili Tiptap tanpa
+  kehilangan format (tabel, gambar, judul di dalam paragraf) tampil **hanya-baca** dengan tombol "Sunting juga" (meminta konfirmasi).
+- **Tipe tanpa panel** menampilkan catatan kuning di inspektur ("Tipe ini belum punya panel"): daftarkan di `BlockRegistry`.
+  Sejak rilis 32 semua tipe bawaan punya panel (judul, paragraf, eyebrow, gambar, kartu builder, kolom, grup langkah, tombol, pemisah seksi
+  + tujuh modul); catatan itu kini hanya muncul untuk tipe lama yang tidak dikenal.
+- **Jarak bawah** (rilis 32): semua blok tingkat atas punya kontrol Jarak Bawah (kecuali Pemisah Seksi). Judul, paragraf, eyebrow, gambar,
+  dan kartu mencetaknya lewat renderer proyek Anda (`Spacing::OWN`); blok lain lewat pembungkus di `sections.blade.php`.
 - **Kanvas** (tengah) masih placeholder.
 
 ## 6. Asumsi yang perlu Anda cek

@@ -9,9 +9,15 @@ use App\Content\ContentRules;
 use App\Content\ContentType;
 use App\Content\Blocks\MediaUrls;
 use App\Content\ContentWriter;
+use App\Content\JsonSql;
 use App\Content\LocaleMap;
 use App\Content\Names;
 use App\Content\PreviewStore;
+use App\Content\BlockExcerpt;
+use App\Content\ChatAvatar;
+use App\Content\EditorPresence;
+use App\Content\ReviewPins;
+use App\Editor\BlockRegistry;
 use App\Livewire\Traits\HasContentBlocks;
 use App\Livewire\Traits\ManagesBlockStructure;
 use App\Livewire\Traits\SearchesInternalPages;
@@ -19,6 +25,7 @@ use App\Livewire\Traits\SearchesLinkTargets;
 use App\Livewire\Traits\WithNotifications;
 use App\Models\ArticleReview;
 use App\Models\Media;
+use App\Models\PostAuthor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
@@ -76,6 +83,18 @@ new class extends Component {
   /** Thumbnail artikel (rilis 40): "" = belum ada | ID media (angka) | nama berkas lama. Dinormalkan server sebelum disimpan (ArticleCover). */
   public string $featured_image = "";
 
+  /**
+   * Sidik jari isi record di database saat dimuat / terakhir disimpan oleh sesi ini (rilis 49 rev 3). Dibandingkan dengan keadaan database
+   * SAAT menyimpan: beda = orang lain menyimpan lebih dulu, jadi simpan ditolak (tidak diam-diam menimpa). Harus #[Locked]: $record
+   * dimuat ulang dari database di setiap permintaan, jadi hanya properti yang bisa menyimpan keadaan "saat dibuka".
+   */
+  #[Locked]
+  public string $baseHash = "";
+
+  /** '' | 'changed' — simpan terakhir ditolak karena record sudah diubah orang lain (menampilkan spanduk Muat ulang / Timpa). */
+  #[Locked]
+  public string $conflict = "";
+
   /** true bila isi dokumen BARU dibentuk dari HTML lama (artikel editor lama) dan belum pernah disimpan sebagai blok. */
   #[Locked]
   public bool $importedLegacy = false;
@@ -115,7 +134,7 @@ new class extends Component {
       $this->record->exists &&
       !ArticleWorkflow::canView(
         $this->workflowActor(),
-        $this->record->user_id ?: null,
+        ArticleTransitions::authorsOf($this->record),
       )
     ) {
       abort(403, "Artikel ini milik penulis lain.");
@@ -123,6 +142,7 @@ new class extends Component {
     // TODO: $this->authorize($this->record->exists ? 'update' : 'create', $this->record) untuk halaman dan snippet
 
     $this->fillFromRecord($type);
+    $this->baseHash = $this->fingerprint();
   }
 
   /** Computed, bukan method publik (aksi yang bisa dipanggil browser) dan bukan private (tak terjangkau dari view). */
@@ -248,7 +268,13 @@ new class extends Component {
     return (bool) config("cms.article_self_review", true);
   }
 
-  /** Artikel: boleh menyimpan perubahan isi sekarang? (penulis: hanya draf miliknya; ditolak: tidak seorang pun). Halaman/snippet: ya. */
+  /** Peninjau boleh menyunting isi di semua status (perilaku sebelum rilis 49)? Bawaan tidak; nyalakan lewat config('cms.article_reviewer_edits'). */
+  private function workflowReviewerEdits(): bool
+  {
+    return (bool) config("cms.article_reviewer_edits", false);
+  }
+
+  /** Artikel: boleh menyimpan perubahan isi sekarang? (draf: penulisnya; ditinjau/ditolak: tidak seorang pun; terbit dst.: peninjau). Halaman/snippet: ya. */
   private function workflowCanEdit(): bool
   {
     if ($this->contentType !== ContentType::Article) {
@@ -258,13 +284,99 @@ new class extends Component {
     return ArticleWorkflow::canEdit(
       $this->record->exists ? $this->record->status : ArticleWorkflow::DRAFT,
       $this->workflowActor(),
-      $this->record->exists ? ($this->record->user_id ?: null) : null,
+      ArticleTransitions::authorsOf($this->record),
+      $this->workflowReviewerEdits(),
+    );
+  }
+
+  /** Kolom isi yang menentukan sidik jari (bukan updated_at/penghitung, supaya aktivitas yang tidak mengubah isi tidak jadi "konflik"). Tag tidak ikut. */
+  private const FINGERPRINT_COLUMNS = [
+    "title",
+    "slug",
+    "content",
+    "meta_title",
+    "meta_description",
+    "status",
+    "category_id",
+    "featured_image",
+    "published_at",
+    "key",
+    "description",
+    "is_closing",
+    "sort_order",
+  ];
+
+  /**
+   * Sidik jari isi record menurut DATABASE saat ini ('' bila record belum tersimpan atau sudah tidak ada). Selalu dibaca ulang dari database
+   * (bukan dari atribut di memori): MySQL menormalkan kolom JSON saat dibaca, sehingga nilai di memori sesudah simpan tidak sama dengan
+   * hasil bacaan berikutnya dan akan menimbulkan "konflik" palsu.
+   */
+  private function fingerprint(): string
+  {
+    if (!$this->record?->exists) {
+      return "";
+    }
+    $row = $this->record
+      ->newQuery()
+      ->withoutGlobalScopes()
+      ->whereKey($this->record->getKey())
+      ->first();
+    if ($row === null) {
+      return "";
+    }
+    $parts = [];
+    foreach (self::FINGERPRINT_COLUMNS as $column) {
+      $value = $row->getRawOriginal($column);
+      $parts[$column] = $value === null ? null : (string) $value;
+    }
+
+    return sha1(
+      (string) json_encode(
+        $parts,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
+      ),
     );
   }
 
   /**
-   * Bahan panel alur artikel (kosong untuk halaman/snippet): status, aksi yang tersedia bagi pengguna ini, catatan terakhir peninjau,
-   * riwayat. Semua keputusan diambil ArticleWorkflow; tampilan hanya menampilkan.
+   * true (dan spanduk konflik menyala) bila database sudah berubah sejak record ini dibuka / terakhir disimpan. Record baru dan sesi lama
+   * tanpa sidik jari tidak diperiksa. Celah yang diketahui: pemeriksaan dan penyimpanan bukan satu transaksi, jadi dua simpanan dalam
+   * selisih beberapa milidetik masih bisa lolos keduanya.
+   */
+  private function conflictDetected(): bool
+  {
+    if (!$this->record->exists || $this->baseHash === "") {
+      return false;
+    }
+    if (hash_equals($this->baseHash, $this->fingerprint())) {
+      $this->conflict = "";
+
+      return false;
+    }
+    $this->conflict = "changed";
+    $this->notify(
+      "Konten ini sudah diubah orang lain sejak Anda membukanya. Simpan dibatalkan agar pekerjaan mereka tidak tertimpa.",
+      "error",
+    );
+
+    return true;
+  }
+
+  /** "Timpa dengan versi saya": terima keadaan database sekarang sebagai dasar, lalu simpan seperti biasa (semua pemeriksaan wewenang/validasi tetap berlaku). */
+  public function overwrite(): void
+  {
+    if (!$this->record->exists || $this->conflict === "") {
+      return;
+    }
+    $this->baseHash = $this->fingerprint();
+    $this->conflict = "";
+    $this->save();
+  }
+
+  /**
+   * Bahan tab Review artikel (kosong untuk halaman/snippet): status, penulis, aksi yang tersedia bagi pengguna ini, dan percakapan
+   * (`chat`: pesan dan peristiwa status dari `article_reviews`, terlama dulu, maks. 100 terakhir). Semua keputusan diambil ArticleWorkflow;
+   * tampilan hanya menampilkan. Peran pada gelembung ("Penulis utama" / "Penulis" / "Peninjau") menurut keanggotaan SEKARANG.
    */
   #[Computed]
   public function workflow(): array
@@ -277,36 +389,184 @@ new class extends Component {
     $status = $exists
       ? ArticleWorkflow::normalize($this->record->status)
       : ArticleWorkflow::DRAFT;
-    $owner = $exists ? ($this->record->user_id ?: null) : null;
+    $mainId = $exists ? ($this->record->user_id ?: null) : null;
+    $owner = ArticleTransitions::authorsOf($this->record); // penulis utama + penulis lain; null = artikel baru
+    $ownerIds = $owner ?? [];
     $actor = $this->workflowActor();
     // Aturan empat mata (rilis 41): pengaju terakhir dibaca hanya bila aturannya menyala (tanpa kueri tambahan bila tidak)
     $submitter = $this->workflowSelfReview()
       ? null
       : ArticleTransitions::submitterOf($this->record);
 
-    $history = [];
+    $chat = [];
+    $authors = [];
     $ready = true;
+
+    // Pesan berpenanda blok (rilis 50): dihitung dari SELURUH riwayat (bukan hanya 100 baris terakhir), terhadap blok yang ada di isi sekarang.
+    // Terpisah dari percakapan: bila migrasi rilis 50 belum dijalankan, percakapan tetap jalan dan hanya penanda yang belum aktif.
+    $liveIds = $exists ? $this->liveBlockIds() : [];
+    $pinData = ["pins" => [], "pending" => 0, "blocks" => []];
+    $pinsReady = true;
+    if ($exists) {
+      try {
+        $pinRows = ArticleReview::query()
+          ->where("post_id", $this->record->getKey())
+          ->where(
+            fn($q) => $q
+              ->where(
+                fn($q2) => $q2
+                  ->where("action", "note")
+                  ->whereNotNull("block_id"),
+              )
+              ->orWhereIn("action", ["resolve", "reopen"]),
+          )
+          ->orderBy("id")
+          ->get([
+            "id",
+            "action",
+            "user_id",
+            "note",
+            "block_id",
+            "block_type",
+            "block_excerpt",
+            "ref_id",
+            "created_at",
+          ])
+          ->map(
+            fn($r) => array_merge($r->getAttributes(), [
+              "created_at" => $r->created_at?->format("d M Y H:i"),
+            ]),
+          )
+          ->all();
+        $pinData = ReviewPins::summarize($pinRows, $liveIds);
+      } catch (\Throwable) {
+        $pinsReady = false; // kolom penanda belum ada: php artisan migrate
+      }
+    }
+    $typeLabel = fn(string $t) => BlockRegistry::block($t)?->label ??
+      ($t !== "" ? $t : "Blok");
+
     if ($exists) {
       try {
         $rows = ArticleReview::query()
           ->where("post_id", $this->record->getKey())
           ->orderByDesc("id")
-          ->limit(12)
-          ->get();
-        $names = \App\Models\User::query()
-          ->whereIn("id", $rows->pluck("user_id")->filter()->unique()->all())
-          ->pluck("name", "id");
+          ->limit(100)
+          ->get()
+          ->reverse()
+          ->values();
+        $users = \App\Models\User::query()
+          ->whereIn(
+            "id",
+            $rows
+              ->pluck("user_id")
+              ->filter()
+              ->merge($ownerIds)
+              ->merge(
+                array_filter(array_column($pinData["pins"], "resolvedBy")),
+              )
+              ->unique()
+              ->all(),
+          )
+          ->get()
+          ->keyBy("id");
+        $names = $users->map(fn($u) => $u->name);
+        $nameOf = fn($id) => $id === null
+          ? "Sistem"
+          : (string) ($names[$id] ?? "#" . $id);
+        $roleOf = function ($id) use ($mainId, $ownerIds): string {
+          if ($id === null) {
+            return "Sistem";
+          }
+          if ($mainId !== null && (string) $id === (string) $mainId) {
+            return "Penulis utama";
+          }
+
+          return in_array((string) $id, $ownerIds, true)
+            ? "Penulis"
+            : "Peninjau";
+        };
+        $avatarOf = fn($id) => $id === null
+          ? null
+          : ChatAvatar::make($nameOf($id), $users[$id] ?? null); // foto profil / inisial (rilis 51)
         foreach ($rows as $row) {
-          $history[] = [
-            "who" => $row->user_id
-              ? (string) ($names[$row->user_id] ?? "#" . $row->user_id)
-              : "Sistem",
+          $uid = $row->user_id ?: null;
+          $isAuthorEvent = in_array(
+            $row->action,
+            ["author-add", "author-remove"],
+            true,
+          );
+          $pin = $pinData["pins"][(int) $row->id] ?? null;
+          $refPin = in_array($row->action, ["resolve", "reopen"], true)
+            ? $pinData["pins"][(int) ($row->ref_id ?? 0)] ?? null
+            : null;
+          $chat[] = [
+            "id" => (int) $row->id,
+            "kind" => $row->action === "note" ? "message" : "event",
+            "who" => $nameOf($uid),
+            "whoId" => $uid === null ? null : (int) $uid,
+            "avatar" => $row->action === "note" ? $avatarOf($uid) : null,
+            "mine" =>
+              $uid !== null &&
+              $actor["id"] !== null &&
+              (string) $uid === (string) $actor["id"],
+            "role" => $roleOf($uid),
+            "action" => (string) $row->action,
             "verb" => ArticleWorkflow::verb((string) $row->action),
             "to" => ArticleWorkflow::normalize($row->to_status),
-            "note" => (string) ($row->note ?? ""),
+            "tone" => ArticleWorkflow::tone($row->to_status),
+            "note" => $isAuthorEvent ? "" : (string) ($row->note ?? ""),
+            "target" => $isAuthorEvent
+              ? (string) ($row->note ?? "")
+              : ($refPin
+                ? "“" . mb_strimwidth($refPin["note"], 0, 60, "…") . "”"
+                : ""),
+            "pin" => $pin
+              ? [
+                "blockId" => $pin["blockId"],
+                "label" => $typeLabel($pin["type"]),
+                "excerpt" => $pin["excerpt"],
+                "gone" => $pin["gone"],
+                "resolved" => $pin["resolved"],
+                "resolvedBy" =>
+                  $pin["resolvedBy"] === null
+                    ? null
+                    : $nameOf($pin["resolvedBy"]),
+                "resolvedAt" => $pin["resolvedAt"],
+              ]
+              : null,
             "at" => $row->created_at?->format("d M Y H:i") ?? "",
             "for" => $row->scheduled_for?->format("d M Y H:i") ?? "",
-            "action" => (string) $row->action,
+          ];
+        }
+        // Pengelompokan (rilis 51): pesan beruntun dari pengirim yang sama membentuk satu kelompok; nama di pesan pertama, foto di pesan terakhir.
+        $last = count($chat) - 1;
+        foreach ($chat as $i => $item) {
+          $same = fn(?array $o) => $o !== null &&
+            $o["kind"] === "message" &&
+            $item["kind"] === "message" &&
+            $o["whoId"] !== null &&
+            $o["whoId"] === $item["whoId"];
+          $chat[$i]["groupStart"] = !$same($chat[$i - 1] ?? null);
+          $chat[$i]["groupEnd"] = !$same($i < $last ? $chat[$i + 1] : null);
+        }
+        foreach (
+          array_values(
+            array_unique(
+              array_filter(
+                array_merge(
+                  [$mainId === null ? null : (string) $mainId],
+                  $ownerIds,
+                ),
+              ),
+            ),
+          )
+          as $id
+        ) {
+          $authors[] = [
+            "id" => (int) $id,
+            "name" => $nameOf($id),
+            "main" => $mainId !== null && (string) $id === (string) $mainId,
           ];
         }
       } catch (\Throwable) {
@@ -314,30 +574,61 @@ new class extends Component {
       }
     }
 
-    // catatan peninjau yang HARUS dibaca penulis: alasan pengembalian (status draf) atau penolakan
-    $feedback = null;
-    foreach ($history as $h) {
-      if (
-        in_array($h["action"], ["return", "reject"], true) &&
-        $h["note"] !== ""
-      ) {
-        $feedback = $h;
-        break;
-      }
+    $canManage =
+      $exists &&
+      !ArticleWorkflow::isFinal($status) &&
+      ArticleWorkflow::canManageAuthors($actor, $mainId);
+    foreach ($authors as &$a) {
+      $a["canRemove"] = $canManage && !$a["main"];
     }
-    if (
-      $status !== ArticleWorkflow::REJECTED &&
-      $status !== ArticleWorkflow::DRAFT
-    ) {
-      $feedback = null;
-    }
+    unset($a);
 
+    $actions = array_values(
+      array_filter(
+        ArticleWorkflow::actionsFor(
+          $status,
+          $actor,
+          $owner,
+          $this->workflowSelfReview(),
+          $submitter,
+          $this->workflowReviewerEdits(),
+        ),
+        fn($a) => !in_array($a["action"], ArticleWorkflow::CHAT_ACTIONS, true), // pesan dan tanda selesai lewat percakapan, bukan tombol
+      ),
+    );
     $publishedAt = $exists
       ? ArticleTransitions::publishedAt($this->record, Carbon::now())
       : null;
 
+    $blockLabels = [];
+    foreach ($liveIds as $bid) {
+      $block = $this->content[$bid] ?? [];
+      $ex = BlockExcerpt::of(
+        is_array($block) ? $block : [],
+        $this->activeLocales,
+        40,
+      );
+      $blockLabels[$bid] =
+        $typeLabel((string) ($block["type"] ?? "")) .
+        ($ex !== "" ? " · “" . $ex . "”" : "");
+    }
+    $canMessage =
+      $exists &&
+      $ready &&
+      ArticleWorkflow::allows(
+        $status,
+        "note",
+        $actor,
+        $owner,
+        $this->workflowSelfReview(),
+        $submitter,
+        $this->workflowReviewerEdits(),
+      );
+
     return [
       "exists" => $exists,
+      "postId" => $exists ? (int) $this->record->getKey() : null,
+      "userId" => $actor["id"] === null ? null : (int) $actor["id"],
       "status" => $status,
       "label" => ContentType::Article->statusLabels()[$status] ?? $status,
       "tone" => ArticleWorkflow::tone($status),
@@ -347,18 +638,28 @@ new class extends Component {
         $owner,
         $this->workflowSelfReview(),
         $submitter,
+        $this->workflowReviewerEdits(),
       ),
       "canEdit" => $this->workflowCanEdit(),
       "final" => ArticleWorkflow::isFinal($status),
-      "actions" => ArticleWorkflow::actionsFor(
-        $status,
-        $actor,
-        $owner,
-        $this->workflowSelfReview(),
-        $submitter,
-      ),
-      "feedback" => $feedback,
-      "history" => $history,
+      "actions" => $actions,
+      "needsDecision" =>
+        $status === ArticleWorkflow::REVIEW &&
+        array_intersect(
+          ArticleWorkflow::DECISIONS,
+          array_column($actions, "action"),
+        ) !== [],
+      "canMessage" => $canMessage,
+      "pinsReady" => $pinsReady,
+      "canPin" => $canMessage && $pinsReady && $blockLabels !== [],
+      "blockLabels" => $blockLabels,
+      "pending" => $pinData["pending"],
+      "pinWarning" => ReviewPins::warning($pinData["pending"]),
+      "pinBlocks" => $pinData["blocks"],
+      "authors" => $authors,
+      "canManageAuthors" => $canManage,
+      "maxAuthors" => ArticleWorkflow::MAX_AUTHORS,
+      "chat" => $chat,
       "historyReady" => $ready,
       "scheduledFor" =>
         $status === ArticleWorkflow::SCHEDULED
@@ -513,6 +814,19 @@ new class extends Component {
       $this->status = $this->record->exists
         ? ArticleWorkflow::normalize($this->record->status)
         : ArticleWorkflow::DRAFT;
+    } elseif (!$this->canPublish()) {
+      // Halaman dan snippet (rilis 49 rev 4): online/offline hanya diubah admin/editor. Nilai dari browser diabaikan; yang lain menyimpan isi
+      // dengan status yang sedang berlaku (record baru: offline). Pengubahan oleh admin/editor tercatat di riwayat (log `status`).
+      $this->status =
+        $this->record->exists &&
+        in_array($this->record->status, $type->statuses(), true)
+          ? $this->record->status
+          : $type->defaultStatus();
+    }
+
+    // Rilis 49 rev 3: orang lain menyimpan record ini sejak Anda membukanya? Tolak, jangan menimpa diam-diam.
+    if ($this->conflictDetected()) {
+      return false;
     }
 
     try {
@@ -583,6 +897,8 @@ new class extends Component {
       $this->tags = $tagIds;
     }
     $this->importedLegacy = false;
+    $this->baseHash = $this->fingerprint(); // dasar baru = apa yang baru saja kita simpan
+    $this->conflict = "";
 
     return true;
   }
@@ -616,7 +932,7 @@ new class extends Component {
     }
 
     $exists = (bool) $this->record->exists;
-    $owner = $exists ? ($this->record->user_id ?: null) : null;
+    $owner = ArticleTransitions::authorsOf($this->record); // semua penulis (utama + tambahan); null = artikel baru
     $status = $exists ? $this->record->status : ArticleWorkflow::DRAFT;
     $now = Carbon::now();
 
@@ -634,6 +950,7 @@ new class extends Component {
       $this->workflowSelfReview()
         ? null
         : ArticleTransitions::submitterOf($this->record),
+      $this->workflowReviewerEdits(),
     );
     if (!$check["ok"]) {
       $this->notify((string) $check["error"], "error");
@@ -650,12 +967,24 @@ new class extends Component {
     ) {
       return false;
     }
+    // Peninjau tidak menyimpan (isi dibekukan), tetapi menyetujui isi: bila penulis menarik, mengubah, dan mengajukan ulang sejak halaman ini
+    // dibuka, yang akan terbit berbeda dari yang pernah dilihat peninjau. Tolak; muat ulang dulu.
+    if (
+      in_array($action, ["publish", "schedule"], true) &&
+      !$this->workflowCanEdit() &&
+      $this->conflictDetected()
+    ) {
+      return false;
+    }
     if (!$this->record->exists) {
       $this->notify("Simpan artikel dulu.", "error");
 
       return false;
     }
 
+    $clean =
+      $this->baseHash === "" ||
+      hash_equals($this->baseHash, $this->fingerprint()); // sebelum transisi: ada perubahan orang lain yang belum kita lihat?
     try {
       $result = ArticleTransitions::apply(
         $this->record,
@@ -665,6 +994,7 @@ new class extends Component {
         $at,
         $this->workflowSelfReview(),
         $now,
+        $this->workflowReviewerEdits(),
       );
     } catch (\Illuminate\Database\QueryException $e) {
       report($e);
@@ -682,6 +1012,10 @@ new class extends Component {
     }
 
     $this->status = $this->record->status;
+    if ($clean) {
+      $this->baseHash = $this->fingerprint(); // perubahan status oleh kita sendiri bukan "konflik"; perubahan orang lain tetap terdeteksi
+    }
+    unset($this->workflow); // cache Computed: panel dirender ulang dengan status/percakapan terbaru
     $this->notify(
       ArticleWorkflow::done(
         $action,
@@ -692,6 +1026,385 @@ new class extends Component {
       "success",
     );
     $this->redirectToEditIfNew($wasNew);
+
+    return true;
+  }
+
+  // ------------------------------------------------------------------ pesan berpenanda blok, selesai, presence (rilis 50)
+
+  /** Id blok yang ada di dokumen SEKARANG (urutan dokumen). Blok yatim di $content (tak terjangkau dari blockOrder) tidak dihitung. @return list<string> */
+  private function liveBlockIds(): array
+  {
+    return $this->structureWalk();
+  }
+
+  /**
+   * Kirim pesan di percakapan, boleh menempel pada SATU blok. Blok diperiksa di server terhadap isi artikel (id harus ada) dan jenis + cuplikannya
+   * dipotret ke baris riwayat, sehingga pesan tetap terbaca bila blok itu dihapus. Tidak mengubah isi atau status artikel.
+   */
+  public function sendMessage(string $note, ?string $blockId = null): bool
+  {
+    if ($this->contentType !== ContentType::Article || !$this->record->exists) {
+      $this->notify("Simpan artikel dulu.", "error");
+
+      return false;
+    }
+    $live = array_intersect_key(
+      $this->content,
+      array_flip($this->liveBlockIds()),
+    );
+    $anchor = ReviewPins::anchor($blockId, $live, $this->activeLocales);
+    if (!$anchor["ok"]) {
+      $this->notify((string) $anchor["error"], "error");
+
+      return false;
+    }
+
+    return $this->recordChat("note", $note, [
+      "block_id" => $anchor["block_id"],
+      "block_type" => $anchor["block_type"],
+      "block_excerpt" => $anchor["block_excerpt"],
+    ]);
+  }
+
+  /**
+   * Tandai pesan berpenanda selesai ($resolved = true) atau buka lagi. Dicatat sebagai baris riwayat tersendiri (tidak mengubah pesan aslinya).
+   * Siapa pun yang boleh berbalas di percakapan ini boleh menandai.
+   */
+  public function resolvePin(int $messageId, bool $resolved = true): bool
+  {
+    if ($this->contentType !== ContentType::Article || !$this->record->exists) {
+      return false;
+    }
+    try {
+      $msg = ArticleReview::query()
+        ->where("post_id", $this->record->getKey())
+        ->where("id", $messageId)
+        ->where("action", "note")
+        ->whereNotNull("block_id")
+        ->first();
+      if (!$msg) {
+        $this->notify("Pesan berpenanda tidak ditemukan.", "error");
+
+        return false;
+      }
+      $last = ArticleReview::query()
+        ->where("post_id", $this->record->getKey())
+        ->where("ref_id", $messageId)
+        ->whereIn("action", ["resolve", "reopen"])
+        ->orderByDesc("id")
+        ->value("action");
+    } catch (\Illuminate\Database\QueryException $e) {
+      report($e);
+      $this->notify(
+        "Penanda blok belum aktif. Jalankan: php artisan migrate",
+        "error",
+      );
+
+      return false;
+    }
+    if (($last === "resolve") === $resolved) {
+      $this->notify(
+        $resolved
+          ? "Pesan ini sudah ditandai selesai."
+          : "Pesan ini masih terbuka.",
+        "error",
+      );
+
+      return false;
+    }
+
+    return $this->recordChat($resolved ? "resolve" : "reopen", null, [
+      "block_id" => $msg->block_id,
+      "block_type" => $msg->block_type,
+      "block_excerpt" => $msg->block_excerpt,
+      "ref_id" => (int) $msg->getKey(),
+    ]);
+  }
+
+  /** Jalur bersama aksi percakapan (note/resolve/reopen): wewenang + catatan diperiksa ArticleWorkflow::plan(), baris riwayat ditambah, tanpa menyentuh artikel. */
+  private function recordChat(string $action, ?string $note, array $extra): bool
+  {
+    try {
+      $result = ArticleTransitions::apply(
+        $this->record,
+        $action,
+        $this->workflowActor(),
+        $note,
+        null,
+        $this->workflowSelfReview(),
+        Carbon::now(),
+        $this->workflowReviewerEdits(),
+        $extra,
+      );
+    } catch (\Illuminate\Database\QueryException $e) {
+      report($e);
+      $this->notify(
+        $extra !== []
+          ? "Penanda blok belum bisa dicatat. Jalankan: php artisan migrate"
+          : "Riwayat tinjauan belum bisa dicatat. Jalankan: php artisan migrate",
+        "error",
+      );
+
+      return false;
+    }
+    if (!$result["ok"]) {
+      $this->notify((string) $result["error"], "error");
+
+      return false;
+    }
+    unset($this->workflow); // percakapan dan hitungan pesan terbuka dirender ulang
+    $this->dispatch("review-pins"); // kanvas memperbarui lencana penanda
+    $this->notify(ArticleWorkflow::done($action), "success");
+
+    return true;
+  }
+
+  /** Penanda untuk kanvas: id blok => {open, total}, hanya blok yang masih ada. Tanpa render ulang; kosong untuk halaman/snippet dan artikel baru. */
+  #[Renderless]
+  public function pinsNow(): array
+  {
+    if ($this->contentType !== ContentType::Article || !$this->record->exists) {
+      return [];
+    }
+    unset($this->workflow);
+
+    return $this->workflow["pinBlocks"] ?? [];
+  }
+
+  /**
+   * Denyut "sedang dibuka" (tiap 30 dtk dari tab yang terlihat): mencatat pengguna ini dan mengembalikan nama pengguna LAIN yang aktif pada record
+   * ini. Hanya untuk record tersimpan yang boleh dibuka pengguna ini (mount() sudah memeriksa). Tidak merender ulang komponen.
+   *
+   * @return list<array{id:int,name:string}>
+   */
+  #[Renderless]
+  public function heartbeat(): array
+  {
+    if (!auth()->check() || !$this->record?->exists) {
+      return [];
+    }
+    $ids = EditorPresence::make()->beat(
+      $this->type,
+      $this->record->getKey(),
+      auth()->id(),
+    );
+    if ($ids === []) {
+      return [];
+    }
+    $names = \App\Models\User::query()
+      ->whereIn("id", $ids)
+      ->pluck("name", "id");
+
+    return collect($ids)
+      ->map(
+        fn($id) => [
+          "id" => (int) $id,
+          "name" => (string) ($names[$id] ?? "#" . $id),
+        ],
+      )
+      ->values()
+      ->all();
+  }
+
+  // ------------------------------------------------------------------ penulis artikel (rilis 49 rev 3)
+
+  /** Cari akun untuk ditambahkan sebagai penulis. Hanya yang boleh mengelola penulis; nama saja yang keluar (maks. 8). */
+  #[Renderless]
+  public function searchAuthors(string $q): array
+  {
+    abort_unless(
+      auth()->check() &&
+        $this->contentType === ContentType::Article &&
+        $this->record->exists &&
+        ArticleWorkflow::canManageAuthors(
+          $this->workflowActor(),
+          $this->record->user_id ?: null,
+        ),
+      403,
+    );
+
+    $q = trim(mb_substr($q, 0, 80));
+    if (mb_strlen($q) < 2) {
+      return [];
+    }
+    $taken = array_map(
+      "strval",
+      ArticleTransitions::authorsOf($this->record) ?? [],
+    );
+
+    return \App\Models\User::query()
+      ->whereRaw("name LIKE ? ESCAPE '!'", [JsonSql::like($q)])
+      ->orderBy("name")
+      ->limit(8)
+      ->get(["id", "name"])
+      ->reject(fn($u) => in_array((string) $u->getKey(), $taken, true))
+      ->map(
+        fn($u) => ["id" => (int) $u->getKey(), "label" => (string) $u->name],
+      )
+      ->values()
+      ->all();
+  }
+
+  /** Tambah penulis (setara: menulis, mengajukan, menarik kembali, berbalas pesan). Dicatat di riwayat tinjauan sebagai `author-add`. */
+  public function addAuthor(int $userId): bool
+  {
+    if (!$this->authorsEditable()) {
+      return false;
+    }
+    $user = \App\Models\User::query()->find($userId);
+    if ($user === null) {
+      $this->notify("Akun tidak ditemukan.", "error");
+
+      return false;
+    }
+    $current = array_map(
+      "strval",
+      ArticleTransitions::authorsOf($this->record) ?? [],
+    );
+    if (in_array((string) $userId, $current, true)) {
+      $this->notify(
+        $user->name . " sudah menjadi penulis artikel ini.",
+        "error",
+      );
+
+      return false;
+    }
+    if (count($current) >= ArticleWorkflow::MAX_AUTHORS) {
+      $this->notify(
+        "Penulis maksimal " . ArticleWorkflow::MAX_AUTHORS . " orang.",
+        "error",
+      );
+
+      return false;
+    }
+
+    return $this->recordAuthorChange(
+      "author-add",
+      $user,
+      function () use ($userId) {
+        PostAuthor::query()->create([
+          "post_id" => $this->record->getKey(),
+          "user_id" => $userId,
+        ]); // siapa menambahkan: ada di baris riwayat author-add
+      },
+      "Penulis ditambahkan.",
+    );
+  }
+
+  /** Lepas penulis tambahan. Penulis utama (pembuat artikel) tidak bisa dilepas. Dicatat sebagai `author-remove`. */
+  public function removeAuthor(int $userId): bool
+  {
+    if (!$this->authorsEditable()) {
+      return false;
+    }
+    if (
+      $this->record->user_id &&
+      (string) $this->record->user_id === (string) $userId
+    ) {
+      $this->notify("Penulis utama tidak bisa dilepas.", "error");
+
+      return false;
+    }
+    $user = \App\Models\User::query()->find($userId);
+    try {
+      $isCo = PostAuthor::query()
+        ->where("post_id", $this->record->getKey())
+        ->where("user_id", $userId)
+        ->exists();
+    } catch (\Illuminate\Database\QueryException) {
+      $isCo = false;
+    }
+    if (!$isCo) {
+      $this->notify("Akun itu bukan penulis tambahan artikel ini.", "error");
+
+      return false;
+    }
+
+    return $this->recordAuthorChange(
+      "author-remove",
+      $user,
+      function () use ($userId) {
+        PostAuthor::query()
+          ->where("post_id", $this->record->getKey())
+          ->where("user_id", $userId)
+          ->delete();
+      },
+      "Penulis dilepas.",
+      $userId,
+    );
+  }
+
+  /** Wewenang bersama addAuthor/removeAuthor: artikel tersimpan, belum ditolak, dan pemakai = penulis utama / admin / editor. */
+  private function authorsEditable(): bool
+  {
+    if ($this->contentType !== ContentType::Article || !$this->record->exists) {
+      $this->notify("Simpan artikel dulu.", "error");
+
+      return false;
+    }
+    if (ArticleWorkflow::isFinal($this->record->status)) {
+      $this->notify("Artikel yang ditolak tidak bisa dilanjutkan.", "error");
+
+      return false;
+    }
+    if (
+      !ArticleWorkflow::canManageAuthors(
+        $this->workflowActor(),
+        $this->record->user_id ?: null,
+      )
+    ) {
+      $this->notify(
+        "Hanya penulis utama, admin, atau editor yang dapat mengelola penulis.",
+        "error",
+      );
+
+      return false;
+    }
+
+    return true;
+  }
+
+  /** Ubah daftar penulis + tulis baris riwayat (nama sasaran di kolom catatan) dalam satu transaksi. */
+  private function recordAuthorChange(
+    string $action,
+    ?object $user,
+    \Closure $change,
+    string $done,
+    ?int $fallbackId = null,
+  ): bool {
+    $status = ArticleWorkflow::normalize($this->record->status);
+    try {
+      DB::transaction(function () use (
+        $action,
+        $user,
+        $change,
+        $status,
+        $fallbackId,
+      ) {
+        $change();
+        ArticleReview::query()->create([
+          "post_id" => $this->record->getKey(),
+          "user_id" => auth()->id(),
+          "action" => $action,
+          "from_status" => $status,
+          "to_status" => $status,
+          "note" => $user ? (string) $user->name : "#" . $fallbackId,
+          "scheduled_for" => null,
+          "created_at" => Carbon::now(),
+        ]);
+      });
+    } catch (\Illuminate\Database\QueryException $e) {
+      report($e);
+      $this->notify(
+        "Daftar penulis belum bisa disimpan. Jalankan: php artisan migrate",
+        "error",
+      );
+
+      return false;
+    }
+    unset($this->workflow);
+    $this->notify($done, "success");
 
     return true;
   }
@@ -1081,13 +1794,36 @@ new class extends Component {
     <h1 class="flex-1 truncate text-sm font-extrabold">
       {{ $this->headerLabel }}
     </h1>
+    {{-- Rilis 50: siapa lagi yang sedang membuka record ini (denyut 30 dtk selagi tab terlihat; hanya informasi) --}}
+    @if ($record?->exists)
+      <span
+        x-data="editorPresence(@js(['interval' => EditorPresence::HEARTBEAT * 1000]))"
+        x-show="others.length"
+        x-cloak
+        role="status"
+        class="inline-flex max-w-[22rem] items-center gap-1.5 truncate rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-900"
+        data-presence
+      >
+        <span class="size-2 shrink-0 rounded-full bg-sky-500"></span>
+        <span class="truncate" x-text="label"></span>
+      </span>
+    @endif
     {{-- Bahasa kolom isian (Ganda / ID / EN). Tab Metadata/Konten = tab Halaman/Blok di kanan; Pratinjau = kanvas; Minimap = outline. --}}
     <x-editor.lang-tabs :locales="$activeLocales" />
     @if ($type === "article")
-      <x-content.status-badge
-        :tone="$this->workflow['tone']"
-        :label="$this->workflow['label']"
-      />
+      {{-- Lencana status = pintasan ke tab Review (status, penulis, tombol alur, percakapan) --}}
+      <button
+        type="button"
+        x-on:click="$store.editor.tab = 'review'"
+        title="Buka tab Review"
+        class="rounded-full focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:outline-none"
+        data-open-review
+      >
+        <x-content.status-badge
+          :tone="$this->workflow['tone']"
+          :label="$this->workflow['label']"
+        />
+      </button>
     @endif
     @if ($type !== "article" || $this->workflow["canEdit"])
       <button
@@ -1105,6 +1841,43 @@ new class extends Component {
       >
     @endif
   </header>
+
+  {{-- Rilis 49 rev 3: orang lain menyimpan lebih dulu. Simpan ditolak; pilih muat ulang (buang perubahan Anda) atau timpa (buang perubahan mereka). --}}
+  @if ($conflict !== "")
+    <div
+      role="alert"
+      class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-900"
+      data-conflict
+    >
+      <p class="min-w-0 flex-1">
+        <b>Konten ini sudah diubah orang lain</b> sejak Anda membukanya{{
+          $record?->updated_at
+            ? " (terakhir " . $record->updated_at->format("d M Y H:i") . ")"
+            : ""
+        }}. Simpan dibatalkan supaya pekerjaan mereka tidak tertimpa. Salin dulu
+        bagian yang ingin Anda simpan.
+      </p>
+      <button
+        type="button"
+        onclick="window.location.reload()"
+        class="rounded-md bg-amber-600 px-3 py-1.5 font-bold text-white hover:bg-amber-700"
+        data-conflict-reload
+      >
+        Muat ulang (buang perubahan saya)
+      </button>
+      @if ($type !== "article" || $this->workflow["canEdit"])
+        <button
+          type="button"
+          wire:click="overwrite"
+          wire:confirm="Timpa versi terbaru dengan versi Anda? Perubahan orang lain akan hilang."
+          class="rounded-md border border-amber-400 bg-white px-3 py-1.5 font-bold text-amber-900 hover:bg-amber-100"
+          data-conflict-overwrite
+        >
+          Timpa dengan versi saya
+        </button>
+      @endif
+    </div>
+  @endif
 
   {{-- Ringkasan galat validasi: tanpa ini, Simpan yang gagal tidak menampilkan apa pun. --}}
   @if ($errors->any())
@@ -1162,55 +1935,74 @@ new class extends Component {
 
     {{-- ======= KANAN: tab "Halaman" (judul, slug, status, SEO) dan "Blok" (properti yang difokus) ======= --}}
     <aside class="flex min-h-0 flex-col border-l">
-      <div class="flex shrink-0 border-b text-xs font-bold" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          x-on:click="$store.editor.tab = 'page'"
-          x-bind:aria-selected="$store.editor.tab === 'page'"
-          x-bind:class="
-            $store.editor.tab === 'page'
-              ? 'border-foresty text-foresty border-b-2'
-              : 'text-gray-500 hover:text-gray-700'
-          "
-          class="flex-1 px-3 py-2.5"
-        >
-          Halaman
-        </button>
-        <button
-          type="button"
-          role="tab"
-          x-on:click="$store.editor.tab = 'block'"
-          x-bind:aria-selected="$store.editor.tab === 'block'"
-          x-bind:class="
-            $store.editor.tab === 'block'
-              ? 'border-foresty text-foresty border-b-2'
-              : 'text-gray-500 hover:text-gray-700'
-          "
-          class="flex-1 px-3 py-2.5"
-        >
-          Blok
-        </button>
-        @if ($this->canViewAudit)
+      {{-- Bilah tab hanya-ikon (rilis 49 rev 3): tab aktif = ikon + nama; yang lain ikon saja, namanya muncul sebagai tooltip saat hover/fokus (tanpa animasi). --}}
+      @php
+        $tabs = [
+          ["key" => "page", "label" => "Halaman"],
+          ["key" => "block", "label" => "Blok"],
+        ];
+        if ($type === "article") {
+          $tabs[] = ["key" => "review", "label" => "Review"];
+        }
+        if ($this->canViewAudit) {
+          $tabs[] = ["key" => "audit", "label" => "Riwayat"];
+        }
+      @endphp
+      <div
+        class="flex shrink-0 border-b text-xs font-bold"
+        role="tablist"
+        aria-label="Panel editor"
+      >
+        @foreach ($tabs as $t)
           <button
             type="button"
             role="tab"
-            x-on:click="$store.editor.tab = 'audit'"
-            x-bind:aria-selected="$store.editor.tab === 'audit'"
-            x-bind:class="
-              $store.editor.tab === 'audit'
-                ? 'border-foresty text-foresty border-b-2'
-                : 'text-gray-500 hover:text-gray-700'
-            "
-            class="flex-1 px-3 py-2.5"
-            data-tab-audit
+            aria-label="{{ $t['label'] }}"
+            x-on:click="$store.editor.tab = '{{ $t['key'] }}'"
+            x-bind:aria-selected="$store.editor.tab === '{{ $t['key'] }}'"
+            x-bind:class="$store.editor.tab === '{{ $t['key'] }}' ? 'border-foresty text-foresty flex-1 border-b-2' : 'w-11 shrink-0 text-gray-500 hover:text-gray-700'"
+            class="group relative flex items-center justify-center gap-1.5 px-3 py-2.5 focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:outline-none focus-visible:ring-inset"
+            data-tab="{{ $t['key'] }}"
           >
-            Riwayat
+            <x-content.tab-icon :name="$t['key']" />
+            <span
+              x-show="$store.editor.tab === '{{ $t['key'] }}'"
+              class="truncate"
+              >{{ $t["label"] }}</span
+            >
+            <span
+              x-show="$store.editor.tab !== '{{ $t['key'] }}'"
+              role="tooltip"
+              class="pointer-events-none invisible absolute top-full z-30 mt-1 rounded bg-gray-900 px-2 py-1 text-[10px] font-semibold whitespace-nowrap text-white group-hover:visible group-focus-visible:visible {{ $loop->last ? 'right-0' : 'left-0' }}"
+              data-tab-tooltip
+              >{{ $t["label"] }}</span
+            >
+            @if ($t["key"] === "review")
+              <span
+                x-show="$store.editor.reviewUnread > 0"
+                x-cloak
+                x-text="
+                  $store.editor.reviewUnread > 9
+                    ? '9+'
+                    : $store.editor.reviewUnread
+                "
+                class="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-red-600 px-1 text-center text-[9px] leading-4 font-extrabold text-white"
+                data-review-unread
+              ></span>
+              @if ($this->workflow["needsDecision"])
+                <span
+                  x-show="!($store.editor.reviewUnread > 0)"
+                  class="absolute top-1.5 right-1.5 size-2 rounded-full bg-amber-500"
+                  data-review-decision
+                  title="Menunggu keputusan Anda"
+                ></span>
+              @endif
+            @endif
           </button>
-        @endif
+        @endforeach
       </div>
 
-      <div class="min-h-0 flex-1 overflow-y-auto p-3">
+      <div class="mb-8 min-h-0 flex-1 overflow-y-auto p-3">
         <div x-show="$store.editor.tab === 'page'">
           <x-content.page-settings
             :type="$type"
@@ -1226,6 +2018,11 @@ new class extends Component {
         <div x-show="$store.editor.tab === 'block'" x-cloak>
           <x-editor.inspector :locales="$activeLocales" />
         </div>
+        @if ($type === "article")
+          <div x-show="$store.editor.tab === 'review'" x-cloak>
+            <x-content.article-workflow :workflow="$this->workflow" />
+          </div>
+        @endif
         @if ($this->canViewAudit)
           <div x-show="$store.editor.tab === 'audit'" x-cloak>
             <x-content.audit-panel />

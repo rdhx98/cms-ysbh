@@ -36,7 +36,7 @@ UI 4 area dari mockup menuntut satu aturan: **membaca dari state klien, menulis 
    ```
 5. `config/cms.php`: `'editor' => ['defer_style_sync' => false]`.
 
-**Teks kaya (heading, paragraf) sengaja hanya-baca di inspektur** sampai Fase 3. `<x-editor.rich>` hanya menampilkan teks tanpa tag dan tidak menulis apa pun, supaya HTML Tiptap tidak rusak. Keduanya tetap diedit lewat editor lama.
+**Teks kaya (heading, paragraf)** diedit dengan satu Tiptap aktif per bahasa di panel Properti (Fase 3, rilis 31; `resources/js/rich-field.js`). Perlu pemasangan di `app.js` (lihat `contoh-kode/app.js.snippet` dan `PERUBAHAN.md` rilis 31).
 
 ## Hasil audit (`php tests/registry-audit.php app/Livewire/Traits/HasContentBlocks.php config/cms.php`)
 Enam ketidakcocokan nyata antara yang ditulis trait dan yang bisa dipilih kontrol. Arah perbaikannya keputusan Anda:
@@ -74,7 +74,7 @@ Skrip keluar dengan kode 1 bila ada kesalahan, jadi bisa dijalankan di CI.
 
 ## Fase berikutnya
 2. **Shell**: outline + kanvas dirender klien dari `$wire.content`; layout responsif dari mockup.
-3. **Tiptap tunggal** per bahasa di inspektur (menghapus ratusan instance), lalu `heading`/`paragraph` tidak lagi hanya-baca.
+3. ✅ **Tiptap tunggal** per bahasa di inspektur (rilis 31).
 4. UI aksi struktur (tambah/pindah/duplikat/hapus) memakai trait yang sudah dipatch.
-5. Migrasi blok lain (eyebrow, image, multi-columns, step-group) = menambah entri registri.
+5. ✅ Blok lain terdaftar: eyebrow, image, kartu builder (rilis 32; daftar kartu → kolom → elemen di `<x-editor.cards>`), multi-columns, step-group.
 6. Hapus blade editor lama.

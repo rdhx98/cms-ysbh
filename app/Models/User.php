@@ -18,8 +18,8 @@ use Spatie\Permission\Traits\HasRoles;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-#[Fillable(['name', 'handle', 'email', 'active', 'job_title', 'password'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Fillable(["name", "handle", "email", "active", "job_title", "password"])]
+#[Hidden(["password", "two_factor_secret", "two_factor_recovery_codes", "remember_token"])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
@@ -33,16 +33,16 @@ class User extends Authenticatable implements PasskeyUser
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            "email_verified_at" => "datetime",
+            "password" => "hashed",
         ];
     }
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email']) 
+            ->logOnly(["name", "email"])
             ->logOnlyDirty()
-            ->useLogName('user_updates'); 
+            ->useLogName("user_updates");
     }
 
     /**
@@ -50,11 +50,7 @@ class User extends Authenticatable implements PasskeyUser
      */
     public function initials(): string
     {
-        return Str::of($this->name)
-            ->explode(' ')
-            ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
-            ->implode('');
+        return Str::of($this->name)->explode(" ")->take(2)->map(fn($word) => Str::substr($word, 0, 1))->implode("");
     }
     public function handle(): string
     {
@@ -62,25 +58,25 @@ class User extends Authenticatable implements PasskeyUser
     }
     public function getRouteKeyName()
     {
-        return 'handle';
+        return "handle";
     }
     public function getRoleColor(string $roleName)
     {
         return match ($roleName) {
-            'admin'  => 'bg-violet-50 text-violet-700 border-violet-700 dark:bg-violet-950 dark:text-violet-300',
-            'editor' => 'bg-yellow-50 text-yellow-700 border-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+            "admin" => "bg-mist text-forest border-forest dark:bg-mist dark:text-forest",
+            "editor" => "bg-yellow-50 text-yellow-700 border-yellow-700 dark:bg-yellow-950 dark:text-yellow-300",
             // 'writer' => 'bg-sky-50 text-sky-700 border-sky-700 dark:bg-sky-950 dark:text-sky-300',
-            'writer' => 'bg-sky-50 text-sky-700 border-sky-700 dark:bg-sky-950 dark:text-sky-300',
-            default  => 'bg-zinc-50 text-zinc-700 border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300',
+            "writer" => "bg-sky-50 text-sky-700 border-sky-700 dark:bg-sky-950 dark:text-sky-300",
+            default => "bg-zinc-50 text-zinc-700 border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300",
         };
     }
     public function getRoleIcon(string $roleName)
     {
         return match ($roleName) {
-            'admin'  => 'lucide-crown',
-            'editor' => 'lucide-glasses',
-            'writer' => 'lucide-feather',
-            default  => 'lucide-user', // Ikon default jika role tidak dikenali
+            "admin" => "lucide-crown",
+            "editor" => "lucide-glasses",
+            "writer" => "lucide-feather",
+            default => "lucide-user", // Ikon default jika role tidak dikenali
         };
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Content;
 
 use App\Models\ArticleReview;
+use App\Models\PostAuthor;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -18,24 +19,29 @@ final class ArticleTransitions
 {
     /**
      * @param array{id?:int|string|null,reviewer?:bool} $actor
+     * @param array{block_id?:?string,block_type?:?string,block_excerpt?:?string,ref_id?:?int} $extra (rilis 50) penanda blok pada pesan, atau pesan yang ditandai selesai/dibuka lagi; hanya kunci berisi yang ditulis
      * @return array{ok:bool,error:?string,to:?string,note:?string,publishedAt:DateTimeImmutable|null|false}
      */
-    public static function apply(Model $post, string $action, array $actor, ?string $note = null, ?string $at = null, bool $selfReview = true, ?DateTimeInterface $now = null): array
+    public static function apply(Model $post, string $action, array $actor, ?string $note = null, ?string $at = null, bool $selfReview = true, ?DateTimeInterface $now = null, bool $reviewerEdits = false, array $extra = []): array
     {
         $now ??= Carbon::now();
         $from = ArticleWorkflow::normalize($post->status);
         // Aturan empat mata: siapa yang mengajukan dibaca dari riwayat di SERVER (bukan dari kiriman browser); tanpa kueri bila aturan mati
-        $plan = ArticleWorkflow::plan($from, $action, $actor, $post->user_id ?: null, $note, $at, $now, self::publishedAt($post, $now), $selfReview, $selfReview ? null : self::submitterOf($post));
+        $plan = ArticleWorkflow::plan($from, $action, $actor, self::authorsOf($post), $note, $at, $now, self::publishedAt($post, $now), $selfReview, $selfReview ? null : self::submitterOf($post), $reviewerEdits);
         if (!$plan['ok']) {
             return $plan;
         }
 
-        DB::transaction(function () use ($post, $plan, $from, $action, $actor, $now) {
-            $post->status = $plan['to'];
-            if ($plan['publishedAt'] !== false) {
-                $post->published_at = $plan['publishedAt']?->format('Y-m-d H:i:s');
+        $pin = array_filter(array_intersect_key($extra, array_flip(['block_id', 'block_type', 'block_excerpt', 'ref_id'])), fn ($v) => $v !== null && $v !== '');
+
+        DB::transaction(function () use ($post, $plan, $from, $action, $actor, $now, $pin) {
+            if (!in_array($action, ArticleWorkflow::CHAT_ACTIONS, true)) {   // pesan dan tanda selesai (rilis 49/50) hanya menambah baris riwayat: artikelnya tidak disentuh (updated_at, log perubahan)
+                $post->status = $plan['to'];
+                if ($plan['publishedAt'] !== false) {
+                    $post->published_at = $plan['publishedAt']?->format('Y-m-d H:i:s');
+                }
+                $post->save();
             }
-            $post->save();
 
             ArticleReview::query()->create([
                 'post_id' => $post->getKey(),
@@ -46,10 +52,32 @@ final class ArticleTransitions
                 'note' => $plan['note'],
                 'scheduled_for' => $action === 'schedule' ? $plan['publishedAt']->format('Y-m-d H:i:s') : null,
                 'created_at' => Carbon::instance($now),
-            ]);
+            ] + $pin);
         });
 
         return $plan;
+    }
+
+    /**
+     * Semua penulis artikel: penulis utama (`posts.user_id`) lalu penulis tambahan (tabel pivot `post_users`), sebagai daftar id string; null bila
+     * tidak ada seorang pun (artikel baru / yatim: siapa pun dianggap penulisnya). Tabel belum dimigrasi = hanya penulis utama.
+     *
+     * @return list<string>|null
+     */
+    public static function authorsOf(Model $post): ?array
+    {
+        $ids = [$post->user_id ?: null];
+        if ($post->exists) {
+            try {
+                foreach (PostAuthor::query()->where('post_id', $post->getKey())->orderBy('user_id')->pluck('user_id') as $uid) {
+                    $ids[] = $uid;
+                }
+            } catch (\Illuminate\Database\QueryException) {
+                // tabel post_users belum ada (php artisan migrate): hanya penulis utama
+            }
+        }
+
+        return ArticleWorkflow::authorIds($ids);
     }
 
     /**

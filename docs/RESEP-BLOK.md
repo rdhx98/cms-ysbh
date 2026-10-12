@@ -29,6 +29,8 @@ Kelas bantu (peta gaya, pengubah teks) taruh di `app/Content/Blocks/`.
 
 **Kapan masih perlu mengubah berkas lama?** Hanya bila blok butuh **jenis kontrol baru** di inspektur (mis. daftar gambar): tambahkan `Field::...` di `app/Editor/Field.php` dan satu `@case` di `field.blade.php`, sekali saja. Kontrol yang sudah ada: teks, teks per bahasa (satu/banyak baris), teks berformat, pilihan segmented/select/swatches, ikon, sakelar, media (`Field::media($key, $label, '')` = semua berkas, dengan nama berkas ditampilkan; bawaan `'image'`), tautan, dan daftar berulang.
 
+**Jarak bawah (rilis 32) otomatis:** registri menambahkan kontrol `data.margin_bottom` ke setiap blok tingkat atas yang belum punya, dan `sections.blade.php` memasang kelasnya pada pembungkus; modul tidak perlu mencetaknya. Pembersih modul hanya mengembalikan kunci miliknya, tetapi `BlockSanitizer::forType` mempertahankan `margin_bottom` yang sah (`Spacing::keep`). Jangan mencetak margin lagi di root tampilan modul (jarak akan dobel).
+
 Catatan: blok **Tombol** masih bawaan (bukan modul); perilakunya sama.
 
 ## Jebakan yang sudah pernah terjadi (jangan ulangi)

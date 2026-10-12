@@ -173,7 +173,8 @@ export function registerEditor(Alpine) {
     panel: null, // "block:heading" | "element:text"
     base: null, // path wire node ini, mis. "content.blk_1" atau "content.blk_1.data.cards.0.layout.children.1.children.0"
     lang: 'both', // 'id' | 'en' | 'both'
-    tab: 'page', // panel kanan: 'page' (pengaturan halaman) | 'block' (properti blok/elemen yang difokus)
+    tab: 'page', // panel kanan: 'page' (pengaturan halaman) | 'block' (properti blok/elemen yang difokus) | 'review' (artikel) | 'audit'
+    reviewUnread: 0, // jumlah pesan/peristiwa baru dari orang lain di tab Review (dihitung reviewChat; per peramban)
 
     focusBlock(id, type) {
       this.id = id
@@ -917,6 +918,218 @@ export function registerEditor(Alpine) {
       },
     }),
   )
+
+  /**
+   * Percakapan tab Review (rilis 49 rev 3). Server merender seluruh gelembung (data-chat-id / data-mine); komponen ini hanya mengurus:
+   *  - lencana "belum dibaca" di ikon tab (jumlah entri orang lain dengan id > id terakhir yang dilihat; disimpan per artikel dan per
+   *    pengguna di localStorage PERAMBAN INI, jadi tidak ikut berpindah ke perangkat lain);
+   *  - menggulir ke pesan terbaru dan menandai "sudah dibaca" selagi tab Review terbuka;
+   *  - mengirim pesan lewat $wire.sendMessage(teks, idBlok|null) (rilis 50: pesan boleh menempel pada blok yang sedang difokus di kanvas);
+   *  - tombol "Tandai selesai" / "Buka lagi" pada pesan berpenanda ($wire.resolvePin), chip blok (fokus ke blok), dan loncat ke pesan dari
+   *    lencana penanda di kanvas (peristiwa window 'review-goto').
+   * MutationObserver dipakai karena Livewire merender ulang elemen ini lewat morph tanpa menjalankan ulang x-data.
+   */
+  Alpine.data('reviewChat', (postId, userId) => ({
+    draft: '',
+    sending: false,
+    pin: false, // centang "Kaitkan pesan ke blok terpilih"
+    seen: 0,
+    _mo: null,
+    _goto: null,
+    _root: null, // akar komponen: di dalam ekspresi x-show, $el menunjuk elemen yang sedang dievaluasi, bukan akar
+    storeKey() {
+      return 'ysbh.review.' + (postId ?? 'new') + '.' + (userId ?? 'anon')
+    },
+    init() {
+      this._root = this.$el
+      try {
+        this.seen = parseInt(window.localStorage.getItem(this.storeKey()) || '0', 10) || 0
+      } catch (e) {
+        this.seen = 0
+      }
+      this.recount(true)
+      this._mo = new MutationObserver(() => this.recount(false))
+      this._mo.observe(this.$el, { childList: true, subtree: true })
+      this.$watch('$store.editor.tab', () => this.recount(true))
+      this._goto = (e) => this.goto(e && e.detail && e.detail.id)
+      window.addEventListener('review-goto', this._goto)
+    },
+    destroy() {
+      if (this._mo) this._mo.disconnect()
+      if (this._goto) window.removeEventListener('review-goto', this._goto)
+    },
+    // ---- penanda blok (rilis 50)
+    labelFor(id) {
+      const el = this._root && this._root.querySelector('[data-bl="' + String(id).replace(/[^A-Za-z0-9_-]/g, '') + '"]')
+      return el ? el.textContent.trim() : ''
+    },
+    // id blok yang difokus DAN ada di isi artikel (label dirender server); elemen kartu / blok yatim = null
+    focusId() {
+      const id = Alpine.store('editor').id
+      return typeof id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(id) && this.labelFor(id) ? id : null
+    },
+    focusLabel() {
+      const id = this.focusId()
+      return id ? this.labelFor(id) : ''
+    },
+    // chip di gelembung: fokus ke blok itu (inspektur + sorot di kanvas)
+    focusPin(blockId) {
+      const type = this.$wire.$get('content.' + blockId + '.type')
+      if (type) Alpine.store('editor').focusBlock(blockId, type)
+    },
+    // dari lencana di kanvas: buka tab ini dan gulir ke pesan terbuka terakhir pada blok itu (atau pesan terakhir bila semuanya selesai)
+    goto(blockId) {
+      if (typeof blockId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(blockId)) return
+      Alpine.store('editor').tab = 'review'
+      setTimeout(() => {
+        const all = Array.from(this._root.querySelectorAll('[data-chat-block="' + blockId + '"]'))
+        const el = all.filter((n) => n.dataset.pinState === 'open').pop() || all.pop()
+        if (!el) return
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        el.classList.add('ring-2', 'ring-amber-400', 'rounded-lg')
+        setTimeout(() => el.classList.remove('ring-2', 'ring-amber-400', 'rounded-lg'), 1800)
+      }, 60)
+    },
+    async resolve(messageId, on) {
+      if (this.sending) return
+      this.sending = true
+      try {
+        await this.$wire.resolvePin(messageId, !!on)
+      } finally {
+        this.sending = false
+      }
+    },
+    rows() {
+      return Array.from(this.$el.querySelectorAll('[data-chat-id]')).map((el) => ({ id: parseInt(el.dataset.chatId, 10) || 0, mine: el.dataset.mine === '1' }))
+    },
+    recount(scroll) {
+      const rows = this.rows()
+      const store = Alpine.store('editor')
+      const top = rows.reduce((m, r) => Math.max(m, r.id), 0)
+      if (store.tab === 'review') {
+        if (top > this.seen) {
+          this.seen = top
+          try {
+            window.localStorage.setItem(this.storeKey(), String(top))
+          } catch (e) {
+            /* penyimpanan tidak tersedia: hitungan saja yang tidak diingat */
+          }
+        }
+        store.reviewUnread = 0
+        if (scroll || top > 0) this.$nextTick(() => this.toEnd())
+      } else {
+        store.reviewUnread = rows.filter((r) => !r.mine && r.id > this.seen).length
+      }
+    },
+    toEnd() {
+      const el = this.$refs.scroll
+      if (el) el.scrollTop = el.scrollHeight
+    },
+    async send() {
+      const text = this.draft.trim()
+      if (!text || this.sending) return
+      this.sending = true
+      try {
+        const ok = await this.$wire.sendMessage(text, this.pin ? this.focusId() : null)
+        if (ok) {
+          this.draft = ''
+          this.pin = false
+        }
+      } finally {
+        this.sending = false
+      }
+    },
+  }))
+
+  /**
+   * "Sedang dibuka oleh ..." (rilis 50). Denyut ke server tiap `interval` ms HANYA selagi tab terlihat; tab tersembunyi berhenti (namanya hilang
+   * dari layar orang lain setelah masa berlaku cache di server). Murni informasi: tidak mengunci apa pun. Galat jaringan diabaikan; setelah
+   * 5 galat beruntun denyut berhenti (mis. sesi berakhir) supaya tidak menghujani server.
+   */
+  Alpine.data('editorPresence', (cfg) => ({
+    others: [],
+    _timer: null,
+    _fails: 0,
+    _vis: null,
+    get label() {
+      const n = this.others.map((o) => o.name)
+      if (n.length <= 2) return 'Sedang dibuka oleh ' + n.join(' dan ')
+      return 'Sedang dibuka oleh ' + n[0] + ', ' + n[1] + ' dan ' + (n.length - 2) + ' lainnya'
+    },
+    init() {
+      this._vis = () => (document.hidden ? this.stop() : this.start())
+      document.addEventListener('visibilitychange', this._vis)
+      if (!document.hidden) this.start()
+    },
+    destroy() {
+      this.stop()
+      if (this._vis) document.removeEventListener('visibilitychange', this._vis)
+    },
+    start() {
+      if (this._timer || this._fails >= 5) return
+      this.beat()
+      this._timer = setInterval(() => this.beat(), cfg.interval || 30000)
+    },
+    stop() {
+      clearInterval(this._timer)
+      this._timer = null
+    },
+    async beat() {
+      try {
+        const r = await this.$wire.heartbeat()
+        this.others = Array.isArray(r) ? r.filter((o) => o && typeof o.name === 'string') : []
+        this._fails = 0
+      } catch (e) {
+        if (++this._fails >= 5) this.stop()
+      }
+    },
+  }))
+
+  /** Penulis artikel (tab Review): cari akun, tambah, lepas. Server memeriksa wewenang dan batas jumlah; hasil pencarian hanya nama. */
+  Alpine.data('authorPicker', () => ({
+    q: '',
+    results: [],
+    busy: false,
+    _t: null,
+    _seq: 0,
+    search() {
+      clearTimeout(this._t)
+      const q = this.q.trim()
+      if (q.length < 2) {
+        this.results = []
+        return
+      }
+      this._t = setTimeout(async () => {
+        const seq = ++this._seq
+        try {
+          const r = await this.$wire.searchAuthors(q)
+          if (seq === this._seq) this.results = Array.isArray(r) ? r : []
+        } catch (e) {
+          if (seq === this._seq) this.results = []
+        }
+      }, 250)
+    },
+    async add(id) {
+      this.busy = true
+      try {
+        if (await this.$wire.addAuthor(id)) {
+          this.q = ''
+          this.results = []
+        }
+      } finally {
+        this.busy = false
+      }
+    },
+    async remove(id, name) {
+      if (!window.confirm('Lepas ' + name + ' dari penulis artikel ini?')) return
+      this.busy = true
+      try {
+        await this.$wire.removeAuthor(id)
+      } finally {
+        this.busy = false
+      }
+    },
+  }))
 
   /**
    * Tab "Riwayat" (audit trail, rilis 42). Memuat dari $wire.auditTrail(offset) setiap tab dibuka; permintaan lama yang terlambat

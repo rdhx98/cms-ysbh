@@ -1,8 +1,12 @@
+> **Catatan rilis 24:** dokumen ini adalah catatan sejarah rilis 13. Alamat `/artikel`, `/articles` (301), `reserved_slugs` berisi enam slug, dan `articles_index_slug` bertipe teks sudah **diganti**: sekarang `/articles` (EN) dan `/id/artikel` (ID), semua kunci config per bahasa. Yang berlaku: `docs/BAHASA.md`, `docs/LANDING-RAMPING.md`.
+
 # Landing tahap 1: halaman dan artikel dari CMS
 
-Dasar: berkas landing yang Anda kirim (`web.php`, `app.css`, `head`, `header`, `footer`, layout `app`, `Navigation`, `Setting`, `User`, `AppServiceProvider`, `app.js`). Hasil tahap ini: halaman CMS tampil di `/{slug}`, artikel di `/artikel/{slug}`, indeks artikel di `/artikel`, menu bisa menunjuk halaman CMS, dan SEO dasar (judul, deskripsi, canonical, Open Graph). Halaman statis Anda (`/about`, `/programs/...`) tetap jalan.
+Dasar: berkas landing yang Anda kirim (`web.php`, `app.css`, `head`, `header`, `footer`, layout `app`, `Navigation`, `Setting`, `User`, `AppServiceProvider`, `app.js`). Hasil tahap ini: halaman CMS tampil di `/{slug}`, artikel di `/artikel/{slug}`, indeks artikel di `/artikel`, menu bisa menunjuk halaman CMS, dan SEO dasar (judul, deskripsi, canonical, Open Graph). 
 
-> **Cara tercepat memasang semuanya: `docs/PASANG-LANDING.md`.** Satu perintah (`php tools\pasang-landing.php <landing> <cms>`, lalu `--apply`) menyalin 73 berkas, mencadangkan yang diganti, dan menjalankan pemeriksa. Bagian-bagian di bawah menjelaskan *apa* yang dipasang dan *mengapa*.
+> **Rilis 23 mengubah dasar ini:** halaman statis (`/about`, `/programs/...`, dst.) **dihapus**; semua isi situs dari CMS, beranda di `/`. Bagian di bawah yang menyebut rute statis menggambarkan rilis 13 sampai 22; keadaan sekarang ada di **`LANDING-RAMPING.md`**.
+
+> **Cara tercepat memasang semuanya: `docs/PASANG-LANDING.md`.** Satu perintah (`php tools\pasang-landing.php <landing> <cms>`, lalu `--apply`) menyalin 74 berkas, mencadangkan yang diganti, dan menjalankan pemeriksa. Bagian-bagian di bawah menjelaskan *apa* yang dipasang dan *mengapa*.
 
 ## Temuan pada berkas Anda
 | # | Temuan | Dampak | Perbaikan |
@@ -21,7 +25,7 @@ Dasar: berkas landing yang Anda kirim (`web.php`, `app.css`, `head`, `header`, `
 
 **Salin dari CMS (tujuh berkas)**, dari `resources/views/components/` CMS ke folder yang sama di landing:
 ```powershell
-$cms = "C:\jalur\cms-ysbh"; $landing = "C:\jalur\landing-ysbh"
+$cms = "D:\Herd\cms-ysbh"; $landing = "D:\Herd\landing-ysbh"
 $render = "$landing\resources\views\components\blocks\render"
 New-Item -ItemType Directory -Force $render | Out-Null
 foreach ($t in 'heading','paragraph','eyebrow','image','card-builder','step-group','multi-columns') {
@@ -42,7 +46,7 @@ Lapis kedua: **anchor blok kini dinormalkan di server** (`BlockSanitizer::clean`
 
 **Lalu jalankan pemeriksa** (dari folder zip yang diekstrak):
 ```powershell
-php tools\check-landing.php C:\jalur\landing-ysbh
+php tools\check-landing.php D:\Herd\landing-ysbh
 ```
 Keluarannya `GALAT`/`PERINGATAN` per butir, dengan petunjuk perbaikan. Berkas renderer asli Anda sudah diuji lewat mesin seksi kit (rilis 18): lihat bagian berikut.
 
@@ -100,7 +104,7 @@ Aturan keras: alamat harus absolut `http(s)` tanpa spasi, kutip, `<`, `>`, `&`, 
 - `composer.json`: Laravel ^13.7, Livewire ^4.1 (komponen `⚡` didukung), `mallardduck/blade-lucide-icons`, `spatie/laravel-translatable`. Tidak ada `spatie/laravel-activitylog` di landing, dan model landing memang tidak memakainya.
 
 ## Pemasangan (urut)
-1. **Sinkron kit ke landing** (dari folder zip): `php tools\sync-landing.php C:\jalur\landing` lalu `--apply`. 47 berkas (rilis 18: `RichText.php` dan `CoreBlocks.php` baru).
+1. **Sinkron kit ke landing** (dari folder zip): `php tools\sync-landing.php D:\Herd\landing-ysbh` lalu `--apply`. 47 berkas (rilis 18: `RichText.php` dan `CoreBlocks.php` baru).
 2. **Salin berkas di bawah ke landing** (folder `landing-app/` di zip; sama dengan yang ada di pesan):
 
 | Berkas | Tujuan di landing | Status |
@@ -120,8 +124,8 @@ Aturan keras: alamat harus absolut `http(s)` tanpa spasi, kutip, `<`, `>`, `&`, 
 
 3. **Sisi CMS (rilis 15)**: salin ke CMS `app/Content/Slug.php`, `ContentRules.php`, `SlugAudit.php`, `Rules/ReservedSlug.php`, dan `app/Console/Commands/AuditSlugs.php` (juga `PublicLookup.php`, yang sama dengan di landing). Tambahkan dua kunci dari `contoh-kode/config-slug-terlarang.php` ke `config/cms.php` CMS, lalu `php artisan optimize:clear` dan `php artisan cms:audit-slugs`.
 4. `.env` landing: `CMS_PUBLIC_URL=` (kosong), `CMS_COVER_TEMPLATE=/storage/posts/{file}` (sesuaikan), dan `MEDIA_URL=https://ysbh.org/storage` (lihat `DUA-APLIKASI.md`). Bila memakai pengguna basis data baca-saja: `SESSION_DRIVER=file`, `CACHE_STORE=file`, `QUEUE_CONNECTION=sync`.
-5. Salin tujuh renderer dari CMS (bagian "Dari CMS ke landing"); daftar isi dari `landing-app/` (dan ke CMS), lalu `php tools\check-landing.php C:\jalur\landing`.
-6. `php artisan view:clear`, `npm run build`, `php tests\blade-scan.php C:\jalur\landing`.
+5. Salin tujuh renderer dari CMS (bagian "Dari CMS ke landing"); daftar isi dari `landing-app/` (dan ke CMS), lalu `php tools\check-landing.php D:\Herd\landing-ysbh`.
+6. `php artisan view:clear`, `npm run build`, `php tests\blade-scan.php D:\Herd\landing-ysbh`.
 
 ## Menyematkan blok di halaman Blade statis
 Renderer blok bisa dipakai di halaman biasa tanpa CMS, mis. di beranda:

@@ -12,6 +12,7 @@ Judul, Paragraf, Eyebrow, Gambar, Kartu Builder, Grup Langkah (timeline), Kolom,
 | 1 ✅ | **Tombol** (*button-builder*, rilis 2; lihat `BLOK-TOMBOL.md`) | ajakan bertindak: Donasi, Unduh laporan, Hubungi kami | repeater; tautan ke halaman/artikel/berkas/URL/telepon/surel/anchor |
 | 2 ✅ | **Akordion / FAQ** (rilis 4; lihat `BLOK-AKORDION.md`) | halaman FAQ; keterangan program | daftar pertanyaan-jawaban; saat ini hanya ada sebagai elemen di dalam kartu |
 | 3 ✅ | **Daftar unduhan** (rilis 6; lihat `BLOK-UNDUHAN.md`) | Transparansi Laporan (PDF per tahun) | berkas dari file manager: judul, tahun, kategori; ukuran/jenis otomatis dari `media`; ikut "Digunakan Di" |
+| ✅ | **Tabel** (rilis 34; lihat `BLOK-TABEL.md`) | jadwal, mitra, rincian dana | kisi di panel, tempel dari Excel/Sheets |
 | 4 ✅ | **Callout** (rilis 7; lihat `BLOK-CALLOUT.md`) | peringatan/catatan penting di halaman kesehatan | nada: info / peringatan / sukses; ikon; teks |
 | 5 ✅ | **Video (YouTube/Vimeo)** (rilis 8; lihat `BLOK-VIDEO.md`) | penjelasan program, testimoni video | YouTube/Vimeo, mode privasi, keterangan |
 | 6 ✅ | **Artikel terbaru** (rilis 12; lihat `BLOK-ARTIKEL-TERBARU.md`) (dinamis) | beranda dan halaman program terisi otomatis | pilih kategori + jumlah; tanpa suntingan manual |

@@ -7,12 +7,12 @@ Dua folder: **kit** (zip yang sudah diekstrak) dan **cms** (proyek CMS, yang ber
 
 ## Langkah 1: buka terminal di folder kit
 ```powershell
-cd C:\kit\ysbh-cms-kit
+cd D:\Herd\claude\ysbh-cms-kit
 ```
 
 ## Langkah 2: lihat rencananya dulu (aman, tidak mengubah apa pun)
 ```powershell
-php tools\pasang-cms.php "C:\proyek\cms-ysbh"
+php tools\pasang-cms.php "D:\Herd\cms-ysbh"
 ```
 
 **Yang seharusnya Anda lihat jika CMS Anda memang rilis 12 yang utuh** (perkiraan dari riwayat rilis saya):
@@ -37,32 +37,43 @@ Kalimat **"TIDAK ADA YANG DIUBAH. Ada masalah..."** berarti ada yang harus diber
 
 ## Langkah 3: pasang
 ```powershell
-php tools\pasang-cms.php "C:\proyek\cms-ysbh" --apply
+php tools\pasang-cms.php "D:\Herd\cms-ysbh" --apply
 ```
 Alat ini mencadangkan setiap berkas yang diganti atau dihapus, menyalin berkas, lalu menjalankan pemindai direktif Blade pada CMS (menangkap bug `@context` pada JSON-LD). Bila ada satu masalah di tengah jalan, **tidak ada berkas yang berubah**.
 
-## Langkah 4: dua pengaturan yang HARUS Anda isi sendiri
+## Langkah 4: pengaturan yang HARUS Anda isi sendiri
 Alat ini tidak pernah mengubah `config`, `routes`, atau `.env` Anda.
 
-1. **`config/cms.php` di CMS**: tambahkan dua kunci di samping `design`, `lucide`, `fonts` (isinya juga ada di `contoh-kode/config-slug-terlarang.php`):
+1. **`config/cms.php` di CMS**: sejak rilis 24 kunci-kuncinya **per bahasa** (contoh lengkap: `contoh-kode/config-slug-terlarang.php`; arti dan alasan: `BAHASA.md`):
    ```php
-   "reserved_slugs" => ["about", "contact", "programs", "credibility", "transparancies", "impact"],
-   "articles_index_slug" => "artikel",
+   "default_locale" => "en",
+   "reserved_slugs" => ["en" => [], "id" => []],
+   "home_slug" => ["en" => "home", "id" => "beranda"],
+   "articles_index_slug" => ["en" => "articles", "id" => "artikel"],
+   "public" => [
+       "base" => env("CMS_PUBLIC_URL", ""),   // https://ysbh.org
+       "page" => ["en" => "/{slug}", "id" => "/id/{slug}"],
+       "article" => ["en" => "/articles/{slug}", "id" => "/id/artikel/{slug}"],
+       "home" => ["en" => "/", "id" => "/id"],
+       "articles" => ["en" => "/articles", "id" => "/id/artikel"],
+       "cover" => "/storage/posts/{file}",
+   ],
    ```
-   Tanpa `reserved_slugs`, editor hanya menolak slug teknis (`storage`, `build`, dst.), bukan rute statis situs Anda.
-2. **`config/app.php` di CMS**: tambahkan `'supported_locales' => ['en', 'id'],` di dekat `'locale'`.
+   Bentuk lama (teks atau daftar biasa) masih diterima dan berlaku untuk semua bahasa, tetapi tautan ke halaman berbahasa Indonesia baru benar bila templat per bahasa diisi. **`reserved_slugs` KOSONG** sejak rilis 23: bila CMS Anda masih memuat enam slug lama (`about`, `contact`, `programs`, `credibility`, `transparancies`, `impact`), **hapus**; entri itu membuat editor menolak menyimpannya. `home_slug` adalah slug halaman beranda tiap bahasa (dilayani di `/` dan `/id`). Lihat `LANDING-RAMPING.md`.
+2. **`config/app.php` di CMS**: `'supported_locales' => ['en', 'id'],` di dekat `'locale'`. `.env`: `APP_LOCALE=en`, `APP_FALLBACK_LOCALE=en`.
 
 ## Langkah 5: perintah di folder CMS
 ```powershell
-cd C:\proyek\cms-ysbh
+cd D:\Herd\cms-ysbh
 php artisan optimize:clear
 npm run build
 php artisan cms:audit-slugs
+php artisan cms:audit-translations
 ```
-`cms:audit-slugs` menampilkan halaman lama yang slug-nya bertabrakan dengan alamat tetap situs (halaman itu tersimpan dan tampak online, tetapi tidak akan pernah terbuka di situs). Bila ada, ganti slug-nya di editor. **Tidak ada migrasi baru sejak rilis 12**, jadi `php artisan migrate` tidak diperlukan.
+`cms:audit-translations` (rilis 24, hanya membaca) mendaftar halaman dan artikel yang belum atau setengah diterjemahkan (`BAHASA.md`). `cms:audit-slugs` menampilkan halaman lama yang slug-nya bertabrakan dengan alamat tetap situs (halaman itu tersimpan dan tampak online, tetapi tidak akan pernah terbuka di situs). Bila ada, ganti slug-nya di editor. **Rilis 26 tidak menambah migrasi.** Migrasi terakhir di kit tetap tabel `snippets` (`2026_10_07_000001_create_snippets_table`); `cms:seed-pages` membutuhkan tabel itu. Jalankan `php artisan migrate:status`: bila ada baris **Pending**, jalankan `php artisan migrate` lebih dulu; bila semuanya **Ran**, tidak ada yang perlu dilakukan.
 
 ## Yang akan terasa berbeda di CMS
-- Menyimpan **halaman** dengan slug `about`, `contact`, `programs`, `credibility`, `transparancies`, `impact`, atau slug teknis ditolak dengan pesan yang jelas. Artikel tidak terkena. Slug `artikel` diizinkan (kepala daftar artikel).
+- Menyimpan **halaman** dengan slug teknis (`storage`, `build`, `articles`, `robots`, ...) atau slug yang kelak Anda catat di `reserved_slugs` ditolak dengan pesan yang jelas. Sejak rilis 23 `about`, `contact`, `programs`, dan seterusnya **boleh** dipakai (daftar kosong). Artikel tidak terkena. Slug kepala daftar artikel (`articles` di EN, `artikel` di ID) diizinkan di bahasanya. Di bahasa EN, slug `id` ditolak karena `/id` adalah beranda bahasa Indonesia.
 - **Pratinjau tersimpan** menampilkan isi persis seperti situs publik, yaitu sesudah disaring: skrip, `<iframe>`, penangan `on*` dihilangkan, dan sematan `<iframe>` pada artikel lama tidak tampil (gunakan blok Video). Data di basis data **tidak berubah**.
 - Anchor blok dinormalkan saat disimpan: "Beban Kasus" menjadi `beban-kasus`; anchor yang sudah sah tidak berubah.
 

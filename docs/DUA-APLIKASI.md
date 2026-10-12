@@ -4,7 +4,7 @@
 
 Pilihan yayasan: **dua aplikasi Laravel yang berdiri sendiri**, supaya bila satu bermasalah yang lain tetap beroperasi.
 
-| | **CMS** (`kelola.ysbh.org`) | **Landing** (`ysbh.org`) |
+| | **CMS** (`cms.ysbh.org`) | **Landing** (`ysbh.org`) |
 |---|---|---|
 | Fungsi | admin: menulis dan mengubah konten | situs publik: menampilkan konten |
 | Rute publik `page.show` / `article.show` | **tidak punya** | **milik landing** |
@@ -31,15 +31,38 @@ Konten menyimpan tautan sebagai **ID** (`{"kind":"article","ref":9}`); alamatnya
 ```php
 'public' => [
     'base'    => env('CMS_PUBLIC_URL', ''),   // CMS: https://ysbh.org  |  landing: kosong
-    'page'    => '/{slug}',
-    'article' => '/artikel/{slug}',
+    'page'    => ['en' => '/{slug}',          'id' => '/id/{slug}'],          // rilis 24: per bahasa (teks = semua bahasa)
+    'article' => ['en' => '/articles/{slug}', 'id' => '/id/artikel/{slug}'],
+    'home'    => ['en' => '/',                'id' => '/id'],
+    'articles'=> ['en' => '/articles',        'id' => '/id/artikel'],
     'cover'   => '/storage/posts/{file}',   // nama berkas sampul artikel -> alamat gambar (blok Artikel Terbaru)
 ],
 ```
-- **CMS**: `CMS_PUBLIC_URL=https://ysbh.org` → tautan menjadi `https://ysbh.org/artikel/imunisasi-dasar` (absolut, menuju landing).
-- **Landing**: `base` kosong → `/artikel/imunisasi-dasar`. Rute `page.show` dan `article.show` di landing harus berjalan di jalur yang sama (contoh dan uji kontrak: `landing-app/routes/web.php`).
+- **CMS**: `CMS_PUBLIC_URL=https://ysbh.org` → tautan menjadi `https://ysbh.org/articles/basic-immunization` (EN) atau `https://ysbh.org/id/artikel/imunisasi-dasar` (ID), absolut, menuju landing.
+- **Landing**: `base` kosong → `/articles/basic-immunization`. Rute `page.show`, `article.show`, `id.page.show`, `id.article.show` di landing harus berjalan di jalur yang sama (contoh dan uji kontrak: `landing-app/routes/web.php`).
 - Bila `cms.public.*` tidak diatur, `LinkResolver` memakai rute bernama `page.show`/`article.show` **bila ada di aplikasi itu**, dan bila tidak ada, tautan tidak dirender. Tidak ada lagi galat "route not found" di CMS (bug di rilis ≤ 10).
 - Perubahan pola alamat = ubah templat di KEDUA aplikasi **dan** rute di landing, bersamaan.
+
+## Alamat: lokal (Herd) dan produksi (Hostinger)
+| | Lokal | Produksi |
+|---|---|---|
+| Landing | `http://landing-ysbh.test` | `https://ysbh.org` |
+| CMS | `http://cms-ysbh.test` | `https://cms.ysbh.org` |
+
+`.env` per aplikasi:
+| | Lokal | Produksi |
+|---|---|---|
+| Landing `APP_URL` | `http://landing-ysbh.test` | `https://ysbh.org` |
+| CMS `APP_URL` | `http://cms-ysbh.test` | `https://cms.ysbh.org` |
+| CMS `CMS_PUBLIC_URL` | `http://landing-ysbh.test` | `https://ysbh.org` |
+| Landing `CMS_PUBLIC_URL` | kosong | kosong |
+| `MEDIA_URL` (kedua aplikasi) | `http://landing-ysbh.test/storage` | `https://ysbh.org/storage` |
+| CMS `MEDIA_ROOT` | folder `public/storage` milik landing (jalur lengkapnya sesuai komputer Anda; harus folder biasa, bukan hasil `storage:link`) | `/home/uXXXXXXXX/domains/ysbh.org/public_html/storage` |
+
+> **Rilis 45: alamat gambar tidak lagi tersimpan sebagai kebenaran.** Blok Gambar menyimpan `url` + `media_id`, tetapi `url` kini dibentuk ulang dari `media_id` setiap konten ditampilkan (`MediaUrls`, dipanggil oleh `<x-content.sections>`) dan setiap dibuka di editor. Jadi pindah domain cukup mengganti `MEDIA_URL` (+ `config:clear`); isi database tidak perlu diubah. Pengecualian: blok bergambar yang tak punya `media_id` (lihat PERUBAHAN rilis 45).
+
+`APP_URL` landing dipakai peta situs dan `robots.txt`, jadi di produksi harus `https://ysbh.org` persis (tanpa `/` di belakang dan tanpa jalur). Sebelum rilis 23 `robots.txt` menulis domain tetap; sekarang mengikuti `APP_URL` di lokal maupun produksi.
+Bila lokal Anda lebih mudah memakai `MEDIA_URL=http://cms-ysbh.test/storage` di kedua aplikasi (cara C di bawah), itu cukup untuk pengembangan; produksi tetap memakai cara yang disarankan.
 
 ## Gambar dan berkas, secara rinci
 **Cara kerjanya.** Setiap unggahan punya satu baris di tabel `media` (kolom `disk` dan `path`, mis. `public` dan `galeri/a.jpg`). Alamat gambar dibentuk `Storage::disk('public')->url($path)`: **`url` disk + path**. Kedua aplikasi membaca baris yang sama, tetapi alamatnya ditentukan oleh konfigurasi disk di masing-masing; hasilnya sama hanya bila `MEDIA_URL` sama. Ada dua hal yang terpisah: **di mana berkas ditulis** (`root`) dan **alamat publiknya** (`url`).
@@ -67,11 +90,11 @@ Jalur `…/domains/<domain>/public_html` adalah format yang disebut panduan Host
 
 **Bila unggahan gagal** (pesan "failed to open stream", "Permission denied", atau "open_basedir restriction in effect"): PHP CMS tidak diizinkan menulis ke folder situs lain. Saya tidak menemukan keterangan resmi Hostinger tentang `open_basedir` untuk kasus ini; umumnya dibatasi ke folder akun, sehingga situs-situs dalam **satu akun** saling terjangkau, tetapi itu harus diuji (langkah 4). Alternatifnya:
 - **B**: biarkan `MEDIA_ROOT` di folder CMS (`storage/app/public`), lalu di landing buat tautan simbolik lewat SSH: `ln -s <folder-CMS>/storage/app/public <folder-landing>/storage`. Fungsi PHP `symlink()` dinonaktifkan, tetapi `ln -s` di SSH dilaporkan berhasil oleh pengguna; belum saya verifikasi untuk akun Anda, termasuk apakah web server mau mengikuti tautan lintas situs. Gambar tetap tampil walau aplikasi CMS mati, karena berkasnya di disk.
-- **C** (terakhir): `MEDIA_URL=https://kelola.ysbh.org/storage` di kedua aplikasi. Berfungsi, tetapi gambar halaman publik dimuat dari subdomain admin: ikut mati bila subdomain itu dimatikan atau diproteksi, dan nama host admin terlihat di halaman publik.
+- **C** (terakhir): `MEDIA_URL=https://cms.ysbh.org/storage` di kedua aplikasi. Berfungsi, tetapi gambar halaman publik dimuat dari subdomain admin: ikut mati bila subdomain itu dimatikan atau diproteksi, dan nama host admin terlihat di halaman publik.
 
 ## Memeriksa di hPanel (hasil verifikasi dan koreksi)
 **1. Subdomain: pakai "situs mandiri", bukan "folder kustom".** Artikel resmi Hostinger (diperbarui September 2026) menyebut dua cara:
-- **Cara 1 (disarankan): subdomain sebagai situs mandiri** (hPanel → Websites → tambah website → isi `kelola.ysbh.org`). Hasilnya situs sendiri dengan pengaturan sendiri: inilah pemisahan yang Anda inginkan (dua situs dalam satu akun).
+- **Cara 1 (disarankan): subdomain sebagai situs mandiri** (hPanel → Websites → tambah website → isi `cms.ysbh.org`). Hasilnya situs sendiri dengan pengaturan sendiri: inilah pemisahan yang Anda inginkan (dua situs dalam satu akun).
 - **Cara 2: subdomain sebagai bagian situs yang ada** (subfolder di dalam folder situs utama; di sinilah folder bawaan bisa diubah). **Jangan** dipakai: CMS akan hidup di dalam folder landing, sehingga tidak terpisah.
 
 *Koreksi atas saran saya sebelumnya:* saya menyebut opsi "folder kustom" untuk mengarahkan subdomain ke folder `public`. Opsi itu hanya ada pada Cara 2, dan Hostinger juga menyatakan folder utama (`public_html`) **tidak bisa diubah** pada paket web hosting. Maka **kedua aplikasi** (CMS dan landing) harus mengatasi `public_html` versus `public` Laravel dengan salah satu:
@@ -108,10 +131,10 @@ Renderer publik (mesin seksi, renderer blok, pencarian dan perakitan di `PublicL
 
 Setiap rilis kit (dijalankan dari folder zip yang diekstrak):
 ```powershell
-php tools\sync-landing.php C:\jalur\landing            # PERIKSA: berkas baru/berbeda (tidak mengubah apa pun)
-php tools\sync-landing.php C:\jalur\landing --apply    # salin yang baru/berbeda
+php tools\sync-landing.php D:\Herd\landing-ysbh            # PERIKSA: berkas baru/berbeda (tidak mengubah apa pun)
+php tools\sync-landing.php D:\Herd\landing-ysbh --apply    # salin yang baru/berbeda
 ```
-lalu di landing `php artisan view:clear` dan `php tests\blade-scan.php C:\jalur\landing`. Alat ini menolak folder yang bukan proyek Laravel, menolak jalur tidak aman, dan tidak pernah menyentuh berkas landing di luar daftar. Daftar kebutuhan landing (model, komponen, konfigurasi) dicetak oleh `php tools\landing-files.php`.
+lalu di landing `php artisan view:clear` dan `php tests\blade-scan.php D:\Herd\landing-ysbh`. Alat ini menolak folder yang bukan proyek Laravel, menolak jalur tidak aman, dan tidak pernah menyentuh berkas landing di luar daftar. Daftar kebutuhan landing (model, komponen, konfigurasi) dicetak oleh `php tools\landing-files.php`.
 
 **Yang harus disediakan landing sendiri** (bukan bagian kit): lima model (bagian di atas), komponen `<x-table-of-contents>`, renderer blok milik Anda (heading, paragraf, gambar, eyebrow, kartu, langkah, kolom, ...), konfigurasi `cms.lucide`, `app.supported_locales`, dan `cms.public` (`base`, `page`, `article`, `cover`), layout yang memuat Alpine (Livewire sudah memuatnya; Video, Galeri, dan FAQ memakainya), dan rute.
 

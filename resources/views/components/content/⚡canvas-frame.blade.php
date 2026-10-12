@@ -74,7 +74,9 @@ new #[Layout('layouts.landing.index')] class extends Component {
   // ---- Protokol bingkai <-> editor --------------------------------------------------------------------------------------------
   // Editor -> bingkai : {type:'canvas-refresh'} render ulang dari cache | {type:'canvas-focus', id, scroll} sorot blok
   //                     {type:'change-lang', lang} ganti bahasa tampilan (sama dengan protokol page-preview)
+  //                     {type:'canvas-pins', pins:{idBlok:{open,total}}} lencana penanda pesan review (rilis 50)
   // Bingkai -> editor : {type:'canvas-ready'} | {type:'canvas-select', id, blockType} blok diklik | {type:'canvas-expired'}
+  //                     {type:'canvas-pin', id} lencana penanda diklik
   // Pesan HANYA diterima dari jendela induk yang sama asalnya; di tab baru (tanpa induk) klik tetap berfungsi normal.
   if (! window.__canvasFrame) {
     window.__canvasFrame = true
@@ -113,6 +115,48 @@ new #[Layout('layouts.landing.index')] class extends Component {
       send({ type: 'canvas-select', id: el.getAttribute('data-block-id'), blockType: el.getAttribute('data-block-type') || '' })
     }, true)
 
+    // ---- Lencana penanda pesan review (rilis 50): lapisan `position:fixed` di body (DI LUAR akar komponen, jadi selamat dari morph Livewire).
+    // Diletakkan ulang saat gulir, ubah ukuran, atau isi komponen berubah; tidak digambar di tab baru (tanpa induk editor).
+    let pinMap = {}
+    let pinRaf = 0
+    const layer = document.createElement('div')
+    layer.id = 'canvas-pin-layer'
+    layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483000'
+    if (inFrame) document.body.appendChild(layer)
+    const layoutPins = () => {
+      pinRaf = 0
+      layer.textContent = ''
+      for (const [id, p] of Object.entries(pinMap)) {
+        if (! ID.test(id)) continue
+        const el = document.querySelector(`[data-block-id="${id}"]`)
+        if (! el) continue
+        const r = el.getBoundingClientRect()
+        if (r.bottom < 0 || r.top > window.innerHeight) continue
+        const open = Number(p.open) || 0
+        const b = document.createElement('button')
+        b.type = 'button'
+        b.setAttribute('data-pin', id)
+        b.title = open > 0 ? `${open} pesan belum selesai pada blok ini` : 'Semua pesan pada blok ini sudah selesai'
+        b.textContent = open > 0 ? String(open) : '✓'
+        b.style.cssText = `position:absolute;left:${Math.max(4, r.right - 28)}px;top:${Math.max(4, r.top + 6)}px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;border:2px solid #fff;`
+          + `font:700 11px/18px system-ui,sans-serif;color:#fff;cursor:pointer;pointer-events:auto;box-shadow:0 1px 3px rgba(0,0,0,.35);background:${open > 0 ? '#d97706' : '#059669'}`
+        b.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); send({ type: 'canvas-pin', id }) })
+        layer.appendChild(b)
+      }
+    }
+    const schedulePins = () => { if (inFrame && ! pinRaf) pinRaf = requestAnimationFrame(layoutPins) }
+    if (inFrame) {
+      window.addEventListener('scroll', schedulePins, { passive: true, capture: true })
+      window.addEventListener('resize', schedulePins)
+      window.addEventListener('load', schedulePins)
+      const root = document.querySelector('[data-canvas-frame]')
+      if (root) {
+        new MutationObserver(schedulePins).observe(root, { childList: true, subtree: true, attributes: true })
+        if (typeof ResizeObserver !== 'undefined') new ResizeObserver(schedulePins).observe(root)
+        root.addEventListener('load', schedulePins, true)
+      }
+    }
+
     window.addEventListener('message', (e) => {
       if (e.origin !== origin || e.source !== parentWin) return
       const m = e.data
@@ -124,6 +168,9 @@ new #[Layout('layouts.landing.index')] class extends Component {
         focusedId = typeof m.id === 'string' && ID.test(m.id) ? m.id : null
         paint()
         if (focusedId && m.scroll) scrollToBlock(focusedId)
+      } else if (m.type === 'canvas-pins') {
+        pinMap = m.pins && typeof m.pins === 'object' && ! Array.isArray(m.pins) ? m.pins : {}
+        schedulePins()
       } else if (m.type === 'change-lang' && typeof m.lang === 'string') {
         $wire.$set('lang', m.lang)
       }

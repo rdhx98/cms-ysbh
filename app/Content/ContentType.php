@@ -119,15 +119,20 @@ enum ContentType: string
      * Status yang SAH disimpan (validasi). Artikel: penulis biasa hanya draft dan review; admin/editor semuanya.
      * Status artikel saat ini tetap sah, supaya menyimpan tanpa mengubah status tidak ditolak.
      * Sejak rilis 38 artikel TIDAK lagi memilih status bebas: status berubah hanya lewat App\Content\ArticleWorkflow (builder::transition);
-     * aturan ini tinggal jaring pengaman di jalur simpan. Halaman dan snippet tetap memilih offline/online.
+     * aturan ini tinggal jaring pengaman di jalur simpan.
+     * Halaman dan snippet memilih offline/online, dan sejak rilis 49 rev 4 HANYA admin/editor ($canPublish) yang boleh mengubahnya:
+     * yang lain hanya mendapat status tersimpan saat ini (record baru: offline), jadi menyimpan isi tidak mengubah status.
      *
      * @return string[]
      */
     public function statusesFor(bool $canPublish, ?string $current = null): array
     {
         $all = $this->statuses();
-        if ($this !== self::Article || $canPublish) {
+        if ($canPublish) {
             return $all;
+        }
+        if ($this !== self::Article) {
+            return [$current !== null && in_array($current, $all, true) ? $current : $this->defaultStatus()];
         }
 
         $allowed = ['draft', 'review'];

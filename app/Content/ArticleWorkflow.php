@@ -10,7 +10,10 @@ use DateTimeInterface;
  *
  *   penulis (bukan admin/editor): menulis, menyimpan sebagai DRAF, mengajukan ke tinjauan, menarik kembali pengajuannya.
  *   admin & editor (peninjau)   : dari "Ditinjau" memutuskan: terbitkan sekarang / jadwalkan / kembalikan ke draf (wajib alasan) /
- *                                 tolak total (wajib alasan; TIDAK bisa dilanjutkan lagi).
+ *                                 tolak total (wajib alasan; TIDAK bisa dilanjutkan lagi). Selama draf dan tinjauan mereka memberi
+ *                                 MASUKAN lewat pesan (rilis 49) tanpa mengubah isi atau status; isi hanya diubah penulisnya.
+ *   beberapa penulis            : (rilis 49 rev 3) satu penulis utama (pembuat) + penulis lain; semuanya setara dalam menulis, mengajukan,
+ *                                 menarik kembali, dan berbalas pesan. $ownerId di bawah boleh berupa SATU id atau DAFTAR id penulis.
  *   tidak ada jalan pintas      : draf tidak bisa langsung terbit atau terjadwal, untuk siapa pun (admin juga harus melewati
  *                                 "Ditinjau"; yang menerbitkan boleh diri sendiri atau tidak, diatur `cms.article_self_review`).
  *
@@ -31,12 +34,15 @@ final class ArticleWorkflow
     public const REJECTED = 'rejected';
 
     public const NOTE_MAX = 500;
+    /** Aksi percakapan (rilis 50): tidak mengubah status maupun isi artikel; hanya menambah baris riwayat. Bukan keputusan, jadi bebas dari aturan empat mata. */
+    public const CHAT_ACTIONS = ['note', 'resolve', 'reopen'];
+    public const MAX_AUTHORS = 10;
     public const SCHEDULE_MAX_DAYS = 1095;
 
     /** status => [aksi => status tujuan] */
     public const TRANSITIONS = [
-        self::DRAFT => ['submit' => self::REVIEW],
-        self::REVIEW => ['recall' => self::DRAFT, 'publish' => self::PUBLISHED, 'schedule' => self::SCHEDULED, 'return' => self::DRAFT, 'reject' => self::REJECTED],
+        self::DRAFT => ['submit' => self::REVIEW, 'note' => self::DRAFT, 'resolve' => self::DRAFT, 'reopen' => self::DRAFT],
+        self::REVIEW => ['recall' => self::DRAFT, 'note' => self::REVIEW, 'resolve' => self::REVIEW, 'reopen' => self::REVIEW, 'publish' => self::PUBLISHED, 'schedule' => self::SCHEDULED, 'return' => self::DRAFT, 'reject' => self::REJECTED],
         self::SCHEDULED => ['publish' => self::PUBLISHED, 'schedule' => self::SCHEDULED, 'withdraw' => self::DRAFT],
         self::PUBLISHED => ['withdraw' => self::DRAFT, 'archive' => self::ARCHIVED],
         self::ARCHIVED => ['restore' => self::DRAFT],
@@ -47,6 +53,9 @@ final class ArticleWorkflow
     public const ACTIONS = [
         'submit' => ['label' => 'Ajukan review', 'tone' => 'primary', 'note' => 'optional', 'date' => false, 'reviewer' => false],
         'recall' => ['label' => 'Tarik kembali ke draf', 'tone' => 'neutral', 'note' => 'none', 'date' => false, 'reviewer' => false],
+        'note' => ['label' => 'Kirim pesan', 'tone' => 'neutral', 'note' => 'required', 'date' => false, 'reviewer' => false],
+        'resolve' => ['label' => 'Tandai selesai', 'tone' => 'neutral', 'note' => 'none', 'date' => false, 'reviewer' => false],
+        'reopen' => ['label' => 'Buka lagi', 'tone' => 'neutral', 'note' => 'none', 'date' => false, 'reviewer' => false],
         'publish' => ['label' => 'Terbitkan sekarang', 'tone' => 'success', 'note' => 'optional', 'date' => false, 'reviewer' => true],
         'schedule' => ['label' => 'Jadwalkan terbit', 'tone' => 'info', 'note' => 'optional', 'date' => true, 'reviewer' => true],
         'return' => ['label' => 'Kembalikan ke draf', 'tone' => 'warn', 'note' => 'required', 'date' => false, 'reviewer' => true],
@@ -64,32 +73,73 @@ final class ArticleWorkflow
         return (bool) ($actor['reviewer'] ?? false);
     }
 
-    /** $ownerId null = artikel baru (belum punya penulis): pemakai saat ini akan menjadi penulisnya. */
-    public static function isOwner(array $actor, int|string|null $ownerId): bool
+    /**
+     * Satu id atau daftar id penulis -> daftar string tanpa duplikat; null bila kosong (artikel baru / yatim: siapa pun dianggap penulisnya).
+     *
+     * @return list<string>|null
+     */
+    public static function authorIds(int|string|array|null $owners): ?array
+    {
+        $out = [];
+        foreach (is_array($owners) ? $owners : [$owners] as $o) {
+            if ($o === null || $o === '') {
+                continue;
+            }
+            $out[(string) $o] = (string) $o;
+        }
+
+        return $out === [] ? null : array_values($out);
+    }
+
+    /** $ownerId null/kosong = artikel baru (belum punya penulis): pemakai saat ini akan menjadi penulisnya. Daftar id = salah satunya. */
+    public static function isOwner(array $actor, int|string|array|null $ownerId): bool
+    {
+        $ids = self::authorIds($ownerId);
+        $id = $actor['id'] ?? null;
+
+        return $ids === null || ($id !== null && in_array((string) $id, $ids, true));
+    }
+
+    /** Boleh menambah/melepas penulis lain? Admin/editor, atau PENULIS UTAMA (pembuat). Penulis lain tidak, agar penulis utama tak bisa disingkirkan. */
+    public static function canManageAuthors(array $actor, int|string|null $mainOwnerId): bool
     {
         $id = $actor['id'] ?? null;
 
-        return $ownerId === null || ($id !== null && (string) $id === (string) $ownerId);
+        return self::isReviewer($actor) || ($id !== null && $mainOwnerId !== null && (string) $id === (string) $mainOwnerId);
     }
 
     /** Penulis hanya melihat artikelnya sendiri; admin/editor melihat semuanya. */
-    public static function canView(array $actor, int|string|null $ownerId): bool
+    public static function canView(array $actor, int|string|array|null $ownerId): bool
     {
         return self::isReviewer($actor) || self::isOwner($actor, $ownerId);
     }
 
     /**
-     * Boleh MENGUBAH isi (menyimpan)? Ditolak tidak bisa diubah siapa pun. Penulis: hanya draf miliknya (dalam tinjauan terkunci).
-     * Peninjau: semua status lain (memperbaiki salah ketik sebelum terbit, dll.); status tidak berubah oleh penyimpanan.
+     * Boleh MENGUBAH isi (menyimpan)? (rilis 49) Isi diubah oleh yang menulisnya, dan hanya selagi masih draf; peninjau tidak menyunting
+     * naskah orang lain selama proses tinjauan, ia memberi masukan lewat catatan (aksi "note").
+     *
+     *   Draf      : penulisnya saja (termasuk admin/editor yang menulis artikel itu sendiri).
+     *   Ditinjau  : tidak seorang pun (isi dibekukan; yang diputuskan = yang dilihat peninjau).
+     *   Terjadwal / Terbit / Arsip : peninjau (memperbaiki salah ketik); penulis tidak.
+     *   Ditolak   : tidak seorang pun.
+     * $reviewerEdits (`cms.article_reviewer_edits`, bawaan mati): bila menyala, peninjau boleh menyunting di semua status kecuali Ditolak
+     * (perilaku sebelum rilis 49).
      */
-    public static function canEdit(?string $status, array $actor, int|string|null $ownerId): bool
+    public static function canEdit(?string $status, array $actor, int|string|array|null $ownerId, bool $reviewerEdits = false): bool
     {
         $status = self::normalize($status);
         if ($status === self::REJECTED || !self::canView($actor, $ownerId)) {
             return false;
         }
+        if ($reviewerEdits && self::isReviewer($actor)) {
+            return true;
+        }
 
-        return self::isReviewer($actor) || $status === self::DRAFT;
+        return match ($status) {
+            self::DRAFT => self::isOwner($actor, $ownerId),
+            self::REVIEW => false,
+            default => self::isReviewer($actor),
+        };
     }
 
     public static function isFinal(?string $status): bool
@@ -119,12 +169,12 @@ final class ArticleWorkflow
      * Aturan empat mata (rilis 41): bila `cms.article_self_review` mati, akun yang MENULIS artikel atau yang MENGAJUKANNYA (pengajuan terakhir)
      * tidak boleh memutuskannya. Mengembalikan 'author' | 'submitter' | null (null = tidak terhalang). Hanya relevan untuk peninjau.
      */
-    public static function conflict(array $actor, int|string|null $ownerId, int|string|null $submitterId, bool $selfReview): ?string
+    public static function conflict(array $actor, int|string|array|null $ownerId, int|string|null $submitterId, bool $selfReview): ?string
     {
         if ($selfReview) {
             return null;
         }
-        if ($ownerId !== null && self::isOwner($actor, $ownerId)) {
+        if (self::authorIds($ownerId) !== null && self::isOwner($actor, $ownerId)) {
             return 'author';
         }
 
@@ -134,11 +184,14 @@ final class ArticleWorkflow
     /**
      * @param int|string|null $submitterId akun yang terakhir mengajukan artikel ini (ArticleTransitions::submitterOf); hanya dipakai bila $selfReview = false
      */
-    public static function allows(?string $status, string $action, array $actor, int|string|null $ownerId, bool $selfReview = true, int|string|null $submitterId = null): bool
+    public static function allows(?string $status, string $action, array $actor, int|string|array|null $ownerId, bool $selfReview = true, int|string|null $submitterId = null, bool $reviewerEdits = false): bool
     {
         $status = self::normalize($status);
         if (!isset(self::TRANSITIONS[$status][$action]) || !self::canView($actor, $ownerId)) {
             return false;
+        }
+        if (in_array($action, self::CHAT_ACTIONS, true)) {
+            return true;   // pesan (rilis 49 rev 3) dan tanda selesai/buka lagi (rilis 50): semua yang boleh melihat artikel ini -- penulis dan peninjau -- selagi Draf/Ditinjau
         }
         $owner = self::isOwner($actor, $ownerId);
         if ($action === 'recall') {
@@ -147,7 +200,9 @@ final class ArticleWorkflow
             return $owner || (!$selfReview && self::isSubmitter($actor, $submitterId));
         }
         if ($action === 'submit') {
-            return $owner || self::isReviewer($actor);   // admin/editor boleh mengajukan draf yang tertahan (mis. penulisnya sudah tidak ada)
+            // Mengajukan = hak penulisnya (rilis 49: peninjau tidak mengajukan naskah orang lain; ia memberi catatan). Pengecualian: draf tanpa
+            // penulis (artikel lama/impor, isOwner() true), dan keadaan darurat `cms.article_reviewer_edits` menyala (penulisnya sudah tidak ada).
+            return $owner || (self::isReviewer($actor) && $reviewerEdits);
         }
         if (!self::isReviewer($actor)) {
             return false;
@@ -166,12 +221,15 @@ final class ArticleWorkflow
      *
      * @return list<array{action:string,label:string,tone:string,note:string,date:bool,to:string}>
      */
-    public static function actionsFor(?string $status, array $actor, int|string|null $ownerId, bool $selfReview = true, int|string|null $submitterId = null): array
+    public static function actionsFor(?string $status, array $actor, int|string|array|null $ownerId, bool $selfReview = true, int|string|null $submitterId = null, bool $reviewerEdits = false): array
     {
         $status = self::normalize($status);
         $out = [];
         foreach (self::ACTIONS as $action => $meta) {
-            if (!self::allows($status, $action, $actor, $ownerId, $selfReview, $submitterId)) {
+            if (in_array($action, ['resolve', 'reopen'], true)) {
+                continue;   // per pesan, bukan aksi status: tombolnya ada pada gelembung pesan berpenanda (rilis 50)
+            }
+            if (!self::allows($status, $action, $actor, $ownerId, $selfReview, $submitterId, $reviewerEdits)) {
                 continue;
             }
             $label = $meta['label'];
@@ -192,7 +250,7 @@ final class ArticleWorkflow
      * @return array{ok:bool,error:?string,to:?string,note:?string,publishedAt:DateTimeImmutable|null|false}
      *         publishedAt: false = jangan diubah; null = kosongkan; DateTimeImmutable = isi dengan itu
      */
-    public static function plan(?string $status, string $action, array $actor, int|string|null $ownerId, ?string $note, ?string $at, DateTimeInterface $now, ?DateTimeInterface $publishedAt = null, bool $selfReview = true, int|string|null $submitterId = null): array
+    public static function plan(?string $status, string $action, array $actor, int|string|array|null $ownerId, ?string $note, ?string $at, DateTimeInterface $now, ?DateTimeInterface $publishedAt = null, bool $selfReview = true, int|string|null $submitterId = null, bool $reviewerEdits = false): array
     {
         $status = self::normalize($status);
         $fail = fn (string $e) => ['ok' => false, 'error' => $e, 'to' => null, 'note' => null, 'publishedAt' => false];
@@ -203,7 +261,7 @@ final class ArticleWorkflow
         if ($status === self::REJECTED) {
             return $fail('Artikel yang ditolak tidak bisa dilanjutkan.');
         }
-        if (!self::allows($status, $action, $actor, $ownerId, $selfReview, $submitterId)) {
+        if (!self::allows($status, $action, $actor, $ownerId, $selfReview, $submitterId, $reviewerEdits)) {
             if (in_array($action, self::DECISIONS, true) && self::isReviewer($actor) && ($why = self::conflict($actor, $ownerId, $submitterId, $selfReview)) !== null && isset(self::TRANSITIONS[$status][$action])) {
                 return $fail('Aturan empat mata: artikel yang ' . ($why === 'author' ? 'Anda tulis' : 'Anda ajukan') . ' harus diputuskan admin atau editor lain.');
             }
@@ -214,7 +272,7 @@ final class ArticleWorkflow
         $meta = self::ACTIONS[$action];
         $note = $note === null ? '' : trim(preg_replace('/\R{3,}/u', "\n\n", str_replace("\r\n", "\n", $note)) ?? '');
         if ($meta['note'] === 'required' && $note === '') {
-            return $fail('Alasan wajib diisi.');
+            return $fail($action === 'note' ? 'Pesan wajib diisi.' : 'Alasan wajib diisi.');
         }
         if (mb_strlen($note) > self::NOTE_MAX) {
             return $fail('Catatan maksimal ' . self::NOTE_MAX . ' karakter.');
@@ -291,7 +349,7 @@ final class ArticleWorkflow
     {
         return [
             'submit' => 'mengajukan untuk ditinjau', 'recall' => 'menarik kembali ke draf', 'publish' => 'menerbitkan', 'schedule' => 'menjadwalkan terbit',
-            'return' => 'mengembalikan ke draf', 'reject' => 'menolak', 'withdraw' => 'menarik ke draf', 'archive' => 'mengarsipkan',
+            'return' => 'mengembalikan ke draf', 'note' => 'mengirim pesan', 'resolve' => 'menandai selesai', 'reopen' => 'membuka kembali', 'author-add' => 'menambahkan penulis', 'author-remove' => 'melepas penulis', 'reject' => 'menolak', 'withdraw' => 'menarik ke draf', 'archive' => 'mengarsipkan',
             'restore' => 'memulihkan ke draf', 'auto-publish' => 'menerbitkan otomatis sesuai jadwal',
         ][$action] ?? $action;
     }
@@ -305,6 +363,9 @@ final class ArticleWorkflow
             'publish' => 'Artikel diterbitkan.',
             'schedule' => 'Artikel dijadwalkan terbit' . ($when ? ' pada ' . $when->format('d M Y H:i') : '') . '.',
             'return' => 'Artikel dikembalikan ke draf bersama alasannya.',
+            'note' => 'Pesan terkirim.',
+            'resolve' => 'Pesan ditandai selesai.',
+            'reopen' => 'Pesan dibuka lagi.',
             'reject' => 'Artikel ditolak dan tidak bisa dilanjutkan.',
             'withdraw' => 'Artikel ditarik ke draf.',
             'archive' => 'Artikel diarsipkan.',
@@ -314,7 +375,7 @@ final class ArticleWorkflow
     }
 
     /** Kalimat penjelas untuk pengguna ini pada status ini. */
-    public static function hint(?string $status, array $actor, int|string|null $ownerId, bool $selfReview = true, int|string|null $submitterId = null): string
+    public static function hint(?string $status, array $actor, int|string|array|null $ownerId, bool $selfReview = true, int|string|null $submitterId = null, bool $reviewerEdits = false): string
     {
         $status = self::normalize($status);
         $reviewer = self::isReviewer($actor);
@@ -323,12 +384,12 @@ final class ArticleWorkflow
 
         return match ($status) {
             self::DRAFT => $own || $reviewer
-                ? ($reviewer && !$own ? 'Draf milik penulis lain. Penulis yang mengajukannya untuk ditinjau.' : 'Tulis dan simpan sebagai draf. Bila sudah siap, ajukan agar ditinjau admin atau editor.')
+                ? ($reviewer && !$own ? ($reviewerEdits ? 'Draf milik penulis lain. Penulis yang mengajukannya untuk ditinjau; Anda juga bisa mengirim pesan kepada penulis.' : 'Draf milik penulis lain: isinya hanya diubah penulisnya. Anda bisa mengirim pesan kepada penulis; penulis yang mengajukannya untuk ditinjau.') : 'Tulis dan simpan sebagai draf. Bila sudah siap, ajukan agar ditinjau admin atau editor; semua penulis artikel ini boleh mengajukannya.')
                 : '',
             self::REVIEW => $why !== null
                 ? 'Menunggu keputusan admin atau editor LAIN: artikel ini ' . ($why === 'author' ? 'Anda tulis' : 'Anda ajukan') . ', dan aturan empat mata tidak membolehkan Anda memutuskannya.' . ($why === 'submitter' || $own ? ' Salah ajukan? Tarik kembali ke draf.' : '')
                 : ($reviewer
-                    ? 'Menunggu keputusan Anda: terbitkan, jadwalkan, kembalikan ke penulis dengan alasan, atau tolak total.'
+                    ? 'Menunggu keputusan Anda: terbitkan, jadwalkan, kembalikan ke penulis dengan alasan, atau tolak total.' . ($reviewerEdits ? '' : ' Isi terkunci selama tinjauan; beri masukan lewat pesan.')
                     : 'Sedang ditinjau admin atau editor. Isi terkunci; tarik kembali ke draf bila ingin mengubahnya.'),
             self::SCHEDULED => 'Sudah disetujui dan menunggu waktu terbit. Tampil di situs otomatis saat waktunya tiba.',
             self::PUBLISHED => 'Tampil di situs. Mengubah artikel terbit hanya oleh admin atau editor; menariknya ke draf berarti harus ditinjau lagi.',

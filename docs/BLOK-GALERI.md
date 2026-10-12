@@ -12,7 +12,7 @@ Kumpulan gambar dari File Manager, ditampilkan sebagai **grid** atau **carousel*
 |---|---|
 | **Jenis: Foto** | petak berpotongan mengisi rasio (1:1, 4:3, 3:2, 16:9); keterangan tampil di bawah foto; foto bisa diperbesar |
 | **Jenis: Logo mitra** | kotak putih berasio 3:2, logo tampil **utuh**; tanpa keterangan dan tanpa pembesar |
-| **Tampilan: Grid** | semua gambar tertata; 2 kolom di ponsel, 3 di tablet, sesuai pilihan di desktop (2–6) |
+| **Tampilan: Grid** | semua gambar tertata; 2 kolom di ponsel, 3 di tablet, sesuai pilihan di desktop (1–6; **1 kolom** = satu gambar selebar blok di semua ukuran layar) |
 | **Tampilan: Carousel** | satu baris yang bisa digeser: 2 gambar per layar di ponsel, paling banyak 3 di tablet, sesuai pilihan di desktop; panah, geser sentuh, papan ketik |
 | **Logo hitam-putih** | logo tampil abu-abu dan agak pudar, berwarna penuh saat disorot atau difokus |
 | **Foto bisa diperbesar** | klik membuka pembesar (hanya jenis Foto); panah kiri/kanan berpindah foto, Esc menutup |
@@ -39,7 +39,7 @@ Memilih **banyak gambar sekaligus** dari File Manager (sekarang satu per satu; b
 ## Bentuk data
 ```json
 { "type": "gallery-builder", "data": {
-  "mode": "photos | logos", "layout": "grid | carousel", "columns": "2..6 (teks)", "ratio": "1:1 | 4:3 | 3:2 | 16:9",
+  "mode": "photos | logos", "layout": "grid | carousel", "columns": "1..6 (teks)", "ratio": "1:1 | 4:3 | 3:2 | 16:9",
   "grayscale": false, "lightbox": true, "autoplay": false,
   "items": [ { "id": "itm_ab12cd34", "title": {"id": "…", "en": "…"}, "caption": {"id": "…", "en": "…"},
                "image": {"media_id": 7, "url": "…/foto.jpg"}, "link": {"kind": "url", "ref": "https://…", "new_tab": true} } ] } }
