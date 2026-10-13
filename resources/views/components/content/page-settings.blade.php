@@ -56,6 +56,12 @@
       <x-editor.tags path="tags" :options="$tags" label="Tag" />
     </div>
 
+    {{-- Rilis 53: nama penulis di kepala halaman artikel (pengaturan dokumen di kolom content; tanpa migrasi) --}}
+    <div class="flex flex-col gap-1.5" data-show-author>
+      <x-editor.toggle path="settings.show_author" label="Tampilkan nama penulis" :live="true" />
+      <p class="text-[10px] leading-relaxed text-gray-400">Tampil di samping tanggal sebagai "Ditulis oleh …": penulis utama, lalu penulis tambahan. Mati = nama tidak ditampilkan (bawaan).</p>
+    </div>
+
     {{-- Thumbnail (rilis 40): dari gambar yang dipasang di isi artikel; bila tidak ada, dari File Manager --}}
     <x-content.thumbnail-picker :featured="$featured" :editable="$workflow['canEdit'] ?? true" />
 

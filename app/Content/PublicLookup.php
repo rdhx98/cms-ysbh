@@ -374,6 +374,33 @@ final class PublicLookup
     }
 
     /**
+     * Nama penulis artikel (rilis 53): penulis utama (`posts.user_id`) lalu penulis tambahan (`post_users`), dibaca dari `users.name`.
+     * Hanya membaca; tabel yang tidak ada atau galat apa pun = daftar kosong (kepala artikel tampil tanpa nama, halaman tidak rusak).
+     *
+     * @return list<string>
+     */
+    public static function authorNames(int $postId, mixed $mainId): array
+    {
+        try {
+            $extra = [];
+            try {
+                $extra = \Illuminate\Support\Facades\DB::table('post_users')->where('post_id', $postId)->pluck('user_id')->all();
+            } catch (\Throwable) {
+                $extra = [];   // tabel penulis tambahan belum ada
+            }
+            $ids = array_values(array_unique(array_filter(array_map('intval', array_merge([$mainId], $extra)), fn (int $i) => $i > 0)));
+            if ($ids === []) {
+                return [];
+            }
+            $names = \Illuminate\Support\Facades\DB::table('users')->whereIn('id', $ids)->pluck('name', 'id')->all();
+
+            return ArticleByline::names($mainId, $extra, $names);
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /**
      * Jumlah artikel terbit per kategori di $locale (null $ids = semua kategori). id kategori => jumlah.
      *
      * @param int[]|null $ids
