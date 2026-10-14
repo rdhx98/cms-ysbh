@@ -62,8 +62,20 @@
       <p class="text-[10px] leading-relaxed text-gray-400">Tampil di samping tanggal sebagai "Ditulis oleh …": penulis utama, lalu penulis tambahan. Mati = nama tidak ditampilkan (bawaan).</p>
     </div>
 
+    {{-- Rilis 54: artikel terkait (berdasarkan tag) tampil bawaan; centang untuk menyembunyikannya di artikel ini (pengaturan dokumen hide_related; tanpa migrasi) --}}
+    <div class="flex flex-col gap-1.5" data-hide-related>
+      <x-editor.toggle path="settings.hide_related" label="Sembunyikan artikel terkait" :live="true" />
+      <p class="text-[10px] leading-relaxed text-gray-400">Di bawah artikel tampil hingga 3 artikel lain yang berbagi tag. Centang bila tidak ingin menampilkannya di artikel ini. Artikel tanpa tag tidak menampilkan bagian ini.</p>
+    </div>
+
     {{-- Thumbnail (rilis 40): dari gambar yang dipasang di isi artikel; bila tidak ada, dari File Manager --}}
     <x-content.thumbnail-picker :featured="$featured" :editable="$workflow['canEdit'] ?? true" />
+
+    {{-- Rilis 56: thumbnail dari gambar yang sudah dipasang di isi artikel akan tampil dua kali; centang untuk menyembunyikan gambar lebar di halaman (pengaturan dokumen hide_hero; tanpa migrasi) --}}
+    <div class="flex flex-col gap-1.5" data-hide-hero>
+      <x-editor.toggle path="settings.hide_hero" label="Sembunyikan thumbnail di halaman artikel" :live="true" />
+      <p class="text-[10px] leading-relaxed text-gray-400">Thumbnail tetap dipakai di kartu artikel dan pratinjau media sosial. Centang bila gambarnya sudah dipasang di isi artikel, supaya tidak tampil dua kali.</p>
+    </div>
 
     <p class="rounded-md bg-amber-50 px-2.5 py-2 text-[10px] leading-relaxed text-amber-800">
       Builder menyimpan isi artikel sebagai <b>blok</b>. Pakai artikel percobaan sampai halaman publik artikel mendukung blok.

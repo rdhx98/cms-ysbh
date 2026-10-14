@@ -8,9 +8,11 @@
   Gaya bento ditulis di <style> kecil bawaan blok (kelas ".ula-…", warna merek dengan nilai cadangan heksa), supaya tidak bergantung pada kelas Tailwind
   yang belum dikompilasi.
   Gagal membaca basis data: blok tidak dirender (dilaporkan), halaman lain tetap tampil. Tanpa artikel: tidak dirender di situs; di kanvas tampil keterangan.
-  Prop `feed` dipakai halaman daftar artikel (landing: ⚡articles-index) yang memberi data berhalaman sendiri dari PublicLookup::articlesPage: jalur LAMA,
-  hanya daftar kartu (tanpa unggulan dan tanpa tombol halaman blok). `articleUrl`, `coverFile`, `mediaUrl`, `resolver`, `pageQuery` hanya untuk pengujian.
+  Prop `feed` memberi data sendiri (rows + categories): jalur KARTU SAJA, tanpa unggulan, chip, dan tombol halaman blok. Dipakai "Artikel terkait" di
+  halaman artikel (rilis 54); dulu juga halaman daftar artikel lama (⚡articles-index, dihapus di rilis 52). `articleUrl`, `coverFile`, `mediaUrl`, `resolver`, `pageQuery` hanya untuk pengujian.
   $currentArticleId (bila dibagikan oleh halaman artikel) dikeluarkan dari semua bagian.
+  Rilis 54: ?tag=slug (blok UTAMA) menyaring daftar; keterangan "Artikel bertag #nama · Hapus penyaring" tampil di atas daftar (juga saat hasilnya kosong).
+  "Artikel terkait" di halaman artikel memakai prop `feed` (jalur kartu saja) dengan judul bagian dari `data.title`.
 --}}
 @props([
   'block' => [],
@@ -27,6 +29,7 @@
 
 @php
   use App\Content\ArticleListing;
+  use App\Content\ArticleTags;
   use App\Content\Blocks\ArticleCards;
   use App\Content\Blocks\BlockSanitizer;
   use App\Content\Blocks\FileInfo;
@@ -52,12 +55,14 @@
   }
   $param = ArticleListing::pageParam($block['id'] ?? null, $primaryId);
   $filterParam = ArticleListing::filterParam($block['id'] ?? null, $primaryId);
+  $tagParam = ArticleListing::tagParam($block['id'] ?? null, $primaryId);
   $paged = ! $legacy && $clean['paging'] === 'pages';
   $featuredWanted = $legacy ? 0 : (int) $clean['featured_count'];
 
   $empty = ['featured' => [], 'rows' => [], 'categories' => [], 'total' => 0, 'page' => 1, 'pages' => 1, 'perPage' => (int) $clean['limit'], 'noCategories' => false];
   $chips = [];
   $active = null;
+  $activeTag = null;   // rilis 54: tag yang sedang menyaring daftar (?tag=), hanya di blok utama
   if ($legacy) {
       $found = ['rows' => $feed['rows'], 'categories' => $feed['categories']] + $empty;
   } else {
@@ -70,6 +75,7 @@
           $found = $listing['found'];
           $chips = $listing['showFilter'] ? $listing['chips'] : [];
           $active = $listing['active'];
+          $activeTag = $listing['activeTag'] ?? null;
       } catch (\Throwable $e) {
           if (function_exists('report')) {
               report($e);
@@ -133,6 +139,7 @@
   }
   $pageHref = fn (int $n): string => ArticleListing::href($query, [$param => $n], '#ula-' . $param, $basePath);
   $chipHref = fn (?string $slug): string => $inCanvas ? '#' : ArticleListing::href($query, [$filterParam => $slug, $param => null], '#ula-' . $param, $basePath);
+  $tagClearHref = ArticleListing::href($query, [$tagParam => null, $param => null], '#ula-' . $param, $basePath);
   $allChip = $lang === 'id' ? 'Semua' : 'All';
   $filterName = $lang === 'id' ? 'Saring menurut kategori' : 'Filter by category';
   $prevLabel = $lang === 'id' ? '← Sebelumnya' : '← Previous';
@@ -140,10 +147,11 @@
   $pagerName = $lang === 'id' ? 'Halaman artikel' : 'Article pages';
 
   $hasAny = count($featuredCards) || count($cards);
+  $tagNote = $activeTag !== null ? [ArticleTags::filterLabel($lang), ArticleTags::clearLabel($lang), ArticleTags::emptyLabel($lang)] : null;
   $tileCat = fn (array $card) => $clean['show_category'] && $card['category'] !== '' ? $card['category'] : '';
 @endphp
 
-@if ($hasAny || $chips)
+@if ($hasAny || $chips || $activeTag)
   <section id="ula-{{ $param }}" data-latest-articles class="ula" @if ($title !== '') aria-label="{{ $title }}" @endif>
     <style>
       .ula{--ula-forest:#064F3B;--ula-gold:#EBCC26;--ula-paper:#FBF7EA;--ula-ink:#12241C;--ula-soft:#4B5D53;--ula-line:rgba(6,79,59,.18)}
@@ -188,6 +196,11 @@
       a.ula-chip:hover{background:rgba(6,79,59,.07)}
       a.ula-chip:focus-visible{outline:3px solid var(--ula-gold);outline-offset:2px}
       .ula-chip[aria-current="true"]{background:var(--ula-forest);border-color:var(--ula-forest);color:var(--ula-paper)}
+      .ula-tagbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 1.5rem;font-size:14.5px;color:var(--ula-soft)}
+      .ula-tagbar strong{color:var(--ula-forest)}
+      .ula-tagclear{font-weight:700;color:var(--ula-forest)!important;text-decoration:underline!important;text-underline-offset:3px}
+      .ula-tagclear:focus-visible{outline:3px solid var(--ula-gold);outline-offset:2px}
+      .ula-none{margin:0;padding:1.5rem 0;color:var(--ula-soft)}
       .ula-pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin-top:3rem}
       .ula-pg{display:inline-grid;place-items:center;min-width:42px;height:42px;padding:0 16px;border-radius:99px;font-weight:700;font-size:14px;color:var(--ula-forest)}
       a.ula-pg:hover{background:rgba(6,79,59,.07)}
@@ -215,6 +228,16 @@
           <a class="ula-chip" href="{{ $chipHref($chip['slug']) }}" @if ($active !== null && $active['id'] === $chip['id']) aria-current="true" @endif data-ula-chip="{{ $chip['slug'] }}">{{ $chip['name'] }}</a>
         @endforeach
       </nav>
+    @endif
+
+    @if ($activeTag !== null)
+      <p class="ula-tagbar" data-ula-tag="{{ $activeTag['slug'] }}">
+        <span>{{ $tagNote[0] }} <strong>#{{ $activeTag['name'] }}</strong></span>
+        <a class="ula-tagclear" href="{{ $tagClearHref }}" data-ula-tag-clear>{{ $tagNote[1] }}</a>
+      </p>
+      @unless ($hasAny)
+        <p class="ula-none" data-ula-empty>{{ $tagNote[2] }}</p>
+      @endunless
     @endif
 
     @if ($bento)

@@ -21,10 +21,109 @@ final class PublicLookup
     /** Penanda: baca ulang kategori pada pemanggilan berikut (flush). */
     private static bool $categoriesStale = false;
 
+    /** Penanda: baca ulang tag pada pemanggilan berikut (flush). */
+    private static bool $tagsStale = false;
+
+    /** Isi footer mentah dari tabel site_settings (rilis 55), diingat per permintaan. */
+    private static ?string $footerRaw = null;
+
+    private static bool $footerLoaded = false;
+
+    /** Palet warna mentah dari tabel site_settings (rilis 57), diingat per permintaan. */
+    private static ?string $paletteRaw = null;
+
+    private static bool $paletteLoaded = false;
+
     public static function flush(): void
     {
         self::$siblings = [];
+        self::$footerLoaded = false;
+        self::$paletteLoaded = false;
         self::$categoriesStale = true;
+        self::$tagsStale = true;
+    }
+
+    /**
+     * Rilis 55: isi footer untuk bahasa $locale, siap tampil (SiteFooter::view). Sumber: tabel site_settings, kunci "footer", yang diisi
+     * dari CMS; belum ada / tabel belum dibuat / data rusak = isi bawaan (sama dengan footer lama). TIDAK PERNAH melempar galat.
+     */
+    public static function footer(string $locale): array
+    {
+        try {
+            $lang = Languages::fromConfig();
+            $locales = $lang['locales'];
+            $default = $lang['default'];
+        } catch (\Throwable) {
+            $locales = ['en', 'id'];
+            $default = 'en';
+        }
+        try {
+            if (!self::$footerLoaded) {
+                $value = \Illuminate\Support\Facades\DB::table('site_settings')->where('key', SiteFooter::KEY)->value('value');
+                self::$footerRaw = is_string($value) ? $value : null;
+                self::$footerLoaded = true;
+            }
+            $data = SiteFooter::resolve(self::$footerRaw);
+        } catch (\Throwable) {
+            $data = SiteFooter::defaults();   // tabel belum ada (migrasi belum dijalankan) atau basis data bermasalah
+            self::$footerLoaded = true;
+            self::$footerRaw = null;
+        }
+
+        return SiteFooter::view($data, $locale, $locales, $default, fn (string $url, string $l) => self::localizeUrl($url, $l));
+    }
+
+    /**
+     * Rilis 57: CSS variabel palet warna untuk <head> (":root{--pal-forest:#…;--pal-forest-on:#…;…}"), dari tabel site_settings kunci "palette".
+     * Belum diatur / tabel belum ada / data rusak = warna bawaan (Palette::defaults). TIDAK PERNAH melempar galat; hanya hex sah yang dicetak.
+     */
+    public static function paletteCss(): string
+    {
+        try {
+            if (!self::$paletteLoaded) {
+                $value = \Illuminate\Support\Facades\DB::table('site_settings')->where('key', Palette::KEY)->value('value');
+                self::$paletteRaw = is_string($value) ? $value : null;
+                self::$paletteLoaded = true;
+            }
+            $raw = self::$paletteRaw;
+        } catch (\Throwable) {
+            $raw = null;   // tabel belum ada atau basis data bermasalah
+            self::$paletteRaw = null;
+            self::$paletteLoaded = true;
+        }
+
+        return Palette::css(Palette::resolve($raw));
+    }
+
+    /**
+     * Tautan lokal satu isian ("/about-us") -> alamat versi bahasa $locale, aturan yang sama dengan menu (Navigation::localized). Tautan luar,
+     * mailto:, tel:, #anchor tidak diubah. Bila basis data / konfigurasi bermasalah, mengembalikan $url apa adanya (tidak pernah galat).
+     */
+    public static function localizeUrl(string $url, string $locale): string
+    {
+        try {
+            $lang = Languages::fromConfig();
+            $setting = function_exists('config') ? config('cms.articles_index_slug') : null;
+
+            return NavLinks::localize(
+                $url,
+                $locale,
+                $lang['locales'],
+                $lang['default'],
+                array_map(fn (string $l) => Languages::indexSlug($setting, $l), $lang['locales']),
+                fn (string $slug, string $l) => self::sibling('page', $slug, $l, $lang['locales'], $lang['default']),
+                fn (string $slug, string $l) => LinkResolver::address('page', $slug, $l),
+                fn (string $l) => LinkResolver::homeAddress($l),
+                fn (string $l) => LinkResolver::indexAddress($l),
+                function (string $slug, string $l) use ($lang) {
+                    $hit = self::categorySibling($slug, $l, $lang['locales'], $lang['default']);
+
+                    return $hit === null ? null : LinkResolver::categoryAddress($hit['slug'], $hit['locale']);
+                },
+            );
+        } catch (\Throwable) {
+            return $url;
+        }
     }
 
     public const PAGE_STATUS = 'online';
@@ -262,13 +361,21 @@ final class PublicLookup
             $ids = $ids === null ? [$filterId] : array_values(array_intersect($ids, [$filterId]));
             $featuredCount = 0;
         }
+        // Penyaring tag dari alamat (rilis 54): SATU tag, digabung (DAN) dengan kategori. Seperti kategori, unggulan dan sematan tidak tampil.
+        $tagId = (int) ($o['filterTagId'] ?? 0);
+        if ($tagId > 0) {
+            $featuredCount = 0;
+        }
         $empty = ['featured' => [], 'rows' => [], 'categories' => [], 'total' => 0, 'page' => 1, 'pages' => 1, 'perPage' => $perPage, 'noCategories' => false];
         if ($ids === []) {
             return ['noCategories' => true] + $empty;
         }
 
-        $base = function () use ($locale, $ids, $exclude): \Illuminate\Database\Eloquent\Builder {
+        $base = function () use ($locale, $ids, $exclude, $tagId): \Illuminate\Database\Eloquent\Builder {
             $q = self::inCategories(self::publishedArticles($locale), $ids);
+            if ($tagId > 0) {
+                $q->whereIn('id', fn ($sub) => $sub->select('post_id')->from('post_tags')->where('tag_id', $tagId));
+            }
 
             return $exclude === null ? $q : $q->where('id', '!=', $exclude);
         };
@@ -336,7 +443,7 @@ final class PublicLookup
      * @param array<string,mixed> $clean data blok yang sudah dibersihkan (LatestArticlesBlock::sanitize)
      * @param array<string,mixed> $query parameter alamat (request()->query())
      * @param string[] $locales
-     * @return array{found:array<string,mixed>,chips:list<array<string,mixed>>,showFilter:bool,active:?array<string,mixed>,redirect:?string,pageParam:string,filterParam:string,requestedPage:?int}
+     * @return array{found:array<string,mixed>,chips:list<array<string,mixed>>,showFilter:bool,active:?array<string,mixed>,redirect:?string,pageParam:string,filterParam:string,requestedPage:?int,activeTag:?array{id:int,name:string,slug:string},tagRedirect:?string,tagParam:string}
      */
     public static function listing(array $clean, string $blockId, ?string $primaryId, string $lang, array $locales, array $query, ?int $excludeId = null): array
     {
@@ -357,6 +464,20 @@ final class PublicLookup
         }
         $requested = ArticleListing::requestedPage($query[$pageParam] ?? null);
 
+        // Penyaring tag (rilis 54): hanya blok UTAMA. Tag dicari di tabel tags menurut slug bahasa halaman; slug bahasa lain -> 301 ke slugnya
+        // di bahasa halaman; tidak dikenal atau belum punya slug di bahasa ini -> diabaikan (tampil seperti tanpa saringan).
+        $tagParam = ArticleListing::tagParam($blockId, $primaryId);
+        $activeTag = null;
+        $tagRedirect = null;
+        $rawTag = $query[$tagParam] ?? null;
+        if ($primaryId !== null && $primaryId === $blockId && is_string($rawTag) && $rawTag !== '') {
+            $hit = self::findTag($rawTag, $lang, $locales);
+            if ($hit !== null) {
+                $activeTag = ['id' => $hit['id'], 'name' => $hit['name'], 'slug' => $hit['slug']];
+                $tagRedirect = $hit['redirect'];
+            }
+        }
+
         $found = self::blockArticles([
             'locale' => $lang,
             'source' => $clean['source'] ?? 'all',
@@ -368,9 +489,10 @@ final class PublicLookup
             'page' => $requested ?? 1,
             'excludeId' => $excludeId,
             'filterCategoryId' => $active['id'] ?? 0,
+            'filterTagId' => $activeTag['id'] ?? 0,
         ]);
 
-        return ['found' => $found, 'chips' => $chips, 'showFilter' => !empty($clean['show_filter']) && count($chips) >= 2, 'active' => $active, 'redirect' => $redirect, 'pageParam' => $pageParam, 'filterParam' => $filterParam, 'requestedPage' => $requested];
+        return ['found' => $found, 'chips' => $chips, 'showFilter' => !empty($clean['show_filter']) && count($chips) >= 2, 'active' => $active, 'redirect' => $redirect, 'pageParam' => $pageParam, 'filterParam' => $filterParam, 'requestedPage' => $requested, 'activeTag' => $activeTag, 'tagRedirect' => $tagRedirect, 'tagParam' => $tagParam];
     }
 
     /**
@@ -398,6 +520,108 @@ final class PublicLookup
         } catch (\Throwable) {
             return [];
         }
+    }
+
+    /**
+     * Tag sebuah artikel untuk ditampilkan di $lang (rilis 54; aturan: ArticleTags::forArticle). Tabel tags atau post_tags yang tidak ada,
+     * atau galat apa pun = daftar kosong (artikel tampil tanpa deretan tag).
+     *
+     * @param string[] $locales
+     * @return list<array{id:int,name:string,slug:?string,slugs:array<string,string>}>
+     */
+    public static function articleTags(int $postId, string $lang, array $locales): array
+    {
+        try {
+            $ids = \Illuminate\Support\Facades\DB::table('post_tags')->where('post_id', $postId)->pluck('tag_id')->all();
+
+            return $ids === [] ? [] : ArticleTags::forArticle(self::tagRows(), $ids, $lang, $locales);
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * Artikel terkait (rilis 54): artikel TERBIT lain di $lang yang berbagi tag dengan artikel $postId, paling banyak tag sama dulu, lalu
+     * terbaru (ArticleTags::rank). Bentuk keluaran sama dengan blockArticles (rows + categories), siap untuk ArticleCards::prepare.
+     * Tanpa tag, tanpa artikel lain, atau galat = rows kosong.
+     *
+     * @return array{rows:list<array<string,mixed>>,categories:array<int,mixed>}
+     */
+    public static function relatedArticles(int $postId, string $lang, int $limit = ArticleTags::RELATED_LIMIT): array
+    {
+        $none = ['rows' => [], 'categories' => []];
+        try {
+            $tagIds = array_values(array_unique(array_map('intval', \Illuminate\Support\Facades\DB::table('post_tags')->where('post_id', $postId)->pluck('tag_id')->all())));
+            if ($tagIds === []) {
+                return $none;
+            }
+            $shared = \Illuminate\Support\Facades\DB::table('post_tags')
+                ->selectRaw('post_id, COUNT(DISTINCT tag_id) as c')
+                ->whereIn('tag_id', $tagIds)->where('post_id', '!=', $postId)
+                ->groupBy('post_id')->orderByDesc('c')->limit(ArticleTags::RELATED_CANDIDATES)
+                ->pluck('c', 'post_id')->all();
+            if ($shared === []) {
+                return $none;
+            }
+            $dates = [];
+            foreach (self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $lang)->whereIn('id', array_map('intval', array_keys($shared)))->toBase()->get(['id', 'published_at']) as $r) {
+                $dates[(int) $r->id] = (string) $r->published_at;
+            }
+            $order = ArticleTags::rank($shared, $dates, max(1, min(12, $limit)));
+            if ($order === []) {
+                return $none;
+            }
+            $feed = self::feed(\App\Models\Post::query()->whereIn('id', $order));
+            $byId = [];
+            foreach ($feed['rows'] as $row) {
+                $byId[(int) $row['id']] = $row;
+            }
+            $rows = [];
+            foreach ($order as $id) {
+                if (isset($byId[$id])) {
+                    $rows[] = $byId[$id];
+                }
+            }
+
+            return ['rows' => $rows, 'categories' => $feed['categories']];
+        } catch (\Throwable) {
+            return $none;
+        }
+    }
+
+    /**
+     * Semua tag, nilai MENTAH kolom (tabel kecil: dibaca sekali per permintaan, dicocokkan di PHP seperti kategori). Kolom `slug` boleh tidak ada.
+     *
+     * @return list<array{id:mixed,name:mixed,slug:mixed}>
+     */
+    private static function tagRows(): array
+    {
+        static $rows = null;
+        if ($rows !== null && !self::$tagsStale) {
+            return $rows;
+        }
+        self::$tagsStale = false;
+        try {
+            try {
+                $found = \App\Models\Tag::query()->orderBy('id')->limit(2000)->get(['id', 'name', 'slug']);
+            } catch (\Throwable) {
+                $found = \App\Models\Tag::query()->orderBy('id')->limit(2000)->get(['id', 'name']);
+            }
+            $rows = [];
+            foreach ($found as $tag) {
+                $rows[] = ['id' => $tag->getKey(), 'name' => $tag->getRawOriginal('name'), 'slug' => $tag->getRawOriginal('slug')];
+            }
+        } catch (\Throwable) {
+            $rows = [];
+        }
+
+        return $rows;
+    }
+
+    /** Tag untuk alamat "?tag={slug}" (aturan sama dengan kategori: CategoryLookup::find). */
+    public static function findTag(string $slug, string $locale, array $locales = ['en', 'id']): ?array
+    {
+        return CategoryLookup::find(self::tagRows(), $slug, $locale, $locales);
     }
 
     /**

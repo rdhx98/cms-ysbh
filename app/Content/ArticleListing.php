@@ -19,6 +19,8 @@ final class ArticleListing
 {
     public const PAGE = 'page';
     public const FILTER = 'category';
+    /** Penyaring tag (rilis 54): "?tag=slug", hanya untuk blok UTAMA, bisa digabung dengan ?category= (keduanya harus cocok). */
+    public const TAG = 'tag';
     public const TYPE = 'latest-articles-builder';
 
     /**
@@ -58,6 +60,20 @@ final class ArticleListing
         $id = is_scalar($blockId) ? trim((string) $blockId) : '';
 
         return $id === '' ? 'kategori' : 'kat' . substr(sha1($id), 0, 6);
+    }
+
+    /**
+     * Nama parameter tag: "tag" untuk blok utama. Blok lain TIDAK menyaring menurut tag (tag datang dari tautan di artikel, yang selalu
+     * menuju daftar utama); namanya "tag" + kode blok hanya supaya tautan "Hapus penyaring" tidak pernah menyentuh parameter blok utama.
+     */
+    public static function tagParam(mixed $blockId, ?string $primaryId): string
+    {
+        if ($primaryId !== null && is_scalar($blockId) && (string) $blockId === $primaryId) {
+            return self::TAG;
+        }
+        $id = is_scalar($blockId) ? trim((string) $blockId) : '';
+
+        return $id === '' ? 'label' : 'tag' . substr(sha1($id), 0, 6);
     }
 
     /**

@@ -164,6 +164,21 @@ final class LinkResolver
         return $index === null ? null : $index . '?category=' . rawurlencode($slug);
     }
 
+    /**
+     * Alamat ARTIKEL BERTAG bahasa $locale (rilis 54): "{alamat daftar artikel}?tag={slug}" (mis. "/articles?tag=stunting",
+     * "/id/artikel?tag=stunting"). $slug = slug tag DI BAHASA itu. Daftarnya hanya tersaring bila halaman daftar punya blok Artikel Terbaru
+     * UTAMA (berhalaman atau bersaringan). null bila alamat daftar tidak diatur/rusak atau slug tidak sah. Tidak pernah galat.
+     */
+    public static function tagAddress(string $slug, ?string $locale = null): ?string
+    {
+        if (strlen($slug) > 190 || !\App\Content\Slug::isValid($slug)) {
+            return null;
+        }
+        $index = self::indexAddress($locale);
+
+        return $index === null ? null : $index . '?tag=' . rawurlencode($slug);
+    }
+
     private static function config(string $key): mixed
     {
         try {
