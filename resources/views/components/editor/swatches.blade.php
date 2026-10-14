@@ -34,6 +34,19 @@
           'hex' => '',
           default => $value,
         };
+        // Rilis 59: opsi dari palet membawa hex warnanya. Admin TIDAK mencetak palet (sidebar tetap warna tetap), jadi kelas bg-forest di sini
+        // akan berwarna bawaan dan slot kustom tak berwarna; wajah swatch dilukis langsung dengan hex dan kelasnya dibuang.
+        $swatchHex = \App\Content\Palette::hex($opt['hex'] ?? null);
+        $faceStyle = '';
+        if ($swatchHex !== null) {
+          $faceStyle = match ($mode) {
+            'text' => 'color:' . $swatchHex . ';background-color:' . (\App\Content\Palette::hex($opt['preview_hex'] ?? null) ?? '#FFFFFF'),
+            default => 'background-color:' . $swatchHex,
+          };
+          $face = '';
+        } elseif ($mode === 'hex') {
+          $faceStyle = 'background-color:' . $value;
+        }
       @endphp
       <div class="group/btn relative flex flex-col items-center">
         <button
@@ -44,7 +57,7 @@
           x-bind:class="isCi(@js($value))
             ? 'ring-2 ring-forest ring-offset-2 scale-110'
             : 'ring-1 hover:ring-offset-1 ring-gray-200/50'"
-          @if ($mode === 'hex') style="background-color: {{ $value }}" @endif
+          @if ($faceStyle !== '') style="{{ $faceStyle }}" @endif
           class="hover:ring-forest relative flex h-6 w-6 items-center justify-center overflow-hidden rounded-md border border-gray-200 text-sm font-semibold shadow-sm transition-all duration-300 hover:scale-110 hover:shadow-md hover:ring-2 focus:outline-none {{ $face }}"
         >
           @if ($mode === 'text')

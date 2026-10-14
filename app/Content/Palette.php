@@ -35,6 +35,18 @@ final class Palette
         'mist' => ['Mist', '#E9F1EB', ['misty']],
         'sage-soft' => ['Sage Muda', '#D2E7DF', []],
         'amber' => ['Amber', '#D97706', []],
+        // Rilis 60: warna program, selaras dengan palet yayasan. Tiap program: warna utama + warna muda (latar label/kartu; teks gelap terbaca, kontras > 10).
+        // Utama dipilih agar teks di atasnya (putih/gelap, otomatis) terbaca >= 4,5 dan tiap program tetap berbeda untuk buta warna merah-hijau.
+        'kia' => ['KIA', '#E0679A', []],
+        'kia-soft' => ['KIA Muda', '#FCDCEC', []],
+        'imunisasi' => ['Imunisasi', '#1A4793', []],
+        'imunisasi-soft' => ['Imunisasi Muda', '#DBE9FA', []],
+        'malaria' => ['Malaria', '#A347C2', []],
+        'malaria-soft' => ['Malaria Muda', '#EBE0F8', []],
+        'hiv' => ['HIV', '#A3153A', []],
+        'hiv-soft' => ['HIV Muda', '#FBD1CB', []],
+        'tbc' => ['TBC', '#57A630', []],
+        'tbc-soft' => ['TBC Muda', '#DFF2D4', []],
     ];
 
     /** @return list<string> kunci slot berurutan: bernama dulu, lalu custom-1..custom-8 */
@@ -270,6 +282,129 @@ final class Palette
         $lines[] = '}';
 
         return implode("\n", $lines) . "\n";
+    }
+
+    /**
+     * Rilis 58: @source inline(...) untuk Tailwind. Kelas seperti bg-custom-3 / text-aurum-soft / border-sage-soft dibentuk oleh PHP, jadi
+     * pemindai Tailwind tidak pernah melihatnya tertulis; tanpa baris ini kelasnya tidak dibuat dan warna tidak muncul. Taruh di LUAR @theme.
+     */
+    public static function sourceBlock(): string
+    {
+        $keys = implode(',', self::keys());
+
+        return "@source inline(\"{bg,text,border}-{{$keys}}\");\n@source inline(\"text-{{$keys}}-on\");\n";
+    }
+
+    /**
+     * Rilis 58: opsi untuk kontrol swatches, dibuat dari palet. Bentuknya sama dengan config('cms.design.*') (name, value, preview).
+     *
+     * @param 'bg'|'text'|'border'|'hex' $kind  bg = bg-{slot} | text = text-{slot} (preview: latar berkontras terbaik) | border = border-{slot} | hex = nilai #RRGGBB
+     * @param list<string>               $hide  slot yang disembunyikan dari picker ini
+     * @param list<string>               $extra pilihan tetap di luar palet: 'white', 'transparent'
+     * @return list<array<string,mixed>>
+     */
+    public static function swatchOptions(string $kind, mixed $palette, array $hide = [], array $extra = []): array
+    {
+        $palette = self::resolve($palette);
+        $out = [];
+
+        if (in_array('transparent', $extra, true) && $kind === 'border') {
+            $out[] = ['name' => 'Transparan', 'value' => 'border-transparent', 'preview' => 'bg-transparent', 'is_transparent' => true];
+        }
+        if (in_array('white', $extra, true) && in_array($kind, ['bg', 'border'], true)) {
+            $out[] = $kind === 'bg'
+                ? ['name' => 'Putih', 'value' => 'bg-white', 'hex' => '#FFFFFF']
+                : ['name' => 'Putih', 'value' => 'border-white', 'preview' => 'bg-white', 'hex' => '#FFFFFF'];
+        }
+
+        foreach ($palette as $key => $slot) {
+            if (($slot['hex'] ?? '') === '' || in_array($key, $hide, true)) {
+                continue;   // slot kustom kosong = belum dipakai; yang disembunyikan tidak ditampilkan
+            }
+            $name = $slot['label'] !== '' ? $slot['label'] : $key;
+            // 'hex' = warna slot saat ini, untuk wajah swatch di admin (admin tidak mencetak palet, jadi kelas bg-{slot} di sana bukan warna palet)
+            $out[] = match ($kind) {
+                'text' => ['name' => $name, 'value' => "text-$key", 'preview' => ($pv = self::previewBg($slot['hex'], $palette)), 'hex' => $slot['hex'], 'preview_hex' => self::previewHex($pv, $palette)],
+                'border' => ['name' => $name, 'value' => "border-$key", 'preview' => "bg-$key", 'hex' => $slot['hex']],
+                'hex' => ['name' => $name, 'value' => "var(--color-$key)", 'hex' => $slot['hex']],
+                default => ['name' => $name, 'value' => "bg-$key", 'hex' => $slot['hex']],
+            };
+        }
+
+        if (in_array('white', $extra, true) && $kind === 'text') {
+            $out[] = ['name' => 'Putih', 'value' => 'text-white', 'preview' => 'bg-charcoal', 'hex' => '#FFFFFF', 'preview_hex' => self::hex($palette['charcoal']['hex'] ?? '') ?? '#1F2937'];
+        }
+
+        return $out;
+    }
+
+    private static function previewHex(string $class, array $palette): string
+    {
+        $key = substr($class, 3);
+
+        return $key === 'white' ? '#FFFFFF' : (self::hex($palette[$key]['hex'] ?? '') ?? '#FFFFFF');
+    }
+
+    /** Kelas latar untuk memperagakan teks berwarna $hex: slot paper/charcoal/forest atau putih, mana yang paling kontras. */
+    private static function previewBg(string $hex, array $palette): string
+    {
+        $best = 'bg-white';
+        $bestRatio = self::contrast($hex, '#FFFFFF');
+        foreach (['paper', 'charcoal', 'forest'] as $key) {
+            $bg = self::hex($palette[$key]['hex'] ?? '');
+            if ($bg !== null && ($ratio = self::contrast($hex, $bg)) > $bestRatio) {
+                $best = "bg-$key";
+                $bestRatio = $ratio;
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * Rilis 59: nama warna (kunci slot ATAU nama lama: "forest", "foresty", "custom-3") -> kunci slot; selain itu null.
+     */
+    public static function slotFor(mixed $name): ?string
+    {
+        if (!is_string($name)) {
+            return null;
+        }
+        if (in_array($name, self::keys(), true)) {
+            return $name;
+        }
+        foreach (self::BASE as $key => $row) {
+            if (in_array($name, $row[2], true)) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    /** "var(--color-forest)" / "var(--color-foresty)" -> "var(--color-forest)" (nama lama dinormalkan); selain itu null. Aman dicetak ke style. */
+    public static function colorVar(mixed $value): ?string
+    {
+        if (!is_string($value) || preg_match('/^var\(--color-([a-z0-9-]{1,20})\)$/D', $value, $m) !== 1) {
+            return null;
+        }
+        $slot = self::slotFor($m[1]);
+
+        return $slot === null ? null : "var(--color-$slot)";
+    }
+
+    /**
+     * Kelas warna teks yang terbaca di atas kelas latar $bgClasses ("bg-forest", "bg-foresty text-white", "bg-custom-3").
+     * Latar slot -> "text-{slot}-on"; putih, transparan, berbayang (bg-x/50), kelas selain palet -> "text-charcoal" (seperti sebelum rilis 59).
+     */
+    public static function autoText(mixed $bgClasses): string
+    {
+        foreach (preg_split('/\s+/', is_string($bgClasses) ? trim($bgClasses) : '') ?: [] as $token) {
+            if (preg_match('/^bg-([a-z0-9-]+)$/D', $token, $m) === 1 && ($slot = self::slotFor($m[1])) !== null) {
+                return "text-$slot-on";
+            }
+        }
+
+        return 'text-charcoal';
     }
 
     /** Semua nama warna Tailwind yang diatur palet (slot + alias), untuk menghapus definisi lama di CSS. @return list<string> */

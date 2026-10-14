@@ -11,11 +11,14 @@
  *    URL, Email, Telepon, atau Anchor. Landing menerjemahkannya ke bahasa pembaca (NavLinks); pratinjau di bawah menunjukkan alamat tiap bahasa.
  *    `route_name` tidak lagi diisi (rute statis lama sudah dihapus rilis 23). Baris lama yang masih membawa rute mati ditandai dan harus dipilihkan tujuan baru.
  *  - Alamat divalidasi dengan aturan yang sama dengan tombol (LinkResolver): hanya https://, /jalur, mailto:, tel:, #anchor.
- *  - Baris yang menuju halaman yang belum online/tidak ada diberi tanda (tautan itu akan 404).
+ *  - Rilis 42: tujuan "Artikel per kategori" (pilih kategori dari daftar): menuju halaman yang menampung artikel satu kategori
+ *    ("/articles/category/{slug}" EN, "/id/artikel/kategori/{slug}" ID). Disimpan "/{daftar artikel}/category/{slug}" dan diterjemahkan ke bahasa pembaca.
+ *  - Baris yang menuju halaman atau kategori yang belum ada diberi tanda (tautan itu akan 404).
  *  - Simpan, hapus, dan urutan memeriksa login, memakai transaksi, dan memberi notifikasi (WithNotifications); urutan hanya menulis baris yang berubah.
  * Logika yang bisa diuji ada di App\Content\MenuTarget (tests/menu-target-test.php). Komponen ini sendiri belum dijalankan di Livewire sungguhan.
  */
 
+use App\Content\CategoryLookup;
 use App\Content\Languages;
 use App\Content\Links\LinkResolver;
 use App\Content\MenuTarget;
@@ -100,15 +103,23 @@ new class extends Component {
           $this->defaultLocale,
         );
         $missing =
-          $t["kind"] === "page" &&
           $t["ref"] !== "" &&
-          PublicLookup::sibling(
-            "page",
-            $t["ref"],
-            $this->defaultLocale,
-            $this->activeLocales,
-            $this->defaultLocale,
-          ) === null;
+          match ($t["kind"]) {
+            "page" => PublicLookup::sibling(
+              "page",
+              $t["ref"],
+              $this->defaultLocale,
+              $this->activeLocales,
+              $this->defaultLocale,
+            ) === null,
+            "category" => PublicLookup::categorySibling(
+              $t["ref"],
+              $this->defaultLocale,
+              $this->activeLocales,
+              $this->defaultLocale,
+            ) === null,
+            default => false,
+          };
 
         return [
           "id" => (int) $menu->id,
@@ -125,12 +136,55 @@ new class extends Component {
             $t["kind"] === null || $t["legacy"] !== ""
               ? "Tujuan perlu dipilih ulang."
               : ($missing
-                ? "Halaman ini belum online atau tidak ditemukan: tautannya akan 404."
+                ? ($t["kind"] === "category"
+                  ? "Kategori ini tidak ditemukan (dihapus atau slug berubah): tautannya akan 404."
+                  : "Halaman ini belum online atau tidak ditemukan: tautannya akan 404.")
                 : null),
           "is_active" => (bool) $menu->is_active,
         ];
       })
       ->all();
+  }
+
+  /**
+   * Kategori yang bisa dituju: [slug bahasa bawaan (atau bahasa lain yang ada) => nama]. Kategori tanpa slug di bahasa mana pun dilewati
+   * (tidak punya alamat). Urut nama.
+   *
+   * @return array<string,string>
+   */
+  #[Computed]
+  public function categoryOptions(): array
+  {
+    $out = [];
+    try {
+      foreach (
+        \App\Models\Category::query()->orderBy("id")->limit(500)->get()
+        as $category
+      ) {
+        $row = [
+          "id" => $category->getKey(),
+          "name" => $category->getRawOriginal("name"),
+          "slug" => $category->getRawOriginal("slug"),
+        ];
+        $slugs = CategoryLookup::slugs($row, $this->activeLocales);
+        $slug =
+          $slugs[$this->defaultLocale] ?? (array_values($slugs)[0] ?? null);
+        if ($slug !== null) {
+          $out[$slug] =
+            CategoryLookup::name(
+              $row,
+              $this->defaultLocale,
+              $this->activeLocales,
+            ) ?:
+            $slug;
+        }
+      }
+    } catch (\Throwable) {
+      return []; // tabel categories belum siap: pilihan kosong, bagian lain menu tetap berfungsi
+    }
+    asort($out, SORT_NATURAL | SORT_FLAG_CASE);
+
+    return $out;
   }
 
   #[Computed]
@@ -172,6 +226,18 @@ new class extends Component {
           ),
           fn(string $loc) => LinkResolver::homeAddress($loc),
           fn(string $loc) => LinkResolver::indexAddress($loc),
+          function (string $slug, string $loc) {
+            $hit = PublicLookup::categorySibling(
+              $slug,
+              $loc,
+              $this->activeLocales,
+              $this->defaultLocale,
+            );
+
+            return $hit === null
+              ? null
+              : LinkResolver::categoryAddress($hit["slug"], $hit["locale"]);
+          },
         );
       }
     } catch (\Throwable) {
@@ -237,6 +303,21 @@ new class extends Component {
     );
 
     $built = MenuTarget::build($this->kind, $this->ref, $this->articlesSlug());
+    if (
+      $built["error"] === null &&
+      $this->kind === "category" &&
+      PublicLookup::categorySibling(
+        trim($this->ref),
+        $this->defaultLocale,
+        $this->activeLocales,
+        $this->defaultLocale,
+      ) === null
+    ) {
+      $built = [
+        "url" => null,
+        "error" => "Kategori itu tidak ditemukan. Pilih dari daftar.",
+      ]; // nilai dari browser tidak dipercaya: harus kategori yang ada
+    }
     if ($built["error"] !== null) {
       $this->addError("ref", $built["error"]);
 
@@ -348,6 +429,7 @@ new class extends Component {
     "page" => "Halaman CMS",
     "home" => "Beranda",
     "articles" => "Daftar artikel",
+    "category" => "Artikel per kategori",
     "url" => "URL khusus",
     "mailto" => "Email",
     "tel" => "Telepon",
@@ -370,267 +452,358 @@ new class extends Component {
 </x-slot:title>
 
 <x-main-wrapper>
-  <div class="mb-4 flex w-full items-center justify-between">
-    <div class="text-2xl font-bold">{{ __("Navigasi") }}</div>
-  </div>
-
-  <div
-    class="flex max-h-full w-full max-w-screen flex-col gap-8 overflow-x-auto overflow-y-auto rounded-xl md:flex-row"
-  >
-    {{-- KOLOM KIRI: FORMULIR --}}
-    <div class="flex w-full flex-col gap-4">
-      <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 class="text-foresty mb-4 text-lg font-bold">
-          {{
-            $editId
-              ? "Edit Menu"
-              : "Tambah Menu Baru"
-          }}
-        </h2>
-
-        @if ($legacyRoute !== "")
-          <div
-            class="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"
+  {{-- Rilis 55: tab "Footer" (isi footer situs, komponen content.footer-editor) dan rilis 57: tab "Palet" (warna situs) di samping tab Menu; hanya admin/editor yang melihat tabnya. --}}
+  <div x-data="{ tab: 'menu' }" class="contents">
+    <div class="mb-4 flex w-full items-center justify-between">
+      <div class="text-2xl font-bold">{{ __("Navigasi") }}</div>
+      @if (($footerUser = auth()->user()) &&
+        method_exists($footerUser, "hasRole") &&
+        $footerUser->hasRole(["admin", "editor"]))
+        <div
+          class="flex gap-1 rounded-lg bg-gray-100 p-1 text-sm font-bold"
+          data-menu-tabs
+        >
+          <button
+            type="button"
+            x-on:click="tab = 'menu'"
+            x-bind:class="
+              tab === 'menu' ? 'bg-white shadow text-foresty' : 'text-gray-500'
+            "
+            class="rounded-md px-3 py-1"
           >
-            Baris ini memakai rute lama <b>{{ $legacyRoute }}</b> yang sudah
-            tidak ada. Pilih tujuan baru di bawah, lalu simpan.
-          </div>
-        @endif
+            Header
+          </button>
+          <button
+            type="button"
+            x-on:click="tab = 'footer'"
+            x-bind:class="
+              tab === 'footer'
+                ? 'bg-white shadow text-foresty'
+                : 'text-gray-500'
+            "
+            class="rounded-md px-3 py-1"
+            data-tab-footer
+          >
+            Footer
+          </button>
+          <button
+            type="button"
+            x-on:click="tab = 'palette'"
+            x-bind:class="
+              tab === 'palette'
+                ? 'bg-white shadow text-foresty'
+                : 'text-gray-500'
+            "
+            class="rounded-md px-3 py-1"
+            data-tab-palette
+          >
+            Palet
+          </button>
+        </div>
+      @endif
+    </div>
 
-        <form wire:submit="save" class="space-y-4">
-          @foreach ($activeLocales as $loc)
-            <div wire:key="label-{{ $loc }}">
-              <label class="mb-1 block text-xs font-bold text-gray-500">
-                Label ({{ strtoupper($loc) }}){{
-                  $loc === $defaultLocale
-                    ? " *"
-                    : ""
-                }}
-              </label>
-              <input
-                type="text"
-                wire:model="labels.{{ $loc }}"
-                maxlength="120"
-                placeholder="{{ $loc === $defaultLocale ? 'Wajib diisi' : 'Kosong = memakai label ' . strtoupper($defaultLocale) }}"
-                class="focus:ring-foresty w-full rounded-md border-gray-300 text-sm"
-              />
-              @error ("labels." . $loc)
+    <div
+      x-show="tab === 'menu'"
+      class="flex max-h-full w-full max-w-screen flex-col gap-8 overflow-x-auto overflow-y-auto rounded-xl md:flex-row"
+    >
+      {{-- KOLOM KIRI: FORMULIR --}}
+      <div class="flex w-full flex-col gap-4">
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 class="text-foresty mb-4 text-lg font-bold">
+            {{
+              $editId
+                ? "Edit Menu"
+                : "Tambah Menu Baru"
+            }}
+          </h2>
+
+          @if ($legacyRoute !== "")
+            <div
+              class="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"
+            >
+              Baris ini memakai rute lama <b>{{ $legacyRoute }}</b> yang sudah
+              tidak ada. Pilih tujuan baru di bawah, lalu simpan.
+            </div>
+          @endif
+
+          <form wire:submit="save" class="space-y-4">
+            @foreach ($activeLocales as $loc)
+              <div wire:key="label-{{ $loc }}">
+                <label class="mb-1 block text-xs font-bold text-gray-500">
+                  Label ({{ strtoupper($loc) }}){{
+                    $loc === $defaultLocale
+                      ? " *"
+                      : ""
+                  }}
+                </label>
+                <input
+                  type="text"
+                  wire:model="labels.{{ $loc }}"
+                  maxlength="120"
+                  placeholder="{{ $loc === $defaultLocale ? 'Wajib diisi' : 'Kosong = memakai label ' . strtoupper($defaultLocale) }}"
+                  class="focus:ring-foresty w-full rounded-md border-gray-300 text-sm"
+                />
+                @error ("labels." . $loc)
+                  <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+              </div>
+            @endforeach
+
+            <div class="border-t border-gray-100 pt-4">
+              <label class="mb-1 block text-xs font-bold text-gray-500"
+                >Tujuan tautan</label
+              >
+              <p class="mb-2 text-[10px] text-gray-400">Satu tujuan untuk semua bahasa: pembaca otomatis dibawa ke versi bahasanya.</p>
+
+              <select
+                wire:model.live="kind"
+                class="mb-3 w-full rounded-md border-gray-300 bg-gray-50 text-sm"
+              >
+                @foreach ($kindLabels as $value => $text)
+                  <option value="{{ $value }}">{{ $text }}</option>
+                @endforeach
+              </select>
+
+              @if ($kind === "page")
+                <input
+                  type="search"
+                  wire:model.live.debounce.300ms="pageQuery"
+                  placeholder="Cari judul halaman (min. 2 huruf)…"
+                  class="w-full rounded-md border-gray-300 bg-gray-50 text-sm"
+                  autocomplete="off"
+                />
+                @if (count($this->pageResults) > 0)
+                  <ul
+                    class="mt-1 divide-y divide-gray-100 rounded-md border border-gray-200 bg-white text-sm"
+                  >
+                    @foreach ($this->pageResults as $r)
+                      <li wire:key="pg-{{ $r['id'] }}">
+                        <button
+                          type="button"
+                          wire:click="pickPage({{ $r['id'] }})"
+                          class="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-gray-50"
+                        >
+                          <span>{{ $r["label"] }}</span>
+                          <span
+                            class="text-[10px] text-gray-400"
+                            >{{ $r["hint"] }}</span
+                          >
+                        </button>
+                      </li>
+                    @endforeach
+                  </ul>
+                @endif
+                <p class="mt-2 text-xs text-gray-600">
+                  Dipilih:
+                  @if ($ref !== "")
+                    <code class="rounded bg-gray-100 px-1">/{{ $ref }}</code>
+                  @else
+                    <span class="text-gray-400">belum ada</span>
+                  @endif
+                </p>
+              @elseif ($kind === "category")
+                <select
+                  wire:model.live="ref"
+                  class="w-full rounded-md border-gray-300 bg-gray-50 text-sm"
+                >
+                  <option value="">Pilih kategori…</option>
+                  @foreach ($this->categoryOptions as $slug => $name)
+                    <option value="{{ $slug }}">{{ $name }}</option>
+                  @endforeach
+                  @if ($ref !== "" && !array_key_exists($ref, $this->categoryOptions))
+                    <option value="{{ $ref }}">
+                      {{ $ref }} (tidak ditemukan)
+                    </option>
+                  @endif
+                </select>
+                @if (count($this->categoryOptions) === 0)
+                  <p class="mt-2 text-xs text-amber-700">Belum ada kategori yang punya slug. Isi slug kategori lebih dulu.</p>
+                @endif
+              @elseif (in_array( $kind, ["url", "mailto", "tel", "anchor"], true ))
+                <input
+                  type="text"
+                  wire:model.live.debounce.400ms="ref"
+                  placeholder="{{ $placeholders[$kind] ?? '' }}"
+                  class="w-full rounded-md border-gray-300 bg-gray-50 text-sm"
+                />
+              @endif
+              @error ("ref")
                 <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
               @enderror
-            </div>
-          @endforeach
 
-          <div class="border-t border-gray-100 pt-4">
-            <label class="mb-1 block text-xs font-bold text-gray-500"
-              >Tujuan tautan</label
-            >
-            <p class="mb-2 text-[10px] text-gray-400">Satu tujuan untuk semua bahasa: pembaca otomatis dibawa ke versi bahasanya.</p>
-
-            <select
-              wire:model.live="kind"
-              class="mb-3 w-full rounded-md border-gray-300 bg-gray-50 text-sm"
-            >
-              @foreach ($kindLabels as $value => $text)
-                <option value="{{ $value }}">{{ $text }}</option>
-              @endforeach
-            </select>
-
-            @if ($kind === "page")
-              <input
-                type="search"
-                wire:model.live.debounce.300ms="pageQuery"
-                placeholder="Cari judul halaman (min. 2 huruf)…"
-                class="w-full rounded-md border-gray-300 bg-gray-50 text-sm"
-                autocomplete="off"
-              />
-              @if (count($this->pageResults) > 0)
-                <ul
-                  class="mt-1 divide-y divide-gray-100 rounded-md border border-gray-200 bg-white text-sm"
-                >
-                  @foreach ($this->pageResults as $r)
-                    <li wire:key="pg-{{ $r['id'] }}">
-                      <button
-                        type="button"
-                        wire:click="pickPage({{ $r['id'] }})"
-                        class="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-gray-50"
-                      >
-                        <span>{{ $r["label"] }}</span>
-                        <span
-                          class="text-[10px] text-gray-400"
-                          >{{ $r["hint"] }}</span
-                        >
-                      </button>
-                    </li>
+              @if (count($this->preview) > 0)
+                <div class="mt-3 rounded-md bg-gray-50 p-3">
+                  <p class="mb-1 text-[10px] font-bold text-gray-400 uppercase">Yang dilihat pembaca</p>
+                  @foreach ($this->preview as $loc => $address)
+                    <p
+                      class="font-mono text-xs break-all text-gray-600"
+                      wire:key="pv-{{ $loc }}"
+                    ><b>{{
+                      strtoupper(
+                        $loc,
+                      )
+                    }}</b> {{ $address }}</p>
                   @endforeach
-                </ul>
+                </div>
               @endif
-              <p class="mt-2 text-xs text-gray-600">
-                Dipilih:
-                @if ($ref !== "")
-                  <code class="rounded bg-gray-100 px-1">/{{ $ref }}</code>
-                @else
-                  <span class="text-gray-400">belum ada</span>
-                @endif
-              </p>
-            @elseif (in_array( $kind, ["url", "mailto", "tel", "anchor"], true ))
+            </div>
+
+            <div class="flex items-center gap-2 border-t border-gray-100 pt-4">
               <input
-                type="text"
-                wire:model.live.debounce.400ms="ref"
-                placeholder="{{ $placeholders[$kind] ?? '' }}"
-                class="w-full rounded-md border-gray-300 bg-gray-50 text-sm"
+                type="checkbox"
+                wire:model="is_active"
+                id="isActive"
+                class="text-foresty focus:ring-foresty rounded"
               />
-            @endif
-            @error ("ref")
-              <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-            @enderror
-
-            @if (count($this->preview) > 0)
-              <div class="mt-3 rounded-md bg-gray-50 p-3">
-                <p class="mb-1 text-[10px] font-bold text-gray-400 uppercase">Yang dilihat pembaca</p>
-                @foreach ($this->preview as $loc => $address)
-                  <p
-                    class="font-mono text-xs break-all text-gray-600"
-                    wire:key="pv-{{ $loc }}"
-                  ><b>{{
-                    strtoupper(
-                      $loc,
-                    )
-                  }}</b> {{ $address }}</p>
-                @endforeach
-              </div>
-            @endif
-          </div>
-
-          <div class="flex items-center gap-2 border-t border-gray-100 pt-4">
-            <input
-              type="checkbox"
-              wire:model="is_active"
-              id="isActive"
-              class="text-foresty focus:ring-foresty rounded"
-            />
-            <label for="isActive" class="text-sm font-medium text-gray-600"
-              >Tampilkan di Publik</label
-            >
-          </div>
-
-          <div class="flex gap-2 pt-4">
-            <button
-              type="submit"
-              class="bg-foresty flex-1 rounded-md py-2 text-sm font-bold text-white transition-colors hover:bg-[#043b2c]"
-            >
-              {{
-                $editId
-                  ? "Simpan Perubahan"
-                  : "Tambahkan"
-              }}
-            </button>
-            @if ($editId)
-              <button
-                type="button"
-                wire:click="resetForm"
-                class="rounded-md bg-gray-100 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200"
+              <label for="isActive" class="text-sm font-medium text-gray-600"
+                >Tampilkan di Publik</label
               >
-                Batal
+            </div>
+
+            <div class="flex gap-2 pt-4">
+              <button
+                type="submit"
+                class="bg-foresty flex-1 rounded-md py-2 text-sm font-bold text-white transition-colors hover:bg-[#043b2c]"
+              >
+                {{
+                  $editId
+                    ? "Simpan Perubahan"
+                    : "Tambahkan"
+                }}
               </button>
-            @endif
-          </div>
-        </form>
-      </div>
-    </div>
-
-    {{-- KOLOM KANAN: DAFTAR MENU (DRAG & DROP) --}}
-    <div class="flex max-h-full min-h-full w-full flex-col">
-      <div class="overflow-hidden rounded-xl border bg-white shadow-sm">
-        <div
-          class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-3"
-        >
-          <span class="text-xs font-bold text-gray-500 uppercase"
-            >Susunan Menu Saat Ini</span
-          >
-          <span class="text-[10px] text-gray-400"
-            >Geser ikon garis untuk mengubah urutan</span
-          >
-        </div>
-
-        <ul
-          x-data
-          x-sort="$wire.updateOrder($item, $position)"
-          class="max-h-full divide-y divide-gray-100 overflow-auto pb-12"
-        >
-          @forelse ($this->rows as $row)
-            <li
-              x-sort:item="{{ $row['id'] }}"
-              wire:key="menu-{{ $row['id'] }}"
-              class="group flex items-center justify-between bg-white p-4 transition-colors hover:bg-gray-50"
-            >
-              <div class="flex items-center gap-4">
+              @if ($editId)
                 <button
                   type="button"
-                  x-sort:handle
-                  class="hover:text-foresty cursor-grab touch-none text-gray-400 active:cursor-grabbing"
-                  title="Geser"
+                  wire:click="resetForm"
+                  class="rounded-md bg-gray-100 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200"
                 >
-                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                  Batal
                 </button>
+              @endif
+            </div>
+          </form>
+        </div>
+      </div>
 
-                <div>
-                  <h4
-                    class="font-bold text-sm text-gray-800 {{ ! $row['is_active'] ? 'line-through opacity-50' : '' }}"
+      {{-- KOLOM KANAN: DAFTAR MENU (DRAG & DROP) --}}
+      <div class="flex max-h-full min-h-full w-full flex-col">
+        <div class="overflow-hidden rounded-xl border bg-white shadow-sm">
+          <div
+            class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-3"
+          >
+            <span class="text-xs font-bold text-gray-500 uppercase"
+              >Susunan Menu Saat Ini</span
+            >
+            <span class="text-[10px] text-gray-400"
+              >Geser ikon garis untuk mengubah urutan</span
+            >
+          </div>
+
+          <ul
+            x-data
+            x-sort="$wire.updateOrder($item, $position)"
+            class="max-h-full divide-y divide-gray-100 overflow-auto pb-12"
+          >
+            @forelse ($this->rows as $row)
+              <li
+                x-sort:item="{{ $row['id'] }}"
+                wire:key="menu-{{ $row['id'] }}"
+                class="group flex items-center justify-between bg-white p-4 transition-colors hover:bg-gray-50"
+              >
+                <div class="flex items-center gap-4">
+                  <button
+                    type="button"
+                    x-sort:handle
+                    class="hover:text-foresty cursor-grab touch-none text-gray-400 active:cursor-grabbing"
+                    title="Geser"
                   >
-                    @foreach ($activeLocales as $loc)
-                      @if ($loop->first)
-                        {{
-                          $row["labels"][$loc] !== ""
-                            ? $row["labels"][$loc]
-                            : "—"
-                        }}
-                      @else
-                        <span class="ml-1 text-xs font-normal text-gray-400"
-                          >/ {{
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                  </button>
+
+                  <div>
+                    <h4
+                      class="font-bold text-sm text-gray-800 {{ ! $row['is_active'] ? 'line-through opacity-50' : '' }}"
+                    >
+                      @foreach ($activeLocales as $loc)
+                        @if ($loop->first)
+                          {{
                             $row["labels"][$loc] !== ""
                               ? $row["labels"][$loc]
-                              : "N/A"
-                          }}</span
-                        >
-                      @endif
-                    @endforeach
-                  </h4>
-                  <p class="mt-0.5 font-mono text-[10px] text-gray-400">{{ $row["target"] }}</p>
-                  @if ($row["warning"])
-                    <p class="mt-0.5 text-[10px] text-amber-600">⚠ {{ $row["warning"] }}</p>
-                  @endif
+                              : "—"
+                          }}
+                        @else
+                          <span class="ml-1 text-xs font-normal text-gray-400"
+                            >/ {{
+                              $row["labels"][$loc] !== ""
+                                ? $row["labels"][$loc]
+                                : "N/A"
+                            }}</span
+                          >
+                        @endif
+                      @endforeach
+                    </h4>
+                    <p class="mt-0.5 font-mono text-[10px] text-gray-400">{{ $row["target"] }}</p>
+                    @if ($row["warning"])
+                      <p class="mt-0.5 text-[10px] text-amber-600">⚠ {{ $row["warning"] }}</p>
+                    @endif
+                  </div>
                 </div>
-              </div>
 
-              <div
-                class="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
-              >
-                <button
-                  type="button"
-                  wire:click="edit({{ $row['id'] }})"
-                  class="rounded p-1.5 text-blue-600 hover:bg-blue-50"
-                  title="Edit"
+                <div
+                  class="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
                 >
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                </button>
-                <button
-                  type="button"
-                  wire:click="delete({{ $row['id'] }})"
-                  wire:confirm="Yakin ingin menghapus menu ini?"
-                  class="rounded p-1.5 text-red-600 hover:bg-red-50"
-                  title="Hapus"
-                >
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
-              </div>
-            </li>
-          @empty
-            <li class="p-8 text-center text-sm text-gray-400">
-              Belum ada menu navigasi yang ditambahkan.
-            </li>
-          @endforelse
-        </ul>
+                  <button
+                    type="button"
+                    wire:click="edit({{ $row['id'] }})"
+                    class="rounded p-1.5 text-blue-600 hover:bg-blue-50"
+                    title="Edit"
+                  >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                  </button>
+                  <button
+                    type="button"
+                    wire:click="delete({{ $row['id'] }})"
+                    wire:confirm="Yakin ingin menghapus menu ini?"
+                    class="rounded p-1.5 text-red-600 hover:bg-red-50"
+                    title="Hapus"
+                  >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  </button>
+                </div>
+              </li>
+            @empty
+              <li class="p-8 text-center text-sm text-gray-400">
+                Belum ada menu navigasi yang ditambahkan.
+              </li>
+            @endforelse
+          </ul>
+        </div>
       </div>
     </div>
+
+    @if (($footerUser = auth()->user()) &&
+      method_exists($footerUser, "hasRole") &&
+      $footerUser->hasRole(["admin", "editor"]))
+      {{-- lazy: dimuat setelah tab Footer ditampilkan (elemen tersembunyi belum "terlihat"), jadi halaman Menu tidak menanggung bebannya --}}
+      <div
+        x-show="tab === 'footer'"
+        x-cloak
+        class="w-full max-w-4xl"
+        data-footer-tab
+      >
+        <livewire:content.footer-editor lazy wire:key="footer-editor" />
+      </div>
+      {{-- Rilis 57: tab Palet (warna situs; komponen content.palette-editor), dimuat malas seperti Footer --}}
+      <div
+        x-show="tab === 'palette'"
+        x-cloak
+        class="w-full max-w-5xl"
+        data-palette-tab
+      >
+        Pindah ke setting
+        {{-- <livewire:content.palette-editor lazy wire:key="palette-editor" /> --}}
+      </div>
+    @endif
   </div>
 </x-main-wrapper>

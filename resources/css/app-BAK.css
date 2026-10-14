@@ -1,0 +1,1598 @@
+/* @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap'); */
+@import 'tailwindcss';
+@import '../../vendor/livewire/flux/dist/flux.css';
+
+/* CARA IMPLEMENTASI TYPOGRAPHY DI TAILWIND V4 */
+@plugin "@tailwindcss/typography";
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
+@source '../../vendor/livewire/flux/stubs/**/*.blade.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* =========================================
+   1. Fraunces (.woff2)
+   ========================================= */
+@layer base {
+
+    /* =========================================
+       1. LIGHT (300)
+       ========================================= */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Light.ttf') format('truetype');
+        font-weight: 300;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-LightItalic.ttf') format('truetype');
+        font-weight: 300;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    /* =========================================
+       2. REGULAR (400)
+       ========================================= */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Regular.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Italic.ttf') format('truetype');
+        font-weight: 400;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    /* =========================================
+       3. MEDIUM (500)
+       ========================================= */
+    /* Catatan: Di gambar file Anda sebelumnya, sepertinya tidak ada file "Medium".
+       Jika file ini benar-benar tidak ada di folder Anda, Anda bisa menghapus blok 500 ini,
+       atau arahkan src URL-nya ke file Regular agar tidak terjadi error 404. */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Medium.ttf') format('truetype');
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/Fraunces_72pt-MediumItalic.ttf') format('truetype');
+        font-weight: 500;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    /* =========================================
+       4. SEMI-BOLD (600)
+       ========================================= */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-SemiBold.ttf') format('truetype');
+        font-weight: 600;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-SemiBoldItalic.ttf') format('truetype');
+        font-weight: 600;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    /* =========================================
+       5. BOLD (700)
+       ========================================= */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Bold.ttf') format('truetype');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-BoldItalic.ttf') format('truetype');
+        font-weight: 700;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    /* =========================================
+       6. BLACK (900)
+       ========================================= */
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-Black.ttf') format('truetype');
+        font-weight: 900;
+        font-style: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Fraunces';
+        src: url('../../public/fonts/fraunces/Fraunces_72pt-BlackItalic.ttf') format('truetype');
+        font-weight: 900;
+        font-style: italic;
+        font-display: swap;
+    }
+}
+
+/* =========================================
+   2. JETBRAINS MONO (.woff2)
+   ========================================= */
+@layer base {
+    /* 300 - Light */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-LightItalic.woff2') format('woff2'); font-weight: 300; font-style: italic; font-display: swap; }
+
+    /* 400 - Regular */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+
+    /* 500 - Medium */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-MediumItalic.woff2') format('woff2'); font-weight: 500; font-style: italic; font-display: swap; }
+
+    /* 600 - SemiBold */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-SemiBoldItalic.woff2') format('woff2'); font-weight: 600; font-style: italic; font-display: swap; }
+
+    /* 700 - Bold */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-BoldItalic.woff2') format('woff2'); font-weight: 700; font-style: italic; font-display: swap; }
+
+    /* 900 - Black (Menggunakan ExtraBold) */
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-ExtraBold.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'JetBrains Mono'; src: url('../../public/fonts/jetbrains-mono/JetBrainsMono-ExtraBoldItalic.woff2') format('woff2'); font-weight: 900; font-style: italic; font-display: swap; }
+}
+
+/* =========================================
+   3. PLUS JAKARTA SANS (.ttf)
+   ========================================= */
+@layer base {
+    /* 300 - Light */
+		/* ../../public/ */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-LightItalic.ttf') format('truetype'); font-weight: 300; font-style: italic; font-display: swap; }
+
+    /* 400 - Regular */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+
+    /* 500 - Medium */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/PlusJakartaSans-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; font-display: swap; }
+
+    /* 600 - SemiBold */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-SemiBoldItalic.ttf') format('truetype'); font-weight: 600; font-style: italic; font-display: swap; }
+
+    /* 700 - Bold */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: swap; }
+
+    /* 900 - Black (Menggunakan ExtraBold) */
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-ExtraBold.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Plus Jakarta Sans'; src: url('../../public/fonts/plus-jakarta-sans/PlusJakartaSans-ExtraBoldItalic.ttf') format('truetype'); font-weight: 900; font-style: italic; font-display: swap; }
+}
+
+/* =========================================
+   4. OPEN SANS (.ttf)
+   (Hanya mengambil versi standar, mengabaikan Condensed)
+   ========================================= */
+@layer base {
+    /* 300 - Light */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-LightItalic.ttf') format('truetype'); font-weight: 300; font-style: italic; font-display: swap; }
+
+    /* 400 - Regular */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+
+    /* 500 - Medium */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; font-display: swap; }
+
+    /* 600 - SemiBold */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-SemiBoldItalic.ttf') format('truetype'); font-weight: 600; font-style: italic; font-display: swap; }
+
+    /* 700 - Bold */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: swap; }
+
+    /* 900 - Black (Menggunakan ExtraBold) */
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-ExtraBold.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Open Sans'; src: url('../../public/fonts/open-sans/OpenSans-ExtraBoldItalic.ttf') format('truetype'); font-weight: 900; font-style: italic; font-display: swap; }
+}
+
+/* =========================================
+   5. ROBOTO (.ttf)
+   (Hanya mengambil versi standar, mengabaikan Condensed)
+   ========================================= */
+@layer base {
+    /* 300 - Light */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-LightItalic.ttf') format('truetype'); font-weight: 300; font-style: italic; font-display: swap; }
+
+    /* 400 - Regular */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+
+    /* 500 - Medium */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; font-display: swap; }
+
+    /* 600 - SemiBold */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-SemiBoldItalic.ttf') format('truetype'); font-weight: 600; font-style: italic; font-display: swap; }
+
+    /* 700 - Bold */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: swap; }
+
+    /* 900 - Black (Tersedia Berkas Black Asli) */
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-Black.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Roboto'; src: url('../../public/fonts/roboto/Roboto-BlackItalic.ttf') format('truetype'); font-weight: 900; font-style: italic; font-display: swap; }
+}
+
+@theme {
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-sans: 'Open Sans', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-jakarta: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-arial: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
+    --font-times: 'Times New Roman', Times, Baskerville, Georgia, serif;
+    --font-roboto: 'Roboto', sans-serif;
+    --font-fraunces: 'Fraunces', serif;
+    --font-jetbrains: 'JetBrains Mono', monospace;
+    --font-opensans: 'Open Sans', sans-serif;
+    /* --font-sans: 'Plus Jakarta Sans', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif; */
+
+    --color-zinc-50: #fafafa;
+    --color-zinc-100: #f5f5f5;
+    --color-zinc-200: #e5e5e5;
+    --color-zinc-300: #d4d4d4;
+    --color-zinc-400: #a3a3a3;
+    --color-zinc-500: #737373;
+    --color-zinc-600: #525252;
+    --color-zinc-700: #404040;
+    --color-zinc-800: #262626;
+    --color-zinc-900: #171717;
+    --color-zinc-950: #0a0a0a;
+
+    --color-accent: var(--color-neutral-800);
+    --color-accent-content: var(--color-neutral-800);
+    --color-accent-foreground: var(--color-white);
+
+
+    --color-foresty:#064F3B;
+    --color-foresty-dark:#043328;
+    --color-foresty-tint:#0E6A4F;
+    --color-goldy:#EBCC26;
+    --color-goldy-soft:#F7EBAF;
+    --color-coral:#E42326;
+    --color-coral-dark:#BE1417;
+    --color-paper:#FBF7EA;
+    --color-paper-dim:#F3ECD6;
+    --color-ink:#12241C;
+    --color-ink-soft:#4B5D53;
+    --color-misty:#E9F1EB;
+
+    /* GEMINI */
+    --color-charcoal: #1f2937;
+    --color-amber: #d97706;
+    --color-mist: #E9F1EB;
+    --color-sage-soft: #D2E7DF;
+    --color-pale-yellow: #FFF2B2;
+    --color-coral-muted: #FAD2D2;
+    --color-forest: #073324;
+    --color-terracotta: #C85A32; /* FIX: Diisi agar compiler tidak macet */
+    --color-aurum: #E5C423;
+}
+
+/* ==========================================================================
+   NORMALISASI HEADING DARI TAILWIND TYPOGRAPHY
+   ========================================================================== */
+
+body, html {
+    overflow-x: hidden;
+}
+@utility transition-radius {
+  transition-property: border-radius;
+}
+@utility no-scrollbar {
+  scrollbar-width: none; /* Untuk Firefox */
+  -ms-overflow-style: none; /* Untuk IE dan Edge lama */
+  &::-webkit-scrollbar {
+    display: none; /* Untuk Chrome, Safari, dan Opera */
+  }
+}
+@layer base {
+    button {
+        cursor: pointer;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+}
+
+@layer components {
+  .animate-scroll-reveal {
+    @apply opacity-0 translate-y-6 transition-all duration-700 ease-out motion-reduce:transition-none [&.is-revealed]:opacity-100 [&.is-revealed]:translate-y-0;
+  }
+}
+
+@layer utilities {
+    /* Nama kelas terserah Anda, misal: text-xxs */
+    .text-xxs {
+        font-size: 9px; /* Ukuran default untuk layar HP */
+        line-height: 14px;
+    }
+
+		.text-fluid-xxs {
+        /* Rumus: clamp(Ukuran Terkecil, Ukuran Dinamis, Ukuran Terbesar) */
+        /* Teks tidak akan lebih kecil dari 9px, dan tidak lebih besar dari 12px */
+        font-size: clamp(9px, 1.5vw + 4px, 10px);
+        line-height: 1.5;
+    }
+
+    /* Saat layar mencapai ukuran md (Tablet/Desktop) */
+    @screen md {
+        .text-xxs {
+            font-size: 10px; /* Membesar jadi 10px */
+            line-height: 16px;
+        }
+    }
+}
+/* 2. Trik Full-Bleed */
+.tiptap-full-bleed {
+    position: relative;
+    z-index: 0;
+}
+
+.tiptap-full-bleed::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -5000px;
+    right: -5000px;
+    background-color: inherit; /* Otomatis membaca class bg-mist, bg-paper, dll di <section> */
+    z-index: -1;
+    pointer-events: none;
+}
+
+
+.tiptap h1,
+.tiptap h2,
+.tiptap h3 {
+    color: inherit !important;
+    font-weight: 700 !important;
+}
+
+.tiptap h1 {
+    font-size: 2rem !important;
+    margin-top: 1.75rem !important;
+    margin-bottom: 0.5rem !important;
+    line-height: 1.25 !important;
+}
+
+.tiptap h2 {
+    font-size: 1.5rem !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 0.4rem !important;
+    line-height: 1.3 !important;
+}
+
+.tiptap h3 {
+    font-size: 1.25rem !important;
+    margin-top: 1.25rem !important;
+    margin-bottom: 0.35rem !important;
+    line-height: 1.35 !important;
+}
+
+/* Hilangkan spasi atas jika heading berada di baris pertama editor */
+.tiptap > *:first-child {
+    margin-top: 0 !important;
+}
+
+/* ==========================================================================
+   ILUSI KERTAS HVS (MAX-W-64REM) DI TENGAH LAYAR
+   ========================================================================== */
+.tiptap {
+    width: 100%;
+    outline: none;
+    padding: 1rem 0 0 0 !important;
+    min-height: 100%; /* HAPUS 250vh, ganti dengan 100% */
+    /* display: flex; */
+    /* flex-direction: column; */
+
+    /* Menggambar Latar Kertas Putih persis selebar 64rem di tengah layar */
+    /* background-color: transparent; */
+    /* background-image: linear-gradient(
+        to right,
+        transparent calc(50% - 32rem),
+        #ffffff calc(50% - 32rem),
+        #ffffff calc(50% + 32rem),
+        transparent calc(50% + 32rem)
+    );  */
+
+}
+
+.dark .tiptap {
+    background-image: linear-gradient(
+        to right,
+        transparent calc(50% - 32rem),
+        #18181b calc(50% - 32rem),
+        #18181b calc(50% + 32rem),
+        transparent calc(50% + 32rem)
+    );
+}
+
+/* Jika layar kecil (Tablet/HP), hilangkan efek kolom kertas */
+@media (max-width: 1024px) {
+    .tiptap {
+        background-image: none !important;
+        background-color: #ffffff;
+    }
+    .dark .tiptap {
+        background-image: none !important;
+        background-color: #18181b;
+    }
+}
+
+/* Kunci Semua Paragraf dan Teks sejajar di atas "Kertas" tersebut */
+.tiptap > * {
+    max-width: 64rem !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 2.5rem !important; /* Ruang kosong lega di kiri untuk tempat Drag Handle */
+    padding-right: 2.5rem !important;
+    width: 100%;
+}
+
+/* Pengecualian! Blok Warna (SectionBlock) boleh menembus kertas layar penuh */
+.tiptap > .full-width-section {
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+.drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: transparent;
+
+    /* 1. KEMBALIKAN BORDER DI SINI */
+    border: 1px solid #e5e7eb; /* Warna abu-abu terang mirip gray-200 */
+    border-radius: 4px;
+    cursor: grab;
+
+    /* Posisi Mutlak untuk Sortable */
+    /* position: fixed !important; */
+    /* z-index: 9999 !important; */
+    opacity: 1;
+
+    /* Transisi mulus untuk wadah tombol */
+    transition: all 0.2s ease;
+}
+
+/* 2. SVG DIPINDAH KE SINI SEBAGAI TOPENG (MASK) */
+.drag-handle::before {
+    content: '';
+    display: block;
+    width: 16px;
+    height: 16px;
+
+    /* Warna Titik Bawaan (Foresty) */
+    background-color: #064F3B;
+
+    /* SVG hitam sebagai cetakan (mask) */
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='black'%3E%3Cpath d='M8 5.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 13.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 21.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='black'%3E%3Cpath d='M8 5.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 13.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8 21.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm8 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z'/%3E%3C/svg%3E");
+
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+
+    /* Transisi warna titik */
+    transition: background-color 0.2s ease;
+}
+
+/* 3. EFEK HOVER PADA WADAH TOMBOL */
+.drag-handle:hover {
+    background-color: var(--color-foresty);
+    border-color: var(--color-foresty); /* Border ikut berubah warna */
+}
+
+/* 4. EFEK HOVER PADA TITIK-TITIK (Berubah jadi Goldy!) */
+.drag-handle:hover::before {
+    background-color: var(--color-goldy);
+}
+
+
+/* 3. EFEK HOVER, SAAT DITEKAN, & SAAT DI-DRAG PADA WADAH TOMBOL */
+.drag-handle:hover,
+.drag-handle:active,
+.shadow-2xl .drag-handle {
+    background-color: var(--color-foresty);
+    border-color: var(--color-foresty); /* Border ikut berubah warna */
+}
+
+/* 4. EFEK HOVER, SAAT DITEKAN, & SAAT DI-DRAG PADA TITIK-TITIK */
+.drag-handle:hover::before,
+.drag-handle:active::before,
+.shadow-2xl .drag-handle::before {
+    background-color: var(--color-goldy);
+}
+
+/* Status sedang diseret (active) */
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* 5. PERBAIKAN BUG OPACITY (opacity maksimal adalah 1, bukan 100) */
+.drag-handle.hide {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.drag-handle svg { display: none !important; }
+
+/* Trik Full-Bleed Background menggunakan Variabel CSS */
+.tiptap-full-bleed {
+    position: relative;
+    z-index: 0;
+}
+
+.tiptap-full-bleed::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -5000px;
+    right: -5000px;
+
+    /* AJAIB: Menerima warna dari renderHTML dan NodeView */
+    background-color: var(--bg-outer, transparent);
+
+    z-index: -1;
+    pointer-events: none;
+    transition: background-color 0.3s ease;
+}
+
+/* 🌟 UX HACK: Sembunyikan Palet Warna Jika Tidak Di-Hover */
+/* Agar editor tidak terlihat penuh sesak dengan palet warna */
+section[data-type="section-block"] .section-color-toolbar {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-5px);
+    transition: all 0.2s ease;
+}
+
+section[data-type="section-block"]:hover .section-color-toolbar,
+.ProseMirror-selectednode .section-color-toolbar {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* FOCUS STATE */
+.tiptap:focus {
+    outline: none;
+}
+
+/* Memaksa elemen internal Tiptap (ProseMirror) mengisi penuh tinggi kontainer */
+.tiptap .ProseMirror {
+    min-height: 100%;
+    height: 100%;
+    outline: none;
+}
+
+/* Jaga margin paragraf asli agar konsisten */
+/* .tiptap p {
+    margin-top: 4px !important;
+    margin-bottom: 4px !important;
+    min-height: 24px !important;
+} */
+.tiptap p {
+    margin-top: 0.65rem !important;    /* Naikkan dari 4px menjadi ~10px */
+    margin-bottom: 0.65rem !important; /* Naikkan dari 4px menjadi ~10px */
+    min-height: 24px ;
+    /* min-height: 24px !important; */
+}
+.ProseMirror p.is-editor-empty:first-child::before {
+    pointer-events: none; /* Kursor akan menembus placeholder, tidak akan nyangkut lagi */
+    user-select: none;    /* Placeholder tidak bisa diseleksi/diblok */
+}
+
+/* Placeholder saat editor kosong */
+.tiptap p.is-editor-empty:first-child::before {
+    color: #a1a1aa;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+}
+/* ==========================================================================
+   2. MEDIA & SCROLLBAR STYLING (VERSI AMAN: ALIGNMENT KEMBALI NORMAL)
+   ========================================================================== */
+.tiptap img {
+    display: inline-block; /* Tetap inline-block agar inline-style JS bisa menimpa */
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 50px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+}
+
+/* 💡 JALUR AMAN: Amankan paragraf yang berisi gambar rata tengah agar min-height 24px bawaan tidak membuat gap */
+.tiptap p:has(img[style*="margin-left: auto !important"]) {
+    min-height: 0 !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
+}
+
+/* 🔒 PENJINAK ELEMEN HANTU TANPA MERUSAK ALIGNMENT
+   Kita buat separator dan trailing break melayang (absolute) dengan ukuran 0px
+   supaya tidak memakan ruang tinggi di bawah gambar, baik kiri, tengah, maupun kanan */
+.tiptap p:has(img.tiptap-uploaded-image) .ProseMirror-separator,
+.tiptap p:has(img.tiptap-uploaded-image) .ProseMirror-trailingBreak {
+    position: absolute !important;
+    display: inline-block !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Highlight saat gambar aktif klik */
+.tiptap img.ProseMirror-selectednode {
+    outline: 3px solid #10b981;
+    border-radius: 0.5rem;
+}
+
+/* Kustomisasi Scrollbar area editor */
+[x-ref="editorElement"]::-webkit-scrollbar {
+    width: 8px;
+}
+[x-ref="editorElement"]::-webkit-scrollbar-track {
+    background: transparent;
+}
+[x-ref="editorElement"]::-webkit-scrollbar-thumb {
+    background-color: #d4d4d8;
+    border-radius: 4px;
+}
+.dark [x-ref="editorElement"]::-webkit-scrollbar-thumb {
+    background-color: #52525b;
+}
+
+
+/* ==========================================================================
+   GAYA MULTI-LEVEL LIST GABUNGAN (DOKUMEN YAYASAN)
+   ========================================================================== */
+
+/* Base reset untuk semua Ordered List */
+.tiptap ol {
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  list-style-type: none !important; /* Matikan bawaan browser */
+}
+
+.tiptap ol > li {
+  position: relative;
+  margin-bottom: 0.25rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   GAYA 1: DEFAULT (1 -> a -> i -> •)
+   Dimulai dengan angka biasa jika induk utamanya tidak punya class khusus
+   -------------------------------------------------------------------------- */
+.tiptap ol:not(.list-alpha-upper) { counter-reset: g1_l1; }
+.tiptap ol:not(.list-alpha-upper) > li { counter-increment: g1_l1; }
+.tiptap ol:not(.list-alpha-upper) > li::before {
+  content: counter(g1_l1) ". ";
+  position: absolute; left: -1.5rem; font-weight: 600; color: #374151;
+}
+
+/* Gaya 1 - Level 2 (a) */
+.tiptap ol:not(.list-alpha-upper) ol { counter-reset: g1_l2; }
+.tiptap ol:not(.list-alpha-upper) ol > li { counter-increment: g1_l2; }
+.tiptap ol:not(.list-alpha-upper) ol > li::before {
+  content: counter(g1_l2, lower-alpha) ". ";
+}
+
+/* Gaya 1 - Level 3 (i) */
+.tiptap ol:not(.list-alpha-upper) ol ol { counter-reset: g1_l3; }
+.tiptap ol:not(.list-alpha-upper) ol ol > li { counter-increment: g1_l3; }
+.tiptap ol:not(.list-alpha-upper) ol ol > li::before {
+  content: counter(g1_l3, lower-roman) ". ";
+}
+
+/* Gaya 1 - Level 4 (• Buletan) */
+.tiptap ol:not(.list-alpha-upper) ol ol ol > li::before {
+  content: "• ";
+  font-weight: bold;
+  color: #4b5563;
+}
+
+
+/* --------------------------------------------------------------------------
+   GAYA 2: KAPITAL UTAMA (A -> 1 -> i -> •)
+   Aktif jika list tingkat pertama diberi class 'list-alpha-upper'
+   -------------------------------------------------------------------------- */
+.tiptap ol.list-alpha-upper { counter-reset: g2_l1; }
+.tiptap ol.list-alpha-upper > li { counter-increment: g2_l1; }
+.tiptap ol.list-alpha-upper > li::before {
+  content: counter(g2_l1, upper-alpha) ". ";
+  position: absolute; left: -1.5rem; font-weight: 600; color: #374151;
+}
+
+/* Gaya 2 - Level 2 (1) */
+.tiptap ol.list-alpha-upper ol { counter-reset: g2_l2; }
+.tiptap ol.list-alpha-upper ol > li { counter-increment: g2_l2; }
+.tiptap ol.list-alpha-upper ol > li::before {
+  content: counter(g2_l2) ". ";
+}
+
+/* Gaya 2 - Level 3 (i) */
+.tiptap ol.list-alpha-upper ol ol { counter-reset: g2_l3; }
+.tiptap ol.list-alpha-upper ol ol > li { counter-increment: g2_l3; }
+.tiptap ol.list-alpha-upper ol ol > li::before {
+  content: counter(g2_l3, lower-roman) ". ";
+}
+
+/* Gaya 2 - Level 4 (• Buletan) */
+.tiptap ol.list-alpha-upper ol ol ol > li::before {
+  content: "• ";
+  font-weight: bold;
+  color: #4b5563;
+}
+
+/* ==========================================================================
+   4. TASK LIST EXTENSION (CHECKBOX)
+   ========================================================================== */
+.tiptap ul[data-type="taskList"] {
+    list-style: none !important;
+    padding-left: 0.5rem !important;
+    margin-top: 1rem !important;
+    margin-bottom: 1rem !important;
+}
+
+.tiptap ul[data-type="taskList"] li {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    padding-left: 0 !important;
+}
+
+.tiptap ul[data-type="taskList"] li::before {
+    display: none !important;
+}
+
+.tiptap ul[data-type="taskList"] li>div {
+    flex: 1 1 auto;
+    margin: 0 !important;
+}
+
+.tiptap ul[data-type="taskList"] input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: transparent;
+    margin: 0 !important;
+    cursor: pointer;
+    width: 1.2rem !important;
+    height: 1.2rem !important;
+    border: 2px solid #d1d5db;
+    border-radius: 0.375rem;
+    display: grid;
+    place-content: center;
+    transition: all 0.15s ease-in-out;
+}
+
+.dark .tiptap ul[data-type="taskList"] input[type="checkbox"] {
+    border-color: #52525b;
+}
+
+.tiptap ul[data-type="taskList"] input[type="checkbox"]:checked {
+    background-color: #15803d;
+    border-color: #15803d;
+}
+
+.tiptap ul[data-type="taskList"] input[type="checkbox"]::before {
+    content: "";
+    width: 0.55rem;
+    height: 0.35rem;
+    transform: scale(0) rotate(-45deg);
+    transform-origin: center;
+    transition: 100ms transform ease-in-out;
+    box-shadow: inset 0.15rem -0.15rem 0px 0px white;
+}
+
+.tiptap ul[data-type="taskList"] input[type="checkbox"]:checked::before {
+    transform: scale(1) rotate(-45deg) translate(0.05rem, -0.05rem);
+}
+
+/* ==========================================================================
+   5. HIDDEN MARKS VISUALIZER (KUNCI ELEMEN HANTU 0-PIKSEL)
+   ========================================================================== */
+   .show-invisible-marks .tiptap-invisible-para {
+    display: inline-block !important;
+    width: 0 !important;
+    height: 0 !important;
+    line-height: 0 !important;
+    overflow: visible !important;
+
+    /* Gunakan relative, bukan static, agar top dan left berfungsi */
+    position: relative !important;
+    vertical-align: middle !important;
+    top: -0.25em !important;
+
+    /* Kunci utama agar pilcrow tidak ikut terdorong indentasi */
+    text-indent: 0px !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    /* font-family: monospace !important; */
+    font-size: 0.85em !important;
+    font-weight: bold !important;
+    color: #10b981 !important;
+    user-select: none !important;
+    pointer-events: none !important;
+    margin-left: 2px !important;
+}
+
+/* Penanda Hard Break / Shift+Enter (↵) */
+.show-invisible-marks .tiptap-invisible-break {
+    display: inline-block !important;
+    position: static !important;
+    width: 0 !important;
+    height: 0 !important;
+    line-height: 0 !important;
+    overflow: visible !important;
+    vertical-align: baseline !important;
+    font-family: monospace !important;
+    font-size: 0.85em !important;
+    font-weight: bold !important;
+    color: #c300ff !important;
+    user-select: none !important;
+    pointer-events: none !important;
+    margin-left: 2px !important;
+}
+
+/* Sembunyikan separator bawaan jika ¶ sedang aktif agar tidak tumpang tindih horizontal */
+.show-invisible-marks img.ProseMirror-separator {
+    display: inline !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.show-invisible-marks .ProseMirror-trailingBreak {
+    display: none !important;
+}
+
+/* Proteksi bentrok Placeholder vs Hidden Marks Widget */
+.tiptap p.is-empty:has(.tiptap-invisible-para)::before,
+.tiptap.is-editor-empty:has(.tiptap-invisible-para)::before {
+    content: none !important;
+    display: none !important;
+}
+/* Gaya visual blok zona drop internal Tiptap */
+.tiptap .media-placeholder-zone {
+    position: relative !important;
+    z-index: 60 !important; /* 👈 LEBIH TINGGI dari z-50 milik overlay besar, agar dia mengisolasi diri saat didekati kursor */
+    pointer-events: auto !important; /* Menjamin dia tetap responsif menerima drop biner */
+
+    background-color: #f4f4f5 !important;
+    border: 2px dashed #cbd5e1 !important;
+    padding: 2rem 1rem !important;
+    border-radius: 0.5rem !important;
+    margin-top: 1rem !important;
+    margin-bottom: 1rem !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    user-select: none !important;
+}
+
+.dark .tiptap .media-placeholder-zone {
+    background-color: #27272a !important;
+    border-color: #4b5563 !important;
+}
+
+/* Mengubah teks kalimat biasa di dalam placeholder menjadi tombol Kapsul Sage-Soft */
+.tiptap .media-placeholder-zone .placeholder-text {
+    font-size: 0.875rem !important;
+    color: #71717a !important;
+    font-weight: 500 !important;
+}
+
+.tiptap .media-placeholder-zone .placeholder-btn {
+    background-color: #D2E7DF !important;
+    color: #073324 !important;
+    font-weight: 700 !important;
+    padding: 0.35rem 1rem !important;
+    border-radius: 0.375rem !important;
+    font-size: 0.8125rem !important;
+    cursor: pointer !important;
+    border: 1px solid #073324 !important;
+    transition: all 0.2s ease !important;
+    margin-top: 0.25rem !important;
+}
+
+.tiptap .media-placeholder-zone .placeholder-btn:hover {
+    background-color: #073324 !important;
+    color: #ffffff !important;
+}
+.tiptap .media-placeholder-zone.ProseMirror-selectednode {
+    outline: 3px solid #10b981 !important; /* Warna emerald/forest menyala */
+    outline-offset: 2px !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* Pastikan ini ada di paling bawah app.css */
+/* .tiptap-locked,
+.tiptap-locked * {
+    cursor: wait !important;
+    pointer-events: none !important;
+    user-select: none !important;
+} */
+
+/* Tambahkan ini untuk memastikan container-nya juga terkunci */
+[x-ref="editorElement"].tiptap-locked {
+    pointer-events: none !important;
+    opacity: 0.7;
+}
+ /* Menargetkan semua elemen di dalam editor yang mungkin memiliki cursor: text bawaan */
+.tiptap-locked,
+.tiptap-locked *,
+.tiptap-locked .ProseMirror,
+.tiptap-locked .ProseMirror * {
+    cursor: wait !important;
+}
+
+/* Jika editor menggunakan contenteditable, pastikan ini juga tertutup */
+.tiptap-locked[contenteditable="true"] {
+    cursor: wait !important;
+}
+
+.toolbar-mobile { display: none; }
+.toolbar-desktop { display: block; }
+
+/* Jika perangkatnya adalah layar sentuh (HP/Tablet), paksakan UI Mobile */
+@media (pointer: coarse) {
+    .toolbar-desktop {
+        display: none !important;
+    }
+    .toolbar-mobile {
+        display: flex !important; /* atau block, sesuaikan dengan desain Anda */
+    }
+}
+/* ==========================================================================
+   KUSTOMISASI TOM SELECT (Menyesuaikan Tema Editor)
+   ========================================================================== */
+
+/* 1. Kotak Input Utama (Control) */
+.ts-wrapper .ts-control {
+    @apply border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-gray-900 text-zinc-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm shadow-sm transition-colors cursor-pointer;
+}
+
+/* 2. Saat Input Sedang Fokus / Diklik */
+.ts-wrapper.focus .ts-control {
+    @apply border-forest ring-2 ring-forest/20 shadow-none;
+}
+
+/* 3. Kotak Dropdown (Laci Pilihan) */
+.ts-wrapper .ts-dropdown {
+    @apply bg-white dark:bg-gray-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl mt-1 text-sm overflow-hidden z-50;
+}
+
+/* 4. Teks Pilihan di dalam Dropdown */
+.ts-wrapper .ts-dropdown .option {
+    @apply px-4 py-2 cursor-pointer text-zinc-700 dark:text-zinc-300 transition-colors;
+}
+
+/* 5. Saat Opsi Disorot (Hover pakai Mouse / Navigasi Keyboard) */
+.ts-wrapper .ts-dropdown .active {
+    @apply bg-sage-soft text-forest dark:bg-zinc-800 dark:text-white font-medium;
+}
+
+/* ==========================================================================
+   KUSTOMISASI KHUSUS TAGS (Multi-Select)
+   ========================================================================== */
+
+/* Item/Pill Tag yang sudah dipilih */
+.ts-wrapper.multi .ts-control > div {
+    @apply bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 rounded px-2 py-0.5 m-1 text-xs font-medium flex items-center gap-1;
+}
+
+/* Tombol silang (X) untuk menghapus tag */
+.ts-wrapper.multi .ts-control > div .remove {
+    @apply text-zinc-500 hover:text-red-500 dark:hover:text-red-400 border-l border-zinc-300 dark:border-zinc-600 pl-1 ml-1 cursor-pointer transition-colors;
+}
+
+/* ==========================================================================
+   EFEK HOVER TAMBAHAN UNTUK TOM SELECT
+   ========================================================================== */
+
+/* 1. Hover pada kotak input utama (saat belum diklik/fokus) */
+.ts-wrapper:not(.focus):hover .ts-control {
+    @apply border-forest/50 dark:border-forest/50 shadow-md;
+}
+
+/* 2. Hover pada opsi di dalam dropdown (sebagai pelengkap class .active) */
+.ts-wrapper .ts-dropdown .option:hover {
+    @apply bg-sage-soft/70 text-forest dark:bg-zinc-800/70 dark:text-zinc-100 transition-colors;
+}
+
+/* 3. Hover pada pil/item Tag yang sudah terpilih */
+.ts-wrapper.multi .ts-control > div:hover {
+    @apply bg-zinc-200 dark:bg-zinc-700 border-zinc-300 dark:border-zinc-600 transition-colors shadow-sm;
+}
+
+/* ===== Callout (Catatan/Peringatan) ===== */
+.tiptap-callout {
+  display: flex;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: var(--radius-md, 14px);
+  border-left: 4px solid var(--color-forest);
+  background: var(--color-mist, #E9F1EB);
+  margin: 20px 0;
+}
+.tiptap-callout[data-color="gold"] { border-left-color: var(--color-goldy); background: var(--color-goldy-soft, #F7EBAF); }
+.tiptap-callout[data-color="coral"] { border-left-color: var(--color-coral); background: #FBE6E6; }
+.tiptap-callout-icon { width: 22px; height: 22px; flex-shrink: 0; color: var(--color-forest); }
+.tiptap-callout[data-color="coral"] .tiptap-callout-icon { color: var(--color-coral); }
+.tiptap-callout-body p { margin: 0 !important; color: var(--color-ink, #12241C); }
+
+/* ===== Stat Highlight ===== */
+.tiptap-stat-highlight {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  padding: 20px 0;
+  margin: 20px 0;
+  border-top: 1px solid rgba(6,79,59,0.14);
+  border-bottom: 1px solid rgba(6,79,59,0.14);
+}
+.tiptap-stat-item { display: flex; flex-direction: column; gap: 2px; }
+.tiptap-stat-value {
+  font-family: var(--font-times), serif; font-weight: 700; font-size: 28px; color: var(--color-forest);
+  border: none; background: transparent; width: auto; max-width: 140px;
+}
+.tiptap-stat-label { font-size: 13px; color: var(--color-ink-soft, #4B5D53); border: none; background: transparent; }
+.tiptap-stat-remove { border: none; background: none; color: var(--color-coral); cursor: pointer; font-size: 12px; }
+.tiptap-stat-add {
+  align-self: flex-start; border: 1px dashed var(--color-forest); background: transparent; color: var(--color-forest);
+  border-radius: 999px; padding: 6px 16px; font-size: 13px; cursor: pointer;
+}
+
+/* ===== Figure (foto + keterangan) ===== */
+.tiptap-figure { margin: 24px 0; }
+.tiptap-figure img { width: 100%; border-radius: var(--radius-md, 14px); display: block; }
+.tiptap-figure-placeholder {
+  aspect-ratio: 4/3; border: 2px dashed rgba(6,79,59,0.14); border-radius: var(--radius-md, 14px);
+  display: flex; align-items: center; justify-content: center; color: var(--color-ink-soft, #4B5D53);
+  background: var(--color-paper-dim, #F3ECD6); font-size: 14px;
+}
+.tiptap-figure-caption {
+  display: block; width: 100%; margin-top: 8px; font-size: 13.5px; color: var(--color-ink-soft, #4B5D53);
+  font-style: italic; border: none; background: transparent; text-align: center;
+}
+
+/* ===== Pull Quote ===== */
+.pull-quote, .tiptap-pull-quote {
+  border-left: 4px solid var(--color-goldy); padding: 4px 0 4px 24px; margin: 24px 0;
+}
+.pull-quote-body p, .tiptap-quote-body p {
+  font-family: var(--font-times), serif; font-style: italic; font-size: 20px; color: var(--color-forest); margin: 0 !important;
+}
+.pull-quote-attribution, .tiptap-quote-attribution {
+  margin-top: 10px; font-size: 13.5px; color: var(--color-ink-soft, #4B5D53); font-weight: 600;
+}
+.tiptap-quote-name, .tiptap-quote-role { border: none; background: transparent; font: inherit; }
+
+/* ===== CTA Button (editor-only wrapper) ===== */
+.tiptap-cta-editor {
+  display: flex; align-items: center; gap: 16px; padding: 14px 16px;
+  border: 1px dashed rgba(6,79,59,0.14); border-radius: var(--radius-md, 14px); margin: 16px 0;
+}
+.tiptap-cta-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.tiptap-cta-controls input, .tiptap-cta-controls select {
+  border: 1px solid rgba(6,79,59,0.14); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+}
+
+/* ===== Columns (drag-to-column) ===== */
+.editor-column-list {
+  display: grid;
+  grid-template-columns: repeat(var(--column-count, 2), 1fr);
+  gap: 24px;
+  margin: 16px 0;
+}
+.editor-column {
+  min-width: 0;
+  border: 1px dashed rgba(6,79,59,0.14);
+  border-radius: 12px;
+  padding: 12px;
+}
+.editor-column:focus-within { border-color: var(--color-forest, #064F3B); border-style: solid; }
+
+@media (max-width: 640px) {
+  .editor-column-list { grid-template-columns: 1fr; }
+}
+
+.column-drop-indicator {
+  position: relative;
+  display: inline-block;
+  width: 3px;
+  height: 1.4em;
+  vertical-align: middle;
+  background: var(--color-coral, #E42326);
+  border-radius: 2px;
+}
+.section-placeholder {
+    position: relative; /* Ini kunci agar placeholder bisa muncul di dalamnya */
+}
+
+.section-placeholder::before {
+    content: "Section Block";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #a1a1aa;
+    font-style: italic;
+    pointer-events: none;
+    z-index: 10;
+}
+
+[data-type="eyebrow"][data-has-pill="true"] .pill-wrapper {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  padding: 0 !important;
+}
+
+/* 🌟 1. Beri ruang ekstra di bagian atas H1 baris pertama untuk menaruh label */
+.ProseMirror > h1:first-child {
+    position: relative !important;
+    margin-top: 2rem !important;
+}
+
+/* 🌟 2. Ciptakan label "📌 JUDUL ARTIKEL" yang melayang di atas H1 */
+.ProseMirror > h1:first-child::before {
+    content: "Judul Artikel";
+    position: absolute;
+    top: -1.5rem; /* Tarik ke atas teks judul */
+    left: 0;
+    font-size: 0.7rem;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    color: #064F3B; /* Warna hijau (bisa disesuaikan dengan tema web Anda) */
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+    margin-left: 2.5rem;
+    margin-right: 2.5rem;
+    pointer-events: none; /* KUNCI: Agar label tidak menghalangi klik mouse */
+}
+
+/* 🌟 3. Jika penulis menekan tombol Rata Tengah, label ikut ke tengah */
+.ProseMirror > h1:first-child[style*="text-align: center"]::before {
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* 🌟 4. Jika penulis menekan tombol Rata Kanan, label ikut ke kanan */
+.ProseMirror > h1:first-child[style*="text-align: right"]::before {
+    left: auto;
+    right: 0;
+}
+/* 🌟 CSS UNTUK MENGGAMBAR PLACEHOLDER CAPTION GAMBAR */
+figcaption[data-placeholder]:empty::before,
+figcaption[data-placeholder].is-empty::before,
+figcaption[data-placeholder]:has(br:only-child)::before {
+    content: attr(data-placeholder);
+    color: #a1a1aa; /* Warna abu-abu samar (zinc-400) */
+    pointer-events: none; /* Agar tidak menghalangi kursor saat diklik */
+    cursor: text;
+}
+
+/* Mencegah tinggi caption anjlok saat kosong */
+figcaption[data-placeholder] {
+    min-height: 1.5rem;
+}
+
+figure[data-type="image-block"] figcaption:empty::before {
+    content: attr(data-placeholder);
+    color: #a1a1aa;
+    pointer-events: none;
+}
+figure[data-type="image-block"]:focus-within {
+    outline: 2px solid #22c55e; /* samakan warnanya dengan border hijau gambar biasa Anda */
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+}
+
+/* 🌟 KUSTOMISASI HEADING UNTUK AREA EDITOR (.prose) */
+
+/* Pengaturan H1 */
+.prose h1 {
+    font-size: 42px !important;          /* Memaksa ukuran tepat 42px */
+    color: #064F3B !important;           /* Warna gelap pekat (mirip gray-900) */
+    font-family: 'Plus Jakarta Sans', sans-serif !important; /* Gunakan font Anda */
+    font-weight: 800 !important;         /* Ketebalan teks (Extra Bold) */
+    line-height: 1.2 !important;         /* Jarak antar baris teks yang pas */
+    margin-top: 2.5rem !important;       /* Jarak kosong di atas heading */
+    margin-bottom: 1rem !important;      /* Jarak kosong di bawah heading */
+}
+
+/* Pengaturan H2 (sebagai bonus jika Anda membutuhkannya) */
+.prose h2 {
+    font-size: 32px !important;
+    color: #064F3B !important;           /* Warna sedikit lebih lembut dari H1 */
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 700 !important;         /* Bold */
+    margin-top: 2rem !important;
+    margin-bottom: 0.75rem !important;
+}
+
+/* Pengaturan H3 */
+.prose h3 {
+    font-size: 24px !important;
+    color: #064F3B !important;
+    /* font-family: 'Plus Jakarta Sans', sans-serif !important; */
+    font-weight: 600 !important;         /* Semi Bold */
+}
+
+.prose [data-type="step-number"]::before {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+.prose > p:last-child {
+    min-height: 4rem; /* Memberikan area klik kosong minimal sebesar ini */
+    margin-bottom: 5rem; /* Memberikan jarak ekstra ke batas bawah editor */
+}
+
+/* Titik 1: Melompat ke sudut kiri bawah dan memutar pena */
+/* Titik 2: Menarik garis ke atas membentuk lengkungan kurva */
+/* Titik 3: Kembali berhenti di posisi tengah (normal) */
+@keyframes draw-feather {
+    0% {
+        transform: translate(-16px, 16px) rotate(-30deg);
+    }
+    50% {
+        transform: translate(4px, 2px) rotate(15deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
+
+/* Class kustom untuk memicu animasi saat tombol (group) di-hover */
+/* .group:hover .group-hover\:animate-draw {
+    animation: draw-feather 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+} */
+
+/* Titik 1: Pena berada jauh di kiri bawah, miring ke belakang bersiap menulis */
+/* Titik 2: Satu tarikan panjang dan mulus ke kanan atas (mengayun) */
+/* Titik 3: Berhenti dengan sangat halus ke posisi tengah */
+/* ease-out adalah kunci agar ayunannya tidak kaku (cepat di awal, lambat di akhir) */
+
+
+/* ease-out adalah kunci agar ayunannya tidak kaku (cepat di awal, lambat di akhir) */
+/* Titik 1: Pena berada jauh di kiri bawah, miring ke belakang bersiap menulis */
+/* Titik 2: Satu tarikan panjang dan mulus ke kanan atas (mengayun) */
+/* Titik 3: Berhenti dengan sangat halus ke posisi tengah */
+@keyframes elegant-write {
+    0% {
+        transform: translate(-18px, 14px) rotate(-25deg);
+    }
+    60% {
+        transform: translate(4px, -4px) rotate(10deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
+/*
+.group:hover .group-hover\:animate-write {
+    animation: elegant-write 1s ease-out forwards;
+} */
+ @keyframes elegant-stroke {
+        0% {
+            /* Ujung pena tetap menempel di kertas (poros).
+               Badan pena dimiringkan ke belakang (kiri) bersiap untuk mengayun. */
+            transform: rotate(-45deg);
+        }
+        100% {
+            /* Ayunan mulus ke posisi tegak (tengah).
+               Ujung pena tidak bergeser sama sekali dari posisinya. */
+            transform: rotate(0deg);
+        }
+    }
+
+/* cubic-bezier memberikan efek ayunan tangan manusia yang nyata:
+    Cepat saat mulai menarik garis, lalu melambat dengan sangat halus di ujung. */
+.group:hover .group-hover\:animate-stroke {
+    animation: elegant-yank 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes elegant-yank {
+    0% {
+        transform: translate(-18px, 14px) rotate(-25deg);
+    }
+    60% {
+        transform: translate(4px, -4px) rotate(10deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
+.animate-stroke {
+    animation: elegant-yank 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes swing-tag {
+        0% {
+            /* Posisi diam */
+            transform: rotate(0deg);
+        }
+        30% {
+            /* Mengayun ke atas secara dinamis saat disentuh */
+            transform: rotate(25deg) scale(1.1);
+        }
+        60% {
+            /* Berayun balik melewati titik tengah (hukum gravitasi) */
+            transform: rotate(-10deg) scale(1);
+        }
+        80% {
+            /* Ayunan kecil terakhir sebelum berhenti */
+            transform: rotate(5deg);
+        }
+        100% {
+            /* Kembali diam sempurna */
+            transform: rotate(0deg);
+        }
+    }
+
+.animate-tag {
+/* .animate-tag { */
+    animation: swing-tag 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.group:hover .group-hover\:animate-tag {
+/* .animate-tag { */
+    animation: swing-tag 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes sort-blocks {
+        0% {
+            /* Posisi diam di tanah */
+            transform: translateY(0) rotate(0) scale(1);
+        }
+        35% {
+            /* Diangkat: Melompat sedikit ke atas, membesar, dan miring ke kiri */
+            transform: translateY(-4px) rotate(-6deg) scale(1.05);
+        }
+        65% {
+            /* Mendarat: Jatuh menekan pijakan (squish) dan miring sedikit ke kanan */
+            transform: translateY(1px) rotate(3deg) scale(0.95);
+        }
+        100% {
+            /* Tersusun rapi: Kembali ke posisi presisi awal */
+            transform: translateY(0) rotate(0) scale(1);
+        }
+    }
+
+    /* Durasi 0.5s membuat efek ketukan (snap) terasa cepat, responsif, dan memuaskan */
+    /* .group:hover .group-hover\:animate-blocks .animate-blocks { */
+    .animate-blocks {
+        animation: sort-blocks 0.5s ease-in-out forwards;
+    }
+    .group:hover .group-hover\:animate-blocks {
+        animation: sort-blocks 0.5s ease-in-out forwards;
+    }
+
+@keyframes save-stamp {
+        0% {
+            transform: translateY(0) scale(1);
+        }
+        30% {
+            /* Ancang-ancang: Terangkat sedikit dan sedikit membesar */
+            transform: translateY(-3px) scale(1.05);
+        }
+        60% {
+            /* Stempel: Ditekan keras ke bawah, sedikit gepeng (squish) */
+            transform: translateY(2px) scale(0.9);
+        }
+        80% {
+            /* Rebound: Pantulan pegas ke atas */
+            transform: translateY(-1px) scale(1.02);
+        }
+        100% {
+            /* Normal kembali */
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .animate-save {
+        /* Durasi 0.6s agar hentakannya terlihat jelas */
+        animation: save-stamp 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    .group:hover .group-hover\:animate-save {
+        /* Durasi 0.6s agar hentakannya terlihat jelas */
+        animation: save-stamp 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+@keyframes trash-wiggle {
+        0% {
+            /* Diam di tempat */
+            transform: translateY(0) rotate(0deg) scale(1);
+        }
+        25% {
+            /* Terangkat, membesar, dan miring tajam ke kiri (ancang-ancang) */
+            transform: translateY(-3px) rotate(-15deg) scale(1.15);
+        }
+        50% {
+            /* Bergetar/Banting setir tajam ke kanan */
+            transform: translateY(-3px) rotate(12deg) scale(1.15);
+        }
+        75% {
+            /* Bergetar kembali ke kiri dengan ayunan yang lebih kecil */
+            transform: translateY(-3px) rotate(-8deg) scale(1.15);
+        }
+        100% {
+            /* Dibanting kembali menapak ke tanah dengan stabil */
+            transform: translateY(0) rotate(0deg) scale(1);
+        }
+    }
+
+    .animate-trash {
+        /* 0.5s adalah waktu yang pas agar getarannya terasa cepat dan waspada */
+        animation: trash-wiggle 0.5s ease-in-out forwards;
+    }
+    .group:hover .group-hover\:animate-trash {
+        /* 0.5s adalah waktu yang pas agar getarannya terasa cepat dan waspada */
+        animation: trash-wiggle 0.5s ease-in-out forwards;
+    }
+@keyframes arrow-bounce-left {
+    0% {
+        /* Posisi awal */
+        transform: translateX(0);
+    }
+    40% {
+        /* Melesat tajam ke kiri seolah menunjuk jalan kembali */
+        transform: translateX(-6px);
+    }
+    70% {
+        /* Memantul sedikit melewati titik tengah karena momentum */
+        transform: translateX(2px);
+    }
+    100% {
+        /* Kembali diam di tempat */
+        transform: translateX(0);
+    }
+}
+
+.animate-back {
+    /* Durasi 0.5s dengan kurva ease-in-out agar pantulannya terasa natural (tidak kaku) */
+    animation: arrow-bounce-left 0.5s ease-in-out forwards;
+}
+.group:hover .group-hover\:animate-back {
+    /* Durasi 0.5s dengan kurva ease-in-out agar pantulannya terasa natural (tidak kaku) */
+    animation: arrow-bounce-left 0.5s ease-in-out forwards;
+}
+
+@keyframes tick-fade {
+        0%, 100% {
+            opacity: 1;
+            transform: rotate(0deg) scale(1);
+        }
+        50% {
+            opacity: 0.4;
+            transform: rotate(-25deg) scale(0.95);
+        }
+    }
+
+/* 2. Buat kelas pemicu animasinya */
+.animate-tick {
+    animation: tick-fade 1s ease-in-out forwards;
+    /* animation: tick-fade 2s ease-in-out infinite; */
+}
+.group:hover .group-hover\:animate-tick {
+    animation: tick-fade 1s ease-in-out forwards;
+    /* animation: tick-fade 2s ease-in-out infinite; */
+}
+
+@layer utilities {
+    /* Kelas dasar untuk elemen yang akan dianimasikan */
+    .reveal {
+        @apply opacity-0 transition-all duration-700 ease-out motion-reduce:transition-none;
+    }
+
+    /* Pilihan Gaya (Bisa ditambah nanti) */
+    .reveal-up { @apply translate-y-8; }
+    .reveal-left { @apply -translate-x-8; }
+    .reveal-right { @apply translate-x-8; }
+    .reveal-scale { @apply scale-95; }
+
+    /* Kelas yang ditambahkan JS saat elemen masuk layar */
+    .is-revealed {
+        @apply !opacity-100 !translate-y-0 !translate-x-0 !scale-100;
+    }
+}
+@layer utilities {
+  /* Targetkan semua elemen yang punya kelas ini */
+  .scrollbar-none {
+    /* 1. Sembunyikan scrollbar standar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    /* 2. Warna dasar (harus solid, sesuaikan jika background Anda bukan putih) */
+    background-color: white;
+
+    /* 3. Trik Magis Scroll Shadow murni CSS */
+    background-image:
+      /* Penutup Atas (Ikut tergulung) */
+      linear-gradient(white 30%, rgba(255,255,255,0)),
+      /* Penutup Bawah (Ikut tergulung) */
+      linear-gradient(rgba(255,255,255,0), white 70%),
+      /* Bayangan Atas (Tetap diam di tempat) */
+      radial-gradient(farthest-side at 50% 0, rgba(0,0,0,0.12), rgba(0,0,0,0)),
+      /* Bayangan Bawah (Tetap diam di tempat) */
+      radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,0.12), rgba(0,0,0,0));
+
+    background-repeat: no-repeat;
+
+    /* Posisi Penutup & Bayangan */
+    background-position:
+      0 0,         /* Penutup Atas */
+      0 100%,      /* Penutup Bawah */
+      0 0,         /* Bayangan Atas */
+      0 100%;      /* Bayangan Bawah */
+
+    /* Ukuran: 40px untuk penutup (harus lebih besar), 14px untuk tebal bayangan */
+    background-size:
+      100% 40px,
+      100% 40px,
+      100% 14px,
+      100% 14px;
+
+    /* KUNCI UTAMA: 'local' berarti ikut scroll, 'scroll' berarti diam */
+    background-attachment: local, local, scroll, scroll;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}

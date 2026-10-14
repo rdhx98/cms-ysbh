@@ -79,6 +79,12 @@ final class PublicLookup
      */
     public static function paletteCss(): string
     {
+        return Palette::css(self::palette());
+    }
+
+    /** Rilis 58: palet lengkap (Palette::resolve) dari site_settings; tidak pernah melempar galat (gagal = warna bawaan). */
+    public static function palette(): array
+    {
         try {
             if (!self::$paletteLoaded) {
                 $value = \Illuminate\Support\Facades\DB::table('site_settings')->where('key', Palette::KEY)->value('value');
@@ -92,7 +98,7 @@ final class PublicLookup
             self::$paletteLoaded = true;
         }
 
-        return Palette::css(Palette::resolve($raw));
+        return Palette::resolve($raw);
     }
 
     /**

@@ -11,9 +11,52 @@
 @source '../../vendor/livewire/flux/stubs/**/*.blade.php';
 
 @custom-variant dark (&:where(.dark, .dark *));
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme static {
+    --color-forest: var(--pal-forest, #064F3B);
+    --color-forest-on: var(--pal-forest-on, #FFFFFF);
+    --color-foresty: var(--pal-forest, #064F3B);   /* nama lama, dilebur ke forest */
+    --color-aurum: var(--pal-aurum, #E5C423);
+    --color-aurum-on: var(--pal-aurum-on, #1F2937);
+    --color-goldy: var(--pal-aurum, #E5C423);   /* nama lama, dilebur ke aurum */
+    --color-aurum-soft: var(--pal-aurum-soft, #F7EBAF);
+    --color-aurum-soft-on: var(--pal-aurum-soft-on, #1F2937);
+    --color-goldy-soft: var(--pal-aurum-soft, #F7EBAF);   /* nama lama, dilebur ke aurum-soft */
+    --color-coral: var(--pal-coral, #E42326);
+    --color-coral-on: var(--pal-coral-on, #FFFFFF);
+    --color-charcoal: var(--pal-charcoal, #1F2937);
+    --color-charcoal-on: var(--pal-charcoal-on, #FFFFFF);
+    --color-ink-soft: var(--pal-ink-soft, #4B5D53);
+    --color-ink-soft-on: var(--pal-ink-soft-on, #FFFFFF);
+    --color-paper: var(--pal-paper, #FBF7EA);
+    --color-paper-on: var(--pal-paper-on, #1F2937);
+    --color-mist: var(--pal-mist, #E9F1EB);
+    --color-mist-on: var(--pal-mist-on, #1F2937);
+    --color-misty: var(--pal-mist, #E9F1EB);   /* nama lama, dilebur ke mist */
+    --color-sage-soft: var(--pal-sage-soft, #D2E7DF);
+    --color-sage-soft-on: var(--pal-sage-soft-on, #1F2937);
+    --color-amber: var(--pal-amber, #D97706);
+    --color-amber-on: var(--pal-amber-on, #1F2937);
+    --color-custom-1: var(--pal-custom-1, transparent);
+    --color-custom-1-on: var(--pal-custom-1-on, #FFFFFF);
+    --color-custom-2: var(--pal-custom-2, transparent);
+    --color-custom-2-on: var(--pal-custom-2-on, #FFFFFF);
+    --color-custom-3: var(--pal-custom-3, transparent);
+    --color-custom-3-on: var(--pal-custom-3-on, #FFFFFF);
+    --color-custom-4: var(--pal-custom-4, transparent);
+    --color-custom-4-on: var(--pal-custom-4-on, #FFFFFF);
+    --color-custom-5: var(--pal-custom-5, transparent);
+    --color-custom-5-on: var(--pal-custom-5-on, #FFFFFF);
+    --color-custom-6: var(--pal-custom-6, transparent);
+    --color-custom-6-on: var(--pal-custom-6-on, #FFFFFF);
+    --color-custom-7: var(--pal-custom-7, transparent);
+    --color-custom-7-on: var(--pal-custom-7-on, #FFFFFF);
+    --color-custom-8: var(--pal-custom-8, transparent);
+    --color-custom-8-on: var(--pal-custom-8-on, #FFFFFF);
+}
+
+@source inline("{bg,text,border}-{forest,aurum,aurum-soft,coral,charcoal,ink-soft,paper,mist,sage-soft,amber,custom-1,custom-2,custom-3,custom-4,custom-5,custom-6,custom-7,custom-8}");
+@source inline("text-{forest,aurum,aurum-soft,coral,charcoal,ink-soft,paper,mist,sage-soft,amber,custom-1,custom-2,custom-3,custom-4,custom-5,custom-6,custom-7,custom-8}-on");
+
 
 
 /* =========================================
@@ -280,30 +323,6 @@
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
 
-
-    --color-foresty:#064F3B;
-    --color-foresty-dark:#043328;
-    --color-foresty-tint:#0E6A4F;
-    --color-goldy:#EBCC26;
-    --color-goldy-soft:#F7EBAF;
-    --color-coral:#E42326;
-    --color-coral-dark:#BE1417;
-    --color-paper:#FBF7EA;
-    --color-paper-dim:#F3ECD6;
-    --color-ink:#12241C;
-    --color-ink-soft:#4B5D53;
-    --color-misty:#E9F1EB;
-
-    /* GEMINI */
-    --color-charcoal: #1f2937;
-    --color-amber: #d97706;
-    --color-mist: #E9F1EB;
-    --color-sage-soft: #D2E7DF;
-    --color-pale-yellow: #FFF2B2;
-    --color-coral-muted: #FAD2D2;
-    --color-forest: #073324;
-    --color-terracotta: #C85A32; /* FIX: Diisi agar compiler tidak macet */
-    --color-aurum: #E5C423;
 }
 
 /* ==========================================================================
@@ -344,12 +363,6 @@ body, html {
         line-height: 14px;
     }
 
-		.text-fluid-xxs {
-        /* Rumus: clamp(Ukuran Terkecil, Ukuran Dinamis, Ukuran Terbesar) */
-        /* Teks tidak akan lebih kecil dari 9px, dan tidak lebih besar dari 12px */
-        font-size: clamp(9px, 1.5vw + 4px, 10px);
-        line-height: 1.5;
-    }
 
     /* Saat layar mencapai ukuran md (Tablet/Desktop) */
     @screen md {
@@ -359,24 +372,6 @@ body, html {
         }
     }
 }
-/* 2. Trik Full-Bleed */
-.tiptap-full-bleed {
-    position: relative;
-    z-index: 0;
-}
-
-.tiptap-full-bleed::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -5000px;
-    right: -5000px;
-    background-color: inherit; /* Otomatis membaca class bg-mist, bg-paper, dll di <section> */
-    z-index: -1;
-    pointer-events: none;
-}
-
 
 .tiptap h1,
 .tiptap h2,
@@ -516,18 +511,6 @@ body, html {
     /* Transisi warna titik */
     transition: background-color 0.2s ease;
 }
-
-/* 3. EFEK HOVER PADA WADAH TOMBOL */
-.drag-handle:hover {
-    background-color: var(--color-foresty);
-    border-color: var(--color-foresty); /* Border ikut berubah warna */
-}
-
-/* 4. EFEK HOVER PADA TITIK-TITIK (Berubah jadi Goldy!) */
-.drag-handle:hover::before {
-    background-color: var(--color-goldy);
-}
-
 
 /* 3. EFEK HOVER, SAAT DITEKAN, & SAAT DI-DRAG PADA WADAH TOMBOL */
 .drag-handle:hover,
@@ -741,39 +724,6 @@ section[data-type="section-block"]:hover .section-color-toolbar,
   color: #4b5563;
 }
 
-
-/* --------------------------------------------------------------------------
-   GAYA 2: KAPITAL UTAMA (A -> 1 -> i -> •)
-   Aktif jika list tingkat pertama diberi class 'list-alpha-upper'
-   -------------------------------------------------------------------------- */
-.tiptap ol.list-alpha-upper { counter-reset: g2_l1; }
-.tiptap ol.list-alpha-upper > li { counter-increment: g2_l1; }
-.tiptap ol.list-alpha-upper > li::before {
-  content: counter(g2_l1, upper-alpha) ". ";
-  position: absolute; left: -1.5rem; font-weight: 600; color: #374151;
-}
-
-/* Gaya 2 - Level 2 (1) */
-.tiptap ol.list-alpha-upper ol { counter-reset: g2_l2; }
-.tiptap ol.list-alpha-upper ol > li { counter-increment: g2_l2; }
-.tiptap ol.list-alpha-upper ol > li::before {
-  content: counter(g2_l2) ". ";
-}
-
-/* Gaya 2 - Level 3 (i) */
-.tiptap ol.list-alpha-upper ol ol { counter-reset: g2_l3; }
-.tiptap ol.list-alpha-upper ol ol > li { counter-increment: g2_l3; }
-.tiptap ol.list-alpha-upper ol ol > li::before {
-  content: counter(g2_l3, lower-roman) ". ";
-}
-
-/* Gaya 2 - Level 4 (• Buletan) */
-.tiptap ol.list-alpha-upper ol ol ol > li::before {
-  content: "• ";
-  font-weight: bold;
-  color: #4b5563;
-}
-
 /* ==========================================================================
    4. TASK LIST EXTENSION (CHECKBOX)
    ========================================================================== */
@@ -962,44 +912,6 @@ section[data-type="section-block"]:hover .section-color-toolbar,
     box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1) !important;
 }
 
-/* Pastikan ini ada di paling bawah app.css */
-/* .tiptap-locked,
-.tiptap-locked * {
-    cursor: wait !important;
-    pointer-events: none !important;
-    user-select: none !important;
-} */
-
-/* Tambahkan ini untuk memastikan container-nya juga terkunci */
-[x-ref="editorElement"].tiptap-locked {
-    pointer-events: none !important;
-    opacity: 0.7;
-}
- /* Menargetkan semua elemen di dalam editor yang mungkin memiliki cursor: text bawaan */
-.tiptap-locked,
-.tiptap-locked *,
-.tiptap-locked .ProseMirror,
-.tiptap-locked .ProseMirror * {
-    cursor: wait !important;
-}
-
-/* Jika editor menggunakan contenteditable, pastikan ini juga tertutup */
-.tiptap-locked[contenteditable="true"] {
-    cursor: wait !important;
-}
-
-.toolbar-mobile { display: none; }
-.toolbar-desktop { display: block; }
-
-/* Jika perangkatnya adalah layar sentuh (HP/Tablet), paksakan UI Mobile */
-@media (pointer: coarse) {
-    .toolbar-desktop {
-        display: none !important;
-    }
-    .toolbar-mobile {
-        display: flex !important; /* atau block, sesuaikan dengan desain Anda */
-    }
-}
 /* ==========================================================================
    KUSTOMISASI TOM SELECT (Menyesuaikan Tema Editor)
    ========================================================================== */
@@ -1060,123 +972,6 @@ section[data-type="section-block"]:hover .section-color-toolbar,
 /* 3. Hover pada pil/item Tag yang sudah terpilih */
 .ts-wrapper.multi .ts-control > div:hover {
     @apply bg-zinc-200 dark:bg-zinc-700 border-zinc-300 dark:border-zinc-600 transition-colors shadow-sm;
-}
-
-/* ===== Callout (Catatan/Peringatan) ===== */
-.tiptap-callout {
-  display: flex;
-  gap: 14px;
-  padding: 18px 20px;
-  border-radius: var(--radius-md, 14px);
-  border-left: 4px solid var(--color-forest);
-  background: var(--color-mist, #E9F1EB);
-  margin: 20px 0;
-}
-.tiptap-callout[data-color="gold"] { border-left-color: var(--color-goldy); background: var(--color-goldy-soft, #F7EBAF); }
-.tiptap-callout[data-color="coral"] { border-left-color: var(--color-coral); background: #FBE6E6; }
-.tiptap-callout-icon { width: 22px; height: 22px; flex-shrink: 0; color: var(--color-forest); }
-.tiptap-callout[data-color="coral"] .tiptap-callout-icon { color: var(--color-coral); }
-.tiptap-callout-body p { margin: 0 !important; color: var(--color-ink, #12241C); }
-
-/* ===== Stat Highlight ===== */
-.tiptap-stat-highlight {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 28px;
-  padding: 20px 0;
-  margin: 20px 0;
-  border-top: 1px solid rgba(6,79,59,0.14);
-  border-bottom: 1px solid rgba(6,79,59,0.14);
-}
-.tiptap-stat-item { display: flex; flex-direction: column; gap: 2px; }
-.tiptap-stat-value {
-  font-family: var(--font-times), serif; font-weight: 700; font-size: 28px; color: var(--color-forest);
-  border: none; background: transparent; width: auto; max-width: 140px;
-}
-.tiptap-stat-label { font-size: 13px; color: var(--color-ink-soft, #4B5D53); border: none; background: transparent; }
-.tiptap-stat-remove { border: none; background: none; color: var(--color-coral); cursor: pointer; font-size: 12px; }
-.tiptap-stat-add {
-  align-self: flex-start; border: 1px dashed var(--color-forest); background: transparent; color: var(--color-forest);
-  border-radius: 999px; padding: 6px 16px; font-size: 13px; cursor: pointer;
-}
-
-/* ===== Figure (foto + keterangan) ===== */
-.tiptap-figure { margin: 24px 0; }
-.tiptap-figure img { width: 100%; border-radius: var(--radius-md, 14px); display: block; }
-.tiptap-figure-placeholder {
-  aspect-ratio: 4/3; border: 2px dashed rgba(6,79,59,0.14); border-radius: var(--radius-md, 14px);
-  display: flex; align-items: center; justify-content: center; color: var(--color-ink-soft, #4B5D53);
-  background: var(--color-paper-dim, #F3ECD6); font-size: 14px;
-}
-.tiptap-figure-caption {
-  display: block; width: 100%; margin-top: 8px; font-size: 13.5px; color: var(--color-ink-soft, #4B5D53);
-  font-style: italic; border: none; background: transparent; text-align: center;
-}
-
-/* ===== Pull Quote ===== */
-.pull-quote, .tiptap-pull-quote {
-  border-left: 4px solid var(--color-goldy); padding: 4px 0 4px 24px; margin: 24px 0;
-}
-.pull-quote-body p, .tiptap-quote-body p {
-  font-family: var(--font-times), serif; font-style: italic; font-size: 20px; color: var(--color-forest); margin: 0 !important;
-}
-.pull-quote-attribution, .tiptap-quote-attribution {
-  margin-top: 10px; font-size: 13.5px; color: var(--color-ink-soft, #4B5D53); font-weight: 600;
-}
-.tiptap-quote-name, .tiptap-quote-role { border: none; background: transparent; font: inherit; }
-
-/* ===== CTA Button (editor-only wrapper) ===== */
-.tiptap-cta-editor {
-  display: flex; align-items: center; gap: 16px; padding: 14px 16px;
-  border: 1px dashed rgba(6,79,59,0.14); border-radius: var(--radius-md, 14px); margin: 16px 0;
-}
-.tiptap-cta-controls { display: flex; gap: 8px; flex-wrap: wrap; }
-.tiptap-cta-controls input, .tiptap-cta-controls select {
-  border: 1px solid rgba(6,79,59,0.14); border-radius: 8px; padding: 6px 10px; font-size: 13px;
-}
-
-/* ===== Columns (drag-to-column) ===== */
-.editor-column-list {
-  display: grid;
-  grid-template-columns: repeat(var(--column-count, 2), 1fr);
-  gap: 24px;
-  margin: 16px 0;
-}
-.editor-column {
-  min-width: 0;
-  border: 1px dashed rgba(6,79,59,0.14);
-  border-radius: 12px;
-  padding: 12px;
-}
-.editor-column:focus-within { border-color: var(--color-forest, #064F3B); border-style: solid; }
-
-@media (max-width: 640px) {
-  .editor-column-list { grid-template-columns: 1fr; }
-}
-
-.column-drop-indicator {
-  position: relative;
-  display: inline-block;
-  width: 3px;
-  height: 1.4em;
-  vertical-align: middle;
-  background: var(--color-coral, #E42326);
-  border-radius: 2px;
-}
-.section-placeholder {
-    position: relative; /* Ini kunci agar placeholder bisa muncul di dalamnya */
-}
-
-.section-placeholder::before {
-    content: "Section Block";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #a1a1aa;
-    font-style: italic;
-    pointer-events: none;
-    z-index: 10;
 }
 
 [data-type="eyebrow"][data-has-pill="true"] .pill-wrapper {
@@ -1504,10 +1299,6 @@ figure[data-type="image-block"]:focus-within {
     }
 }
 
-.animate-back {
-    /* Durasi 0.5s dengan kurva ease-in-out agar pantulannya terasa natural (tidak kaku) */
-    animation: arrow-bounce-left 0.5s ease-in-out forwards;
-}
 .group:hover .group-hover\:animate-back {
     /* Durasi 0.5s dengan kurva ease-in-out agar pantulannya terasa natural (tidak kaku) */
     animation: arrow-bounce-left 0.5s ease-in-out forwards;
@@ -1524,11 +1315,6 @@ figure[data-type="image-block"]:focus-within {
         }
     }
 
-/* 2. Buat kelas pemicu animasinya */
-.animate-tick {
-    animation: tick-fade 1s ease-in-out forwards;
-    /* animation: tick-fade 2s ease-in-out infinite; */
-}
 .group:hover .group-hover\:animate-tick {
     animation: tick-fade 1s ease-in-out forwards;
     /* animation: tick-fade 2s ease-in-out infinite; */
@@ -1540,16 +1326,6 @@ figure[data-type="image-block"]:focus-within {
         @apply opacity-0 transition-all duration-700 ease-out motion-reduce:transition-none;
     }
 
-    /* Pilihan Gaya (Bisa ditambah nanti) */
-    .reveal-up { @apply translate-y-8; }
-    .reveal-left { @apply -translate-x-8; }
-    .reveal-right { @apply translate-x-8; }
-    .reveal-scale { @apply scale-95; }
-
-    /* Kelas yang ditambahkan JS saat elemen masuk layar */
-    .is-revealed {
-        @apply !opacity-100 !translate-y-0 !translate-x-0 !scale-100;
-    }
 }
 @layer utilities {
   /* Targetkan semua elemen yang punya kelas ini */
@@ -1596,3 +1372,225 @@ figure[data-type="image-block"]:focus-within {
     display: none;
   }
 }
+/* ===== DIKEMBALIKAN: blok yang dipakai secara dinamis (kelas ditambah JS / tersimpan di konten). Tempel di AKHIR resources/css/app.css CMS. ===== */
+
+/* ---- dari app.css baris 347-352 ---- */
+		.text-fluid-xxs {
+        /* Rumus: clamp(Ukuran Terkecil, Ukuran Dinamis, Ukuran Terbesar) */
+        /* Teks tidak akan lebih kecil dari 9px, dan tidak lebih besar dari 12px */
+        font-size: clamp(9px, 1.5vw + 4px, 10px);
+        line-height: 1.5;
+    }
+
+/* ---- dari app.css baris 744-776 ---- */
+
+/* --------------------------------------------------------------------------
+   GAYA 2: KAPITAL UTAMA (A -> 1 -> i -> •)
+   Aktif jika list tingkat pertama diberi class 'list-alpha-upper'
+   -------------------------------------------------------------------------- */
+.tiptap ol.list-alpha-upper { counter-reset: g2_l1; }
+.tiptap ol.list-alpha-upper > li { counter-increment: g2_l1; }
+.tiptap ol.list-alpha-upper > li::before {
+  content: counter(g2_l1, upper-alpha) ". ";
+  position: absolute; left: -1.5rem; font-weight: 600; color: #374151;
+}
+
+/* Gaya 2 - Level 2 (1) */
+.tiptap ol.list-alpha-upper ol { counter-reset: g2_l2; }
+.tiptap ol.list-alpha-upper ol > li { counter-increment: g2_l2; }
+.tiptap ol.list-alpha-upper ol > li::before {
+  content: counter(g2_l2) ". ";
+}
+
+/* Gaya 2 - Level 3 (i) */
+.tiptap ol.list-alpha-upper ol ol { counter-reset: g2_l3; }
+.tiptap ol.list-alpha-upper ol ol > li { counter-increment: g2_l3; }
+.tiptap ol.list-alpha-upper ol ol > li::before {
+  content: counter(g2_l3, lower-roman) ". ";
+}
+
+/* Gaya 2 - Level 4 (• Buletan) */
+.tiptap ol.list-alpha-upper ol ol ol > li::before {
+  content: "• ";
+  font-weight: bold;
+  color: #4b5563;
+}
+
+
+/* ---- dari app.css baris 973-1002 ---- */
+/* Tambahkan ini untuk memastikan container-nya juga terkunci */
+[x-ref="editorElement"].tiptap-locked {
+    pointer-events: none !important;
+    opacity: 0.7;
+}
+ /* Menargetkan semua elemen di dalam editor yang mungkin memiliki cursor: text bawaan */
+.tiptap-locked,
+.tiptap-locked *,
+.tiptap-locked .ProseMirror,
+.tiptap-locked .ProseMirror * {
+    cursor: wait !important;
+}
+
+/* Jika editor menggunakan contenteditable, pastikan ini juga tertutup */
+.tiptap-locked[contenteditable="true"] {
+    cursor: wait !important;
+}
+
+.toolbar-mobile { display: none; }
+.toolbar-desktop { display: block; }
+
+/* Jika perangkatnya adalah layar sentuh (HP/Tablet), paksakan UI Mobile */
+@media (pointer: coarse) {
+    .toolbar-desktop {
+        display: none !important;
+    }
+    .toolbar-mobile {
+        display: flex !important; /* atau block, sesuaikan dengan desain Anda */
+    }
+}
+
+/* ---- dari app.css baris 1065-1137 ---- */
+/* ===== Callout (Catatan/Peringatan) ===== */
+.tiptap-callout {
+  display: flex;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: var(--radius-md, 14px);
+  border-left: 4px solid var(--color-forest);
+  background: var(--color-mist, #E9F1EB);
+  margin: 20px 0;
+}
+.tiptap-callout[data-color="gold"] { border-left-color: var(--color-goldy); background: var(--color-goldy-soft, #F7EBAF); }
+.tiptap-callout[data-color="coral"] { border-left-color: var(--color-coral); background: #FBE6E6; }
+.tiptap-callout-icon { width: 22px; height: 22px; flex-shrink: 0; color: var(--color-forest); }
+.tiptap-callout[data-color="coral"] .tiptap-callout-icon { color: var(--color-coral); }
+.tiptap-callout-body p { margin: 0 !important; color: var(--color-ink, #12241C); }
+
+/* ===== Stat Highlight ===== */
+.tiptap-stat-highlight {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  padding: 20px 0;
+  margin: 20px 0;
+  border-top: 1px solid rgba(6,79,59,0.14);
+  border-bottom: 1px solid rgba(6,79,59,0.14);
+}
+.tiptap-stat-item { display: flex; flex-direction: column; gap: 2px; }
+.tiptap-stat-value {
+  font-family: var(--font-times), serif; font-weight: 700; font-size: 28px; color: var(--color-forest);
+  border: none; background: transparent; width: auto; max-width: 140px;
+}
+.tiptap-stat-label { font-size: 13px; color: var(--color-ink-soft, #4B5D53); border: none; background: transparent; }
+.tiptap-stat-remove { border: none; background: none; color: var(--color-coral); cursor: pointer; font-size: 12px; }
+.tiptap-stat-add {
+  align-self: flex-start; border: 1px dashed var(--color-forest); background: transparent; color: var(--color-forest);
+  border-radius: 999px; padding: 6px 16px; font-size: 13px; cursor: pointer;
+}
+
+/* ===== Figure (foto + keterangan) ===== */
+.tiptap-figure { margin: 24px 0; }
+.tiptap-figure img { width: 100%; border-radius: var(--radius-md, 14px); display: block; }
+.tiptap-figure-placeholder {
+  aspect-ratio: 4/3; border: 2px dashed rgba(6,79,59,0.14); border-radius: var(--radius-md, 14px);
+  display: flex; align-items: center; justify-content: center; color: var(--color-ink-soft, #4B5D53);
+  background: var(--color-paper-dim, #F3ECD6); font-size: 14px;
+}
+.tiptap-figure-caption {
+  display: block; width: 100%; margin-top: 8px; font-size: 13.5px; color: var(--color-ink-soft, #4B5D53);
+  font-style: italic; border: none; background: transparent; text-align: center;
+}
+
+/* ===== Pull Quote ===== */
+.pull-quote, .tiptap-pull-quote {
+  border-left: 4px solid var(--color-goldy); padding: 4px 0 4px 24px; margin: 24px 0;
+}
+.pull-quote-body p, .tiptap-quote-body p {
+  font-family: var(--font-times), serif; font-style: italic; font-size: 20px; color: var(--color-forest); margin: 0 !important;
+}
+.pull-quote-attribution, .tiptap-quote-attribution {
+  margin-top: 10px; font-size: 13.5px; color: var(--color-ink-soft, #4B5D53); font-weight: 600;
+}
+.tiptap-quote-name, .tiptap-quote-role { border: none; background: transparent; font: inherit; }
+
+/* ===== CTA Button (editor-only wrapper) ===== */
+.tiptap-cta-editor {
+  display: flex; align-items: center; gap: 16px; padding: 14px 16px;
+  border: 1px dashed rgba(6,79,59,0.14); border-radius: var(--radius-md, 14px); margin: 16px 0;
+}
+.tiptap-cta-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.tiptap-cta-controls input, .tiptap-cta-controls select {
+  border: 1px solid rgba(6,79,59,0.14); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+}
+
+
+/* ---- dari app.css baris 1138-1181 ---- */
+/* ===== Columns (drag-to-column) ===== */
+.editor-column-list {
+  display: grid;
+  grid-template-columns: repeat(var(--column-count, 2), 1fr);
+  gap: 24px;
+  margin: 16px 0;
+}
+.editor-column {
+  min-width: 0;
+  border: 1px dashed rgba(6,79,59,0.14);
+  border-radius: 12px;
+  padding: 12px;
+}
+.editor-column:focus-within { border-color: var(--color-forest, #064F3B); border-style: solid; }
+
+@media (max-width: 640px) {
+  .editor-column-list { grid-template-columns: 1fr; }
+}
+
+.column-drop-indicator {
+  position: relative;
+  display: inline-block;
+  width: 3px;
+  height: 1.4em;
+  vertical-align: middle;
+  background: var(--color-coral, #E42326);
+  border-radius: 2px;
+}
+.section-placeholder {
+    position: relative; /* Ini kunci agar placeholder bisa muncul di dalamnya */
+}
+
+.section-placeholder::before {
+    content: "Section Block";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #a1a1aa;
+    font-style: italic;
+    pointer-events: none;
+    z-index: 10;
+}
+
+
+/* ---- dari app.css baris 1507-1510 ---- */
+.animate-back {
+    /* Durasi 0.5s dengan kurva ease-in-out agar pantulannya terasa natural (tidak kaku) */
+    animation: arrow-bounce-left 0.5s ease-in-out forwards;
+}
+
+/* ---- dari app.css baris 1527-1531 ---- */
+/* 2. Buat kelas pemicu animasinya */
+.animate-tick {
+    animation: tick-fade 1s ease-in-out forwards;
+    /* animation: tick-fade 2s ease-in-out infinite; */
+}
+
+/* ---- dari app.css baris 1543-1552 ---- */
+    /* Pilihan Gaya (Bisa ditambah nanti) */
+    .reveal-up { @apply translate-y-8; }
+    .reveal-left { @apply -translate-x-8; }
+    .reveal-right { @apply translate-x-8; }
+    .reveal-scale { @apply scale-95; }
+
+    /* Kelas yang ditambahkan JS saat elemen masuk layar */
+    .is-revealed {
+        @apply !opacity-100 !translate-y-0 !translate-x-0 !scale-100;
+    }

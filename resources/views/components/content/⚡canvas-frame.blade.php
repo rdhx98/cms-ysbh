@@ -54,6 +54,9 @@ new #[Layout('layouts.landing.index')] class extends Component {
 ?>
 
 <div class="box-border flex h-full w-full flex-col overflow-x-hidden" data-canvas-frame>
+  {{-- rilis 58: palet situs (CSS variabel). Hanya dicetak di pratinjau, bukan di shell admin, jadi sidebar/bilah atas tetap berwarna tetap. --}}
+  <style data-palette>{!! \App\Content\PublicLookup::paletteCss() !!}</style>
+
   @if ($this->payload)
     <x-content.sections
       :blocks="$this->payload['blocks']"

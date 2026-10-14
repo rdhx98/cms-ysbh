@@ -32,7 +32,7 @@ $fail = function (string $msg, int $code = 2): never {
     fwrite(STDERR, "\n$msg\n");
     exit($code);
 };
-$usage = "Pemakaian:\n  php tools/pasang-cms.php <folder-cms>            (melihat rencana)\n  php tools/pasang-cms.php <folder-cms> --apply    (memasang)\n\nContoh:\n  php tools/pasang-cms.php C:\\proyek\\cms-ysbh";
+$usage = "Pemakaian:\n  php tools/pasang-cms.php <folder-cms>            (melihat rencana)\n  php tools/pasang-cms.php <folder-cms> --apply    (memasang)\n\nContoh:\n  php tools/pasang-cms.php D:\\Herd\\cms-ysbh";
 if (count($pos) !== 1) {
     $fail($usage);
 }
@@ -226,5 +226,5 @@ foreach ($out as $l) {
     }
 }
 echo $code === 0 ? "  Pemindai: tidak ada tabrakan direktif Blade.\n" : "  Pemindai menemukan masalah (baris GALAT di atas). Kirimkan keluaran ini bila Anda tidak yakin.\n";
-echo "\nLangkah berikutnya, di folder proyek CMS (panduan: docs/PASANG-CMS.md):\n  1. tambahkan dua kunci di config/cms.php dan 'supported_locales' di config/app.php\n  2. php artisan optimize:clear\n  3. npm run build\n  4. php artisan cms:audit-slugs\n";
+echo "\nLangkah berikutnya, di folder proyek CMS (panduan: docs/PASANG-CMS.md dan docs/BAHASA.md):\n  1. config/cms.php, SEKARANG PER BAHASA (contoh lengkap: contoh-kode/config-slug-terlarang.php):\n       default_locale => 'en'; reserved_slugs, home_slug, articles_index_slug => peta ['en' => ..., 'id' => ...]; public.base/page/article/home/articles\n     config/app.php: 'supported_locales' => ['en', 'id']\n  2. php artisan optimize:clear\n  3. npm run build\n  4. php artisan cms:audit-slugs          (slug bentrok/terlarang, per bahasa)\n  5. php artisan cms:audit-translations   (halaman/artikel yang belum diterjemahkan atau setengah jadi)\n  6. (opsional) php artisan cms:seed-pages  lalu --apply: 12 halaman OFFLINE berisi draf teks EN+ID + tempat NPWP/rekening kosong (docs/HALAMAN-SITUS.md)\n";
 exit(0);

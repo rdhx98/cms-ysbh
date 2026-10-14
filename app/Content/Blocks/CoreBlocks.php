@@ -95,6 +95,11 @@ final class CoreBlocks
 
     public static function color(mixed $value): string
     {
+        // Rilis 59: "var(--color-forest)" (slot palet; hanya nama dari daftar palet, nama lama dinormalkan) mengikuti palet saat diubah
+        if (class_exists(\App\Content\Palette::class) && ($var = \App\Content\Palette::colorVar($value)) !== null) {
+            return $var;
+        }
+
         return is_string($value) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/D', $value) ? $value : self::EYEBROW_COLOR;
     }
 

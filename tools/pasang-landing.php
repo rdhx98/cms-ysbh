@@ -5,10 +5,11 @@
  *   php tools/pasang-landing.php <folder-landing> <folder-cms>            LIHAT rencana saja (tidak mengubah apa pun)
  *   php tools/pasang-landing.php <folder-landing> <folder-cms> --apply    pasang
  *
- * Tiga kelompok berkas:
+ * Empat kelompok berkas:
  *   A. dari kit      : berkas bersama CMS dan landing (daftar: landing-files.txt)
  *   B. dari landing-app/ : berkas khusus landing (rute, model, halaman, header, dst.)
  *   C. dari CMS Anda : tujuh renderer blok inti (resources/views/components/blocks/render/*.blade.php)
+ *   H. dihapus       : halaman prototipe lama yang tidak lagi dirutekan, dan public/robots.txt (daftar: landing-hapus.txt). DICADANGKAN dulu.
  * <folder-cms> boleh dihilangkan: kelompok C dilewati dan Anda diberi tahu.
  *
  * PENGAMAN
@@ -17,12 +18,16 @@
  *  - Berkas yang sudah ada dan BERBEDA dicadangkan dulu ke <landing>/storage/pasang-cadangan/<tanggal-jam>/ (jalur yang sama), lalu diganti.
  *    Berkas yang SAMA tidak disentuh. .env, vendor, node_modules, dan database tidak pernah disentuh.
  *  - Renderer dari CMS yang ternyata komponen EDITOR (bukan tampilan publik) ditolak.
+ *  - Rilis 23 menghapus rute statis lama (about, contact, programs, ...). Bila berkas LAIN Anda (kaki halaman, menu, layout) memanggil
+ *    route('about') dan sejenisnya, pemasangan DITOLAK sebelum mengubah apa pun, dengan daftar berkas:baris dan penggantinya.
+ *    Setelah diperbaiki, jalankan ulang. --abaikan-rute-hilang melewati pemeriksaan ini (situs akan galat sampai tautannya diganti).
  *  - Setelah selesai, pemeriksa (tools/check-landing.php) dijalankan otomatis.
  *
  * Kode keluar: 0 = selesai/rencana dibuat; 1 = gagal saat menulis; 2 = pemakaian salah atau pemeriksaan awal menolak.
  */
 $args = array_slice($argv, 1);
 $apply = in_array('--apply', $args, true);
+$ignoreRoutes = in_array('--abaikan-rute-hilang', $args, true);
 $pos = array_values(array_filter($args, fn ($a) => !str_starts_with($a, '--')));
 $kit = realpath(dirname(__DIR__));
 
@@ -30,7 +35,8 @@ $fail = function (string $msg, int $code = 2): never {
     fwrite(STDERR, "\n$msg\n");
     exit($code);
 };
-$usage = "Pemakaian:\n  php tools/pasang-landing.php <folder-landing> <folder-cms>            (melihat rencana)\n  php tools/pasang-landing.php <folder-landing> <folder-cms> --apply    (memasang)\n\nContoh:\n  php tools/pasang-landing.php C:\\proyek\\landing-ysbh C:\\proyek\\cms-ysbh";
+require_once __DIR__ . '/rute-hilang.php';
+$usage = "Pemakaian:\n  php tools/pasang-landing.php <folder-landing> <folder-cms>            (melihat rencana)\n  php tools/pasang-landing.php <folder-landing> <folder-cms> --apply    (memasang)\n\nContoh:\n  php tools/pasang-landing.php D:\\Herd\\landing-ysbh D:\\Herd\\cms-ysbh";
 if (count($pos) < 1 || count($pos) > 2) {
     $fail($usage);
 }
@@ -115,12 +121,35 @@ if ($cms !== null) {
         $plan[] = ['g' => 'C', 'src' => $src, 'rel' => $rel];
     }
 }
+// H. berkas yang dihapus (dicadangkan dulu); hanya yang tercatat di landing-hapus.txt
+$hapus = [];
+$hapusFile = "$kit/landing-hapus.txt";
+if (!is_file($hapusFile)) {
+    $problems[] = 'H: landing-hapus.txt tidak ada di kit ini.';
+} else {
+    foreach (preg_split('/\R/', (string) file_get_contents($hapusFile)) ?: [] as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#') {
+            continue;
+        }
+        if (!$safeRel($line) || str_ends_with($line, '/') || !preg_match('#^(?:resources/views/pages/|public/robots\.txt$)#', $line)) {
+            $problems[] = "H: jalur di landing-hapus.txt tidak sah (hanya berkas di resources/views/pages/ dan public/robots.txt): $line";
+            continue;
+        }
+        $hapus[] = ['g' => 'H', 'src' => null, 'rel' => $line];
+    }
+}
 $seen = [];
 foreach ($plan as $it2) {
     if (isset($seen[$it2['rel']])) {
         $problems[] = "Bentrok: {$it2['rel']} muncul di dua kelompok ({$seen[$it2['rel']]} dan {$it2['g']}).";
     }
     $seen[$it2['rel']] = $it2['g'];
+}
+foreach ($hapus as $h) {
+    if (isset($seen[$h['rel']])) {
+        $problems[] = "Bentrok: {$h['rel']} akan dipasang sekaligus dihapus.";
+    }
 }
 // Tujuan HARUS tetap di dalam folder landing, juga bila ada tautan simbolik di dalamnya: diperiksa SEBELUM menulis apa pun.
 foreach ($plan as $it4) {
@@ -137,6 +166,38 @@ foreach ($plan as $it4) {
     if ($realAnc === false || !str_starts_with($norm($realAnc), $norm($landing))) {
         $problems[] = "Tujuan berada di luar folder landing (folder di dalam landing menunjuk ke tempat lain): {$it4['rel']}";
     }
+}
+foreach ($hapus as &$h2) {
+    $dest = "$landing/{$h2['rel']}";
+    if (is_link($dest)) {
+        $problems[] = "Berkas yang akan dihapus adalah tautan simbolik (tidak disentuh): {$h2['rel']}";
+    } elseif (is_dir($dest)) {
+        $problems[] = "Yang akan dihapus ternyata folder, bukan berkas: {$h2['rel']}";
+    } else {
+        $anc = dirname($dest);
+        while (!is_dir($anc) && dirname($anc) !== $anc) {
+            $anc = dirname($anc);
+        }
+        $realAnc = realpath($anc);
+        if ($realAnc === false || !str_starts_with($norm($realAnc), $norm($landing))) {
+            $problems[] = "Berkas yang akan dihapus berada di luar folder landing (folder di dalam landing menunjuk ke tempat lain): {$h2['rel']}";
+        }
+    }
+    $h2['status'] = is_file($dest) ? 'HAPUS' : 'TIADA';
+}
+unset($h2);
+// Rilis 23: berkas LAIN (bukan yang diganti atau dihapus di sini) yang masih memanggil route() ke rute yang dihapus
+$skipRel = array_merge(array_column($plan, 'rel'), array_column($hapus, 'rel'));
+$refs = $ignoreRoutes ? [] : ysbh_find_removed_route_refs($landing, $skipRel);
+if ($refs) {
+    $lines = [];
+    foreach ($refs as $r) {
+        $lines[] = "      {$r['file']}:{$r['line']}   route('{$r['name']}')  ->  url('" . ysbh_removed_route_path($r['name']) . "')";
+    }
+    $problems[] = "Berkas Anda masih memanggil rute yang DIHAPUS rilis 23. Tanpa perbaikan, halaman yang memuatnya (mungkin seluruh situs) akan galat \"Route [...] not defined\".\n"
+        . implode("\n", array_slice($lines, 0, 40)) . (count($lines) > 40 ? "\n      ... dan " . (count($lines) - 40) . " lainnya" : '')
+        . "\n     Ganti dengan alamat langsung (url('/jalur')) atau, bila tautannya dari menu, dengan data menu di CMS (kolom url). Lalu jalankan ulang.\n"
+        . "     Bila sengaja ingin melanjutkan: tambahkan --abaikan-rute-hilang.";
 }
 foreach ($plan as &$it3) {
     $dest = "$landing/{$it3['rel']}";
@@ -169,17 +230,25 @@ foreach (['A', 'B', 'C'] as $g) {
         if ($i['status'] === 'GANTI') {
             echo "  GANTI  {$i['rel']}\n";                       // selalu ditampilkan: berkas yang sudah ada dan akan diganti
         } elseif ($i['status'] === 'BARU' && $g !== 'A') {
-            echo "  BARU   {$i['rel']}\n";                       // kelompok A (47 berkas) hanya dihitung; daftarnya ada di landing-files.txt
+            echo "  BARU   {$i['rel']}\n";                       // kelompok A hanya dihitung; daftarnya ada di landing-files.txt
         }
     }
 }
 $todo = array_values(array_filter($plan, fn ($i) => $i['status'] !== 'SAMA'));
-echo "\nRingkasan: {$counts['BARU']} baru, {$counts['GANTI']} diganti, {$counts['SAMA']} sudah sama (tidak disentuh).\n";
-if (!$todo) {
+$toDelete = array_values(array_filter($hapus, fn ($h) => $h['status'] === 'HAPUS'));
+echo "\nH. Berkas prototipe lama yang dihapus (dicadangkan dulu): " . count($toDelete) . " dari " . count($hapus) . " yang tercatat\n";
+foreach ($toDelete as $h) {
+    echo "  HAPUS  {$h['rel']}\n";
+}
+if (count($toDelete) < count($hapus)) {
+    echo "  (" . (count($hapus) - count($toDelete)) . " lainnya tidak ada di landing Anda: dilewati)\n";
+}
+echo "\nRingkasan: {$counts['BARU']} baru, {$counts['GANTI']} diganti, {$counts['SAMA']} sudah sama (tidak disentuh), " . count($toDelete) . " dihapus.\n";
+if (!$todo && !$toDelete) {
     echo "Landing sudah sama dengan kit: tidak ada yang perlu dipasang.\n";
 }
 if (!$apply) {
-    if ($todo) {
+    if ($todo || $toDelete) {
         echo "\nIni baru rencana. Berkas yang \"GANTI\" akan dicadangkan lebih dulu.\nUntuk memasang, ulangi perintah yang sama dengan tambahan  --apply\n";
     }
     exit(0);
@@ -189,9 +258,9 @@ if (!$apply) {
 $backupRoot = "$landing/storage/pasang-cadangan/" . date('Ymd-His');
 $written = 0;
 $backedUp = 0;
-foreach ($todo as $i) {
+foreach (array_merge($todo, $toDelete) as $i) {
     $dest = "$landing/{$i['rel']}";
-    if ($i['status'] === 'GANTI') {
+    if (in_array($i['status'], ['GANTI', 'HAPUS'], true)) {
         $b = "$backupRoot/{$i['rel']}";
         if (!is_dir(dirname($b)) && !mkdir(dirname($b), 0777, true)) {
             $fail("Gagal membuat folder cadangan: " . dirname($b) . "\nTidak ada berkas landing yang diganti.", 1);
@@ -217,6 +286,20 @@ foreach ($todo as $i) {
     }
     $written++;
 }
+$deleted = 0;
+foreach ($toDelete as $h) {
+    $dest = "$landing/{$h['rel']}";
+    if (is_link($dest) || !is_file($dest)) {
+        continue;   // berubah sejak pemeriksaan: jangan disentuh
+    }
+    if (!unlink($dest) || file_exists($dest)) {
+        $fail("Gagal menghapus {$h['rel']}. Cadangan ada di $backupRoot", 1);
+    }
+    $deleted++;
+}
+if ($deleted > 0) {
+    echo "\n$deleted berkas prototipe lama dihapus (salinannya ada di $backupRoot).\n";
+}
 if ($written > 0) {
     echo "\nSELESAI: $written berkas dipasang" . ($backedUp ? ", $backedUp berkas lama dicadangkan di:\n  $backupRoot\n  (untuk membatalkan: salin isi folder cadangan itu kembali ke proyek landing)" : '.') . "\n";
 }
@@ -231,5 +314,5 @@ foreach ($out as $l) {
     }
 }
 echo $code === 0 ? "  Pemeriksa: tidak ada galat.\n" : "  Pemeriksa menemukan galat (lihat baris GALAT di atas). Kirimkan keluaran ini bila Anda tidak yakin.\n";
-echo "\nLangkah berikutnya, di folder proyek landing:\n  php artisan view:clear\n  npm run build\nLalu periksa .env (APP_URL) dan config/app.php ('supported_locales' => ['en', 'id']). Panduan: docs/PASANG-LANDING.md\n";
+echo "\nLangkah berikutnya, di folder proyek landing:\n  php artisan optimize:clear\n  npm run build\nLalu periksa .env (APP_URL=https://ysbh.org; APP_LOCALE=en; APP_FALLBACK_LOCALE=en) dan config/app.php ('supported_locales' => ['en', 'id']).\nRilis 24 = situs dua bahasa: EN tanpa awalan, ID di /id (docs/BAHASA.md). config/cms.php landing kini PETA per bahasa dan harus sama dengan config/cms.php di CMS (contoh: contoh-kode/config-dua-aplikasi.php).\nBuat halaman beranda di CMS dengan slug 'home' (EN) dan 'beranda' (ID). Panduan: docs/PASANG-LANDING.md\n";
 exit(0);

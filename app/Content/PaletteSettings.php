@@ -34,11 +34,20 @@ final class PaletteSettings
         } else {
             DB::table(self::TABLE)->insert(['key' => Palette::KEY, 'value' => $json, 'updated_by' => $userId, 'created_at' => $now, 'updated_at' => $now]);
         }
+        self::forget();
     }
 
     /** Hapus palet tersimpan: situs kembali ke warna bawaan. */
     public static function reset(): void
     {
         DB::table(self::TABLE)->where('key', Palette::KEY)->delete();
+        self::forget();
+    }
+
+    /** Rilis 58: opsi picker dan CSS palet dibaca sekali per proses; setelah berubah, baca ulang. */
+    private static function forget(): void
+    {
+        PublicLookup::flush();
+        \App\Editor\BlockRegistry::reset();
     }
 }

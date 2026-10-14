@@ -58,6 +58,10 @@ foreach ($must as $f => $how) {
     if (!is_file("$target/$f")) { $err("tidak ada: $f ($how)"); $bad++; }
 }
 if (!$bad) { $ok('mesin seksi, isi artikel, daftar isi, PublicLookup, dan lima model ada'); }
+// rilis 54: tanpa model Tag, deretan tag di artikel, artikel terkait, dan ?tag= tidak tampil (halaman lain tetap normal)
+if (!is_file("$target/app/Models/Tag.php")) {
+    $warn("app/Models/Tag.php tidak ada (rilis 54): tag di halaman artikel, artikel terkait, dan penyaring ?tag= tidak tampil; salin landing-app/app/Models/Tag.php");
+}
 if (is_file("$target/app/Models/Media.php") && !preg_match('/use\s+SoftDeletes\s*;/', (string) file_get_contents("$target/app/Models/Media.php"))) {
     $err('app/Models/Media.php tanpa SoftDeletes: berkas yang dihapus di File Manager CMS tetap tampil di situs');
 }
@@ -71,12 +75,71 @@ if (!is_file("$target/config/cms.php")) {
     if (!function_exists('env')) { function env($k, $d = null) { return $d; } }
     try { $cfg = (static fn () => require "$GLOBALS[target]/config/cms.php")(); } catch (\Throwable $e) { $err('config/cms.php tidak bisa dibaca: ' . $e->getMessage()); }
 }
+// Bahasa situs: config/app.php 'supported_locales' bila terbaca, jika tidak ['en', 'id']. Kunci config yang berbentuk PETA bahasa diperiksa per bahasa.
+require_once "$kit/app/Content/Languages.php";
+require_once "$kit/app/Content/Slug.php";
+$locales = ['en', 'id'];
+if (is_file("$target/config/app.php")) {
+    if (!function_exists('env')) { function env($k, $d = null) { return $d; } }
+    try { $app = (static fn () => require "$GLOBALS[target]/config/app.php")(); $locales = \App\Content\Languages::codes($app['supported_locales'] ?? null, $locales); } catch (\Throwable) { /* tidak terbaca: bawaan */ }
+}
+$defaultLocale = is_array($cfg ?? null) ? \App\Content\Languages::defaultOf($cfg['default_locale'] ?? null, $locales) : $locales[0];
+// jalur rute yang dibaca dari routes/web.php: nama rute => jalur ("page.show" => "/{slug}")
+$routePaths = [];
+if (is_file("$target/routes/web.php")) {
+    $webAll = (string) preg_replace('#^\s*(?://|\#).*$#m', '', (string) file_get_contents("$target/routes/web.php"));
+    if (preg_match_all("#Route::\w+\(\s*['\"](/[^'\"]*)['\"][^;]*?->name\(\s*['\"]([^'\"]+)['\"]\s*\)#", $webAll, $rm, PREG_SET_ORDER)) {
+        foreach ($rm as $r) { $routePaths[$r[2]] = $r[1]; }
+    }
+}
+$routeName = fn (string $base, string $loc) => ($loc === $defaultLocale ? '' : $loc . '.') . $base;
 if (is_array($cfg)) {
     $pub = $cfg['public'] ?? null;
     if (!is_array($cfg['lucide'] ?? null) || count($cfg['lucide']) < 1) { $err("kunci 'lucide' kosong: ikon blok tidak akan tampil (salin dari config/cms.php CMS)"); }
-    if (!is_array($pub) || !is_string($pub['page'] ?? null) || !is_string($pub['article'] ?? null)) { $err("kunci 'public' (page dan article) tidak ada: tautan halaman/artikel tidak akan terbentuk"); }
+    // templat alamat: teks (semua bahasa) atau peta yang berisi SETIAP bahasa
+    $templateOk = function (mixed $v) use ($locales): bool {
+        if (is_string($v) && $v !== '') { return true; }
+        if (!is_array($v)) { return false; }
+        foreach ($locales as $l) { if (!is_string($v[$l] ?? null) || $v[$l] === '') { return false; } }
+        return true;
+    };
+    if (!is_array($pub) || !$templateOk($pub['page'] ?? null) || !$templateOk($pub['article'] ?? null)) { $err("kunci 'public' (page dan article, untuk setiap bahasa: " . implode(', ', $locales) . ") tidak ada: tautan halaman/artikel tidak akan terbentuk"); }
     if (!is_array($cfg['design'] ?? null)) { $warn("kunci 'design' tidak ada: renderer yang membaca config('cms.design...') akan kehilangan daftar kelasnya"); }
-    if (is_array($pub) && ($pub['page'] ?? null) && ($pub['article'] ?? null)) { $ok("lucide: " . count($cfg['lucide'] ?? []) . " ikon; public.page '" . $pub['page'] . "', public.article '" . $pub['article'] . "'"); }
+    if (count($locales) > 1 && is_array($pub)) {
+        foreach (['page', 'article'] as $k) {
+            if (is_string($pub[$k] ?? null)) { $warn("config('cms.public.$k') berupa SATU templat '{$pub[$k]}' untuk semua bahasa: alamat bahasa selain '$defaultLocale' tidak akan berawalan bahasa. Ubah menjadi peta bahasa, mis. ['en' => '/{slug}', 'id' => '/id/{slug}'] (docs/BAHASA.md)"); }
+        }
+        foreach (['home' => "jalur beranda per bahasa (['en' => '/', 'id' => '/id'])", 'articles' => "jalur daftar artikel per bahasa (['en' => '/articles', 'id' => '/id/artikel'])"] as $k => $what) {
+            if (!is_array($pub[$k] ?? null)) { $warn("config('cms.public.$k') tidak ada: $what. Sakelar bahasa, menu, dan peta situs memakainya"); }
+        }
+        foreach (['home_slug', 'articles_index_slug'] as $k) {
+            if (isset($cfg[$k]) && !is_array($cfg[$k])) { $warn("config('cms.$k') berupa satu teks untuk semua bahasa: pakai peta bahasa (['en' => '…', 'id' => '…'])"); }
+            elseif (is_array($cfg[$k] ?? null)) { foreach ($locales as $l) { if (!is_string($cfg[$k][$l] ?? null) || !\App\Content\Slug::isValid($cfg[$k][$l])) { $warn("config('cms.$k') tidak punya slug yang sah untuk bahasa '$l'"); } } }
+        }
+        if (array_key_exists('default_locale', $cfg) && !in_array($cfg['default_locale'], $locales, true)) { $warn("config('cms.default_locale') ('" . (is_string($cfg['default_locale']) ? $cfg['default_locale'] : '?') . "') tidak termasuk supported_locales (" . implode(', ', $locales) . "): bahasa pertama yang dipakai"); }
+        // templat dan jalur HARUS sama dengan rute di routes/web.php
+        if ($routePaths !== [] && is_array($pub)) {
+            foreach ([['page', 'page.show'], ['article', 'article.show'], ['home', 'home'], ['articles', 'articles']] as [$key, $base]) {
+                foreach ($locales as $l) {
+                    $want = is_array($pub[$key] ?? null) ? ($pub[$key][$l] ?? null) : null;
+                    $route = $routePaths[$routeName($base, $l)] ?? null;
+                    if (is_string($want) && $route !== null && $want !== $route) { $warn("config('cms.public.$key.$l') '$want' tidak sama dengan rute '" . $routeName($base, $l) . "' di routes/web.php ('$route'): tautan akan menuju alamat yang tidak ada"); }
+                    if (is_string($want) && $route === null && $routePaths !== []) { $warn("tidak ada rute '" . $routeName($base, $l) . "' di routes/web.php untuk bahasa '$l' (config mengharapkan '$want')"); }
+                }
+            }
+        }
+    }
+    // rilis 52: daftar artikel = halaman CMS (page-show) berisi blok Artikel Terbaru; komponen articles-index sudah tidak ada
+    if (is_file("$target/routes/web.php") && preg_match("#Route::livewire\([^;]*['\"]articles-index['\"]#", (string) ($webAll ?? ''))) {
+        $warn("routes/web.php masih memakai komponen 'articles-index' (dihapus di rilis 52): ganti dengan 'page-show' (salin routes/web.php dari kit); daftar artikel kini halaman CMS ber-slug config('cms.articles_index_slug') berisi blok Artikel Terbaru berpenomoran");
+    }
+    if (is_file("$target/resources/views/components/⚡articles-index.blade.php")) {
+        $warn("resources/views/components/⚡articles-index.blade.php masih ada (dihapus di rilis 52): hapus berkas itu setelah rute /articles dan /id/artikel dialihkan ke page-show");
+    }
+    if (is_array($pub) && $templateOk($pub['page'] ?? null) && $templateOk($pub['article'] ?? null)) {
+        $show = fn (mixed $v) => is_array($v) ? implode(' | ', array_map(fn ($l) => "$l " . ($v[$l] ?? '?'), $locales)) : (string) $v;
+        $ok("lucide: " . count($cfg['lucide'] ?? []) . " ikon; public.page '" . $show($pub['page']) . "', public.article '" . $show($pub['article']) . "'");
+    }
 }
 
 // ---------------------------------------------------------------- 3b. rute statis vs slug terlarang
@@ -86,20 +149,30 @@ if (!is_file($webFile) || !is_array($cfg)) {
     $warn('routes/web.php atau config/cms.php tidak bisa dibaca: pemeriksaan slug terlarang dilewati');
 } else {
     require_once "$kit/app/Content/Slug.php";
-    $indexSlug = is_string($cfg['articles_index_slug'] ?? null) && $cfg['articles_index_slug'] !== '' ? $cfg['articles_index_slug'] : 'artikel';
-    $reserved = \App\Content\Slug::reserved(is_array($cfg['reserved_slugs'] ?? null) ? $cfg['reserved_slugs'] : [], $indexSlug);
+    $indexOf = fn (string $loc) => \App\Content\Languages::indexSlug($cfg['articles_index_slug'] ?? null, $loc);
+    $reservedOf = fn (string $loc) => \App\Content\Slug::reserved(is_array($cfg['reserved_slugs'] ?? null) ? $cfg['reserved_slugs'] : [], $indexOf($loc), $loc, $locales, $defaultLocale);
     $web = (string) preg_replace('#^\s*(?://|\#).*$#m', '', (string) file_get_contents($webFile));   // komentar tidak dihitung
-    preg_match_all("#Route::(?:view|get|post|any|redirect|livewire|match)\(\s*(?:\[[^\]]*\]\s*,\s*)?['\"]/([^'\"/{}?]+)['\"]#", $web, $m);
-    // hanya segmen yang SAH sebagai slug yang bisa bertabrakan ("sitemap.xml" bertitik: mustahil menjadi slug halaman)
-    $segments = array_values(array_filter(array_unique($m[1]), fn ($seg) => \App\Content\Slug::isValid($seg)));
-    $unguarded = array_values(array_filter($segments, fn ($seg) => $seg !== $indexSlug && !in_array(strtolower($seg), $reserved, true)));
-    foreach ($unguarded as $seg) {
-        $warn("rute statis '/$seg' belum ada di config('cms.reserved_slugs'): halaman CMS ber-slug \"$seg\" akan tersimpan dan tampak online tetapi TIDAK PERNAH terbuka. Tambahkan \"$seg\" ke reserved_slugs di config/cms.php CMS dan landing");
+    // segmen pertama "id" (awalan bahasa) menentukan bahasa slug: "/id/artikel" = slug "artikel" di bahasa id; "/id" = slug "id" di bahasa bawaan
+    preg_match_all("#Route::(?:view|get|post|any|redirect|livewire|match)\(\s*(?:\[[^\]]*\]\s*,\s*)?['\"]/([^'\"{}?]+)['\"]#", $web, $m);
+    $segments = [];   // [bahasa, slug]
+    foreach (array_unique($m[1]) as $path) {
+        $parts = explode('/', $path);
+        $loc = $defaultLocale;
+        if ($parts[0] !== $defaultLocale && in_array($parts[0], $locales, true) && count($parts) === 2) { $loc = $parts[0]; array_shift($parts); }
+        if (count($parts) === 1 && \App\Content\Slug::isValid($parts[0])) { $segments[] = [$loc, $parts[0]]; }   // bertitik ("sitemap.xml") atau bersegmen banyak: mustahil menjadi slug halaman
     }
-    if (preg_match("#Route::livewire\(\s*['\"]/([^'\"/{}?]+)['\"]\s*,\s*['\"]articles-index['\"]#", $web, $mi) && $mi[1] !== $indexSlug) {
-        $warn("articles_index_slug ('$indexSlug') tidak sama dengan jalur rute articles-index ('/{$mi[1]}'): halaman CMS kepala daftar artikel tidak akan dipakai");
+    $unguarded = array_values(array_filter($segments, fn ($x) => $x[1] !== $indexOf($x[0]) && !in_array(strtolower($x[1]), $reservedOf($x[0]), true)));
+    foreach ($unguarded as [$loc, $seg]) {
+        $warn("rute statis '/" . ($loc === $defaultLocale ? '' : "$loc/") . "$seg' belum ada di config('cms.reserved_slugs'): halaman CMS ber-slug \"$seg\" (bahasa $loc) akan tersimpan dan tampak online tetapi TIDAK PERNAH terbuka. Tambahkan \"$seg\" ke reserved_slugs bahasa '$loc' di config/cms.php CMS dan landing");
     }
-    if (!$unguarded) { $ok(count($segments) . " rute statis satu-segmen: semuanya tercatat sebagai slug terlarang (atau slug kepala '$indexSlug')"); }
+    foreach ($locales as $l) {
+        $routeIndex = $routePaths[$routeName('articles', $l)] ?? null;
+        $routeSlug = $routeIndex === null ? null : preg_replace('#^/(?:' . preg_quote($l, '#') . '/)?#', '', $routeIndex);
+        if ($routeSlug !== null && $routeSlug !== $indexOf($l)) {
+            $warn("articles_index_slug ('" . $indexOf($l) . "', bahasa $l) tidak sama dengan jalur rute articles-index ('$routeIndex'): halaman CMS kepala daftar artikel tidak akan dipakai");
+        }
+    }
+    if (!$unguarded) { $ok(count($segments) . " rute statis satu-segmen: semuanya tercatat sebagai slug terlarang (atau slug kepala daftar artikel bahasanya)"); }
 }
 
 // ---------------------------------------------------------------- 3c. peta situs dan robots.txt
@@ -111,17 +184,59 @@ if (is_file($webFile) && is_array($cfg)) {
     // jalur statis penuh (tanpa parameter) yang dilayani GET, selain peta situs sendiri; pengalihan tidak dihitung
     preg_match_all("#Route::(?:view|get|livewire)\(\s*['\"](/[^'\"{}?]*)['\"]#", $web, $mp);
     $staticPaths = array_values(array_unique(array_filter($mp[1], fn ($pth) => $pth !== '/sitemap.xml' && !str_contains($pth, '.'))));
+    // Rilis 23/24: beranda tiap bahasa ('/' dan '/id' -> page-show) adalah halaman CMS, masuk peta situs dari basis data; bukan jalur statis
+    preg_match_all("#Route::livewire\(\s*['\"](/[^'\"{}?]*)['\"]\s*,\s*['\"]page-show['\"]#", $web, $homes);
+    $staticPaths = array_values(array_diff($staticPaths, $homes[1]));
+    if (!in_array('/', $homes[1], true)) {
+        $warn("rute '/' (beranda) tidak memakai komponen page-show: beranda tidak berasal dari halaman CMS");
+    }
+    foreach ($locales as $l) {
+        if ($l !== $defaultLocale && !in_array('/' . $l, $homes[1], true)) { $warn("rute '/$l' (beranda bahasa $l) tidak memakai komponen page-show: beranda bahasa itu tidak ada"); }
+    }
+    // (kunci yang HILANG sudah dilaporkan sebagai GALAT oleh pemeriksaan kunci config di atas; di sini hanya nilai yang tidak sah)
+    if (array_key_exists('home_slug', $cfg)) {
+        if (is_string($cfg['home_slug'])) {
+            if (!\App\Content\Slug::isValid($cfg['home_slug'])) { $warn("config('cms.home_slug') tidak sah (harus slug huruf kecil dan tanda hubung): beranda tidak masuk peta situs sebagai jalur beranda dan tautan internal ke beranda tidak menuju ke sana"); }
+        } else {
+            foreach ($locales as $l) {
+                $hs = \App\Content\Languages::setting($cfg['home_slug'], $l);
+                if ($hs !== '' && !\App\Content\Slug::isValid($hs)) { $warn("config('cms.home_slug') tidak sah untuk bahasa '$l' (harus slug huruf kecil dan tanda hubung): beranda bahasa itu tidak masuk peta situs sebagai jalur beranda dan tautan internal ke beranda tidak menuju ke sana"); }
+            }
+        }
+    }
     $listed = array_values(array_filter((array) ($cfg['sitemap_static'] ?? []), 'is_string'));
     $notListed = array_values(array_diff($staticPaths, $listed));
     $stale = array_values(array_diff($listed, $staticPaths));
     foreach ($notListed as $pth) { $warn("rute statis '$pth' belum ada di config('cms.sitemap_static'): halaman ini tidak akan masuk peta situs"); }
     foreach ($stale as $pth) { $warn("config('cms.sitemap_static') memuat '$pth' tetapi tidak ada rute statisnya di routes/web.php (alamat mati masuk peta situs, atau halaman sudah pindah ke CMS: hapus dari daftar)"); }
-    $robots = is_file("$target/public/robots.txt") ? (string) file_get_contents("$target/public/robots.txt") : null;
-    if ($robots === null) { $warn('public/robots.txt tidak ada: tambahkan baris "Sitemap: https://domain-anda/sitemap.xml"'); }
-    elseif (!preg_match('#^Sitemap:\s*https?://\S+/sitemap\.xml\s*$#mi', $robots)) { $warn('public/robots.txt tidak memuat baris "Sitemap: https://domain-anda/sitemap.xml"'); }
-    if ($hasRoute && !$notListed && !$stale && $robots !== null && preg_match('#^Sitemap:\s*https?://\S+/sitemap\.xml\s*$#mi', $robots)) { $ok(count($listed) . ' jalur statis tercatat di sitemap_static, rute /sitemap.xml ada, dan robots.txt menunjuk peta situs'); }
+    $robotsRoute = (bool) preg_match("#Route::get\(\s*['\"]/robots\.txt['\"]#", $web);
+    $robotsStatic = is_file("$target/public/robots.txt");
+    if ($robotsRoute && !is_file("$target/app/Http/Controllers/RobotsController.php")) { $err('routes/web.php merujuk RobotsController tetapi app/Http/Controllers/RobotsController.php tidak ada'); }
+    if ($robotsRoute && $robotsStatic) { $err('public/robots.txt masih ada: server web melayaninya lebih dulu dan menutupi rute /robots.txt (alamat peta situs bisa salah domain). Hapus berkas itu (pemasang landing melakukannya, dengan cadangan)'); }
+    if (!$robotsRoute) {
+        $robots = $robotsStatic ? (string) file_get_contents("$target/public/robots.txt") : null;
+        if ($robots === null) { $warn('tidak ada rute /robots.txt maupun public/robots.txt: tambahkan baris "Sitemap: https://domain-anda/sitemap.xml"'); }
+        elseif (!preg_match('#^Sitemap:\s*https?://\S+/sitemap\.xml\s*$#mi', $robots)) { $warn('public/robots.txt tidak memuat baris "Sitemap: https://domain-anda/sitemap.xml"'); }
+    }
+    if ($hasRoute && !$notListed && !$stale && ($robotsRoute ? !$robotsStatic : (isset($robots) && preg_match('#^Sitemap:\s*https?://\S+/sitemap\.xml\s*$#mi', (string) $robots)))) { $ok(count($listed) . ' jalur statis tercatat di sitemap_static, rute /sitemap.xml ada, dan robots.txt ' . ($robotsRoute ? '(rute dinamis, mengikuti APP_URL) ' : '') . 'menunjuk peta situs'); }
 } else {
     $warn('routes/web.php atau config/cms.php tidak bisa dibaca: pemeriksaan peta situs dilewati');
+}
+
+// ---------------------------------------------------------------- 3d. route() ke rute statis lama yang sudah dihapus
+echo "\n[3d] Pemanggilan route() ke rute yang dihapus rilis 23\n";
+require_once __DIR__ . '/rute-hilang.php';
+$refs = ysbh_find_removed_route_refs($target);
+if (!is_file($webFile)) {
+    $warn('routes/web.php tidak bisa dibaca: pemeriksaan route() dilewati');
+} else {
+    // hanya nama yang MEMANG tidak ada lagi di routes/web.php yang dituduh (proyek yang masih memelihara rute lama tidak dituduh)
+    $webSrc = (string) preg_replace('#^\s*(?://|\#).*$#m', '', (string) file_get_contents($webFile));
+    $stillDefined = [];
+    foreach (ysbh_removed_route_names() as $n) { if (preg_match("#->name\(\s*['\"]" . preg_quote($n, '#') . "['\"]\s*\)#", $webSrc)) { $stillDefined[$n] = true; } }
+    $refs = array_values(array_filter($refs, fn ($r) => !isset($stillDefined[$r['name']])));
+    foreach ($refs as $r) { $err("{$r['file']}:{$r['line']} memanggil route('{$r['name']}'), rute yang sudah tidak ada: halaman ini akan galat \"Route not defined\". Ganti dengan url('" . ysbh_removed_route_path($r['name']) . "')"); }
+    if (!$refs) { $ok('tidak ada route() ke rute yang dihapus di resources/views, app, dan routes'); }
 }
 
 // ---------------------------------------------------------------- 4. isi renderer: bukan komponen editor
