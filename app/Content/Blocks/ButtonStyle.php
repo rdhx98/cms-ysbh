@@ -24,16 +24,16 @@ final class ButtonStyle
 
     private const LOOK = [
         'solid' => [
-            'foresty' => 'border-foresty bg-foresty text-forest-on hover:opacity-90',
-            'coral' => 'border-coral bg-coral text-coral-on hover:opacity-90',
-            'aurum' => 'border-aurum bg-aurum text-aurum-on hover:opacity-90',
-            'charcoal' => 'border-charcoal bg-charcoal text-charcoal-on hover:opacity-90',
+            'foresty' => 'border-foresty bg-foresty text-white hover:opacity-90',
+            'coral' => 'border-coral bg-coral text-white hover:opacity-90',
+            'aurum' => 'border-aurum bg-aurum text-charcoal hover:opacity-90',
+            'charcoal' => 'border-charcoal bg-charcoal text-white hover:opacity-90',
         ],
         'outline' => [
-            'foresty' => 'border-foresty bg-transparent text-foresty hover:bg-foresty hover:text-forest-on',
-            'coral' => 'border-coral bg-transparent text-coral hover:bg-coral hover:text-coral-on',
-            'aurum' => 'border-aurum bg-transparent text-aurum hover:bg-aurum hover:text-aurum-on',
-            'charcoal' => 'border-charcoal bg-transparent text-charcoal hover:bg-charcoal hover:text-charcoal-on',
+            'foresty' => 'border-foresty bg-transparent text-foresty hover:bg-foresty hover:text-white',
+            'coral' => 'border-coral bg-transparent text-coral hover:bg-coral hover:text-white',
+            'aurum' => 'border-aurum bg-transparent text-aurum hover:bg-aurum hover:text-charcoal',
+            'charcoal' => 'border-charcoal bg-transparent text-charcoal hover:bg-charcoal hover:text-white',
         ],
         'ghost' => [
             'foresty' => 'border-transparent bg-transparent text-foresty hover:bg-foresty/10',

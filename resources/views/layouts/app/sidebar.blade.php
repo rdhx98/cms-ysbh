@@ -1,13 +1,24 @@
+@php
+  $isAdmin = auth()->user()->hasRole("admin") ? "true" : "false";
+  $isEditor = auth()->user()->hasRole("editor") ? "true" : "false";
+  $isWriter = auth()->user()->hasRole("writer") ? "true" : "false";
+@endphp
 <aside
+  x-data="{
+    admin: {{ $isAdmin }},
+    editor: {{ $isEditor }},
+    writer: {{ $isWriter }},
+  }"
+  x-init="console.log(admin)"
   {{
     $attributes->merge([
       // fixed top-0 left-0 z-50 -translate-x-full h-screen md:h-[calc(100vh-1rem)]
       // md:relative md:translate-x-0
       "class" => '
-                                                        fixed top-0 left-0 z-50 -translate-x-full h-screen md:h-[calc(100vh-1rem)]
-                                                        md:sticky md:top-2 md:translate-x-0
+                                                                                                            fixed top-0 left-0 z-50 -translate-x-full h-screen md:h-[calc(100vh-1rem)]
+                                                                                                            md:sticky md:top-2 md:translate-x-0
 
-                                                        transform-gpu transition-all duration-300 ease-in-out overflow-x-hidden flex flex-col items-start bg-white text-white p-1 md:mx-1.5  md:my-2 md:rounded-lg max-h-dvh md:border-0 border-r-2 border-forest',
+                                                                                                            transform-gpu transition-all duration-300 ease-in-out overflow-x-hidden flex flex-col items-start bg-white text-white p-1 md:mx-1.5  md:my-2 md:rounded-lg max-h-dvh md:border-0 border-r-2 border-forest',
     ])
   }}
   {{-- :class="isExpanded ? 'w-64' : 'w-20'" --}}
@@ -95,6 +106,8 @@
           icon="book-open"
           activeIcon="book-open-text"
           iconSize="5"
+          x-cloak
+          x-show="admin | editor"
         >
           {{
             __(
@@ -108,6 +121,8 @@
             icon="layout-template"
             activeIcon="layout-dashboard"
             iconSize="5"
+            x-cloak
+            x-show="admin | editor"
           >
             Snippets</x-layouts.app.sidebar-link>
 
@@ -126,6 +141,8 @@
                 icon="list-tree"
                 activeIcon="folder-tree"
                 iconSize="5"
+                x-cloak
+                x-show="admin | editor"
               >
                 {{
                   __(
@@ -138,6 +155,8 @@
                   icon="user-round"
                   activeIcon="users-round"
                   iconSize="5"
+                  x-cloak
+                  x-show="admin | editor"
                 >
                   {{
                     __(
@@ -153,6 +172,8 @@
       route="{{ route('settings.manager') }}"
       :active="request()->routeIs('settings.manager')"
       icon="cog"
+      x-cloak
+      x-show="admin | editor"
     >
       {{
         __(

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Spatie\Permission\Middleware\RoleMiddleware;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 use Laravel\Fortify\Http\Controllers\RegisteredUserController;
 use App\Http\Controllers\EditorImageUploadController;
@@ -31,29 +32,31 @@ Route::middleware(["auth", "verified"])->group(function () {
     // Route::livewire('/page/preview/{page:slug}', 'page-preview')->name('page.preview');
 
     // Route::livewire("/page/menu-builder", "menu-builder")->name("page.menu-builder");
-    Route::livewire("/navigation", "navigation-builder")->name("navigation.index");
+    Route::livewire("/navigation", "navigation-builder")->middleware("role:admin|editor")->name("navigation.index");
 
     // Route::livewire('/user/edit/{user:handle}', 'user-edit')->name('user.edit');
-    Route::livewire("/user", "user-index")->name("user.index");
-    Route::livewire("/user/create", "user-detail")->name("user.create");
-    Route::livewire("/user/detail/{user:handle}", "user-detail")->name("user.detail");
+    Route::livewire("/user", "user-index")->middleware("role:admin|editor")->name("user.index");
+    Route::livewire("/user/create", "user-detail")->middleware("role:admin|editor")->name("user.create");
+    Route::livewire("/user/detail/{user:handle}", "user-detail")->middleware("role:admin|editor")->name("user.detail");
 
-    Route::livewire("/preferences", "settings-manager")->name("settings.manager");
+    Route::livewire("/preferences", "settings-manager")->middleware("role:admin|editor")->name("settings.manager");
 
     // Route::livewire("/documentation", "json-viewer")->name("documentation");
     Route::view("/documentation", "pages.todo")->name("documentation");
 
-    Route::livewire("/page", "page-index")->name("page.index");
-    Route::livewire("/page/create", "content.builder")->name("page.create");
-    Route::livewire("/page/edit/{page:id}", "content.builder")->name("page.edit");
+    Route::livewire("/page", "page-index")->middleware("role:admin|editor")->name("page.index");
+    Route::livewire("/page/create", "content.builder")->middleware("role:admin|editor")->name("page.create");
+    Route::livewire("/page/edit/{page:id}", "content.builder")->middleware("role:admin|editor")->name("page.edit");
 
     Route::livewire("/article", "article-index")->name("article.index");
     Route::livewire("/article/write", "content.builder")->name("article.write");
     Route::livewire("/article/edit/{post:id}", "content.builder")->name("article.edit");
 
-    Route::livewire("/snippet", "snippet-index")->name("snippet.index");
-    Route::livewire("/snippet/make", "content.builder")->name("snippet.create");
-    Route::livewire("/snippet/edit/{snippet:id}", "content.builder")->name("snippet.edit");
+    Route::livewire("/snippet", "snippet-index")->middleware("role:admin|editor")->name("snippet.index");
+    Route::livewire("/snippet/make", "content.builder")->middleware("role:admin|editor")->name("snippet.create");
+    Route::livewire("/snippet/edit/{snippet:id}", "content.builder")
+        ->middleware("role:admin|editor")
+        ->name("snippet.edit");
 
     Route::livewire("/preview/{token}", "content.canvas-frame")->name("preview.frame");
     Route::livewire("/preview/{type}/{id}", "content.record-preview")

@@ -20,10 +20,10 @@ final class TableStyle
     public const MAX_CELL = 600;
 
     private const HEAD = [
-        'foresty' => 'bg-foresty text-forest-on',
-        'coral' => 'bg-coral text-coral-on',
-        'aurum' => 'bg-aurum text-aurum-on',
-        'charcoal' => 'bg-charcoal text-charcoal-on',
+        'foresty' => 'bg-foresty text-white',
+        'coral' => 'bg-coral text-white',
+        'aurum' => 'bg-aurum text-gray-900',
+        'charcoal' => 'bg-charcoal text-white',
         'light' => 'bg-gray-100 text-gray-800',
     ];
 
@@ -34,10 +34,10 @@ final class TableStyle
      * Isinya dari daftar tetap, bukan dari data pengguna.
      */
     private const HEAD_STYLE = [
-        'foresty' => 'background-color:var(--color-forest,#064F3B);color:var(--color-forest-on,#FFFFFF)',
-        'coral' => 'background-color:var(--color-coral,#E42326);color:var(--color-coral-on,#FFFFFF)',
-        'aurum' => 'background-color:var(--color-aurum,#E5C423);color:var(--color-aurum-on,#1F2937)',
-        'charcoal' => 'background-color:var(--color-charcoal,#1F2937);color:var(--color-charcoal-on,#FFFFFF)',
+        'foresty' => 'background-color:var(--color-foresty,#064F3B);color:#fff',
+        'coral' => 'background-color:var(--color-coral,#E42326);color:#fff',
+        'aurum' => 'background-color:var(--color-aurum,#EBCC26);color:#111827',
+        'charcoal' => 'background-color:var(--color-charcoal,#2B2B2B);color:#fff',
         'light' => 'background-color:#F3F4F6;color:#1F2937',
     ];
 

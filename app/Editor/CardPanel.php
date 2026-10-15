@@ -46,12 +46,12 @@ final class CardPanel
         $d = fn (string $k) => config('cms.design.' . $k, []);
 
         return [
-            Field::swatches('bg', 'Warna Latar', PaletteOptions::colors('card_bg_colors'), 'bg-white', 'bg'),
+            Field::swatches('bg', 'Warna Latar', $d('card_bg_colors'), 'bg-white', 'bg'),
             Field::segmented('padding', 'Ruang Dalam', self::labelled($d('card_paddings')), 'p-2 md:p-4'),
             Field::segmented('radius', 'Sudut', self::labelled($d('border_radiuses')), 'rounded-[14px]'),
             Field::segmented('border_width', 'Garis Tepi', self::labelled($d('border_widths')), 'border-0'),
             Field::segmented('border_style', 'Jenis Garis', self::labelled($d('border_styles')), 'border-solid'),
-            Field::swatches('border_color', 'Warna Garis', PaletteOptions::colors('card_border_colors'), 'border-forest', 'preview'),
+            Field::swatches('border_color', 'Warna Garis', $d('card_border_colors'), 'border-forest', 'preview'),
             Field::segmented('shadow', 'Bayangan', [
                 'shadow-none' => 'Tanpa', 'shadow-sm' => 'Tipis', 'shadow-md' => 'Sedang', 'shadow-lg' => 'Tebal',
             ], 'shadow-sm'),

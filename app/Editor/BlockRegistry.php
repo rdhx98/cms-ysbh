@@ -98,13 +98,11 @@ final class BlockRegistry
             ]),
 
             new BlockType('section-divider', 'Pemisah Seksi', 'between-horizontal-start', 'block', [
-                Field::swatches('data.background', 'Warna Latar Seksi', \App\Editor\PaletteOptions::colors('bg_colors'), 'bg-paper', 'bg'),
-                // Rilis 59: Otomatis (bawaan) = teks yang terbaca di atas latar yang dipilih, dari palet (text-{slot}-on). Gelap/Terang = penimpaan manual.
+                Field::swatches('data.background', 'Warna Latar Seksi', config('cms.design.bg_colors', []), 'bg-paper', 'bg'),
                 Field::segmented('data.text_color', 'Warna Teks', [
-                    self::dot('text-auto', 'Otomatis', 'bg-gradient-to-r from-white to-charcoal', true),
                     self::dot('text-charcoal', 'Gelap', 'bg-charcoal'),
                     self::dot('text-white', 'Terang', 'bg-white', true),
-                ], 'text-auto'),
+                ], 'text-charcoal'),
                 Field::segmented('data.padding', 'Padding Atas & Bawah', [
                     ['value' => 'py-8 sm:py-12', 'label' => 'Rapat'],
                     ['value' => 'py-16 sm:py-24', 'label' => 'Normal'],
@@ -146,7 +144,7 @@ final class BlockRegistry
             new BlockType('eyebrow', 'Eyebrow', 'crosshair', 'block', [
                 Field::i18n('data.text', 'Teks Eyebrow'),
                 Field::icon('data.icon', 'Ikon', 'newspaper'),
-                Field::swatches('data.color', 'Warna', \App\Editor\PaletteOptions::colors('eyebrow_colors'), 'var(--color-coral)', 'hex'),
+                Field::swatches('data.color', 'Warna', config('cms.design.eyebrow_colors', []), '#E42326', 'hex'),
                 Field::segmented('data.margin_bottom', 'Jarak Bawah', self::marginBottom(), Spacing::DEFAULT),
             ]),
 
@@ -283,14 +281,14 @@ final class BlockRegistry
                     'rounded-[20px]' => ['Agak Bulat', 'rounded-md'],
                     'rounded-full' => ['Lingkaran', 'rounded-full'],
                 ]), 'rounded-full', null, ['compact' => true]),
-                Field::swatches('data.style.bg_color', 'Warna Latar', \App\Editor\PaletteOptions::colors('mini_bg_colors'), 'bg-forest', 'bg'),
-                Field::swatches('data.style.text_color', 'Warna Teks', \App\Editor\PaletteOptions::colors('text_colors'), 'text-white', 'text'),
+                Field::swatches('data.style.bg_color', 'Warna Latar', config('cms.design.mini_bg_colors', []), 'bg-forest', 'bg'),
+                Field::swatches('data.style.text_color', 'Warna Teks', config('cms.design.text_colors', []), 'text-white', 'text'),
                 Field::segmented('data.style.border', 'Garis Tepi', ['border-0' => '0', 'border' => '1', 'border-2' => '2', 'border-4' => '4'], 'border-0'),
                 // Trait menulis 'border-transparent' sebagai nilai bawaan, tetapi opsi itu dikomentari di
                 // cms.design.avatar_border_colors — ditambahkan di sini supaya nilai bawaan bisa dipilih.
                 Field::swatches('data.style.border_color', 'Warna Tepian', array_merge([
                     ['name' => 'Transparan', 'value' => 'border-transparent', 'preview' => 'bg-transparent', 'is_transparent' => true],
-                ], \App\Editor\PaletteOptions::colors('avatar_border_colors')), 'border-transparent', 'preview'),
+                ], config('cms.design.avatar_border_colors', [])), 'border-transparent', 'preview'),
             ], defaults: [
                 'content' => ['text' => ''],
                 'style' => [

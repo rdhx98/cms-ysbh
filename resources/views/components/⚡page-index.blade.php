@@ -263,14 +263,14 @@ new class extends Component {
       <div
         class="max-h-[calc(100vh-450px)] w-full max-w-screen overflow-x-auto overflow-y-auto rounded-xl border border-zinc-200 shadow-sm lg:max-h-[calc(100vh-280px)] dark:border-zinc-700"
       >
-        <table class="w-full min-w-max border-collapse text-left">
+        <table class="w-full min-w-max table-fixed border-collapse text-left">
           <thead
             class="bg-misty text-foresty text-xs dark:bg-green-950 dark:text-green-300"
           >
             <tr>
               <!-- Header Judul -->
               <th
-                class="bg-misty border-sage-soft sticky top-0 z-10 border-r-2 px-4 py-3 font-semibold tracking-wider uppercase lg:z-20"
+                class="bg-misty border-sage-soft sticky top-0 z-10 w-2/5 border-r-2 px-4 py-3 font-semibold tracking-wider uppercase lg:z-20"
               >
                 <button
                   wire:click="sortBy('title')"
@@ -351,16 +351,39 @@ new class extends Component {
                   <!-- TITLE -->
                   <td class="max-w-[30%] px-4 py-3.5 text-sm">
                     <div
-                      class="truncate font-medium text-zinc-900 dark:text-white"
+                      class="group relative inline-block w-full font-medium text-zinc-900 dark:text-white"
                     >
-                      {{
-                        $page->getTranslation(
-                          "title",
-                          "id",
-                        )
-                      }}
+                      <!-- 2. Teks utama yang di-truncate -->
+                      <div class="truncate">
+                        {{
+                          $page->getTranslation(
+                            "title",
+                            "id",
+                          )
+                        }}
+                      </div>
+
+                      <!-- 3. Elemen Tooltip (Disembunyikan secara default, muncul saat group di-hover) -->
+                      <div
+                        class="bg-mist border-forest text-forest pointer-events-none absolute top-full right-0 z-50 mb-2 w-max max-w-xs rounded border px-3 py-1.5 text-xs break-words whitespace-normal opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100"
+                      >
+                        {{-- {{
+                          is_array($article->title)
+                            ? $article->title[app()->getLocale()] ??
+                              ($article->title["id"] ?? (current($article->title) ?? "Tanpa Judul"))
+                            : $article->title
+                        }} <!-- Segitiga Kecil di Bawah Tooltip --> --}}
+                        {{
+                          $page->getTranslation(
+                            "title",
+                            "id",
+                          )
+                        }}
+                        <div
+                          class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"
+                        ></div>
+                      </div>
                     </div>
-                    {{-- <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $article->author->name }}</div> --}}
                   </td>
 
                   <!-- PATH -->

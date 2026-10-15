@@ -77,9 +77,6 @@ new #[Layout('layouts.landing.index')] class extends Component {
 @endphp
 
 <div class="relative w-full" data-record-preview>
-  {{-- rilis 58: palet situs (CSS variabel). Hanya dicetak di pratinjau, bukan di shell admin, jadi sidebar/bilah atas tetap berwarna tetap. --}}
-  <style data-palette>{!! \App\Content\PublicLookup::paletteCss() !!}</style>
-
   {{-- Pita kecil di pojok: bukan bagian halaman, hanya penanda bahwa ini pratinjau tersimpan --}}
   <div class="pointer-events-none fixed top-3 right-3 z-[60]">
     <div class="pointer-events-auto flex max-w-[92vw] items-center gap-2 rounded-full bg-gray-900/90 px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg backdrop-blur">

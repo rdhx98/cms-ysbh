@@ -298,19 +298,6 @@ final class ArticleCards
     }
 
     /**
-     * Rilis 56: sembunyikan gambar utama di HALAMAN artikel (pengaturan dokumen `settings.hide_hero`, kotak centang di panel Halaman artikel;
-     * tanpa migrasi). Thumbnail tetap dipakai untuk kartu artikel dan og:image; yang disembunyikan hanya gambar lebar di bawah judul, mis.
-     * ketika thumbnail dipilih dari gambar yang sudah dipasang di isi artikel (kalau tidak, gambar itu tampil dua kali). Bawaan = TAMPIL.
-     * Hanya nilai benar yang tegas menyembunyikan: true, 1, "1", "true", "on".
-     */
-    public static function hideHero(mixed $settings): bool
-    {
-        $v = is_array($settings) ? ($settings['hide_hero'] ?? false) : false;
-
-        return $v === true || $v === 1 || (is_string($v) && in_array(strtolower(trim($v)), ['1', 'true', 'on'], true));
-    }
-
-    /**
      * Gambar utama halaman artikel (rilis 47): sumbernya kolom featured_image yang SAMA dengan kartu. Angka = ID media (harus gambar),
      * nama berkas lama = templat sampul. "default.webp"/kosong = tidak ada gambar (halaman tampil tanpa gambar, bukan gambar rusak).
      *
