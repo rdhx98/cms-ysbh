@@ -12,7 +12,7 @@ export function registerCanvas(Alpine) {
   const DEBOUNCE = 700
 
   Alpine.data('canvasPane', (cfg) => ({
-    // Lebar jendela bingkai. "wide" (1600) memperlihatkan tata letak >= 1536 px, termasuk daftar isi (TOC) yang hanya muncul di lebar itu.
+    // Lebar jendela bingkai. "wide" (1600) memperlihatkan tata letak layar lebar, termasuk daftar isi (TOC) yang hanya muncul bila sisi kolom cukup lebar (sekitar >= 1560 px).
     widths: { desktop: '100%', tablet: '820px', phone: '390px', wide: '1600px' },
     device: 'desktop',
     paneW: 0, // lebar area panel (px), diukur oleh ResizeObserver

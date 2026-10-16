@@ -10,9 +10,47 @@
 @php
   $types = $types ?? \App\Editor\BlockRegistry::all();
   $anchor = \App\Editor\Field::text('anchor', 'ID Tautan (Anchor)', ['slug' => true, 'placeholder' => 'nama-anchor']);
+  $crumbLabels = collect($types)->map(fn ($d) => $d->label)->all(); // 'block:heading' => 'Judul', 'element:text' => 'Teks', ...
 @endphp
 
 <div wire:ignore x-data {{ $attributes->class('text-sm') }}>
+  {{-- Rilis 65: breadcrumb blok bertingkat (menggantikan tombol kembali per elemen). Hanya tampil bila ada tingkat di atasnya. --}}
+  <nav
+    x-data="crumbs(@js($crumbLabels))"
+    x-show="trail.length > 1"
+    x-cloak
+    aria-label="Lokasi di dalam blok bertingkat"
+    data-crumbs
+    class="sticky top-0 z-10 -mx-1 mb-3 flex items-start gap-1.5 border-b border-gray-100 bg-white/95 px-1 pb-2 backdrop-blur"
+  >
+    <button
+      type="button"
+      x-on:click="up()"
+      data-back-to-parent
+      title="Naik satu tingkat"
+      aria-label="Naik satu tingkat"
+      class="hover:bg-sage-soft hover:text-forest mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded border border-gray-200 text-gray-600"
+    >
+      <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+    </button>
+    <ol class="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[10px] font-bold">
+      <template x-for="(c, i) in trail" x-bind:key="i + ':' + c.label">
+        <li class="flex min-w-0 items-center gap-1">
+          <svg x-show="i > 0" class="h-2.5 w-2.5 shrink-0 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+          <button
+            type="button"
+            x-show="c.kind !== 'current'"
+            x-on:click="go(c)"
+            data-crumb-link
+            class="hover:text-forest max-w-[8.5rem] truncate text-gray-500 underline-offset-2 hover:underline"
+            x-text="c.label"
+          ></button>
+          <span x-show="c.kind === 'current'" aria-current="page" data-crumb-current class="max-w-[10rem] truncate text-gray-800" x-text="c.label"></span>
+        </li>
+      </template>
+    </ol>
+  </nav>
+
   <div x-show="! $store.editor.panel" class="rounded-xl bg-gray-50 p-4 text-xs leading-relaxed text-gray-500">
     Pilih sebuah blok atau elemen untuk mengubah isi dan gayanya.
   </div>
@@ -32,18 +70,6 @@
         <span class="bg-foresty rounded px-2 py-0.5 text-[10px] font-extrabold tracking-widest text-white uppercase">{{ $def->label }}</span>
         <span class="text-[10px] font-semibold text-gray-400 uppercase">{{ $def->kind === 'block' ? 'Blok' : 'Elemen kartu' }}</span>
       </div>
-
-      @if ($def->kind === 'element')
-        {{-- Elemen kartu dibuka dari daftar di panel Kartu Builder: sediakan jalan kembali --}}
-        <button
-          type="button"
-          x-show="$store.editor.parentId"
-          x-cloak
-          x-on:click="$store.editor.backToParent()"
-          data-back-to-parent
-          class="hover:bg-sage-soft hover:text-foresty flex w-fit items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-[11px] font-bold text-gray-600"
-        >← Kembali ke Kartu Builder</button>
-      @endif
 
       @if ($def->component && $def->componentFirst)
         <x-dynamic-component :component="$def->component" :locales="$locales" />

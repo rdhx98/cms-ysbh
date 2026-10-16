@@ -6,6 +6,8 @@ namespace App\Content\Blocks;
  * Gaya Callout -> kelas Tailwind dan ikon bawaan per jenis. Semua kelas ditulis UTUH (terdeteksi pemindai Tailwind); nilai di luar daftar
  * jatuh ke bawaan, sehingga data dari browser tidak bisa menyisipkan kelas sembarang. Ikon bawaan berupa SVG sendiri (konstanta tepercaya),
  * tidak bergantung pada daftar ikon aplikasi, dan HTML di dalamnya tidak pernah berasal dari data.
+ *
+ * Warna jenis info/sukses/peringatan/bahaya adalah warna STATUS (makna universal), sengaja bukan slot palet: palette-audit: abaikan D
  */
 final class CalloutStyle
 {
@@ -35,7 +37,7 @@ final class CalloutStyle
             'warning' => 'border-amber-400 bg-amber-400 text-gray-900',
             'danger' => 'border-red-700 bg-red-700 text-white',
             'neutral' => 'border-gray-800 bg-gray-800 text-white',
-            'brand' => 'border-foresty bg-foresty text-white',
+            'brand' => 'border-forest bg-forest text-forest-on',
         ],
     ];
 
@@ -91,7 +93,7 @@ final class CalloutStyle
     public static function icon(mixed $style, mixed $tone): string
     {
         $tone = self::tone($tone);
-        $color = self::style($style) === 'solid' ? ($tone === 'warning' ? 'text-gray-900' : 'text-white') : self::ICON[$tone];
+        $color = self::style($style) === 'solid' ? ($tone === 'warning' ? 'text-gray-900' : ($tone === 'brand' ? 'text-forest-on' : 'text-white')) : self::ICON[$tone];
 
         return 'mt-0.5 h-6 w-6 shrink-0 ' . $color;
     }

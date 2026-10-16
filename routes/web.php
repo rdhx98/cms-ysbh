@@ -35,9 +35,21 @@ Route::middleware(["auth", "verified"])->group(function () {
     Route::livewire("/navigation", "navigation-builder")->middleware("role:admin|editor")->name("navigation.index");
 
     // Route::livewire('/user/edit/{user:handle}', 'user-edit')->name('user.edit');
-    Route::livewire("/user", "user-index")->middleware("role:admin|editor")->name("user.index");
-    Route::livewire("/user/create", "user-detail")->middleware("role:admin|editor")->name("user.create");
-    Route::livewire("/user/detail/{user:handle}", "user-detail")->middleware("role:admin|editor")->name("user.detail");
+    // Route::livewire("/user", "user-index")->middleware("role:admin|editor")->name("user.index");
+    // Route::livewire("/user/create", "user-detail")->middleware("role:admin|editor")->name("user.create");
+    // Route::livewire("/user/detail/{user:handle}", "user-detail")->middleware("role:admin|editor")->name("user.detail");
+    Route::livewire("/user/detail/{user:handle}", "user-detail")
+    ->middleware(["role:admin|editor|writer", "can:view,user"])
+    ->name("user.detail");
+ 
+    // Hanya admin: daftar pengguna dan pembuatan pengguna baru
+    Route::livewire("/user", "user-index")
+        ->middleware("role:admin")
+        ->name("user.index");
+    
+    Route::livewire("/user/create", "user-detail")
+        ->middleware(["role:admin", "can:create," . \App\Models\User::class])
+        ->name("user.create");
 
     Route::livewire("/preferences", "settings-manager")->middleware("role:admin|editor")->name("settings.manager");
 

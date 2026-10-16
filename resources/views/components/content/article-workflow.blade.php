@@ -6,6 +6,7 @@
   Aksi yang butuh alasan / tanggal membuka formulir kecil; aksi lain langsung jalan. Pesan chat = aksi "note" (tidak mengubah status/isi).
   Rilis 50: pesan boleh menempel pada SATU blok (penanda; chip di gelembung, lencana di kanvas), ditandai "Selesai" (baris riwayat tersendiri),
   dan formulir Terbitkan/Jadwalkan memperingatkan (tanpa memblokir) bila masih ada pesan berpenanda yang belum selesai.
+  Panel admin: warna status UI (bukan situs publik), sengaja di luar palet. palette-audit: abaikan D
 --}}
 @props(['workflow'])
 

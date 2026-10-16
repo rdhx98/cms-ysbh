@@ -28,23 +28,12 @@
   {{ $attributes->class('flex flex-col gap-2') }}
   data-card-panel
 >
-  <div class="flex items-center justify-between">
+  <div class="flex items-center justify-between gap-2">
     <span class="text-xxs font-bold text-gray-700 uppercase">Kartu <span class="font-semibold text-gray-400" x-text="'(' + cards.length + ')'"></span></span>
+    <x-editor.add-card-menu variant="header" />
   </div>
 
-  {{-- Tambah kartu: pilih titik awal --}}
-  <div class="flex flex-wrap items-center gap-1.5" data-add-card>
-    @foreach (CardPanel::PRESETS as $preset => $label)
-      <button
-        type="button"
-        x-on:click="addCard(@js($preset))"
-        x-bind:disabled="cards.length >= limits.cards"
-        class="hover:bg-sage-soft hover:text-foresty rounded-md border border-dashed border-gray-300 px-2 py-1 text-[11px] font-bold text-gray-500 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-      >+ {{ $label }}</button>
-    @endforeach
-  </div>
-
-  <p x-show="cards.length === 0" x-cloak class="rounded-lg bg-gray-50 p-3 text-xs text-gray-500">Belum ada kartu. Pilih titik awal di atas.</p>
+  <p x-show="cards.length === 0" x-cloak class="rounded-lg bg-gray-50 p-3 text-xs text-gray-500">Belum ada kartu. Klik <b>Tambah kartu</b>, lalu pilih templatnya.</p>
 
   <template x-for="(card, ci) in cards" x-bind:key="ci">
     <div class="rounded-lg border bg-white" x-bind:class="openCard === ci ? 'border-foresty/40 shadow-sm' : 'border-gray-200'" data-card>
@@ -139,4 +128,9 @@
       </div>
     </div>
   </template>
+
+  {{-- Tombol kedua di bawah daftar: kartu baru ditambah tepat di tempat mata berada, tanpa menggulir ke atas --}}
+  <div x-show="cards.length > 0" x-cloak>
+    <x-editor.add-card-menu variant="full" />
+  </div>
 </div>

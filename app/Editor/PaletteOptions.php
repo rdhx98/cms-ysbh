@@ -20,7 +20,7 @@ final class PaletteOptions
     /** kunci config('cms.design.*') => [jenis, pilihan tetap di luar palet] */
     private const MAP = [
         'bg_colors' => ['bg', ['white']],
-        'card_bg_colors' => ['bg', ['white']],
+        'card_bg_colors' => ['bg', ['white', 'transparent']],
         'mini_bg_colors' => ['bg', ['white']],
         'text_colors' => ['text', ['white']],
         'card_border_colors' => ['border', ['transparent', 'white']],

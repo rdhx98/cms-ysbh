@@ -1,5 +1,6 @@
 <?php
 
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use App\Models\User;
 use App\Livewire\Traits\WithNotifications;
@@ -13,7 +14,10 @@ use Carbon\Carbon;
 new class extends Component {
   use WithNotifications;
 
+  // #[Locked]: properti publik Livewire bisa diubah dari browser. Model target dan mode (buat/ubah) tidak boleh.
+  #[Locked]
   public ?User $user = null;
+  #[Locked]
   public bool $isCreateMode = false;
 
   // Deklarasi wire:model
@@ -30,6 +34,13 @@ new class extends Component {
   {
     $this->user = $user ?? new User();
     $this->isCreateMode = !$this->user->exists;
+
+    // Akses per profil (UserPolicy): admin = semua; editor/writer = hanya profil sendiri. Rute hanya memeriksa PERAN, bukan siapa pemiliknya.
+    if ($this->isCreateMode) {
+      $this->authorize("create", User::class);
+    } else {
+      $this->authorize("view", $this->user);
+    }
 
     if (!$this->isCreateMode) {
       $this->name = $this->user->name;
@@ -123,6 +134,11 @@ new class extends Component {
 
   public function save()
   {
+    // Setiap aksi Livewire bisa dipanggil langsung dari browser: periksa lagi di SINI, sebelum validasi dan sebelum menulis.
+    $this->isCreateMode
+      ? $this->authorize("create", User::class)
+      : $this->authorize("update", $this->user);
+
     $userId = $this->user->id ?? "";
 
     // 1. Cek apakah yang menekan tombol adalah Admin
@@ -360,7 +376,7 @@ new class extends Component {
   {{
     $isCreateMode
       ? __("Tambah Pengguna")
-      : __("Users Detail") . " | " . auth()->user()->name
+      : __("Users Detail") . " | " . $user->name
   }}
 </x-slot:title>
 <x-main-wrapper>
@@ -387,7 +403,7 @@ new class extends Component {
           }}
         </p>
       </div>
-      @if (!$isCreateMode)
+      @if (!$isCreateMode && auth()->user()->hasRole("admin"))
         {{-- <a href="{{ route('user.index') }}" wire:navigate class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-foresty hover:text-goldy transition-colors shadow-sm">
                     <x-dynamic-component :component="'lucide-arrow-left'" class="w-4 h-4" />
                     Kembali ke Daftar
@@ -605,12 +621,17 @@ new class extends Component {
                   >Alamat Email</label
                 >
                 <input
-                  x-bind:disabled="!isEditing"
+                  x-bind:disabled="!isEditing || @js(! auth()->user()->hasRole('admin'))"
                   type="email"
                   wire:model="email"
                   class="focus:ring-forest/20 focus:border-forest w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 shadow-sm transition-colors focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                   placeholder="email@organisasi.org"
                 />
+                @unlessrole ("admin")
+                  <span class="mt-1 block text-xs text-zinc-500"
+                    >Perubahan e-mail hanya oleh admin.</span
+                  >
+                @endunlessrole
                 @error ("email")
                   <span class="mt-1 text-xs text-red-500">{{ $message }}</span>
                 @enderror

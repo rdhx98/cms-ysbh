@@ -789,7 +789,8 @@ new class extends Component {
       <div
         x-show="tab === 'footer'"
         x-cloak
-        class="w-full max-w-4xl"
+        {{-- class="w-full max-w-4xl" --}}
+        class="flex max-h-full w-full max-w-screen flex-col gap-8 overflow-x-auto overflow-y-auto rounded-xl md:flex-row"
         data-footer-tab
       >
         <livewire:content.footer-editor lazy wire:key="footer-editor" />

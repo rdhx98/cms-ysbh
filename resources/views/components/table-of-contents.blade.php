@@ -54,24 +54,24 @@
         }
     }"
     @scroll.window.passive="checkScroll"
-    class="sticky top-24 w-full"
+    class="w-full"
 >
     {{-- Header Daftar Isi --}}
-    <h3 class="mb-4 text-xs font-extrabold tracking-widest text-red-700 uppercase">
+    <h3 class="text-coral mb-4 text-xs font-extrabold tracking-widest uppercase">
         {{ $label }}
     </h3>
 
     {{-- Garis Pembatas Kiri Keseluruhan --}}
-    <ul class="flex flex-col border-l-2 border-gray-200/80">
+    <ul class="border-charcoal/10 flex flex-col border-l-2">
         @foreach($items as $item)
             <li>
                 <button 
                     type="button" 
                     @click="scrollTo(@js($item['anchor']))"
-                    class="block w-full px-4 py-2 text-sm text-left transition-all duration-200 border-l-2 -ml-[2px] outline-none"
+                    class="-ml-[2px] block w-full border-l-2 py-2 pr-1 pl-3 text-left text-sm leading-snug break-words outline-none transition-all duration-200"
                     :class="activeAnchor === @js($item['anchor']) 
-                        ? 'border-foresty text-foresty font-bold' 
-                        : 'border-transparent text-gray-600 hover:text-foresty hover:border-gray-300'"
+                        ? 'border-forest text-forest font-bold' 
+                        : 'border-transparent text-ink-soft hover:text-forest hover:border-gray-300'"
                 >
                     {{ $item['title'] }}
                 </button>

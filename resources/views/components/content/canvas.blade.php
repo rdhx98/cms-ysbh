@@ -49,7 +49,7 @@
         <button type="button" title="Ponsel (390 px)" x-on:click="setDevice('phone')" x-bind:aria-pressed="device === 'phone'" x-bind:class="device === 'phone' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500'" class="{{ $seg }}">
           <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" /><path d="M12 18h.01" /></svg>
         </button>
-        <button type="button" title="Layar lebar (1600 px, diperkecil agar muat). Daftar isi (TOC) hanya tampil di lebar ini" x-on:click="setDevice('wide')" x-bind:aria-pressed="device === 'wide'" x-bind:class="device === 'wide' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500'" class="{{ $seg }}">
+        <button type="button" title="Layar lebar (1600 px, diperkecil agar muat). Daftar isi (TOC) hanya tampil bila sisi kolom cukup lebar (mulai sekitar 1560 px)" x-on:click="setDevice('wide')" x-bind:aria-pressed="device === 'wide'" x-bind:class="device === 'wide' ? 'bg-white text-foresty shadow-sm' : 'text-gray-500'" class="{{ $seg }}">
           <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" /></svg>
         </button>
       </div>

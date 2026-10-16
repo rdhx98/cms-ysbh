@@ -90,6 +90,32 @@ trait ManagesBlockStructure
     // removeElementFromColumn). Dua di bawah ini baru: menambah elemen dengan nilai bawaan dari REGISTRI (sesuai pilihan kontrol di
     // panel; addElementToColumn() di trait menulis nilai yang tidak ada di pilihan, temuan audit #2-#5) dan menggeser kartu.
 
+    /**
+     * Tambah kartu ke blok Kartu Builder dari sebuah templat (rilis 67). $preset: stack | icon-text | document (preset trait HasContentBlocks, lewat
+     * addCardItem) atau blank = kartu tanpa kolom (rangka kosong; kolom ditambah sendiri di panel). Templat tak dikenal = stack. Batas jumlah kartu
+     * (CardPanel::MAX_CARDS) ditegakkan di sini, bukan hanya di tombol.
+     */
+    public function addCardWithPreset(string $blockId, string $preset = 'stack'): void
+    {
+        $block = $this->content[$blockId] ?? null;
+        if (!is_array($block) || BlockPalette::canonical($block['type'] ?? '') !== 'card-builder') {
+            return;
+        }
+        $before = $block['data']['cards'] ?? [];
+        if (!is_array($before) || count($before) >= CardPanel::MAX_CARDS) {
+            return;
+        }
+        $preset = array_key_exists($preset, CardPanel::PRESETS) ? $preset : 'stack';
+
+        $this->addCardItem($blockId, $preset === 'blank' ? 'stack' : $preset);
+
+        $cards = $this->content[$blockId]['data']['cards'] ?? [];
+        if ($preset === 'blank' && is_array($cards) && count($cards) === count($before) + 1) {
+            $last = array_key_last($cards);
+            $this->content[$blockId]['data']['cards'][$last]['layout']['children'] = [];
+        }
+    }
+
     /** Tambah elemen ke kolom (id kolom) pada kartu ke-$cardIndex. Jenis harus punya panel dan nilai bawaan di registri. */
     public function addCardElementAt(string $blockId, int $cardIndex, string $columnId, string $elementType): void
     {

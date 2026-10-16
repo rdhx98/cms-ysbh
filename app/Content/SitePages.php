@@ -32,6 +32,7 @@ final class SitePages
             ['key' => 'credibility', 'title' => ['en' => 'Credibility', 'id' => 'Kredibilitas'], 'slug' => ['en' => 'credibility', 'id' => 'kredibilitas']],
             ['key' => 'impact', 'title' => ['en' => 'Our Impact', 'id' => 'Dampak Kami'], 'slug' => ['en' => 'impact', 'id' => 'dampak']],
             ['key' => 'transparency', 'title' => ['en' => 'Transparency', 'id' => 'Transparansi'], 'slug' => ['en' => 'transparency', 'id' => 'transparansi'], 'snippet' => self::SNIPPET_KEY],
+            ['key' => 'donation', 'title' => ['en' => 'Donate', 'id' => 'Donasi'], 'slug' => ['en' => 'donate', 'id' => 'donasi']],
             ['key' => 'contact', 'title' => ['en' => 'Contact Us', 'id' => 'Hubungi Kami'], 'slug' => ['en' => 'contact', 'id' => 'kontak']],
         ];
     }

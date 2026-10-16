@@ -63,6 +63,10 @@
       </button>
 
       <div class="flex shrink-0 items-center pr-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
+        @if ($type === 'card-builder')
+          {{-- rilis 67: tambah kartu langsung dari outline (menu templat), tanpa membuka panelnya dulu --}}
+          <x-editor.add-card-menu variant="row" :bid="$id" label="Tambah kartu" />
+        @endif
         <button type="button" title="Menu: sisipkan, pindahkan, masuk/keluar kontainer" aria-label="Menu blok" aria-haspopup="menu" x-on:click.stop="openMenu($event)" class="rounded p-1 hover:bg-black/10">
           <svg class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2.2" /><circle cx="12" cy="12" r="2.2" /><circle cx="19" cy="12" r="2.2" /></svg>
         </button>

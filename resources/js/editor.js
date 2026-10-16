@@ -169,6 +169,9 @@ export function registerEditor(Alpine) {
 
   Alpine.store('editor', {
     id: null, // id blok yang difokus (null bila elemen kartu)
+    via: null, // rilis 65: id anak yang menuju asal navigasi breadcrumb (daftar isi kontainer menyorot dan menggulir ke baris ini)
+    viaZone: null, // rilis 65: kunci zona (mis. col_2_zone) yang diklik di breadcrumb; daftar isi kolom menggulir ke zona itu
+    cardHint: null, // rilis 65: {bid, ci}: buka kartu ke-ci di panel Kartu Builder blok bid (dipakai breadcrumb)
     parentId: null, // id blok Kartu Builder pemilik elemen yang difokus (null bila bukan elemen kartu); dipakai tombol "Kembali"
     panel: null, // "block:heading" | "element:text"
     base: null, // path wire node ini, mis. "content.blk_1" atau "content.blk_1.data.cards.0.layout.children.1.children.0"
@@ -176,8 +179,10 @@ export function registerEditor(Alpine) {
     tab: 'page', // panel kanan: 'page' (pengaturan halaman) | 'block' (properti blok/elemen yang difokus) | 'review' (artikel) | 'audit'
     reviewUnread: 0, // jumlah pesan/peristiwa baru dari orang lain di tab Review (dihitung reviewChat; per peramban)
 
-    focusBlock(id, type) {
+    focusBlock(id, type, via = null, viaZone = null) {
       this.id = id
+      this.via = via
+      this.viaZone = viaZone
       this.parentId = null
       this.base = 'content.' + id
       this.panel = 'block:' + canon(type)
@@ -186,6 +191,7 @@ export function registerEditor(Alpine) {
     // parentId (rilis 32): blok Kartu Builder tempat elemen ini berada; panel elemen menampilkan tombol kembali ke panel kartu itu
     focusElement(base, elementType, parentId = null) {
       this.id = null
+      this.via = this.viaZone = null
       this.parentId = parentId
       this.base = base
       this.panel = 'element:' + elementType
@@ -195,13 +201,199 @@ export function registerEditor(Alpine) {
       if (this.parentId) this.focusBlock(this.parentId, 'card-builder')
     },
     clear() {
-      this.id = this.parentId = this.base = this.panel = null
+      this.id = this.parentId = this.base = this.panel = this.via = this.viaZone = this.cardHint = null
       this.tab = 'page'
     },
     showLang(l) {
       return this.lang === 'both' || this.lang === l
     },
   })
+
+
+  // ------------------------------------------------------------------ breadcrumb & daftar isi kontainer (rilis 65)
+  // Zona anak sebuah kontainer: Grup Langkah = 'children' (tiap anak adalah satu langkah); Kolom = col_1_zone .. col_6_zone.
+  const isZoneKey = (k) => k === 'children' || /^col_\d+_zone$/.test(String(k))
+  const zoneNo = (k) => parseInt(String(k).replace(/\D/g, ''), 10) || 0
+
+  /** Induk sebuah blok, dicari dari state klien (bukan dari DOM outline): {parent, zone, index} atau null. */
+  const findParent = (content, id) => {
+    for (const [pid, b] of Object.entries(content || {})) {
+      for (const [k, v] of Object.entries((b && b.data) || {})) {
+        if (isZoneKey(k) && Array.isArray(v)) {
+          const i = v.indexOf(id)
+          if (i >= 0) return { parent: pid, zone: k, index: i }
+        }
+      }
+    }
+    return null
+  }
+
+  /**
+   * Breadcrumb panel kanan (<x-editor.crumbs>): Grup Langkah › Langkah 2 › Kartu 3 › Teks. Dibangun dari state klien: rantai induk blok
+   * lewat zona kontainer, lalu (bila elemen kartu difokus) kartu dan kolom dari path elemen. Segmen mana pun bisa diklik: blok membuka
+   * panelnya (kanvas ikut menggulir lewat fokus), Kartu membuka Kartu Builder dengan kartu itu terbuka, Kolom membuka panel Kolom dan
+   * menggulir daftar isinya ke kolom itu. Anak pada jalur ditandai (via) supaya daftar isi kontainer menyorot asal Anda.
+   */
+  Alpine.data('crumbs', (labels = {}) => ({
+    labels,
+    nameOf(panelKey, fallback) {
+      return (this.labels && this.labels[panelKey]) || fallback || panelKey
+    },
+    get trail() {
+      const s = Alpine.store('editor')
+      const bid = s.parentId || s.id
+      if (!bid) return []
+      const content = this.$wire.content || {}
+      if (!content[bid]) return []
+
+      const chain = []
+      let cur = bid
+      for (let guard = 0; cur && guard < 12; guard++) {
+        const p = findParent(content, cur)
+        chain.unshift({ id: cur, p })
+        cur = p ? p.parent : null
+      }
+
+      const out = []
+      chain.forEach((n, i) => {
+        const type = canon((content[n.id] || {}).type)
+        const parentType = n.p ? canon((content[n.p.parent] || {}).type) : ''
+        const next = chain[i + 1]
+        if (n.p && parentType === 'multi-columns') {
+          // zona kolom: segmen sendiri, menuju panel Kolom dan menggulir ke kolom itu
+          out.push({ kind: 'zone', label: 'Kolom ' + zoneNo(n.p.zone), id: n.p.parent, type: 'multi-columns', via: n.id, viaZone: n.p.zone })
+        }
+        out.push({
+          kind: 'block',
+          label: n.p && parentType === 'step-group' ? 'Langkah ' + (n.p.index + 1) : this.nameOf('block:' + type, type),
+          id: n.id,
+          type,
+          via: next ? next.id : null,
+          viaZone: next && next.p ? next.p.zone : null,
+        })
+      })
+
+      // elemen kartu: Kartu N (dan Kolom N bila kartu itu punya lebih dari satu kolom), lalu elemennya
+      if (s.parentId && s.base) {
+        const m = /\.data\.cards\.(\d+)\.layout\.children\.(\d+)\.children\.(\d+)$/.exec(s.base)
+        if (m) {
+          const ci = parseInt(m[1], 10)
+          const co = parseInt(m[2], 10)
+          out.push({ kind: 'card', label: 'Kartu ' + (ci + 1), id: bid, type: 'card-builder', card: ci })
+          const cols = this.$wire.$get('content.' + bid + '.data.cards.' + ci + '.layout.children')
+          if (Array.isArray(cols) && cols.length > 1) {
+            out.push({ kind: 'card', label: 'Kolom ' + (co + 1), id: bid, type: 'card-builder', card: ci })
+          }
+        }
+        out.push({ kind: 'current', label: this.nameOf(s.panel, 'Elemen') })
+      } else if (out.length) {
+        out[out.length - 1].kind = 'current'
+      }
+      return out
+    },
+    go(c) {
+      if (!c || c.kind === 'current' || !c.id) return
+      const s = Alpine.store('editor')
+      s.focusBlock(c.id, c.type, c.via || null, c.viaZone || null)
+      if (c.kind === 'card') {
+        // setelah panel Kartu Builder aktif (cardPanel mengosongkan kartu terbuka saat berpindah blok), buka kartunya
+        setTimeout(() => {
+          s.cardHint = { bid: c.id, ci: c.card }
+        }, 0)
+      }
+    },
+    up() {
+      const t = this.trail
+      for (let i = t.length - 2; i >= 0; i--) {
+        if (t[i].kind !== 'current') return this.go(t[i])
+      }
+    },
+  }))
+
+  /**
+   * Daftar isi panel kontainer (<x-editor.container-kids>): Grup Langkah = daftar langkah, Kolom = daftar blok per kolom. Klik baris =
+   * masuk ke blok itu. Baris yang menuju asal navigasi breadcrumb (store.via / viaZone) disorot dan digulir ke tampilan.
+   */
+  Alpine.data('containerKids', (labels = {}) => ({
+    labels,
+    get zones() {
+      const s = Alpine.store('editor')
+      const content = this.$wire.content || {}
+      const b = s.id && content[s.id]
+      if (!b) return []
+      const type = canon(b.type)
+      const d = b.data || {}
+      let keys = []
+      if (type === 'step-group') keys = ['children']
+      else if (type === 'multi-columns') {
+        const n = Math.max(1, Math.min(6, parseInt(d.col_count, 10) || 2))
+        for (let i = 1; i <= 6; i++) {
+          const k = 'col_' + i + '_zone'
+          if (i <= n || (Array.isArray(d[k]) && d[k].length)) keys.push(k)
+        }
+      } else return []
+      return keys.map((k) => {
+        const ids = (Array.isArray(d[k]) ? d[k] : []).filter((id) => content[id])
+        return {
+          key: k,
+          title: type === 'step-group' ? 'Isi langkah' : 'Kolom ' + zoneNo(k),
+          hidden: type === 'multi-columns' && zoneNo(k) > (parseInt(d.col_count, 10) || 2),
+          items: ids.map((id, i) => {
+            const ct = canon((content[id] || {}).type)
+            return {
+              id,
+              type: ct,
+              label: type === 'step-group' ? 'Langkah ' + (i + 1) : (this.labels['block:' + ct] || ct),
+              hint: this.hint(id, ct, content),
+            }
+          }),
+        }
+      })
+    },
+    get kind() {
+      const s = Alpine.store('editor')
+      const b = s.id && (this.$wire.content || {})[s.id]
+      return b ? canon(b.type) : ''
+    },
+    // keterangan satu baris: jumlah kartu, atau teks pertama blok itu
+    hint(id, type, content) {
+      const d = (content[id] || {}).data || {}
+      if (type === 'card-builder') {
+        const n = Array.isArray(d.cards) ? d.cards.length : 0
+        return n + ' kartu'
+      }
+      const loc = document.documentElement.lang || 'id'
+      const pick = (v) => {
+        if (v && typeof v === 'object') v = v[loc] || v.id || Object.values(v).find((x) => typeof x === 'string' && x)
+        return typeof v === 'string' ? v.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() : ''
+      }
+      return (pick(d.text) || pick(d.title) || pick(d.label) || '').slice(0, 60)
+    },
+    isVia(id) {
+      return Alpine.store('editor').via === id
+    },
+    isViaZone(key) {
+      return Alpine.store('editor').viaZone === key && !Alpine.store('editor').via
+    },
+    open(it) {
+      Alpine.store('editor').focusBlock(it.id, it.type)
+    },
+    init() {
+      // asal navigasi berubah: gulir baris/zona itu ke tampilan (setelah panel selesai dirender)
+      this.$watch(
+        () => [Alpine.store('editor').via, Alpine.store('editor').viaZone, Alpine.store('editor').id],
+        () => {
+          this.$nextTick(() => {
+            const s = Alpine.store('editor')
+            const root = this.$root
+            if (!root || !root.isConnected) return
+            const el = s.via ? root.querySelector('[data-kid="' + CSS.escape(s.via) + '"]') : s.viaZone ? root.querySelector('[data-kzone="' + CSS.escape(s.viaZone) + '"]') : null
+            if (el && el.offsetParent !== null) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+          })
+        },
+      )
+    },
+  }))
 
   /**
    * Tinggi editor = SISA tinggi layar (tinggi jendela dikurangi jarak atas elemen ini dan padding bawah induknya), bukan 100dvh.
@@ -1231,6 +1423,72 @@ export function registerEditor(Alpine) {
   }))
 
   /**
+   * Menu "Tambah kartu" (<x-editor.add-card-menu>, rilis 67): satu tombol, popover `fixed` berisi templat kartu (Tumpuk, Ikon + teks, Dokumen, Kosong).
+   * Dipakai di panel Kartu Builder (blok yang sedang difokus) dan di baris outline sebuah Kartu Builder (cfg.bid). Setelah server menambah kartu,
+   * blok difokus bila perlu dan kartu baru dibuka lewat store.cardHint (sama dengan klik segmen "Kartu N" di breadcrumb).
+   */
+  Alpine.data('addCardMenu', (cfg = {}) => ({
+    open: false,
+    busy: false,
+    pos: { left: 0, width: 232, top: null, bottom: null, max: 320 },
+
+    get target() {
+      if (cfg.bid) return cfg.bid
+      const s = Alpine.store('editor')
+      return s.parentId || s.id
+    },
+    get count() {
+      const c = this.target && this.$wire.$get('content.' + this.target + '.data.cards')
+      return Array.isArray(c) ? c.length : 0
+    },
+    get full() {
+      return this.count >= (cfg.max || 24)
+    },
+    toggle() {
+      if (this.open) {
+        this.open = false
+        return
+      }
+      if (this.full || this.busy) return
+      const r = this.$refs.trigger.getBoundingClientRect()
+      const w = Math.max(232, Math.min(260, window.innerWidth - 16))
+      const below = window.innerHeight - r.bottom - 12
+      const above = r.top - 12
+      const up = below < 260 && above > below
+      this.pos = {
+        left: Math.max(8, Math.min(Math.round(r.left), window.innerWidth - w - 8)),
+        width: w,
+        top: up ? null : Math.round(r.bottom + 4),
+        bottom: up ? Math.round(window.innerHeight - r.top + 4) : null,
+        max: Math.max(160, Math.min(340, up ? above : below)),
+      }
+      this.open = true
+    },
+    get style() {
+      const p = this.pos
+      return 'left:' + p.left + 'px;width:' + p.width + 'px;' + (p.top !== null ? 'top:' + p.top + 'px;' : 'bottom:' + p.bottom + 'px;') + 'max-height:' + p.max + 'px'
+    },
+    async pick(preset) {
+      const bid = this.target
+      if (!bid || this.full || this.busy) return
+      this.open = false
+      this.busy = true
+      try {
+        await this.$wire.addCardWithPreset(bid, preset)
+        const ci = this.count - 1
+        if (ci < 0) return
+        const S = Alpine.store('editor')
+        if ((S.parentId || S.id) !== bid) S.focusBlock(bid, 'card-builder')
+        setTimeout(() => {
+          S.cardHint = { bid, ci }
+        }, 0)
+      } finally {
+        this.busy = false
+      }
+    },
+  }))
+
+  /**
    * Panel Kartu Builder (<x-editor.cards>, rilis 32): daftar Kartu -> Kolom -> Elemen untuk blok yang difokus.
    * Data dibaca dari state Livewire ($wire.content.{id}.data.cards). Perubahan STRUKTUR memanggil aksi server (trait HasContentBlocks
    * dan ManagesBlockStructure); perubahan NILAI dikerjakan kontrol biasa di dalam template. DOM dikunci oleh INDEKS.
@@ -1246,6 +1504,14 @@ export function registerEditor(Alpine) {
       this.$watch(() => this.bid, () => {
         this.openCard = null
         this.styleOpen = null
+      })
+      // rilis 65: breadcrumb "Kartu N" meminta kartu itu dibuka (hanya bila untuk blok ini)
+      this.$watch(() => Alpine.store('editor').cardHint, (h) => {
+        if (h && h.bid === this.bid) {
+          this.openCard = h.ci
+          this.styleOpen = null
+        }
+        if (h) Alpine.store('editor').cardHint = null
       })
     },
 
@@ -1278,11 +1544,6 @@ export function registerEditor(Alpine) {
     toggleCard(ci) {
       this.openCard = this.openCard === ci ? null : ci
       this.styleOpen = null
-    },
-    async addCard(preset) {
-      if (this.cards.length >= this.limits.cards) return
-      await this.act('addCardItem', preset)
-      this.openCard = this.cards.length - 1
     },
     async moveCard(ci, d) {
       const j = ci + d

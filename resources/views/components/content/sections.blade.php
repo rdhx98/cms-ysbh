@@ -30,23 +30,39 @@
 @endphp
 
 <div class="bg-paper relative w-full">
-  {{-- Daftar isi kaca di luar max-w-7xl; hanya muncul di layar >= 1536px dan menyingkir bila menabrak blok layar penuh.
-       Rilis 29 (mengganti aturan rilis 27): saat halaman dimuat kartu berada di TENGAH sumbu vertikal layar, lalu ikut turun-naik bersama gulir
-       sampai menempel di 128 px dari atas (setara top-32) dan tetap di sana (tocTop). Bila blok PERTAMA halaman adalah gambar w-screen
-       (data-top-banner), kartu tersembunyi sampai tepi bawah banner itu melewati tepi atas kartu, lalu muncul. Blok layar penuh lainnya
-       menyembunyikan kartu selama menimpanya (margin 50 px), seperti sebelumnya. --}}
+  {{-- Daftar isi (rilis 62, mengganti kartu kaca rilis 29): melayang di samping kolom max-w-7xl, TANPA kartu: tidak ada latar, blur,
+       bingkai, atau bayangan, jadi menyatu dengan latar halaman. Lebarnya mengikuti ruang yang ada, tidak pernah terpotong:
+       lebar = min(256, ruang di sisi kolom + 32 px bantalan kolom - 12 px jarak - 16 px tepi layar); bila < 150 px daftar isi
+       disembunyikan (menggantikan gerbang 2xl lama). Rilis 64: arah (kiri/kanan) dibaca dari atribut data-toc setiap kali dihitung dan diawasi
+       MutationObserver; dulu tertanam di dalam skrip x-data sehingga mengganti arah di editor menyisakan data Alpine lama (TOC tidak muncul lagi). Posisi vertikal & aturan menyingkir dari rilis 29 tidak berubah: saat dimuat di
+       tengah sumbu vertikal, ikut gulir sampai menempel di 128 px dari atas; tersembunyi selama banner puncak halaman belum lewat dan
+       selama menimpa blok layar penuh lain (margin 50 px). --}}
   @if (count($tocItems) > 0 && $tocPosition !== 'hidden')
     <div
       x-data="{
         isTocHidden: true,
         tocTop: 128,
+        tocLeft: 0,
+        tocWidth: 0,
+        side: 'right',
         checkOverlap() {
           const toc = $refs.tocCard
           if (! toc) return
+          const vw = document.documentElement.clientWidth
+          const gutter = (vw - Math.min(vw, 1280)) / 2
+          const width = Math.min(256, Math.floor(gutter + 32 - 12 - 16))
+          this.tocWidth = Math.max(width, 0)
+          const left = this.$root.dataset.toc === 'left'
+          this.side = left ? 'left' : 'right'
+          this.tocLeft = left ? Math.round(gutter + 32 - 12 - this.tocWidth) : Math.round(vw - gutter - 32 + 12)
           const stick = 128
           const height = toc.offsetHeight
           const top = Math.max(stick, Math.round((window.innerHeight - height) / 2) - window.scrollY)
           this.tocTop = top
+          if (width < 150) {
+            this.isTocHidden = true
+            return
+          }
           const bottom = top + height
           const banner = document.querySelector('[data-top-banner]')
           if (banner && banner.getBoundingClientRect().bottom > top) {
@@ -65,34 +81,21 @@
           this.isTocHidden = overlap
         },
       }"
-      x-init="$nextTick(() => checkOverlap()); setTimeout(() => checkOverlap(), 300)"
+      x-init="$nextTick(() => checkOverlap()); setTimeout(() => checkOverlap(), 300); new MutationObserver(() => checkOverlap()).observe($el, { attributes: true, attributeFilter: ['data-toc'] })"
       @scroll.window.capture.passive="checkOverlap()"
       @resize.window.capture.passive="checkOverlap()"
       @load.window.capture="checkOverlap()"
-      class="pointer-events-none fixed inset-0 z-50 hidden 2xl:block"
+      data-toc="{{ $tocPosition === 'left' ? 'left' : 'right' }}"
+      class="pointer-events-none fixed inset-0 z-50"
     >
-      <div class="relative mx-auto h-full w-full max-w-7xl">
-        @if ($tocPosition === 'left')
-          <div class="pointer-events-auto absolute right-full mr-8 w-64" x-bind:style="'top:' + tocTop + 'px'">
-            <div
-              x-ref="tocCard"
-              class="scrollbar-hide max-h-[75vh] overflow-y-auto rounded-2xl border border-white/60 bg-white/40 p-5 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out"
-              x-bind:class="isTocHidden ? 'opacity-0 -translate-x-8 pointer-events-none' : 'opacity-100 translate-x-0'"
-            >
-              <x-table-of-contents :items="$tocItems" />
-            </div>
-          </div>
-        @else
-          <div class="pointer-events-auto absolute left-full ml-8 w-64" x-bind:style="'top:' + tocTop + 'px'">
-            <div
-              x-ref="tocCard"
-              class="scrollbar-hide max-h-[75vh] overflow-y-auto rounded-2xl border border-white/60 bg-white/40 p-5 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out"
-              x-bind:class="isTocHidden ? 'opacity-0 translate-x-8 pointer-events-none' : 'opacity-100 translate-x-0'"
-            >
-              <x-table-of-contents :items="$tocItems" />
-            </div>
-          </div>
-        @endif
+      <div class="pointer-events-auto absolute" x-bind:style="'top:' + tocTop + 'px;left:' + tocLeft + 'px;width:' + tocWidth + 'px'">
+        <div
+          x-ref="tocCard"
+          class="scrollbar-hide max-h-[75vh] overflow-y-auto transition-all duration-500 ease-in-out"
+          x-bind:class="isTocHidden ? 'opacity-0 pointer-events-none ' + (side === 'left' ? '-translate-x-8' : 'translate-x-8') : 'opacity-100 translate-x-0'"
+        >
+          <x-table-of-contents :items="$tocItems" />
+        </div>
       </div>
     </div>
   @endif

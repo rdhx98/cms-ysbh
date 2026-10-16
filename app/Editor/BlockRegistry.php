@@ -3,6 +3,7 @@
 namespace App\Editor;
 
 use App\Content\Blocks\LayoutStyle;
+use App\Content\Blocks\StepStyle;
 use App\Content\Blocks\Spacing;
 
 /**
@@ -98,11 +99,13 @@ final class BlockRegistry
             ]),
 
             new BlockType('section-divider', 'Pemisah Seksi', 'between-horizontal-start', 'block', [
-                Field::swatches('data.background', 'Warna Latar Seksi', config('cms.design.bg_colors', []), 'bg-paper', 'bg'),
+                Field::swatches('data.background', 'Warna Latar Seksi', \App\Editor\PaletteOptions::colors('bg_colors'), 'bg-paper', 'bg'),
+                // Rilis 59: Otomatis (bawaan) = teks yang terbaca di atas latar yang dipilih, dari palet (text-{slot}-on). Gelap/Terang = penimpaan manual.
                 Field::segmented('data.text_color', 'Warna Teks', [
-                    self::dot('text-charcoal', 'Gelap', 'bg-charcoal'),
-                    self::dot('text-white', 'Terang', 'bg-white', true),
-                ], 'text-charcoal'),
+                    self::dot('text-auto', 'Otomatis', 'bg-gradient-to-r from-white to-charcoal', true), // palette-audit: abaikan (penimpaan manual yang disengaja)
+                    self::dot('text-charcoal', 'Gelap', 'bg-charcoal'), // palette-audit: abaikan (penimpaan manual yang disengaja)
+                    self::dot('text-white', 'Terang', 'bg-white', true), // palette-audit: abaikan (penimpaan manual yang disengaja)
+                ], 'text-auto'),
                 Field::segmented('data.padding', 'Padding Atas & Bawah', [
                     ['value' => 'py-8 sm:py-12', 'label' => 'Rapat'],
                     ['value' => 'py-16 sm:py-24', 'label' => 'Normal'],
@@ -131,20 +134,36 @@ final class BlockRegistry
                 'align_y' => LayoutStyle::ALIGN_Y_DEFAULT,
                 'gap' => 'gap-4',
                 'col_1_zone' => [], 'col_2_zone' => [], 'col_3_zone' => [], 'col_4_zone' => [], 'col_5_zone' => [], 'col_6_zone' => [],
-            ]),
+            ], component: 'editor.container-kids', componentFirst: true), // rilis 65: daftar isi per kolom di atas kontrol
 
             new BlockType('step-group', 'Grup Langkah (Timeline)', 'list-ordered', 'block', [
-                Field::text('data.node_color', 'Warna Angka (kelas Tailwind)', ['placeholder' => 'bg-foresty text-white']),
-                Field::text('data.line_color', 'Warna Garis (kelas Tailwind)', ['placeholder' => 'bg-foresty/30']),
                 Field::segmented('data.orientation', 'Orientasi', ['vertical' => 'Vertikal', 'horizontal-top' => 'Horiz. Atas', 'horizontal-bottom' => 'Horiz. Bawah'], 'vertical'),
                 Field::segmented('data.gap', 'Jarak', ['gap-4' => 'Rapat', 'gap-8' => 'Sedang', 'gap-12' => 'Renggang', 'gap-16' => 'Jauh'], 'gap-8'),
-            ]),
+                // Rilis 66: bentuk dan warna angka dari palet (sebelumnya dua isian kelas Tailwind). StepStyle menerjemahkannya ke kelas.
+                Field::segmented('data.node_shape', 'Bentuk Latar Angka', StepStyle::SHAPES, StepStyle::SHAPE_DEFAULT),
+                // Kondisi memuat '' agar data lama (kunci belum ada = lingkaran) tetap menampilkan pemilih latar
+                Field::swatches('data.node_bg', 'Warna Latar Angka', \App\Editor\PaletteOptions::colors('mini_bg_colors'), 'bg-forest', 'bg', ['data.node_shape', ['', 'square', 'circle', 'rounded']]),
+                Field::swatches('data.node_text', 'Warna Angka', \App\Editor\PaletteOptions::colors('text_colors'), 'text-white', 'text', ['data.node_shape', ['', 'square', 'circle', 'rounded']]),
+                Field::swatches('data.node_ink', 'Warna Angka (tanpa latar)', \App\Editor\PaletteOptions::colors('text_colors'), 'text-forest', 'text', ['data.node_shape', 'none']),
+                Field::swatches('data.line_color', 'Warna Garis', \App\Editor\PaletteOptions::colors('mini_bg_colors'), 'bg-forest', 'bg'),
+                Field::segmented('data.line_opacity', 'Kekuatan Garis', StepStyle::OPACITY, StepStyle::OPACITY_DEFAULT),
+            ], defaults: [
+                'orientation' => 'vertical',
+                'gap' => 'gap-8',
+                'node_shape' => StepStyle::SHAPE_DEFAULT,
+                'node_bg' => 'bg-forest',
+                'node_text' => 'text-white',
+                'node_ink' => 'text-forest',
+                'line_color' => 'bg-forest',
+                'line_opacity' => StepStyle::OPACITY_DEFAULT,
+                'children' => [],
+            ], component: 'editor.container-kids', componentFirst: true), // rilis 65: "Isi langkah" di atas kontrol
 
             // Eyebrow: label kecil berikon di atas judul. Data: text{id,en}, icon, color (hex), margin_bottom. Renderer: bawaan editor lama.
             new BlockType('eyebrow', 'Eyebrow', 'crosshair', 'block', [
                 Field::i18n('data.text', 'Teks Eyebrow'),
                 Field::icon('data.icon', 'Ikon', 'newspaper'),
-                Field::swatches('data.color', 'Warna', config('cms.design.eyebrow_colors', []), '#E42326', 'hex'),
+                Field::swatches('data.color', 'Warna', \App\Editor\PaletteOptions::colors('eyebrow_colors'), 'var(--color-coral)', 'hex'),
                 Field::segmented('data.margin_bottom', 'Jarak Bawah', self::marginBottom(), Spacing::DEFAULT),
             ]),
 
@@ -222,38 +241,25 @@ final class BlockRegistry
                 Field::segmented('data.style.weight', 'Ketebalan', ['font-normal' => 'Reguler', 'font-semibold' => 'Semi Bold'], 'font-normal', $notPill),
                 Field::segmented('data.style.size', 'Ukuran', ['text-[13px]' => 'Kecil', 'text-[15px]' => 'Normal', 'text-[21px]' => 'Besar (H3)'], 'text-[13px]', $notPill),
                 Field::segmented('data.style.text_transform', 'Huruf', config('cms.design.text_transform', []), 'normal-case', $notPill),
-                Field::segmented('data.style.pill_bg', 'Warna Latar Pill', [
-                    self::dot('bg-goldy-soft', 'Goldy', 'bg-goldy-soft', true),
-                    self::dot('bg-mist', 'Mist', 'bg-mist', true),
-                    self::dot('bg-sage-soft', 'Sage', 'bg-sage-soft', true),
-                ], 'bg-goldy-soft', $isPill),
+                // Rilis 61: semua warna dari palet (nilai tersimpan bg-{slot}); nama lama (bg-goldy-soft) tetap tampil terpilih pada slotnya.
+                Field::swatches('data.style.pill_bg', 'Warna Latar Pill', \App\Editor\PaletteOptions::colors('mini_bg_colors'), 'bg-aurum-soft', 'bg', $isPill),
                 Field::segmented('data.style.pill_radius', 'Bentuk Pill', ['rounded-md' => 'Bulat Sedikit', 'rounded-full' => 'Lingkaran'], 'rounded-md', $isPill),
-                Field::segmented('data.style.color', 'Warna Teks', [
-                    self::dot('text-ink-soft', 'Abu Gelap', 'bg-ink-soft'),
-                    self::dot('text-foresty', 'Foresty', 'bg-foresty'),
-                    self::dot('text-coral', 'Coral', 'bg-coral'),
-                    self::dot('text-aurum', 'Aurum', 'bg-aurum'),
-                ], 'text-ink-soft'),
+                Field::swatches('data.style.color', 'Warna Teks', \App\Editor\PaletteOptions::colors('text_colors'), 'text-ink-soft', 'text'),
                 Field::segmented('data.style.margin', 'Jarak Bawah', ['mb-0' => '0px', 'mb-2' => 'Kecil', 'mb-4' => 'Sedang'], 'mb-0'),
             ], defaults: [
                 'content' => '@locales',
                 'style' => [
                     'is_pill' => false, 'font' => 'font-jakarta', 'weight' => 'font-normal', 'size' => 'text-[15px]', 'text_transform' => 'normal-case',
-                    'pill_bg' => 'bg-goldy-soft', 'pill_radius' => 'rounded-md', 'color' => 'text-ink-soft', 'margin' => 'mb-2',
+                    'pill_bg' => 'bg-aurum-soft', 'pill_radius' => 'rounded-md', 'color' => 'text-ink-soft', 'margin' => 'mb-2',
                 ],
             ]),
 
             new BlockType('icon', 'Ikon', 'shapes', 'element', [
                 Field::icon('data.content.icon', 'Ikon', 'box'),
-                Field::segmented('data.style.bg', 'Latar Ikon', [
-                    self::dot('bg-goldy-soft', 'Goldy', 'bg-goldy-soft', true),
-                    self::dot('bg-mist', 'Mist', 'bg-mist', true),
-                    ['value' => 'bg-transparent', 'title' => 'Transparan', 'slash' => true],
-                ], 'bg-goldy-soft'),
-                Field::segmented('data.style.color', 'Warna Ikon', [
-                    self::dot('text-foresty', 'Foresty', 'bg-foresty'),
-                    self::dot('text-coral', 'Coral', 'bg-coral'),
-                ], 'text-foresty'),
+                Field::swatches('data.style.bg', 'Latar Ikon', array_merge([
+                    ['name' => 'Transparan', 'value' => 'bg-transparent', 'is_transparent' => true, 'group' => 'Dasar'],
+                ], \App\Editor\PaletteOptions::colors('mini_bg_colors')), 'bg-aurum-soft', 'bg'),
+                Field::swatches('data.style.color', 'Warna Ikon', \App\Editor\PaletteOptions::colors('text_colors'), 'text-forest', 'text'),
                 Field::segmented('data.style.size', 'Ukuran', self::sizeSquares([
                     'w-10 h-10 md:w-12 md:h-12' => ['Standar', 'h-2.5 w-2.5'],
                     'w-16 h-16 md:w-20 md:h-20' => ['Sedang', 'h-3.5 w-3.5'],
@@ -265,7 +271,7 @@ final class BlockRegistry
                 ]), 'rounded-[14px]', null, ['compact' => true]),
             ], defaults: [
                 'content' => ['icon' => 'box'],
-                'style' => ['bg' => 'bg-goldy-soft', 'color' => 'text-foresty', 'size' => 'w-10 h-10 md:w-12 md:h-12', 'radius' => 'rounded-[14px]'],
+                'style' => ['bg' => 'bg-aurum-soft', 'color' => 'text-forest', 'size' => 'w-10 h-10 md:w-12 md:h-12', 'radius' => 'rounded-[14px]'],
             ]),
 
             new BlockType('initials', 'Inisial Nama', 'a-large-small', 'element', [
@@ -281,14 +287,14 @@ final class BlockRegistry
                     'rounded-[20px]' => ['Agak Bulat', 'rounded-md'],
                     'rounded-full' => ['Lingkaran', 'rounded-full'],
                 ]), 'rounded-full', null, ['compact' => true]),
-                Field::swatches('data.style.bg_color', 'Warna Latar', config('cms.design.mini_bg_colors', []), 'bg-forest', 'bg'),
-                Field::swatches('data.style.text_color', 'Warna Teks', config('cms.design.text_colors', []), 'text-white', 'text'),
+                Field::swatches('data.style.bg_color', 'Warna Latar', \App\Editor\PaletteOptions::colors('mini_bg_colors'), 'bg-forest', 'bg'),
+                Field::swatches('data.style.text_color', 'Warna Teks', \App\Editor\PaletteOptions::colors('text_colors'), 'text-white', 'text'),
                 Field::segmented('data.style.border', 'Garis Tepi', ['border-0' => '0', 'border' => '1', 'border-2' => '2', 'border-4' => '4'], 'border-0'),
                 // Trait menulis 'border-transparent' sebagai nilai bawaan, tetapi opsi itu dikomentari di
                 // cms.design.avatar_border_colors — ditambahkan di sini supaya nilai bawaan bisa dipilih.
                 Field::swatches('data.style.border_color', 'Warna Tepian', array_merge([
                     ['name' => 'Transparan', 'value' => 'border-transparent', 'preview' => 'bg-transparent', 'is_transparent' => true],
-                ], config('cms.design.avatar_border_colors', [])), 'border-transparent', 'preview'),
+                ], \App\Editor\PaletteOptions::colors('avatar_border_colors')), 'border-transparent', 'preview'),
             ], defaults: [
                 'content' => ['text' => ''],
                 'style' => [
@@ -312,12 +318,10 @@ final class BlockRegistry
                     'rounded-full' => ['Lingkaran', 'rounded-full'],
                 ]), 'rounded-full', null, ['compact' => true]),
                 Field::segmented('data.style.border', 'Garis Tepi', ['border-0' => 'Tanpa Garis', 'border-2' => 'Tipis (2px)', 'border-4' => 'Tebal (4px)'], 'border-0'),
-                Field::segmented('data.style.border_color', 'Warna Garis', [
-                    ['value' => 'border-transparent', 'title' => 'Transparan', 'slash' => true],
-                    self::dot('border-foresty', 'Foresty', 'bg-foresty'),
-                    self::dot('border-coral', 'Coral', 'bg-coral'),
-                    self::dot('border-gray-200', 'Abu-abu', 'bg-gray-200', true),
-                ], 'border-transparent'),
+                Field::swatches('data.style.border_color', 'Warna Garis', array_merge(
+                    \App\Editor\PaletteOptions::colors('card_border_colors'),
+                    [['name' => 'Abu-abu', 'value' => 'border-gray-200', 'preview' => 'bg-gray-200', 'hex' => '#E5E7EB', 'group' => 'Dasar']],
+                ), 'border-transparent', 'preview'),
             ], defaults: [
                 'content' => ['url' => '', 'media_id' => null, 'alt' => ''],
                 'style' => ['size' => 'w-16 h-16 md:w-20 md:h-20', 'radius' => 'rounded-full', 'border' => 'border-0', 'border_color' => 'border-transparent'],

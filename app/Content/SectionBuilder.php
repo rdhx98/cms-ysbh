@@ -61,9 +61,15 @@ final class SectionBuilder
                 if (count($current['blocks']) > 0) {
                     $sections[] = $current;
                 }
+                $bgClass = $block['data']['background'] ?? 'bg-paper';
+                $textClass = $block['data']['text_color'] ?? 'text-gray-900';
+                if ($textClass === 'text-auto') {
+                    // Rilis 59: "Otomatis" = teks yang terbaca di atas latar (text-{slot}-on dari palet); tanpa kelas Palette = gelap seperti dulu
+                    $textClass = class_exists(\App\Content\Palette::class) ? \App\Content\Palette::autoText($bgClass) : 'text-charcoal';
+                }
                 $current = [
-                    'bgClass' => $block['data']['background'] ?? 'bg-paper',
-                    'textClass' => $block['data']['text_color'] ?? 'text-gray-900',
+                    'bgClass' => $bgClass,
+                    'textClass' => $textClass,
                     'padding' => $block['data']['padding'] ?? 'py-16 sm:py-24',
                     'anchor' => $block['anchor'] ?? '',
                     'dividerId' => (string) $blockId,

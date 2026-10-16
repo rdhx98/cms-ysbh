@@ -51,34 +51,26 @@ final class PublicLookup
     {
         try {
             $lang = Languages::fromConfig();
-            $locales = $lang["locales"];
-            $default = $lang["default"];
+            $locales = $lang['locales'];
+            $default = $lang['default'];
         } catch (\Throwable) {
-            $locales = ["en", "id"];
-            $default = "en";
+            $locales = ['en', 'id'];
+            $default = 'en';
         }
         try {
             if (!self::$footerLoaded) {
-                $value = \Illuminate\Support\Facades\DB::table("site_settings")
-                    ->where("key", SiteFooter::KEY)
-                    ->value("value");
+                $value = \Illuminate\Support\Facades\DB::table('site_settings')->where('key', SiteFooter::KEY)->value('value');
                 self::$footerRaw = is_string($value) ? $value : null;
                 self::$footerLoaded = true;
             }
             $data = SiteFooter::resolve(self::$footerRaw);
         } catch (\Throwable) {
-            $data = SiteFooter::defaults(); // tabel belum ada (migrasi belum dijalankan) atau basis data bermasalah
+            $data = SiteFooter::defaults();   // tabel belum ada (migrasi belum dijalankan) atau basis data bermasalah
             self::$footerLoaded = true;
             self::$footerRaw = null;
         }
 
-        return SiteFooter::view(
-            $data,
-            $locale,
-            $locales,
-            $default,
-            fn(string $url, string $l) => self::localizeUrl($url, $l),
-        );
+        return SiteFooter::view($data, $locale, $locales, $default, fn (string $url, string $l) => self::localizeUrl($url, $l));
     }
 
     /**
@@ -95,15 +87,13 @@ final class PublicLookup
     {
         try {
             if (!self::$paletteLoaded) {
-                $value = \Illuminate\Support\Facades\DB::table("site_settings")
-                    ->where("key", Palette::KEY)
-                    ->value("value");
+                $value = \Illuminate\Support\Facades\DB::table('site_settings')->where('key', Palette::KEY)->value('value');
                 self::$paletteRaw = is_string($value) ? $value : null;
                 self::$paletteLoaded = true;
             }
             $raw = self::$paletteRaw;
         } catch (\Throwable) {
-            $raw = null; // tabel belum ada atau basis data bermasalah
+            $raw = null;   // tabel belum ada atau basis data bermasalah
             self::$paletteRaw = null;
             self::$paletteLoaded = true;
         }
@@ -119,22 +109,22 @@ final class PublicLookup
     {
         try {
             $lang = Languages::fromConfig();
-            $setting = function_exists("config") ? config("cms.articles_index_slug") : null;
+            $setting = function_exists('config') ? config('cms.articles_index_slug') : null;
 
             return NavLinks::localize(
                 $url,
                 $locale,
-                $lang["locales"],
-                $lang["default"],
-                array_map(fn(string $l) => Languages::indexSlug($setting, $l), $lang["locales"]),
-                fn(string $slug, string $l) => self::sibling("page", $slug, $l, $lang["locales"], $lang["default"]),
-                fn(string $slug, string $l) => LinkResolver::address("page", $slug, $l),
-                fn(string $l) => LinkResolver::homeAddress($l),
-                fn(string $l) => LinkResolver::indexAddress($l),
+                $lang['locales'],
+                $lang['default'],
+                array_map(fn (string $l) => Languages::indexSlug($setting, $l), $lang['locales']),
+                fn (string $slug, string $l) => self::sibling('page', $slug, $l, $lang['locales'], $lang['default']),
+                fn (string $slug, string $l) => LinkResolver::address('page', $slug, $l),
+                fn (string $l) => LinkResolver::homeAddress($l),
+                fn (string $l) => LinkResolver::indexAddress($l),
                 function (string $slug, string $l) use ($lang) {
-                    $hit = self::categorySibling($slug, $l, $lang["locales"], $lang["default"]);
+                    $hit = self::categorySibling($slug, $l, $lang['locales'], $lang['default']);
 
-                    return $hit === null ? null : LinkResolver::categoryAddress($hit["slug"], $hit["locale"]);
+                    return $hit === null ? null : LinkResolver::categoryAddress($hit['slug'], $hit['locale']);
                 },
             );
         } catch (\Throwable) {
@@ -142,30 +132,24 @@ final class PublicLookup
         }
     }
 
-    public const PAGE_STATUS = "online";
-    public const ARTICLE_STATUS = "published";
+    public const PAGE_STATUS = 'online';
+    public const ARTICLE_STATUS = 'published';
     /** Artikel terjadwal yang waktunya (published_at) sudah tiba tampil seperti yang terbit (rilis 38). */
-    public const ARTICLE_SCHEDULED = "scheduled";
+    public const ARTICLE_SCHEDULED = 'scheduled';
 
     /**
      * Saring ke baris yang tampil di situs: halaman = status 'online'; artikel = 'published', ATAU 'scheduled' yang published_at-nya sudah lewat
      * (tanpa menunggu perintah cms:publish-scheduled berjalan).
      */
-    public static function visible(
-        \Illuminate\Database\Eloquent\Builder $query,
-        string $status,
-    ): \Illuminate\Database\Eloquent\Builder {
+    public static function visible(\Illuminate\Database\Eloquent\Builder $query, string $status): \Illuminate\Database\Eloquent\Builder
+    {
         if ($status !== self::ARTICLE_STATUS) {
-            return $query->where("status", $status);
+            return $query->where('status', $status);
         }
 
         return $query->where(function ($w) {
-            $w->where("status", self::ARTICLE_STATUS)->orWhere(
-                fn($due) => $due
-                    ->where("status", self::ARTICLE_SCHEDULED)
-                    ->whereNotNull("published_at")
-                    ->where("published_at", "<=", \Illuminate\Support\Carbon::now()),
-            );
+            $w->where('status', self::ARTICLE_STATUS)
+                ->orWhere(fn ($due) => $due->where('status', self::ARTICLE_SCHEDULED)->whereNotNull('published_at')->where('published_at', '<=', \Illuminate\Support\Carbon::now()));
         });
     }
 
@@ -178,13 +162,13 @@ final class PublicLookup
      *
      * @return array{model:object,locale:string,redirect:?string}|null
      */
-    public static function findPage(string $slug, string $locale, array $locales = ["en", "id"]): ?array
+    public static function findPage(string $slug, string $locale, array $locales = ['en', 'id']): ?array
     {
         return self::bySlug(\App\Models\Page::class, self::PAGE_STATUS, $slug, $locale, $locales);
     }
 
     /** @see findPage() artikel terbit dengan slug itu @return array{model:object,locale:string,redirect:?string}|null */
-    public static function findArticle(string $slug, string $locale, array $locales = ["en", "id"]): ?array
+    public static function findArticle(string $slug, string $locale, array $locales = ['en', 'id']): ?array
     {
         return self::bySlug(\App\Models\Post::class, self::ARTICLE_STATUS, $slug, $locale, $locales);
     }
@@ -202,14 +186,14 @@ final class PublicLookup
         $rows = self::rowsWithSlug($model, $status, $slug, $all);
 
         foreach ($rows as $row) {
-            if (Names::exact($row->getRawOriginal("slug"), $locale) === $slug) {
-                return ["model" => $row, "locale" => $locale, "redirect" => null];
+            if (Names::exact($row->getRawOriginal('slug'), $locale) === $slug) {
+                return ['model' => $row, 'locale' => $locale, 'redirect' => null];
             }
         }
         foreach ($rows as $row) {
-            $own = Names::exact($row->getRawOriginal("slug"), $locale);
-            if ($own !== "" && Slug::isValid($own)) {
-                return ["model" => $row, "locale" => $locale, "redirect" => $own];
+            $own = Names::exact($row->getRawOriginal('slug'), $locale);
+            if ($own !== '' && Slug::isValid($own)) {
+                return ['model' => $row, 'locale' => $locale, 'redirect' => $own];
             }
         }
 
@@ -219,7 +203,7 @@ final class PublicLookup
     /** Baris berstatus $status yang slug-nya $slug di SALAH SATU bahasa $locales (paling banyak 5, id naik). @return iterable<object> */
     private static function rowsWithSlug(string $model, string $status, string $slug, array $locales): iterable
     {
-        $expression = JsonSql::locale(new $model()->getConnection()->getDriverName(), "slug") . " = ?";
+        $expression = JsonSql::locale((new $model())->getConnection()->getDriverName(), 'slug') . ' = ?';
 
         return self::visible($model::query(), $status)
             ->where(function ($where) use ($locales, $expression, $slug) {
@@ -227,9 +211,7 @@ final class PublicLookup
                     $where->orWhereRaw($expression, [JsonSql::path($candidate), $slug]);
                 }
             })
-            ->orderBy("id")
-            ->limit(5)
-            ->get();
+            ->orderBy('id')->limit(5)->get();
     }
 
     /**
@@ -240,8 +222,8 @@ final class PublicLookup
     {
         $out = [];
         foreach ($locales as $l) {
-            $slug = Names::exact($model->getRawOriginal("slug"), $l);
-            if ($slug !== "" && Slug::isValid($slug) && Names::exact($model->getRawOriginal("title"), $l) !== "") {
+            $slug = Names::exact($model->getRawOriginal('slug'), $l);
+            if ($slug !== '' && Slug::isValid($slug) && Names::exact($model->getRawOriginal('title'), $l) !== '') {
                 $out[$l] = $slug;
             }
         }
@@ -273,38 +255,30 @@ final class PublicLookup
      * Slug dicari di SEMUA bahasa; hasilnya slug halaman itu di $locale, atau (belum diterjemahkan) di bahasa lain yang ada, bahasa bawaan dulu.
      * Diingat per permintaan. @param 'page'|'article' $kind  @return array{locale:string,slug:string}|null  null = tidak ada / tidak online
      */
-    public static function sibling(
-        string $kind,
-        string $slug,
-        string $locale,
-        array $locales,
-        ?string $default = null,
-    ): ?array {
+    public static function sibling(string $kind, string $slug, string $locale, array $locales, ?string $default = null): ?array
+    {
         $key = "$kind|$slug|$locale";
         if (array_key_exists($key, self::$siblings)) {
             return self::$siblings[$key];
         }
-        $model = $kind === "article" ? \App\Models\Post::class : \App\Models\Page::class;
-        $status = $kind === "article" ? self::ARTICLE_STATUS : self::PAGE_STATUS;
+        $model = $kind === 'article' ? \App\Models\Post::class : \App\Models\Page::class;
+        $status = $kind === 'article' ? self::ARTICLE_STATUS : self::PAGE_STATUS;
         $found = null;
         if (strlen($slug) <= 190 && Slug::isValid($slug)) {
             $all = array_values(array_unique(array_merge([$locale], $locales)));
             $row = null;
             foreach (self::rowsWithSlug($model, $status, $slug, $all) as $candidate) {
                 $row ??= $candidate;
-                if (Names::exact($candidate->getRawOriginal("slug"), $locale) === $slug) {
-                    $row = $candidate; // cocok di bahasa yang diminta: paling tepat
+                if (Names::exact($candidate->getRawOriginal('slug'), $locale) === $slug) {
+                    $row = $candidate;   // cocok di bahasa yang diminta: paling tepat
                     break;
                 }
             }
             if ($row !== null) {
-                foreach (
-                    array_values(array_unique(array_merge([$locale], $default !== null ? [$default] : [], $all)))
-                    as $l
-                ) {
-                    $own = Names::exact($row->getRawOriginal("slug"), $l);
-                    if ($own !== "" && Slug::isValid($own)) {
-                        $found = ["locale" => $l, "slug" => $own];
+                foreach (array_values(array_unique(array_merge([$locale], $default !== null ? [$default] : [], $all))) as $l) {
+                    $own = Names::exact($row->getRawOriginal('slug'), $l);
+                    if ($own !== '' && Slug::isValid($own)) {
+                        $found = ['locale' => $l, 'slug' => $own];
                         break;
                     }
                 }
@@ -325,7 +299,7 @@ final class PublicLookup
         return function (string $kind, string $slug) use ($lang, $locales, $default): ?string {
             $hit = self::sibling($kind, $slug, $lang, $locales, $default);
 
-            return $hit === null ? null : LinkResolver::address($kind, $hit["slug"], $hit["locale"]);
+            return $hit === null ? null : LinkResolver::address($kind, $hit['slug'], $hit['locale']);
         };
     }
 
@@ -337,15 +311,11 @@ final class PublicLookup
      *
      * @return array{rows:list<array<string,mixed>>,categories:array<int,mixed>}
      */
-    public static function latestArticles(
-        int $limit,
-        ?int $excludeId = null,
-        ?string $locale = null,
-        ?int $categoryId = null,
-    ): array {
+    public static function latestArticles(int $limit, ?int $excludeId = null, ?string $locale = null, ?int $categoryId = null): array
+    {
         $query = self::publishedArticles($locale, $categoryId)->limit(max(1, min(12, $limit)));
         if ($excludeId !== null) {
-            $query->where("id", "!=", $excludeId);
+            $query->where('id', '!=', $excludeId);
         }
 
         return self::feed($query);
@@ -356,24 +326,13 @@ final class PublicLookup
      *
      * @return array{rows:list<array<string,mixed>>,categories:array<int,mixed>,total:int,page:int,perPage:int}
      */
-    public static function articlesPage(
-        int $page,
-        int $perPage = 9,
-        ?string $locale = null,
-        ?int $categoryId = null,
-    ): array {
+    public static function articlesPage(int $page, int $perPage = 9, ?string $locale = null, ?int $categoryId = null): array
+    {
         $perPage = max(1, min(24, $perPage));
         $page = max(1, $page);
-        $total = self::inCategory(
-            self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale),
-            $categoryId,
-        )->count();
+        $total = self::inCategory(self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale), $categoryId)->count();
 
-        return self::feed(
-            self::publishedArticles($locale, $categoryId)
-                ->offset(($page - 1) * $perPage)
-                ->limit($perPage),
-        ) + ["total" => $total, "page" => $page, "perPage" => $perPage];
+        return self::feed(self::publishedArticles($locale, $categoryId)->offset(($page - 1) * $perPage)->limit($perPage)) + ['total' => $total, 'page' => $page, 'perPage' => $perPage];
     }
 
     /**
@@ -392,124 +351,94 @@ final class PublicLookup
      */
     public static function blockArticles(array $o): array
     {
-        $locale = isset($o["locale"]) && is_string($o["locale"]) && $o["locale"] !== "" ? $o["locale"] : null;
-        $exclude = isset($o["excludeId"]) && (int) $o["excludeId"] > 0 ? (int) $o["excludeId"] : null;
-        $paged = ($o["paging"] ?? "limit") === "pages";
-        $perPage = $paged ? max(3, min(24, (int) ($o["perPage"] ?? 9))) : max(1, min(12, (int) ($o["perPage"] ?? 3)));
-        $featuredCount = max(0, min(6, (int) ($o["featured"] ?? 0)));
+        $locale = isset($o['locale']) && is_string($o['locale']) && $o['locale'] !== '' ? $o['locale'] : null;
+        $exclude = isset($o['excludeId']) && (int) $o['excludeId'] > 0 ? (int) $o['excludeId'] : null;
+        $paged = ($o['paging'] ?? 'limit') === 'pages';
+        $perPage = $paged ? max(3, min(24, (int) ($o['perPage'] ?? 9))) : max(1, min(12, (int) ($o['perPage'] ?? 3)));
+        $featuredCount = max(0, min(6, (int) ($o['featured'] ?? 0)));
         $ids = null;
-        if (($o["source"] ?? "all") === "categories") {
-            $ids = array_values(
-                array_unique(
-                    array_filter(array_map("intval", (array) ($o["categoryIds"] ?? [])), fn(int $id) => $id > 0),
-                ),
-            );
+        if (($o['source'] ?? 'all') === 'categories') {
+            $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($o['categoryIds'] ?? [])), fn (int $id) => $id > 0)));
         }
         // Penyaring kategori dari alamat (rilis 52): SATU kategori, dipotongkan dengan pilihan blok. Saat menyaring, bagian unggulan dan sematan
         // tidak tampil (artikel unggulan dari kategori lain akan muncul di tengah daftar yang sudah disaring).
-        $filterId = (int) ($o["filterCategoryId"] ?? 0);
+        $filterId = (int) ($o['filterCategoryId'] ?? 0);
         if ($filterId > 0) {
             $ids = $ids === null ? [$filterId] : array_values(array_intersect($ids, [$filterId]));
             $featuredCount = 0;
         }
         // Penyaring tag dari alamat (rilis 54): SATU tag, digabung (DAN) dengan kategori. Seperti kategori, unggulan dan sematan tidak tampil.
-        $tagId = (int) ($o["filterTagId"] ?? 0);
+        $tagId = (int) ($o['filterTagId'] ?? 0);
         if ($tagId > 0) {
             $featuredCount = 0;
         }
-        $empty = [
-            "featured" => [],
-            "rows" => [],
-            "categories" => [],
-            "total" => 0,
-            "page" => 1,
-            "pages" => 1,
-            "perPage" => $perPage,
-            "noCategories" => false,
-        ];
+        $empty = ['featured' => [], 'rows' => [], 'categories' => [], 'total' => 0, 'page' => 1, 'pages' => 1, 'perPage' => $perPage, 'noCategories' => false];
         if ($ids === []) {
-            return ["noCategories" => true] + $empty;
+            return ['noCategories' => true] + $empty;
         }
 
         $base = function () use ($locale, $ids, $exclude, $tagId): \Illuminate\Database\Eloquent\Builder {
             $q = self::inCategories(self::publishedArticles($locale), $ids);
             if ($tagId > 0) {
-                $q->whereIn("id", fn($sub) => $sub->select("post_id")->from("post_tags")->where("tag_id", $tagId));
+                $q->whereIn('id', fn ($sub) => $sub->select('post_id')->from('post_tags')->where('tag_id', $tagId));
             }
 
-            return $exclude === null ? $q : $q->where("id", "!=", $exclude);
+            return $exclude === null ? $q : $q->where('id', '!=', $exclude);
         };
 
         $featured = [];
         $categories = [];
         if ($featuredCount > 0) {
-            $pinned = array_values(
-                array_unique(
-                    array_filter(
-                        array_map("intval", (array) ($o["pinnedIds"] ?? [])),
-                        fn(int $id) => $id > 0 && $id !== $exclude,
-                    ),
-                ),
-            );
+            $pinned = array_values(array_unique(array_filter(array_map('intval', (array) ($o['pinnedIds'] ?? [])), fn (int $id) => $id > 0 && $id !== $exclude)));
             if ($pinned) {
-                $found = self::feed(
-                    self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale)->whereIn(
-                        "id",
-                        $pinned,
-                    ),
-                );
+                $found = self::feed(self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale)->whereIn('id', $pinned));
                 $byId = [];
-                foreach ($found["rows"] as $row) {
-                    $byId[(int) $row["id"]] = $row;
+                foreach ($found['rows'] as $row) {
+                    $byId[(int) $row['id']] = $row;
                 }
-                foreach ($pinned as $id) {
-                    // urutan sesuai pilihan di inspektur
+                foreach ($pinned as $id) {          // urutan sesuai pilihan di inspektur
                     if (isset($byId[$id]) && count($featured) < $featuredCount) {
                         $featured[] = $byId[$id];
                     }
                 }
-                $categories += $found["categories"];
+                $categories += $found['categories'];
             }
             $need = $featuredCount - count($featured);
             if ($need > 0) {
                 $query = $base()->limit($need);
                 if ($featured) {
-                    $query->whereNotIn("id", array_map(fn($r) => (int) $r["id"], $featured));
+                    $query->whereNotIn('id', array_map(fn ($r) => (int) $r['id'], $featured));
                 }
                 $fill = self::feed($query);
-                $featured = array_merge($featured, $fill["rows"]);
-                $categories += $fill["categories"];
+                $featured = array_merge($featured, $fill['rows']);
+                $categories += $fill['categories'];
             }
         }
-        $featuredIds = array_map(fn($r) => (int) $r["id"], $featured);
+        $featuredIds = array_map(fn ($r) => (int) $r['id'], $featured);
 
-        $listQuery = fn() => $featuredIds ? $base()->whereNotIn("id", $featuredIds) : $base();
+        $listQuery = fn () => $featuredIds ? $base()->whereNotIn('id', $featuredIds) : $base();
         $total = 0;
         $page = 1;
         $pages = 1;
         if ($paged) {
             $total = (int) $listQuery()->count();
             $pages = max(1, (int) ceil($total / $perPage));
-            $page = max(1, min($pages, (int) ($o["page"] ?? 1)));
-            $list = self::feed(
-                $listQuery()
-                    ->offset(($page - 1) * $perPage)
-                    ->limit($perPage),
-            );
+            $page = max(1, min($pages, (int) ($o['page'] ?? 1)));
+            $list = self::feed($listQuery()->offset(($page - 1) * $perPage)->limit($perPage));
         } else {
             $list = self::feed($listQuery()->limit($perPage));
-            $total = count($list["rows"]);
+            $total = count($list['rows']);
         }
 
         return [
-            "featured" => $featured,
-            "rows" => $list["rows"],
-            "categories" => $categories + $list["categories"],
-            "total" => $total,
-            "page" => $page,
-            "pages" => $pages,
-            "perPage" => $perPage,
-            "noCategories" => false,
+            'featured' => $featured,
+            'rows' => $list['rows'],
+            'categories' => $categories + $list['categories'],
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'perPage' => $perPage,
+            'noCategories' => false,
         ];
     }
 
@@ -522,36 +451,22 @@ final class PublicLookup
      * @param string[] $locales
      * @return array{found:array<string,mixed>,chips:list<array<string,mixed>>,showFilter:bool,active:?array<string,mixed>,redirect:?string,pageParam:string,filterParam:string,requestedPage:?int,activeTag:?array{id:int,name:string,slug:string},tagRedirect:?string,tagParam:string}
      */
-    public static function listing(
-        array $clean,
-        string $blockId,
-        ?string $primaryId,
-        string $lang,
-        array $locales,
-        array $query,
-        ?int $excludeId = null,
-    ): array {
+    public static function listing(array $clean, string $blockId, ?string $primaryId, string $lang, array $locales, array $query, ?int $excludeId = null): array
+    {
         $pageParam = ArticleListing::pageParam($blockId, $primaryId);
         $filterParam = ArticleListing::filterParam($blockId, $primaryId);
-        $pickIds =
-            ($clean["source"] ?? "all") === "categories" ? ArticleCards::pickIds($clean["categories"] ?? []) : null;
+        $pickIds = ($clean['source'] ?? 'all') === 'categories' ? ArticleCards::pickIds($clean['categories'] ?? []) : null;
 
         // Parameter ?category= berlaku untuk blok UTAMA walau chip-nya tidak ditampilkan (menu "Artikel per kategori" dan alamat lama
         // /articles/category/{slug} dialihkan ke sana); chip hanya tampil bila diaktifkan DAN ada dua kategori atau lebih.
         $chips = [];
         $active = null;
         $redirect = null;
-        if ($pickIds !== [] && ($primaryId === $blockId || !empty($clean["show_filter"]))) {
-            $chips = ArticleListing::chips(
-                self::categoryRows(),
-                self::categoryCounts($pickIds, $lang),
-                $pickIds,
-                $lang,
-                $locales,
-            );
+        if ($pickIds !== [] && ($primaryId === $blockId || !empty($clean['show_filter']))) {
+            $chips = ArticleListing::chips(self::categoryRows(), self::categoryCounts($pickIds, $lang), $pickIds, $lang, $locales);
             $picked = ArticleListing::pick($chips, $query[$filterParam] ?? null);
-            $active = $picked["chip"];
-            $redirect = $picked["redirect"];
+            $active = $picked['chip'];
+            $redirect = $picked['redirect'];
         }
         $requested = ArticleListing::requestedPage($query[$pageParam] ?? null);
 
@@ -561,41 +476,29 @@ final class PublicLookup
         $activeTag = null;
         $tagRedirect = null;
         $rawTag = $query[$tagParam] ?? null;
-        if ($primaryId !== null && $primaryId === $blockId && is_string($rawTag) && $rawTag !== "") {
+        if ($primaryId !== null && $primaryId === $blockId && is_string($rawTag) && $rawTag !== '') {
             $hit = self::findTag($rawTag, $lang, $locales);
             if ($hit !== null) {
-                $activeTag = ["id" => $hit["id"], "name" => $hit["name"], "slug" => $hit["slug"]];
-                $tagRedirect = $hit["redirect"];
+                $activeTag = ['id' => $hit['id'], 'name' => $hit['name'], 'slug' => $hit['slug']];
+                $tagRedirect = $hit['redirect'];
             }
         }
 
         $found = self::blockArticles([
-            "locale" => $lang,
-            "source" => $clean["source"] ?? "all",
-            "categoryIds" => $pickIds ?? [],
-            "pinnedIds" => ArticleCards::pickIds($clean["pinned"] ?? []),
-            "featured" => (int) ($clean["featured_count"] ?? 0),
-            "paging" => $clean["paging"] ?? "limit",
-            "perPage" => (int) ($clean["limit"] ?? 3),
-            "page" => $requested ?? 1,
-            "excludeId" => $excludeId,
-            "filterCategoryId" => $active["id"] ?? 0,
-            "filterTagId" => $activeTag["id"] ?? 0,
+            'locale' => $lang,
+            'source' => $clean['source'] ?? 'all',
+            'categoryIds' => $pickIds ?? [],
+            'pinnedIds' => ArticleCards::pickIds($clean['pinned'] ?? []),
+            'featured' => (int) ($clean['featured_count'] ?? 0),
+            'paging' => $clean['paging'] ?? 'limit',
+            'perPage' => (int) ($clean['limit'] ?? 3),
+            'page' => $requested ?? 1,
+            'excludeId' => $excludeId,
+            'filterCategoryId' => $active['id'] ?? 0,
+            'filterTagId' => $activeTag['id'] ?? 0,
         ]);
 
-        return [
-            "found" => $found,
-            "chips" => $chips,
-            "showFilter" => !empty($clean["show_filter"]) && count($chips) >= 2,
-            "active" => $active,
-            "redirect" => $redirect,
-            "pageParam" => $pageParam,
-            "filterParam" => $filterParam,
-            "requestedPage" => $requested,
-            "activeTag" => $activeTag,
-            "tagRedirect" => $tagRedirect,
-            "tagParam" => $tagParam,
-        ];
+        return ['found' => $found, 'chips' => $chips, 'showFilter' => !empty($clean['show_filter']) && count($chips) >= 2, 'active' => $active, 'redirect' => $redirect, 'pageParam' => $pageParam, 'filterParam' => $filterParam, 'requestedPage' => $requested, 'activeTag' => $activeTag, 'tagRedirect' => $tagRedirect, 'tagParam' => $tagParam];
     }
 
     /**
@@ -609,20 +512,15 @@ final class PublicLookup
         try {
             $extra = [];
             try {
-                $extra = \Illuminate\Support\Facades\DB::table("post_users")
-                    ->where("post_id", $postId)
-                    ->pluck("user_id")
-                    ->all();
+                $extra = \Illuminate\Support\Facades\DB::table('post_users')->where('post_id', $postId)->pluck('user_id')->all();
             } catch (\Throwable) {
-                $extra = []; // tabel penulis tambahan belum ada
+                $extra = [];   // tabel penulis tambahan belum ada
             }
-            $ids = array_values(
-                array_unique(array_filter(array_map("intval", array_merge([$mainId], $extra)), fn(int $i) => $i > 0)),
-            );
+            $ids = array_values(array_unique(array_filter(array_map('intval', array_merge([$mainId], $extra)), fn (int $i) => $i > 0)));
             if ($ids === []) {
                 return [];
             }
-            $names = \Illuminate\Support\Facades\DB::table("users")->whereIn("id", $ids)->pluck("name", "id")->all();
+            $names = \Illuminate\Support\Facades\DB::table('users')->whereIn('id', $ids)->pluck('name', 'id')->all();
 
             return ArticleByline::names($mainId, $extra, $names);
         } catch (\Throwable) {
@@ -640,10 +538,7 @@ final class PublicLookup
     public static function articleTags(int $postId, string $lang, array $locales): array
     {
         try {
-            $ids = \Illuminate\Support\Facades\DB::table("post_tags")
-                ->where("post_id", $postId)
-                ->pluck("tag_id")
-                ->all();
+            $ids = \Illuminate\Support\Facades\DB::table('post_tags')->where('post_id', $postId)->pluck('tag_id')->all();
 
             return $ids === [] ? [] : ArticleTags::forArticle(self::tagRows(), $ids, $lang, $locales);
         } catch (\Throwable) {
@@ -660,52 +555,32 @@ final class PublicLookup
      */
     public static function relatedArticles(int $postId, string $lang, int $limit = ArticleTags::RELATED_LIMIT): array
     {
-        $none = ["rows" => [], "categories" => []];
+        $none = ['rows' => [], 'categories' => []];
         try {
-            $tagIds = array_values(
-                array_unique(
-                    array_map(
-                        "intval",
-                        \Illuminate\Support\Facades\DB::table("post_tags")
-                            ->where("post_id", $postId)
-                            ->pluck("tag_id")
-                            ->all(),
-                    ),
-                ),
-            );
+            $tagIds = array_values(array_unique(array_map('intval', \Illuminate\Support\Facades\DB::table('post_tags')->where('post_id', $postId)->pluck('tag_id')->all())));
             if ($tagIds === []) {
                 return $none;
             }
-            $shared = \Illuminate\Support\Facades\DB::table("post_tags")
-                ->selectRaw("post_id, COUNT(DISTINCT tag_id) as c")
-                ->whereIn("tag_id", $tagIds)
-                ->where("post_id", "!=", $postId)
-                ->groupBy("post_id")
-                ->orderByDesc("c")
-                ->limit(ArticleTags::RELATED_CANDIDATES)
-                ->pluck("c", "post_id")
-                ->all();
+            $shared = \Illuminate\Support\Facades\DB::table('post_tags')
+                ->selectRaw('post_id, COUNT(DISTINCT tag_id) as c')
+                ->whereIn('tag_id', $tagIds)->where('post_id', '!=', $postId)
+                ->groupBy('post_id')->orderByDesc('c')->limit(ArticleTags::RELATED_CANDIDATES)
+                ->pluck('c', 'post_id')->all();
             if ($shared === []) {
                 return $none;
             }
             $dates = [];
-            foreach (
-                self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $lang)
-                    ->whereIn("id", array_map("intval", array_keys($shared)))
-                    ->toBase()
-                    ->get(["id", "published_at"])
-                as $r
-            ) {
+            foreach (self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $lang)->whereIn('id', array_map('intval', array_keys($shared)))->toBase()->get(['id', 'published_at']) as $r) {
                 $dates[(int) $r->id] = (string) $r->published_at;
             }
             $order = ArticleTags::rank($shared, $dates, max(1, min(12, $limit)));
             if ($order === []) {
                 return $none;
             }
-            $feed = self::feed(\App\Models\Post::query()->whereIn("id", $order));
+            $feed = self::feed(\App\Models\Post::query()->whereIn('id', $order));
             $byId = [];
-            foreach ($feed["rows"] as $row) {
-                $byId[(int) $row["id"]] = $row;
+            foreach ($feed['rows'] as $row) {
+                $byId[(int) $row['id']] = $row;
             }
             $rows = [];
             foreach ($order as $id) {
@@ -714,7 +589,7 @@ final class PublicLookup
                 }
             }
 
-            return ["rows" => $rows, "categories" => $feed["categories"]];
+            return ['rows' => $rows, 'categories' => $feed['categories']];
         } catch (\Throwable) {
             return $none;
         }
@@ -734,23 +609,13 @@ final class PublicLookup
         self::$tagsStale = false;
         try {
             try {
-                $found = \App\Models\Tag::query()
-                    ->orderBy("id")
-                    ->limit(2000)
-                    ->get(["id", "name", "slug"]);
+                $found = \App\Models\Tag::query()->orderBy('id')->limit(2000)->get(['id', 'name', 'slug']);
             } catch (\Throwable) {
-                $found = \App\Models\Tag::query()
-                    ->orderBy("id")
-                    ->limit(2000)
-                    ->get(["id", "name"]);
+                $found = \App\Models\Tag::query()->orderBy('id')->limit(2000)->get(['id', 'name']);
             }
             $rows = [];
             foreach ($found as $tag) {
-                $rows[] = [
-                    "id" => $tag->getKey(),
-                    "name" => $tag->getRawOriginal("name"),
-                    "slug" => $tag->getRawOriginal("slug"),
-                ];
+                $rows[] = ['id' => $tag->getKey(), 'name' => $tag->getRawOriginal('name'), 'slug' => $tag->getRawOriginal('slug')];
             }
         } catch (\Throwable) {
             $rows = [];
@@ -760,7 +625,7 @@ final class PublicLookup
     }
 
     /** Tag untuk alamat "?tag={slug}" (aturan sama dengan kategori: CategoryLookup::find). */
-    public static function findTag(string $slug, string $locale, array $locales = ["en", "id"]): ?array
+    public static function findTag(string $slug, string $locale, array $locales = ['en', 'id']): ?array
     {
         return CategoryLookup::find(self::tagRows(), $slug, $locale, $locales);
     }
@@ -774,14 +639,12 @@ final class PublicLookup
     public static function categoryCounts(?array $ids, ?string $locale): array
     {
         try {
-            $q = self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale)->whereNotNull(
-                "category_id",
-            );
+            $q = self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale)->whereNotNull('category_id');
             if ($ids !== null) {
-                $q->whereIn("category_id", $ids ?: [0]);
+                $q->whereIn('category_id', $ids ?: [0]);
             }
             $out = [];
-            foreach ($q->toBase()->selectRaw("category_id, COUNT(*) as c")->groupBy("category_id")->get() as $r) {
+            foreach ($q->toBase()->selectRaw('category_id, COUNT(*) as c')->groupBy('category_id')->get() as $r) {
                 $out[(int) $r->category_id] = (int) $r->c;
             }
 
@@ -792,32 +655,21 @@ final class PublicLookup
     }
 
     /** Menyaring ke beberapa kategori (null = tanpa saringan; larik kosong = tidak ada hasil). */
-    private static function inCategories(
-        \Illuminate\Database\Eloquent\Builder $query,
-        ?array $ids,
-    ): \Illuminate\Database\Eloquent\Builder {
-        return $ids === null ? $query : $query->whereIn("category_id", $ids);
+    private static function inCategories(\Illuminate\Database\Eloquent\Builder $query, ?array $ids): \Illuminate\Database\Eloquent\Builder
+    {
+        return $ids === null ? $query : $query->whereIn('category_id', $ids);
     }
 
     /** Artikel terbit, paling baru dulu; urutan tetap pasti walau tanggalnya sama (id menurun). */
-    private static function publishedArticles(
-        ?string $locale = null,
-        ?int $categoryId = null,
-    ): \Illuminate\Database\Eloquent\Builder {
-        return self::inCategory(
-            self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale),
-            $categoryId,
-        )
-            ->orderByDesc("published_at")
-            ->orderByDesc("id");
+    private static function publishedArticles(?string $locale = null, ?int $categoryId = null): \Illuminate\Database\Eloquent\Builder
+    {
+        return self::inCategory(self::inLocale(self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS), $locale), $categoryId)->orderByDesc('published_at')->orderByDesc('id');
     }
 
     /** Menyaring ke satu kategori (null = tanpa saringan). Id <= 0 = kategori yang mustahil ada: hasil kosong, bukan semua artikel. */
-    private static function inCategory(
-        \Illuminate\Database\Eloquent\Builder $query,
-        ?int $categoryId,
-    ): \Illuminate\Database\Eloquent\Builder {
-        return $categoryId === null ? $query : $query->where("category_id", max(0, $categoryId));
+    private static function inCategory(\Illuminate\Database\Eloquent\Builder $query, ?int $categoryId): \Illuminate\Database\Eloquent\Builder
+    {
+        return $categoryId === null ? $query : $query->where('category_id', max(0, $categoryId));
     }
 
     /**
@@ -835,22 +687,15 @@ final class PublicLookup
         }
         self::$categoriesStale = false;
         try {
-            $query = \App\Models\Category::query()->orderBy("id")->limit(500);
+            $query = \App\Models\Category::query()->orderBy('id')->limit(500);
             try {
-                $found = $query->get(["id", "name", "slug"]);
+                $found = $query->get(['id', 'name', 'slug']);
             } catch (\Throwable) {
-                $found = \App\Models\Category::query()
-                    ->orderBy("id")
-                    ->limit(500)
-                    ->get(["id", "name"]);
+                $found = \App\Models\Category::query()->orderBy('id')->limit(500)->get(['id', 'name']);
             }
             $rows = [];
             foreach ($found as $category) {
-                $rows[] = [
-                    "id" => $category->getKey(),
-                    "name" => $category->getRawOriginal("name"),
-                    "slug" => $category->getRawOriginal("slug"),
-                ];
+                $rows[] = ['id' => $category->getKey(), 'name' => $category->getRawOriginal('name'), 'slug' => $category->getRawOriginal('slug')];
             }
         } catch (\Throwable) {
             $rows = [];
@@ -860,31 +705,25 @@ final class PublicLookup
     }
 
     /** Kategori untuk alamat "{bahasa}/…/{slug}" (aturan: CategoryLookup::find). */
-    public static function findCategory(string $slug, string $locale, array $locales = ["en", "id"]): ?array
+    public static function findCategory(string $slug, string $locale, array $locales = ['en', 'id']): ?array
     {
         return CategoryLookup::find(self::categoryRows(), $slug, $locale, $locales);
     }
 
     /** Padanan slug kategori pada bahasa $locale untuk tautan menu (aturan: CategoryLookup::sibling). */
-    public static function categorySibling(
-        string $slug,
-        string $locale,
-        array $locales = ["en", "id"],
-        ?string $default = null,
-    ): ?array {
+    public static function categorySibling(string $slug, string $locale, array $locales = ['en', 'id'], ?string $default = null): ?array
+    {
         return CategoryLookup::sibling(self::categoryRows(), $slug, $locale, $locales, $default);
     }
 
     /** Menyaring ke baris yang slug DAN judulnya terisi di $locale (null = tanpa saringan). */
-    private static function inLocale(
-        \Illuminate\Database\Eloquent\Builder $query,
-        ?string $locale,
-    ): \Illuminate\Database\Eloquent\Builder {
+    private static function inLocale(\Illuminate\Database\Eloquent\Builder $query, ?string $locale): \Illuminate\Database\Eloquent\Builder
+    {
         if ($locale === null) {
             return $query;
         }
         $driver = $query->getModel()->getConnection()->getDriverName();
-        foreach (["slug", "title"] as $column) {
+        foreach (['slug', 'title'] as $column) {
             $e = JsonSql::locale($driver, $column);
             $query->whereRaw("{$e} IS NOT NULL AND {$e} <> ''", [JsonSql::path($locale), JsonSql::path($locale)]);
         }
@@ -895,16 +734,7 @@ final class PublicLookup
     /** @return array{rows:list<array<string,mixed>>,categories:array<int,mixed>} */
     private static function feed(\Illuminate\Database\Eloquent\Builder $query): array
     {
-        $columns = [
-            "id",
-            "title",
-            "slug",
-            "content",
-            "meta_description",
-            "featured_image",
-            "category_id",
-            "published_at",
-        ];
+        $columns = ['id', 'title', 'slug', 'content', 'meta_description', 'featured_image', 'category_id', 'published_at'];
         $rows = [];
         foreach ($query->get($columns) as $post) {
             $row = [];
@@ -915,19 +745,14 @@ final class PublicLookup
         }
 
         $categories = [];
-        $ids = array_values(array_unique(array_filter(array_map(fn($r) => (int) $r["category_id"], $rows))));
+        $ids = array_values(array_unique(array_filter(array_map(fn ($r) => (int) $r['category_id'], $rows))));
         if ($ids) {
-            foreach (
-                \App\Models\Category::query()
-                    ->whereIn("id", $ids)
-                    ->get(["id", "name"])
-                as $category
-            ) {
-                $categories[(int) $category->id] = $category->getRawOriginal("name");
+            foreach (\App\Models\Category::query()->whereIn('id', $ids)->get(['id', 'name']) as $category) {
+                $categories[(int) $category->id] = $category->getRawOriginal('name');
             }
         }
 
-        return ["rows" => $rows, "categories" => $categories];
+        return ['rows' => $rows, 'categories' => $categories];
     }
 
     /**
@@ -939,60 +764,27 @@ final class PublicLookup
      * @param  string[] $locales
      * @return list<array{kind:string,slug:string,locale:string,lastmod:?string}>
      */
-    public static function sitemapEntries(array $locales = ["en", "id"], int $limit = 10000): array
+    public static function sitemapEntries(array $locales = ['en', 'id'], int $limit = 10000): array
     {
         $limit = max(1, min(Sitemap::MAX_URLS, $limit));
         $rows = [];
         $seen = [];
-        $add = function (string $kind, mixed $rawSlug, mixed $rawTitle, ?string $lastmod) use (
-            &$rows,
-            &$seen,
-            $locales,
-        ): void {
+        $add = function (string $kind, mixed $rawSlug, mixed $rawTitle, ?string $lastmod) use (&$rows, &$seen, $locales): void {
             foreach ($locales as $locale) {
                 $slug = Names::exact($rawSlug, $locale);
-                if (
-                    $slug === "" ||
-                    !Slug::isValid($slug) ||
-                    Names::exact($rawTitle, $locale) === "" ||
-                    isset($seen["$kind:$locale:$slug"])
-                ) {
+                if ($slug === '' || !Slug::isValid($slug) || Names::exact($rawTitle, $locale) === '' || isset($seen["$kind:$locale:$slug"])) {
                     continue;
                 }
                 $seen["$kind:$locale:$slug"] = true;
-                $rows[] = ["kind" => $kind, "slug" => $slug, "locale" => $locale, "lastmod" => $lastmod];
+                $rows[] = ['kind' => $kind, 'slug' => $slug, 'locale' => $locale, 'lastmod' => $lastmod];
             }
         };
 
-        foreach (
-            \App\Models\Page::query()
-                ->where("status", self::PAGE_STATUS)
-                ->orderBy("id")
-                ->limit($limit)
-                ->get(["id", "title", "slug", "updated_at"])
-            as $page
-        ) {
-            $add(
-                "page",
-                $page->getRawOriginal("slug"),
-                $page->getRawOriginal("title"),
-                Sitemap::date($page->getRawOriginal("updated_at")),
-            );
+        foreach (\App\Models\Page::query()->where('status', self::PAGE_STATUS)->orderBy('id')->limit($limit)->get(['id', 'title', 'slug', 'updated_at']) as $page) {
+            $add('page', $page->getRawOriginal('slug'), $page->getRawOriginal('title'), Sitemap::date($page->getRawOriginal('updated_at')));
         }
-        foreach (
-            self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS)
-                ->orderBy("id")
-                ->limit($limit)
-                ->get(["id", "title", "slug", "published_at", "updated_at"])
-            as $post
-        ) {
-            $add(
-                "article",
-                $post->getRawOriginal("slug"),
-                $post->getRawOriginal("title"),
-                Sitemap::date($post->getRawOriginal("updated_at")) ??
-                    Sitemap::date($post->getRawOriginal("published_at")),
-            );
+        foreach (self::visible(\App\Models\Post::query(), self::ARTICLE_STATUS)->orderBy('id')->limit($limit)->get(['id', 'title', 'slug', 'published_at', 'updated_at']) as $post) {
+            $add('article', $post->getRawOriginal('slug'), $post->getRawOriginal('title'), Sitemap::date($post->getRawOriginal('updated_at')) ?? Sitemap::date($post->getRawOriginal('published_at')));
         }
 
         return $rows;
@@ -1009,34 +801,26 @@ final class PublicLookup
      *
      * @return array{locale:string,title:string,metaTitle:string,description:string,intro:array{blocks:array,order:array,settings:array},closing:array{blocks:array,order:array,settings:array}}|null
      */
-    public static function articlesHeader(string $slug, string $locale, array $locales = ["en", "id"]): ?array
+    public static function articlesHeader(string $slug, string $locale, array $locales = ['en', 'id']): ?array
     {
         $found = self::findPage($slug, $locale, $locales);
-        if ($found === null || $found["redirect"] !== null) {
+        if ($found === null || $found['redirect'] !== null) {
             return null;
         }
 
-        $page = $found["model"];
-        $lang = $found["locale"];
-        $doc = self::document($page->getRawOriginal("content"), $locales, true, $lang);
-        $title = Names::of($page->getRawOriginal("title"), $lang);
+        $page = $found['model'];
+        $lang = $found['locale'];
+        $doc = self::document($page->getRawOriginal('content'), $locales, true, $lang);
+        $title = Names::of($page->getRawOriginal('title'), $lang);
 
         return [
-            "locale" => $lang,
-            "title" => $title,
-            "metaTitle" => Names::of($page->getRawOriginal("meta_title"), $lang) ?: $title,
-            "description" => Names::of($page->getRawOriginal("meta_description"), $lang),
-            "intro" => [
-                "blocks" => $doc["blocks"],
-                "order" => array_slice($doc["order"], 0, $doc["closingFrom"]),
-                "settings" => $doc["settings"],
-            ],
+            'locale' => $lang,
+            'title' => $title,
+            'metaTitle' => Names::of($page->getRawOriginal('meta_title'), $lang) ?: $title,
+            'description' => Names::of($page->getRawOriginal('meta_description'), $lang),
+            'intro' => ['blocks' => $doc['blocks'], 'order' => array_slice($doc['order'], 0, $doc['closingFrom']), 'settings' => $doc['settings']],
             // penutup bukan bagian dari dokumen pengantar: tanpa daftar isi
-            "closing" => [
-                "blocks" => $doc["blocks"],
-                "order" => array_slice($doc["order"], $doc["closingFrom"]),
-                "settings" => [],
-            ],
+            'closing' => ['blocks' => $doc['blocks'], 'order' => array_slice($doc['order'], $doc['closingFrom']), 'settings' => []],
         ];
     }
 
@@ -1055,12 +839,8 @@ final class PublicLookup
      *
      * @return array{blocks:array,order:array,settings:array,imported:bool,closingFrom:int}
      */
-    public static function document(
-        mixed $rawContent,
-        array $locales = ["en", "id"],
-        bool $withSnippets = true,
-        ?string $lang = null,
-    ): array {
+    public static function document(mixed $rawContent, array $locales = ['en', 'id'], bool $withSnippets = true, ?string $lang = null): array
+    {
         $doc = ContentDocument::fromRaw($rawContent, $locales);
         $blocks = $doc->blocks;
         $order = $doc->order;
@@ -1068,16 +848,9 @@ final class PublicLookup
 
         if ($withSnippets) {
             $inline = $doc->snippetIds();
-            $closing = ClosingPolicy::resolve(
-                $doc->closingOverride(),
-                self::closingDefaults(),
-                self::availableByKey(),
-                $inline,
-            );
+            $closing = ClosingPolicy::resolve($doc->closingOverride(), self::closingDefaults(), self::availableByKey(), $inline);
             $wanted = array_values(array_unique(array_merge($inline, $closing)));
-            $snippets = $wanted
-                ? \App\Models\Snippet::query()->online()->whereIn("id", $wanted)->get()->keyBy("id")
-                : collect();
+            $snippets = $wanted ? \App\Models\Snippet::query()->online()->whereIn('id', $wanted)->get()->keyBy('id') : collect();
 
             $used = [];
             $expand = function (int $id) use ($snippets, $locales, &$blocks, &$used): array {
@@ -1085,7 +858,7 @@ final class PublicLookup
                     return [];
                 }
                 $used[$id] = true;
-                $inner = ContentDocument::fromRaw($snippets[$id]->getRawOriginal("content"), $locales);
+                $inner = ContentDocument::fromRaw($snippets[$id]->getRawOriginal('content'), $locales);
                 $ids = [];
                 foreach ($inner->order as $blockId) {
                     if (isset($blocks[$blockId]) || !isset($inner->blocks[$blockId])) {
@@ -1105,11 +878,8 @@ final class PublicLookup
             $final = [];
             foreach ($order as $blockId) {
                 $block = $blocks[$blockId] ?? null;
-                if (
-                    is_array($block) &&
-                    str_replace("_", "-", strtolower((string) ($block["type"] ?? ""))) === "snippet"
-                ) {
-                    $sid = $block["data"]["snippet_id"] ?? null;
+                if (is_array($block) && str_replace('_', '-', strtolower((string) ($block['type'] ?? ''))) === 'snippet') {
+                    $sid = $block['data']['snippet_id'] ?? null;
                     if ((is_int($sid) || (is_string($sid) && ctype_digit($sid))) && (int) $sid > 0) {
                         array_push($final, ...$expand((int) $sid)); // blok pembungkusnya sendiri dibuang
                     }
@@ -1125,15 +895,9 @@ final class PublicLookup
             $order = $final;
         }
 
-        $internal = $lang !== null ? self::internalLinks($lang, $locales, Languages::fromConfig()["default"]) : null;
+        $internal = $lang !== null ? self::internalLinks($lang, $locales, Languages::fromConfig()['default']) : null;
 
-        return [
-            "blocks" => BlockSanitizer::forPublic($blocks, $locales, $internal),
-            "order" => $order,
-            "settings" => $doc->settings,
-            "imported" => $doc->imported,
-            "closingFrom" => $closingFrom,
-        ];
+        return ['blocks' => BlockSanitizer::forPublic($blocks, $locales, $internal), 'order' => $order, 'settings' => $doc->settings, 'imported' => $doc->imported, 'closingFrom' => $closingFrom];
     }
 
     /** Blok $rootId beserta semua anaknya (zona kolom / langkah), menurut kunci id. @return array<string,array> */
@@ -1147,7 +911,7 @@ final class PublicLookup
                 continue;
             }
             $out[$id] = $blocks[$id];
-            $data = is_array($blocks[$id]["data"] ?? null) ? $blocks[$id]["data"] : [];
+            $data = is_array($blocks[$id]['data'] ?? null) ? $blocks[$id]['data'] : [];
             array_walk_recursive($data, function ($value) use (&$stack, $blocks) {
                 if (is_string($value) && isset($blocks[$value])) {
                     $stack[] = $value;
@@ -1162,12 +926,7 @@ final class PublicLookup
     private static function closingDefaults(): array
     {
         $out = [];
-        foreach (
-            \App\Models\Snippet::query()
-                ->closing()
-                ->get(["id", "key"])
-            as $s
-        ) {
+        foreach (\App\Models\Snippet::query()->closing()->get(['id', 'key']) as $s) {
             $out[(string) $s->key] = (int) $s->id;
         }
 
@@ -1178,12 +937,7 @@ final class PublicLookup
     private static function availableByKey(): array
     {
         $out = [];
-        foreach (
-            \App\Models\Snippet::query()
-                ->online()
-                ->get(["id", "key"])
-            as $s
-        ) {
+        foreach (\App\Models\Snippet::query()->online()->get(['id', 'key']) as $s) {
             $out[(string) $s->key] = (int) $s->id;
         }
 

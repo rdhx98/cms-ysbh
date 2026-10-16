@@ -296,11 +296,63 @@ final class Palette
     }
 
     /**
+     * Rilis 67c: daftar kelas palet yang ditulis UTUH (satu per kata), untuk berkas yang dipindai Tailwind. Cadangan bagi `@source inline(...)`:
+     * Tailwind di bawah 4.1 tidak mengenalnya, sehingga kelas yang tidak pernah tertulis harfiah di Blade (bg-kia, bg-custom-3, ...) tidak dibuat
+     * dan warna itu kosong, sementara bg-forest dkk tampil karena kebetulan tertulis di tempat lain. Murni.
+     */
+    public static function safelist(): string
+    {
+        $out = [];
+        foreach (self::keys() as $k) {
+            $out[] = "bg-$k text-$k border-$k text-$k-on";
+        }
+        $out[] = 'bg-white text-white bg-transparent border-transparent';
+
+        return implode("\n", $out) . "\n";
+    }
+
+    /** Rilis 67c: versi Tailwind -> true bila mengenal @source inline (>= 4.1.0); null bila versi tidak terbaca. */
+    public static function supportsSourceInline(?string $version): ?bool
+    {
+        if ($version === null || preg_match('/(\d+)\.(\d+)\.(\d+)/', $version, $m) !== 1) {
+            return null;
+        }
+
+        return [(int) $m[1], (int) $m[2]] >= [4, 1];
+    }
+
+    /**
+     * Rilis 67b: memeriksa isi berkas CSS Tailwind terhadap daftar slot. Murni (teks masuk, daftar keluar).
+     *
+     * @return array{theme:list<string>,source:list<string>}  theme = slot tanpa --color-{slot}: dan --color-{slot}-on:; source = slot yang tidak
+     *                                                       tertulis di satu pun @source inline("...")
+     */
+    public static function checkCss(string $css): array
+    {
+        $theme = $source = [];
+        $inline = '';
+        if (preg_match_all('/@source\s+inline\(\s*(["\'])(.*?)\1\s*\)/s', $css, $m) > 0) {
+            $inline = implode(' ', $m[2]);
+        }
+        foreach (self::keys() as $key) {
+            $q = preg_quote($key, '/');
+            if (preg_match('/--color-' . $q . '\s*:/', $css) !== 1 || preg_match('/--color-' . $q . '-on\s*:/', $css) !== 1) {
+                $theme[] = $key;
+            }
+            if (preg_match('/[{,]\s*' . $q . '\s*[,}]/', $inline) !== 1) {
+                $source[] = $key;
+            }
+        }
+
+        return ['theme' => $theme, 'source' => $source];
+    }
+
+    /**
      * Rilis 58: opsi untuk kontrol swatches, dibuat dari palet. Bentuknya sama dengan config('cms.design.*') (name, value, preview).
      *
      * @param 'bg'|'text'|'border'|'hex' $kind  bg = bg-{slot} | text = text-{slot} (preview: latar berkontras terbaik) | border = border-{slot} | hex = nilai #RRGGBB
      * @param list<string>               $hide  slot yang disembunyikan dari picker ini
-     * @param list<string>               $extra pilihan tetap di luar palet: 'white', 'transparent'
+     * @param list<string>               $extra pilihan tetap di luar palet: 'white', 'transparent' (transparent: kind bg dan border)
      * @return list<array<string,mixed>>
      */
     public static function swatchOptions(string $kind, mixed $palette, array $hide = [], array $extra = []): array
@@ -309,12 +361,16 @@ final class Palette
         $out = [];
 
         if (in_array('transparent', $extra, true) && $kind === 'border') {
-            $out[] = ['name' => 'Transparan', 'value' => 'border-transparent', 'preview' => 'bg-transparent', 'is_transparent' => true];
+            $out[] = ['name' => 'Transparan', 'value' => 'border-transparent', 'preview' => 'bg-transparent', 'is_transparent' => true, 'group' => 'Dasar'];
+        }
+        if (in_array('transparent', $extra, true) && $kind === 'bg') {
+            // rilis 67: latar kartu transparan (kartu hanya berisi isi; tampil di atas latar seksi)
+            $out[] = ['name' => 'Transparan', 'value' => 'bg-transparent', 'preview' => 'bg-transparent', 'is_transparent' => true, 'group' => 'Dasar'];
         }
         if (in_array('white', $extra, true) && in_array($kind, ['bg', 'border'], true)) {
             $out[] = $kind === 'bg'
-                ? ['name' => 'Putih', 'value' => 'bg-white', 'hex' => '#FFFFFF']
-                : ['name' => 'Putih', 'value' => 'border-white', 'preview' => 'bg-white', 'hex' => '#FFFFFF'];
+                ? ['name' => 'Putih', 'value' => 'bg-white', 'hex' => '#FFFFFF', 'group' => 'Dasar']
+                : ['name' => 'Putih', 'value' => 'border-white', 'preview' => 'bg-white', 'hex' => '#FFFFFF', 'group' => 'Dasar'];
         }
 
         foreach ($palette as $key => $slot) {
@@ -323,19 +379,38 @@ final class Palette
             }
             $name = $slot['label'] !== '' ? $slot['label'] : $key;
             // 'hex' = warna slot saat ini, untuk wajah swatch di admin (admin tidak mencetak palet, jadi kelas bg-{slot} di sana bukan warna palet)
+            $group = self::groupOf($key);
+            $legacy = self::BASE[$key][2] ?? [];   // nama lama slot ini (foresty, goldy, ...): isi konten lama tetap tampil sebagai terpilih
+            $prefix = ['text' => 'text-', 'border' => 'border-', 'hex' => 'var(--color-'][$kind] ?? 'bg-';
+            $suffix = $kind === 'hex' ? ')' : '';
+            $aliases = array_map(fn (string $a) => $prefix . $a . $suffix, $legacy);
             $out[] = match ($kind) {
-                'text' => ['name' => $name, 'value' => "text-$key", 'preview' => ($pv = self::previewBg($slot['hex'], $palette)), 'hex' => $slot['hex'], 'preview_hex' => self::previewHex($pv, $palette)],
-                'border' => ['name' => $name, 'value' => "border-$key", 'preview' => "bg-$key", 'hex' => $slot['hex']],
-                'hex' => ['name' => $name, 'value' => "var(--color-$key)", 'hex' => $slot['hex']],
-                default => ['name' => $name, 'value' => "bg-$key", 'hex' => $slot['hex']],
-            };
+                'text' => ['name' => $name, 'value' => "text-$key", 'preview' => ($pv = self::previewBg($slot['hex'], $palette)), 'hex' => $slot['hex'], 'preview_hex' => self::previewHex($pv, $palette), 'group' => $group],
+                'border' => ['name' => $name, 'value' => "border-$key", 'preview' => "bg-$key", 'hex' => $slot['hex'], 'group' => $group],
+                'hex' => ['name' => $name, 'value' => "var(--color-$key)", 'hex' => $slot['hex'], 'group' => $group],
+                default => ['name' => $name, 'value' => "bg-$key", 'hex' => $slot['hex'], 'group' => $group],
+            } + ($aliases !== [] ? ['aliases' => $aliases] : []);
         }
 
         if (in_array('white', $extra, true) && $kind === 'text') {
-            $out[] = ['name' => 'Putih', 'value' => 'text-white', 'preview' => 'bg-charcoal', 'hex' => '#FFFFFF', 'preview_hex' => self::hex($palette['charcoal']['hex'] ?? '') ?? '#1F2937'];
+            $out[] = ['name' => 'Putih', 'value' => 'text-white', 'preview' => 'bg-charcoal', 'hex' => '#FFFFFF', 'preview_hex' => self::hex($palette['charcoal']['hex'] ?? '') ?? '#1F2937', 'group' => 'Dasar'];
         }
 
         return $out;
+    }
+
+    /** Program (rilis 60): slot utama dan "-soft"-nya. */
+    public const PROGRAMS = ['kia', 'imunisasi', 'malaria', 'hiv', 'tbc'];
+
+    /** Rilis 61: kelompok slot untuk tampilan pemilih warna: Yayasan | Program | Kustom. */
+    public static function groupOf(string $key): string
+    {
+        if (self::isCustom($key)) {
+            return 'Kustom';
+        }
+        $base = str_ends_with($key, '-soft') ? substr($key, 0, -5) : $key;
+
+        return in_array($base, self::PROGRAMS, true) ? 'Program' : 'Yayasan';
     }
 
     private static function previewHex(string $class, array $palette): string
