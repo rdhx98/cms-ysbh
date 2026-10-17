@@ -54,6 +54,9 @@ new #[Layout('layouts.landing.index')] class extends Component {
 ?>
 
 <div class="box-border flex h-full w-full flex-col overflow-x-hidden" data-canvas-frame>
+  {{-- rilis 58: palet situs (CSS variabel). Hanya dicetak di pratinjau, bukan di shell admin, jadi sidebar/bilah atas tetap berwarna tetap. --}}
+  <style data-palette>{!! \App\Content\PublicLookup::paletteCss() !!}</style>
+
   @if ($this->payload)
     <x-content.sections
       :blocks="$this->payload['blocks']"
@@ -102,7 +105,10 @@ new #[Layout('layouts.landing.index')] class extends Component {
 
     const scrollToBlock = (id) => {
       const el = document.querySelector(`[data-block-id="${id}"]`)
-      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      if (! el) return
+      // rilis 73: blok yang muat di layar diletakkan di tengah; yang lebih tinggi dari layar (kartu besar) rata ke atas agar awalnya terlihat
+      const tall = el.getBoundingClientRect().height > window.innerHeight * 0.9
+      el.scrollIntoView({ block: tall ? 'start' : 'center', behavior: 'smooth' })
     }
 
     // klik = pilih blok (tautan dan tombol tidak berjalan di dalam kanvas)

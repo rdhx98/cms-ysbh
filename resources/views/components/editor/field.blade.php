@@ -22,8 +22,21 @@
           : (is_array($whenVal) ? 'isAny(' . \Illuminate\Support\Js::from(array_values($whenVal)) . ')' : 'is(' . \Illuminate\Support\Js::from($whenVal) . ')');
       $whenRelJs = \App\Editor\Rel::js($whenKey, \App\Editor\Rel::item($prefix, $whenKey));
   }
+  // Syarat tambahan (Field::withAnd, rilis 74): pembungkus luar dengan syaratnya sendiri.
+  $andExpr = null;
+  $andRelJs = null;
+  if (! empty($x['and'])) {
+      [$andKey, $andVal] = $x['and'];
+      $andExpr = is_bool($andVal)
+          ? ($andVal ? '!! v' : '! v')
+          : (is_array($andVal) ? 'isAny(' . \Illuminate\Support\Js::from(array_values($andVal)) . ')' : 'is(' . \Illuminate\Support\Js::from($andVal) . ')');
+      $andRelJs = \App\Editor\Rel::js($andKey, \App\Editor\Rel::item($prefix, $andKey));
+  }
 @endphp
 
+@if ($andExpr)
+<div class="contents" x-data="wireField(null, {!! $andRelJs !!}, null, false)" x-show="{{ $andExpr }}" x-cloak>
+@endif
 <div
   class="contents"
   @if ($whenExpr)
@@ -47,6 +60,10 @@
 
     @case('icon')
       <x-editor.icon-picker :rel="$key" :rel-expr="$relExpr" :label="$field->label" :default="$field->default" :clearable="$x['clearable'] ?? false" />
+      @break
+
+    @case('glyphs')
+      <x-editor.glyphs :rel="$key" :rel-expr="$relExpr" :label="$field->label" :options="$field->options" :default="$field->default" :mode="$x['mode'] ?? 'one'" />
       @break
 
     @case('toggle')
@@ -86,3 +103,6 @@
       @break
   @endswitch
 </div>
+@if ($andExpr)
+</div>
+@endif

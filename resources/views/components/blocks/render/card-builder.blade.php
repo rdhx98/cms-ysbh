@@ -17,7 +17,12 @@
       $borderStyle = $container["border_style"] ?? "border-solid";
       $borderColor = $container["border_color"] ?? "border-gray-200";
       $radius = $container["radius"] ?? "rounded-[18px]";
-      $padding = $container["padding"] ?? "p-4";
+      // Rilis 70: "Ruang Dalam" (semua sisi) + penimpaan samping / atas-bawah (pad_x, pad_y) dari daftar putih BoxPadding
+      $padding = trim(
+        ($container["padding"] ?? "p-4") .
+          " " .
+          \App\Content\Blocks\BoxPadding::classes($container),
+      );
       $alignY = $container["align_y"] ?? "items-start";
 
       // Matikan efek hover dan link jika sedang di dalam Live Preview Editor
@@ -90,7 +95,10 @@
                   @php
                     $text = $content[$lang] ?? ($content["id"] ?? "");
                     $isPill = $style["is_pill"] ?? false;
-                    $margin = $style["margin"] ?? "mb-1.5";
+                    $margin = \App\Content\Blocks\ElementStyle::margin(
+                      $style["margin"] ?? null,
+                      true,
+                    );
                     $color = $style["color"] ?? "text-ink-soft";
                   @endphp
 
@@ -100,7 +108,9 @@
                         $pillBg = $style["pill_bg"] ?? "bg-goldy-soft";
                         $pillRadius = $style["pill_radius"] ?? "rounded-md";
                       @endphp
-                      <div class="{{ $margin }}">
+                      <div
+                        class="{{ trim($margin . " " . \App\Content\Blocks\ElementStyle::align($style["align"] ?? null)) }}"
+                      >
                         <span
                           class="inline-block {{ $pillBg }} {{ $color }} {{ $pillRadius }} px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest"
                         >
@@ -110,11 +120,11 @@
                     @else
                       @php
                         $font = $style["font"] ?? "font-sans";
-                        $size = $style["size"] ?? "text-[15px]";
-                        $weight = $style["weight"] ?? "font-normal";
+                        // Rilis 69: ukuran (6), ketebalan, efek (miring/garis bawah/coret), dan huruf besar/kecil dari daftar putih
+                        $look = \App\Content\Blocks\ElementStyle::textClasses($style);
                       @endphp
                       <div
-                        class="{{ $font }} {{ $size }} {{ $weight }} {{ $color }} {{ $margin }}"
+                        class="{{ $font }} {{ $look }} {{ $color }} {{ $margin }}"
                       >
                         {{ $text }}
                       </div>
@@ -129,11 +139,14 @@
                     $iconColor = $style["color"] ?? "text-foresty";
                     $iconSize = $style["size"] ?? "w-10 h-10";
                     $iconRadius = $style["radius"] ?? "rounded-[14px]";
+                    $iconMargin = \App\Content\Blocks\ElementStyle::margin(
+                      $style["margin"] ?? null,
+                    );
                   @endphp
 
                   @if ($icon)
                     <div
-                      class="shrink-0 flex items-center justify-center {{ $iconBg }} {{ $iconColor }} {{ $iconSize }} {{ $iconRadius }} mb-3"
+                      class="shrink-0 flex items-center justify-center {{ $iconBg }} {{ $iconColor }} {{ $iconSize }} {{ $iconRadius }} {{ $iconMargin }}"
                     >
                       <x-dynamic-component
                         :component="'lucide-' . $icon"
@@ -169,7 +182,10 @@
                   @php
                     // Konten
                     $imgUrl = $content["url"] ?? "";
-                    $imgAlt = $content["alt"][$lang] ?? ($content["alt"]["id"] ?? "");
+                    // alt boleh teks biasa (panel saat ini) atau peta bahasa {id, en} (data lama)
+                    $imgAlt = is_array($content["alt"] ?? null)
+                      ? $content["alt"][$lang] ?? ($content["alt"]["id"] ?? "")
+                      : (string) ($content["alt"] ?? "");
                     $initials = $content["text"] ?? "";
 
                     // Gaya Global (Berbagi antara Foto & Inisial)
@@ -181,9 +197,12 @@
                     // Gaya Khusus Inisial
                     $avatarBgColor = $style["bg_color"] ?? "bg-emerald-700";
                     $avatarTextColor = $style["text_color"] ?? "text-white";
+                    $avatarMargin = \App\Content\Blocks\ElementStyle::margin(
+                      $style["margin"] ?? null,
+                    );
                   @endphp
 
-                  <div class="mb-3 shrink-0">
+                  <div class="{{ $avatarMargin }} shrink-0">
                     @if ($type === "profile_photo" && $imgUrl)
                       {{-- A. Tampilan Foto Profil --}}
                       <img
@@ -204,6 +223,57 @@
                     @endif
                   </div>
 
+                  {{-- 3b. RENDER GAMBAR (rilis 69): di dalam ruang dalam kartu; tautan opsional --}}
+                @elseif ($type === "image")
+                  @php
+                    $picUrl = $content["url"] ?? "";
+                    $picAlt = is_array($content["alt"] ?? null)
+                      ? $content["alt"][$lang] ?? ($content["alt"]["id"] ?? "")
+                      : (string) ($content["alt"] ?? "");
+                    // Aturan emas yang sama dengan tombol: kartu yang sudah berupa tautan tidak boleh memuat <a> lagi; di pratinjau editor tidak ada tautan
+                    $picLink = $isPreview || $cardUrl ? "" : (string) ($content["link"] ?? "");
+                    $pic = \App\Content\Blocks\ElementStyle::image($style);
+                    // Keterangan (rilis 70b): peta bahasa {id, en}; bahasa kosong jatuh ke id. Tampilan = keterangan blok Gambar: tengah, kecil, miring, abu-abu
+                    $picCap = is_array($content["caption"] ?? null)
+                      ? trim(
+                        (string) (($content["caption"][$lang] ?? "") !== ""
+                          ? $content["caption"][$lang]
+                          : $content["caption"]["id"] ?? ""),
+                      )
+                      : trim((string) ($content["caption"] ?? ""));
+                  @endphp
+
+                  @if ($picUrl)
+                    <figure class="{{ $pic['margin'] }} w-full">
+                      <div class="{{ $pic['wrap'] }}">
+                        @if ($picLink)
+                          <a href="{{ $picLink }}" class="block h-full w-full">
+                            <img
+                              src="{{ $picUrl }}"
+                              alt="{{ $picAlt }}"
+                              loading="lazy"
+                              class="{{ $pic['img'] }}"
+                            />
+                          </a>
+                        @else
+                          <img
+                            src="{{ $picUrl }}"
+                            alt="{{ $picAlt }}"
+                            loading="lazy"
+                            class="{{ $pic['img'] }}"
+                          />
+                        @endif
+                      </div>
+                      @if ($picCap !== "")
+                        <figcaption
+                          class="mt-2 text-center text-sm leading-relaxed text-gray-500 italic"
+                        >
+                          {{ $picCap }}
+                        </figcaption>
+                      @endif
+                    </figure>
+                  @endif
+
                   {{-- 4. RENDER TOMBOL AKSI --}}
                 @elseif ($type === "button")
                   @php
@@ -214,6 +284,7 @@
                     $btnColor = $style["color"] ?? "foresty";
                     $btnRadius = $style["radius"] ?? "rounded-lg";
                     $btnAlign = $style["align"] ?? "self-start";
+                    $btnMargin = \App\Content\Blocks\ElementStyle::margin($style["margin"] ?? null);
 
                     // Pemetaan Tema Warna
                     $btnClasses = match ($btnVariant . "-" . $btnColor) {
@@ -243,7 +314,9 @@
                   @endphp
 
                   @if ($btnLabel)
-                    <div class="mb-3 flex w-full {{ $wrapperAlign }}">
+                    <div
+                      class="{{ $btnMargin }} flex w-full {{ $wrapperAlign }}"
+                    >
                       {{-- Aturan Emas: Jika Kartu Induk punya URL, tombol ini JANGAN dirender sebagai tag <a> agar HTML tidak error --}}
                       <{{ $cardUrl ? 'span' : 'a' }}
                         {!! $cardUrl ? "" : 'href="' . htmlspecialchars($btnUrl) . '"' !!}
@@ -261,6 +334,7 @@
                     $question = $content["question"][$lang] ?? ($content["question"]["id"] ?? "");
                     $answer = $content["answer"][$lang] ?? ($content["answer"]["id"] ?? "");
                     $theme = $style["theme"] ?? "foresty";
+                    $accMargin = \App\Content\Blocks\ElementStyle::margin($style["margin"] ?? null);
 
                     $activeText = match ($theme) {
                       "coral" => "text-coral",
@@ -282,7 +356,7 @@
                   @if (!empty($question) || !empty($answer))
                     <div
                       x-data="{ open: false }"
-                      class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 {{ $hoverBorder }} w-full mb-3"
+                      class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 {{ $hoverBorder }} w-full {{ $accMargin }}"
                       {{-- Mencegah klik akordion mengaktifkan link kartu induk (jika ada) --}}
                       x-on:click.prevent
                     >

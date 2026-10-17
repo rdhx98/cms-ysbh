@@ -148,6 +148,27 @@ final class CoreBlocks
         if (array_key_exists('children', $d) && is_array($d['children'])) {
             $d['children'] = self::ids($d['children']);
         }
+        // Rilis 74: label per langkah {idAnak: {bahasa: teks}}. Teks polos, kunci harus id sah, bahasa 2-5 huruf; bentuk lain dibuang.
+        if (array_key_exists('labels', $d)) {
+            $clean = [];
+            if (is_array($d['labels'])) {
+                foreach ($d['labels'] as $childId => $row) {
+                    if (!is_string($childId) || preg_match(self::ID, $childId) !== 1 || !is_array($row)) {
+                        continue;
+                    }
+                    $map = [];
+                    foreach ($row as $loc => $text) {
+                        if (is_string($loc) && preg_match('/^[a-z]{2,5}$/D', $loc) === 1 && is_scalar($text)) {
+                            $map[$loc] = self::plain($text, StepStyle::LABEL_MAX);
+                        }
+                    }
+                    if ($map !== []) {
+                        $clean[$childId] = $map;
+                    }
+                }
+            }
+            $d['labels'] = $clean;
+        }
 
         return $d;
     }
@@ -213,6 +234,25 @@ final class CoreBlocks
                     $type = $el['elementType'] ?? 'text';
                     if ($type === 'icon' && array_key_exists('icon', $el['data']['content'])) {
                         $d['cards'][$i]['layout']['children'][$c]['children'][$e]['data']['content']['icon'] = self::icon($el['data']['content']['icon']);
+                    }
+                    // Rilis 69: gambar di dalam kartu (elemen Gambar dan Foto Profil): alamat gambar hanya http(s)/jalur relatif;
+                    // elemen Gambar juga punya tautan (aturan sama dengan tautan kartu), nama tujuannya, dan teks alternatif polos.
+                    if (in_array($type, ['image', 'profile_photo'], true) && array_key_exists('url', $el['data']['content'])) {
+                        $d['cards'][$i]['layout']['children'][$c]['children'][$e]['data']['content']['url'] = self::imageUrl($el['data']['content']['url']);
+                    }
+                    if ($type === 'image') {
+                        $ct = $el['data']['content'];
+                        $at = &$d['cards'][$i]['layout']['children'][$c]['children'][$e]['data']['content'];
+                        if (array_key_exists('link', $ct)) {
+                            $at['link'] = self::link($ct['link'], $internal);
+                        }
+                        if (array_key_exists('link_label', $ct)) {
+                            $at['link_label'] = ($at['link'] ?? '') === '' ? '' : self::plain($ct['link_label'], 120);
+                        }
+                        if (array_key_exists('alt', $ct) && is_string($ct['alt'])) {
+                            $at['alt'] = self::plain($ct['alt'], 200);
+                        }
+                        unset($at);
                     }
                     if ($type === 'button' && array_key_exists('url', $el['data']['content'])) {
                         $d['cards'][$i]['layout']['children'][$c]['children'][$e]['data']['content']['url'] = self::link($el['data']['content']['url'], $internal) ?: '#';

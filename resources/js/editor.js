@@ -314,8 +314,10 @@ export function registerEditor(Alpine) {
    * Daftar isi panel kontainer (<x-editor.container-kids>): Grup Langkah = daftar langkah, Kolom = daftar blok per kolom. Klik baris =
    * masuk ke blok itu. Baris yang menuju asal navigasi breadcrumb (store.via / viaZone) disorot dan digulir ke tampilan.
    */
-  Alpine.data('containerKids', (labels = {}) => ({
+  Alpine.data('containerKids', (labels = {}, live = true) => ({
     labels,
+    live,
+    _lt: {},
     get zones() {
       const s = Alpine.store('editor')
       const content = this.$wire.content || {}
@@ -355,6 +357,41 @@ export function registerEditor(Alpine) {
       const b = s.id && (this.$wire.content || {})[s.id]
       return b ? canon(b.type) : ''
     },
+    // ---- label per langkah (rilis 74): data.labels = { idAnak: { id, en } } pada Grup Langkah yang sedang difokus
+    group() {
+      const s = Alpine.store('editor')
+      const b = s.id && (this.$wire.content || {})[s.id]
+      return b && b.data && typeof b.data === 'object' ? b.data : {}
+    },
+    get marker() {
+      return this.group().marker === 'dot' ? 'dot' : 'number'
+    },
+    labelAt(id, lang) {
+      const l = this.group().labels
+      const row = l && typeof l === 'object' && !Array.isArray(l) ? l[id] : null
+      const v = row && typeof row === 'object' ? row[lang] : ''
+      return typeof v === 'string' ? v : ''
+    },
+    // Menulis SELURUH peta label (bukan satu path dalam): peta kosong dari server berupa larik [], dan menulis kunci ke larik JS hilang saat dikirim.
+    setLabel(id, lang, text) {
+      const s = Alpine.store('editor')
+      if (!s.id) return
+      const cur = this.group().labels
+      const next = cur && typeof cur === 'object' && !Array.isArray(cur) ? JSON.parse(JSON.stringify(cur)) : {}
+      const row = next[id] && typeof next[id] === 'object' && !Array.isArray(next[id]) ? next[id] : {}
+      row[lang] = String(text).slice(0, 60)
+      next[id] = row
+      const path = 'content.' + s.id + '.data.labels'
+      this.$wire.$set(path, next, false) // state klien langsung
+      if (this.live) {
+        clearTimeout(this._lt[path])
+        this._lt[path] = setTimeout(() => {
+          const now = this.$wire.$get(path)
+          if (now !== undefined) this.$wire.$set(path, now, true)
+        }, 800)
+      }
+    },
+
     // keterangan satu baris: jumlah kartu, atau teks pertama blok itu
     hint(id, type, content) {
       const d = (content[id] || {}).data || {}
@@ -720,6 +757,22 @@ export function registerEditor(Alpine) {
     set(x) {
       const p = this.p
       if (p) this.$wire.$set(p, x, this.live)
+    },
+    // tombol berhuruf (rilis 69). Mode satu nilai: klik yang aktif = kembali ke `clear`.
+    pick(x, clear) {
+      this.set(this.is(x) ? clear : x)
+    },
+    // Mode larik: apakah x ada di larik, dan menyalakan/mematikan x (urutan lain tidak diubah; selalu larik polos).
+    list() {
+      const v = this.v
+      return Array.isArray(v) ? v.map(String) : []
+    },
+    has(x) {
+      return this.list().includes(String(x))
+    },
+    flip(x) {
+      const cur = this.list()
+      this.set(cur.includes(String(x)) ? cur.filter((y) => y !== String(x)) : [...cur, String(x)])
     },
 
     // teks: sub-path (mis. kode bahasa) di bawah p; '' = p itu sendiri

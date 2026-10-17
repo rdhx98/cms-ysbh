@@ -64,6 +64,9 @@ final class CardPanel
         return [
             Field::swatches('bg', 'Warna Latar', PaletteOptions::colors('card_bg_colors'), 'bg-white', 'bg'),
             Field::segmented('padding', 'Ruang Dalam', self::labelled($d('card_paddings')), 'p-2 md:p-4'),
+            // Rilis 70: menimpa satu sumbu dari "Ruang Dalam"; "Ikuti" = tidak menimpa
+            Field::segmented('pad_x', 'Ruang Samping', \App\Content\Blocks\BoxPadding::options('Ikuti'), ''),
+            Field::segmented('pad_y', 'Ruang Atas-Bawah', \App\Content\Blocks\BoxPadding::options('Ikuti'), ''),
             Field::segmented('radius', 'Sudut', self::labelled($d('border_radiuses')), 'rounded-[14px]'),
             Field::segmented('border_width', 'Garis Tepi', self::labelled($d('border_widths')), 'border-0'),
             Field::segmented('border_style', 'Jenis Garis', self::labelled($d('border_styles')), 'border-solid'),

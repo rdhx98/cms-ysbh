@@ -1,0 +1,138 @@
+<?php
+
+namespace App\Editor;
+
+/**
+ * Satu kontrol di inspektur. `key` adalah path RELATIF terhadap node yang sedang difokus,
+ * mis. "data.style.size" -> content.{blockId}.data.style.size  (atau path elemen di dalam kartu).
+ */
+final class Field
+{
+    /** Tipe yang digambar di panel gaya (sebaris), sisanya satu baris penuh. */
+    public const INLINE = ['segmented', 'swatches', 'select', 'icon', 'toggle', 'glyphs'];
+
+    public function __construct(
+        public readonly string $type,
+        public readonly string $key,
+        public readonly string $label,
+        public readonly array $options = [],
+        public readonly mixed $default = null,
+        /** [key, nilai]: kontrol hanya tampil bila nilai di `key` cocok (bool = truthy/falsy; larik = salah satu dari nilai-nilai itu). */
+        public readonly ?array $when = null,
+        public readonly array $extra = [],
+    ) {
+    }
+
+    public static function segmented(string $key, string $label, array $options, mixed $default = null, ?array $when = null, array $extra = []): self
+    {
+        return new self('segmented', $key, $label, $options, $default, $when, $extra);
+    }
+
+    /** $mode: bg | text | preview | hex (lihat <x-editor.swatches>) */
+    public static function swatches(string $key, string $label, array $options, mixed $default = null, string $mode = 'bg', ?array $when = null): self
+    {
+        return new self('swatches', $key, $label, $options, $default, $when, ['mode' => $mode]);
+    }
+
+    public static function select(string $key, string $label, array $options, mixed $default = null, ?array $when = null, array $extra = []): self
+    {
+        return new self('select', $key, $label, $options, $default, $when, $extra);
+    }
+
+    public static function icon(string $key, string $label, string $default = 'box', bool $clearable = false): self
+    {
+        return new self('icon', $key, $label, [], $default, null, ['clearable' => $clearable]);
+    }
+
+    /**
+     * Daftar item berulang (tombol, pertanyaan FAQ, ...). $fields = kontrol per item (key RELATIF terhadap item),
+     * $itemDefaults = nilai satu item baru ("@id" = ID baru, "@locales" = peta bahasa kosong).
+     *
+     * @param Field[] $fields
+     */
+    public static function repeater(string $key, string $label, array $fields, array $itemDefaults, int $max = 12, string $itemLabel = 'Item'): self
+    {
+        return new self('repeater', $key, $label, [], null, null, ['fields' => $fields, 'defaults' => $itemDefaults, 'max' => $max, 'itemLabel' => $itemLabel]);
+    }
+
+    /** Tautan: jenis (halaman, artikel, berkas, URL, telepon, surel, anchor) + tujuannya. Nilai: {kind, ref, ref_label, media_id, url, new_tab}. */
+    public static function link(string $key, string $label): self
+    {
+        return new self('link', $key, $label);
+    }
+
+    /**
+     * Tautan yang disimpan sebagai SATU teks (bukan objek): `internal://page|article/{slug}` atau alamat luar (https://…, /jalur).
+     * Dipakai tempat yang sudah menyimpan teks (mis. tautan seluruh kartu di Kartu Builder), jadi data lama tetap terbaca.
+     * Nama tujuan yang dipilih disimpan di saudaranya "{key}_label" (hanya tampilan; tidak pernah dipakai sebagai href).
+     */
+    public static function urlLink(string $key, string $label): self
+    {
+        return new self('urllink', $key, $label);
+    }
+
+    /** Teks per bahasa: key menunjuk ke objek {id, en}. */
+    public static function i18n(string $key, string $label, bool $multi = false, int $rows = 3, ?array $when = null): self
+    {
+        return new self('i18n', $key, $label, [], null, $when, ['multi' => $multi, 'rows' => $rows]);
+    }
+
+    /**
+     * Teks kaya (HTML dari Tiptap) per bahasa. <x-editor.rich> memasang SATU Tiptap aktif per bahasa untuk blok yang difokus
+     * (resources/js/rich-field.js, rilis 31). multi = false: judul satu baris (disimpan tanpa <p>); true: paragraf (HTML Tiptap).
+     * HTML tersimpan yang tidak bisa diwakili Tiptap tanpa kehilangan isi (tabel, gambar, ...) tetap hanya-baca.
+     */
+    public static function rich(string $key, string $label, bool $multi = false, bool $align = false): self
+    {
+        // align (rilis 33): toolbar Judul menampilkan rata teks, ditulis ke data.align milik blok (Judul tidak punya <p> untuk menyimpannya)
+        return new self('rich', $key, $label, [], null, null, ['multi' => $multi, 'align' => $align]);
+    }
+
+    /**
+     * Tombol berhuruf/simbol (rilis 69). $options = [{value, glyph, title, class?}].
+     *   mode 'one'  : satu nilai teks; klik tombol yang sedang aktif = kembali ke $default (mis. "AA aa Aa": klik lagi = huruf normal)
+     *   mode 'many' : nilai = larik; tiap tombol menyala/mati sendiri (miring, garis bawah, coret)
+     */
+    public static function glyphs(string $key, string $label, array $options, string $mode = 'one', mixed $default = null, ?array $when = null): self
+    {
+        return new self('glyphs', $key, $label, $options, $default, $when, ['mode' => $mode === 'many' ? 'many' : 'one']);
+    }
+
+    public static function toggle(string $key, string $label, ?array $when = null): self
+    {
+        return new self('toggle', $key, $label, [], false, $when);
+    }
+
+    public static function text(string $key, string $label, array $extra = []): self
+    {
+        return new self('text', $key, $label, [], null, null, $extra);
+    }
+
+    /** Tombol File Manager; key menunjuk ke objek konten ({url, media_id, alt_text}). */
+    public static function media(string $key, string $label, string $accept = 'image'): self
+    {
+        return new self('media', $key, $label, [], null, null, ['accept' => $accept]);
+    }
+
+    /**
+     * Daftar pilihan dari basis data (kategori / artikel) yang dicari dengan mengetik. Nilai: [{id, label}] (urut sesuai pilihan).
+     * $kind = "category" | "article" (aksi server searchLinkTargets); $max = jumlah pilihan paling banyak.
+     */
+    public static function picker(string $key, string $label, string $kind, int $max = 6, ?array $when = null, string $placeholder = 'Cari…', string $hint = ''): self
+    {
+        return new self('picker', $key, $label, [], [], $when, ['kind' => $kind, 'max' => $max, 'placeholder' => $placeholder, 'hint' => $hint]);
+    }
+
+    public function isInline(): bool
+    {
+        return in_array($this->type, self::INLINE, true);
+    }
+
+    /** Nilai-nilai yang sah untuk kontrol berpilihan; null untuk kontrol bebas. */
+    public function allowedValues(): ?array
+    {
+        return in_array($this->type, ['segmented', 'swatches', 'select'], true)
+            ? Options::values($this->options)
+            : null;
+    }
+}

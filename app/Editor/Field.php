@@ -9,7 +9,7 @@ namespace App\Editor;
 final class Field
 {
     /** Tipe yang digambar di panel gaya (sebaris), sisanya satu baris penuh. */
-    public const INLINE = ['segmented', 'swatches', 'select', 'icon', 'toggle'];
+    public const INLINE = ['segmented', 'swatches', 'select', 'icon', 'toggle', 'glyphs'];
 
     public function __construct(
         public readonly string $type,
@@ -21,6 +21,12 @@ final class Field
         public readonly ?array $when = null,
         public readonly array $extra = [],
     ) {
+    }
+
+    /** Syarat tambahan [key, nilai] (format sama dengan `when`): kontrol tampil bila `when` DAN syarat ini terpenuhi (rilis 74). */
+    public function withAnd(array $cond): self
+    {
+        return new self($this->type, $this->key, $this->label, $this->options, $this->default, $this->when, $this->extra + ['and' => $cond]);
     }
 
     public static function segmented(string $key, string $label, array $options, mixed $default = null, ?array $when = null, array $extra = []): self
@@ -86,6 +92,16 @@ final class Field
     {
         // align (rilis 33): toolbar Judul menampilkan rata teks, ditulis ke data.align milik blok (Judul tidak punya <p> untuk menyimpannya)
         return new self('rich', $key, $label, [], null, null, ['multi' => $multi, 'align' => $align]);
+    }
+
+    /**
+     * Tombol berhuruf/simbol (rilis 69). $options = [{value, glyph, title, class?}].
+     *   mode 'one'  : satu nilai teks; klik tombol yang sedang aktif = kembali ke $default (mis. "AA aa Aa": klik lagi = huruf normal)
+     *   mode 'many' : nilai = larik; tiap tombol menyala/mati sendiri (miring, garis bawah, coret)
+     */
+    public static function glyphs(string $key, string $label, array $options, string $mode = 'one', mixed $default = null, ?array $when = null): self
+    {
+        return new self('glyphs', $key, $label, $options, $default, $when, ['mode' => $mode === 'many' ? 'many' : 'one']);
     }
 
     public static function toggle(string $key, string $label, ?array $when = null): self

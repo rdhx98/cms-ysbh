@@ -120,6 +120,8 @@
             $spacing = \App\Content\Blocks\Spacing::wrapperClass($block, $marginChoices);
             // Rata teks Judul (rilis 33): data.align, dicetak pembungkus karena Judul tidak punya <p>; kiri = tidak mencetak apa pun
             $textAlign = \App\Content\Blocks\Align::wrapperClass($block);
+            // Padding blok (rilis 70): data.pad_x / data.pad_y dari daftar putih BoxPadding; kosong = tidak ada pembungkus tambahan
+            $boxPad = \App\Content\Blocks\BoxPadding::classes(is_array($block['data'] ?? null) ? $block['data'] : []);
           @endphp
 
           <div
@@ -135,6 +137,9 @@
             @endunless
             class="{{ $canvas ? '' : 'transition-all duration-700 ease-out' }} {{ $isFullScreen ? 'w-full px-0' : 'mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8' }} {{ $spacing }} {{ $textAlign }}"
           >
+            @if ($boxPad !== '')
+              <div class="{{ $boxPad }}">
+            @endif
             @if ($hasView && $canvas)
               {{-- Kanvas: tangkap keluaran; blok yang TIDAK mencetak apa pun (mis. FAQ tanpa pertanyaan) diberi penanda supaya tetap bisa dipilih --}}
               @php ob_start(); @endphp
@@ -163,6 +168,9 @@
             @elseif ($canvas)
               <div class="my-2 rounded-lg border border-dashed border-gray-300 bg-white/60 p-4 text-center text-xs text-gray-500">
                 Blok <b>{{ $type ?: '(tanpa tipe)' }}</b> belum punya tampilan publik.
+              </div>
+            @endif
+            @if ($boxPad !== '')
               </div>
             @endif
           </div>

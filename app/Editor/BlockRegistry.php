@@ -2,6 +2,8 @@
 
 namespace App\Editor;
 
+use App\Content\Blocks\BoxPadding;
+use App\Content\Blocks\ElementStyle;
 use App\Content\Blocks\LayoutStyle;
 use App\Content\Blocks\StepStyle;
 use App\Content\Blocks\Spacing;
@@ -53,6 +55,12 @@ final class BlockRegistry
             fn ($m) => ['value' => $m['value'], 'label' => $m['label'] ?? ($m['name'] ?? $m['value'])],
             config('cms.design.margin_bottom', []),
         );
+    }
+
+    /** Rilis 69: "Jarak Bawah" standar untuk SETIAP elemen kartu (key data.style.margin; tiap elemen mengatur sendiri). */
+    private static function elementMargin(bool $text = false): Field
+    {
+        return Field::segmented('data.style.margin', 'Jarak Bawah', ElementStyle::MARGINS, $text ? ElementStyle::MARGIN_TEXT : ElementStyle::MARGIN_OTHER);
     }
 
     private static function dot(string $value, string $title, string $dot, bool $ring = false): array
@@ -138,17 +146,30 @@ final class BlockRegistry
 
             new BlockType('step-group', 'Grup Langkah (Timeline)', 'list-ordered', 'block', [
                 Field::segmented('data.orientation', 'Orientasi', ['vertical' => 'Vertikal', 'horizontal-top' => 'Horiz. Atas', 'horizontal-bottom' => 'Horiz. Bawah'], 'vertical'),
+                // Rilis 74: penanda (angka / titik + label) dan poros (samping / tengah, kartu selang-seling). Poros tengah dan titik hanya untuk tata letak vertikal
+                // (horizontal menyusul rilis 75). Label tiap langkah diisi di daftar "Isi langkah" di atas panel ini.
+                Field::segmented('data.marker', 'Penanda', StepStyle::MARKERS, StepStyle::MARKER_DEFAULT, ['data.orientation', 'vertical']),
+                Field::segmented('data.axis', 'Poros', StepStyle::AXES, StepStyle::AXIS_DEFAULT, ['data.orientation', 'vertical']),
+                Field::segmented('data.start_side', 'Kartu Pertama di', StepStyle::STARTS, StepStyle::START_DEFAULT, ['data.axis', 'center'])->withAnd(['data.orientation', 'vertical']),
                 Field::segmented('data.gap', 'Jarak', ['gap-4' => 'Rapat', 'gap-8' => 'Sedang', 'gap-12' => 'Renggang', 'gap-16' => 'Jauh'], 'gap-8'),
-                // Rilis 66: bentuk dan warna angka dari palet (sebelumnya dua isian kelas Tailwind). StepStyle menerjemahkannya ke kelas.
-                Field::segmented('data.node_shape', 'Bentuk Latar Angka', StepStyle::SHAPES, StepStyle::SHAPE_DEFAULT),
+                // Rilis 66: bentuk dan warna penanda dari palet (sebelumnya dua isian kelas Tailwind). StepStyle menerjemahkannya ke kelas.
+                // Rilis 74: bentuk dan warna latar berlaku juga untuk titik ("Kosong" = tanpa titik, label saja).
+                Field::segmented('data.node_shape', 'Bentuk Penanda', StepStyle::SHAPES, StepStyle::SHAPE_DEFAULT),
                 // Kondisi memuat '' agar data lama (kunci belum ada = lingkaran) tetap menampilkan pemilih latar
-                Field::swatches('data.node_bg', 'Warna Latar Angka', \App\Editor\PaletteOptions::colors('mini_bg_colors'), 'bg-forest', 'bg', ['data.node_shape', ['', 'square', 'circle', 'rounded']]),
-                Field::swatches('data.node_text', 'Warna Angka', \App\Editor\PaletteOptions::colors('text_colors'), 'text-white', 'text', ['data.node_shape', ['', 'square', 'circle', 'rounded']]),
-                Field::swatches('data.node_ink', 'Warna Angka (tanpa latar)', \App\Editor\PaletteOptions::colors('text_colors'), 'text-forest', 'text', ['data.node_shape', 'none']),
+                Field::swatches('data.node_bg', 'Warna Penanda', \App\Editor\PaletteOptions::colors('mini_bg_colors'), 'bg-forest', 'bg', ['data.node_shape', ['', 'square', 'circle', 'rounded']]),
+                Field::swatches('data.node_text', 'Warna Angka', \App\Editor\PaletteOptions::colors('text_colors'), 'text-white', 'text', ['data.node_shape', ['', 'square', 'circle', 'rounded']])->withAnd(['data.marker', ['', 'number']]),
+                Field::swatches('data.node_ink', 'Warna Angka (tanpa latar)', \App\Editor\PaletteOptions::colors('text_colors'), 'text-forest', 'text', ['data.node_shape', 'none'])->withAnd(['data.marker', ['', 'number']]),
+                Field::segmented('data.dot_size', 'Ukuran Titik', StepStyle::DOT_SIZES, StepStyle::DOT_DEFAULT, ['data.marker', 'dot']),
+                Field::swatches('data.label_color', 'Warna Label', \App\Editor\PaletteOptions::colors('text_colors'), 'text-forest', 'text', ['data.marker', 'dot']),
                 Field::swatches('data.line_color', 'Warna Garis', \App\Editor\PaletteOptions::colors('mini_bg_colors'), 'bg-forest', 'bg'),
                 Field::segmented('data.line_opacity', 'Kekuatan Garis', StepStyle::OPACITY, StepStyle::OPACITY_DEFAULT),
             ], defaults: [
                 'orientation' => 'vertical',
+                'marker' => StepStyle::MARKER_DEFAULT,
+                'axis' => StepStyle::AXIS_DEFAULT,
+                'start_side' => StepStyle::START_DEFAULT,
+                'dot_size' => StepStyle::DOT_DEFAULT,
+                'label_color' => 'text-forest',
                 'gap' => 'gap-8',
                 'node_shape' => StepStyle::SHAPE_DEFAULT,
                 'node_bg' => 'bg-forest',
@@ -238,18 +259,35 @@ final class BlockRegistry
                 Field::i18n('data.content', 'Teks', multi: true, rows: 2),
                 Field::toggle('data.style.is_pill', 'Mode Pill'),
                 Field::select('data.style.font', 'Tipe Font', config('cms.fonts', []), 'font-fraunces', $notPill, ['font' => true]),
-                Field::segmented('data.style.weight', 'Ketebalan', ['font-normal' => 'Reguler', 'font-semibold' => 'Semi Bold'], 'font-normal', $notPill),
-                Field::segmented('data.style.size', 'Ukuran', ['text-[13px]' => 'Kecil', 'text-[15px]' => 'Normal', 'text-[21px]' => 'Besar (H3)'], 'text-[13px]', $notPill),
-                Field::segmented('data.style.text_transform', 'Huruf', config('cms.design.text_transform', []), 'normal-case', $notPill),
+                // Rilis 69: enam ukuran; ketebalan = satu pilihan; efek boleh digabung; huruf = tiga tombol "Aa" (klik lagi = normal)
+                Field::segmented('data.style.size', 'Ukuran', ElementStyle::SIZES, ElementStyle::SIZE_DEFAULT, $notPill),
+                Field::segmented('data.style.weight', 'Ketebalan', ElementStyle::WEIGHTS, ElementStyle::WEIGHT_DEFAULT, $notPill),
+                Field::glyphs('data.style.effects', 'Efek', [
+                    ['value' => 'italic', 'glyph' => 'I', 'title' => 'Miring', 'class' => 'italic'],
+                    ['value' => 'underline', 'glyph' => 'U', 'title' => 'Garis bawah', 'class' => 'underline'],
+                    ['value' => 'line-through', 'glyph' => 'S', 'title' => 'Coret', 'class' => 'line-through'],
+                ], 'many', [], $notPill),
+                Field::glyphs('data.style.text_transform', 'Huruf', [
+                    ['value' => 'uppercase', 'glyph' => 'AA', 'title' => 'HURUF BESAR'],
+                    ['value' => 'lowercase', 'glyph' => 'aa', 'title' => 'huruf kecil'],
+                    ['value' => 'capitalize', 'glyph' => 'Aa', 'title' => 'Awal Kata Besar'],
+                ], 'one', ElementStyle::CASE_DEFAULT, $notPill),
+                // Rilis 71: rata teks per elemen (juga untuk pill). Kosong = ikuti kolom; klik tombol yang aktif = kembali ke ikuti kolom.
+                Field::glyphs('data.style.align', 'Rata Teks', [
+                    ['value' => 'text-left', 'icon' => 'align-left', 'title' => 'Rata kiri'],
+                    ['value' => 'text-center', 'icon' => 'align-center', 'title' => 'Rata tengah'],
+                    ['value' => 'text-right', 'icon' => 'align-right', 'title' => 'Rata kanan'],
+                    ['value' => 'text-justify', 'icon' => 'align-justify', 'title' => 'Rata kiri-kanan'],
+                ], 'one', ''),
                 // Rilis 61: semua warna dari palet (nilai tersimpan bg-{slot}); nama lama (bg-goldy-soft) tetap tampil terpilih pada slotnya.
                 Field::swatches('data.style.pill_bg', 'Warna Latar Pill', \App\Editor\PaletteOptions::colors('mini_bg_colors'), 'bg-aurum-soft', 'bg', $isPill),
                 Field::segmented('data.style.pill_radius', 'Bentuk Pill', ['rounded-md' => 'Bulat Sedikit', 'rounded-full' => 'Lingkaran'], 'rounded-md', $isPill),
                 Field::swatches('data.style.color', 'Warna Teks', \App\Editor\PaletteOptions::colors('text_colors'), 'text-ink-soft', 'text'),
-                Field::segmented('data.style.margin', 'Jarak Bawah', ['mb-0' => '0px', 'mb-2' => 'Kecil', 'mb-4' => 'Sedang'], 'mb-0'),
+                self::elementMargin(true),
             ], defaults: [
                 'content' => '@locales',
                 'style' => [
-                    'is_pill' => false, 'font' => 'font-jakarta', 'weight' => 'font-normal', 'size' => 'text-[15px]', 'text_transform' => 'normal-case',
+                    'is_pill' => false, 'font' => 'font-jakarta', 'weight' => 'font-normal', 'size' => 'text-[15px]', 'text_transform' => 'normal-case', 'effects' => [], 'align' => '',
                     'pill_bg' => 'bg-aurum-soft', 'pill_radius' => 'rounded-md', 'color' => 'text-ink-soft', 'margin' => 'mb-2',
                 ],
             ]),
@@ -269,9 +307,10 @@ final class BlockRegistry
                     'rounded-[14px]' => ['Agak Bulat', 'rounded-md'],
                     'rounded-full' => ['Lingkaran', 'rounded-full'],
                 ]), 'rounded-[14px]', null, ['compact' => true]),
+                self::elementMargin(),
             ], defaults: [
                 'content' => ['icon' => 'box'],
-                'style' => ['bg' => 'bg-aurum-soft', 'color' => 'text-forest', 'size' => 'w-10 h-10 md:w-12 md:h-12', 'radius' => 'rounded-[14px]'],
+                'style' => ['bg' => 'bg-aurum-soft', 'color' => 'text-forest', 'size' => 'w-10 h-10 md:w-12 md:h-12', 'radius' => 'rounded-[14px]', 'margin' => ElementStyle::MARGIN_OTHER],
             ]),
 
             new BlockType('initials', 'Inisial Nama', 'a-large-small', 'element', [
@@ -295,11 +334,12 @@ final class BlockRegistry
                 Field::swatches('data.style.border_color', 'Warna Tepian', array_merge([
                     ['name' => 'Transparan', 'value' => 'border-transparent', 'preview' => 'bg-transparent', 'is_transparent' => true],
                 ], \App\Editor\PaletteOptions::colors('avatar_border_colors')), 'border-transparent', 'preview'),
+                self::elementMargin(),
             ], defaults: [
                 'content' => ['text' => ''],
                 'style' => [
                     'size' => 'w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl', 'radius' => 'rounded-full', 'bg_color' => 'bg-forest',
-                    'text_color' => 'text-white', 'border' => 'border-0', 'border_color' => 'border-transparent',
+                    'text_color' => 'text-white', 'border' => 'border-0', 'border_color' => 'border-transparent', 'margin' => ElementStyle::MARGIN_OTHER,
                 ],
             ]),
 
@@ -322,9 +362,25 @@ final class BlockRegistry
                     \App\Editor\PaletteOptions::colors('card_border_colors'),
                     [['name' => 'Abu-abu', 'value' => 'border-gray-200', 'preview' => 'bg-gray-200', 'hex' => '#E5E7EB', 'group' => 'Dasar']],
                 ), 'border-transparent', 'preview'),
+                self::elementMargin(),
             ], defaults: [
                 'content' => ['url' => '', 'media_id' => null, 'alt' => ''],
-                'style' => ['size' => 'w-16 h-16 md:w-20 md:h-20', 'radius' => 'rounded-full', 'border' => 'border-0', 'border_color' => 'border-transparent'],
+                'style' => ['size' => 'w-16 h-16 md:w-20 md:h-20', 'radius' => 'rounded-full', 'border' => 'border-0', 'border_color' => 'border-transparent', 'margin' => ElementStyle::MARGIN_OTHER],
+            ]),
+
+            // Rilis 69: gambar biasa di dalam kartu (mengikuti ruang dalam kartu). Konten {url, media_id, alt, caption{id,en}, link, link_label}.
+            new BlockType('image', 'Gambar', 'image-plus', 'element', [
+                Field::media('data.content', 'Gambar'),
+                Field::text('data.content.alt', 'Teks Alternatif', ['placeholder' => 'Teks Alternatif (Untuk SEO & Tunanetra)']),
+                Field::i18n('data.content.caption', 'Keterangan Gambar (opsional)'),
+                Field::urlLink('data.content.link', 'Tautan gambar (opsional)'),
+                Field::segmented('data.style.ratio', 'Rasio', ElementStyle::RATIOS, ElementStyle::RATIO_DEFAULT),
+                Field::segmented('data.style.fit', 'Isi Kotak', ElementStyle::FITS, ElementStyle::FIT_DEFAULT, ['data.style.ratio', ['1/1', '4/3', '3/2', '16/9']]),
+                Field::segmented('data.style.radius', 'Sudut', ElementStyle::RADII, ElementStyle::RADIUS_DEFAULT),
+                self::elementMargin(),
+            ], defaults: [
+                'content' => ['url' => '', 'media_id' => null, 'alt' => '', 'caption' => '@locales', 'link' => '', 'link_label' => ''],
+                'style' => ['ratio' => ElementStyle::RATIO_DEFAULT, 'fit' => ElementStyle::FIT_DEFAULT, 'radius' => ElementStyle::RADIUS_DEFAULT, 'margin' => ElementStyle::MARGIN_OTHER],
             ]),
 
             new BlockType('accordion', 'FAQ / Akordion', 'list-chevrons-up-down', 'element', [
@@ -335,9 +391,10 @@ final class BlockRegistry
                     self::dot('coral', 'Coral', 'bg-coral'),
                     self::dot('dark', 'Gelap', 'bg-gray-800'),
                 ], 'foresty'),
+                self::elementMargin(),
             ], defaults: [
                 'content' => ['question' => '@locales', 'answer' => '@locales'],
-                'style' => ['theme' => 'foresty'],
+                'style' => ['theme' => 'foresty', 'margin' => ElementStyle::MARGIN_OTHER],
             ]),
         ];
 
@@ -357,6 +414,17 @@ final class BlockRegistry
         foreach ($all as $key => $def) {
             if ($def->kind === 'block' && $def->type !== 'section-divider' && ! $def->hasField('data.margin_bottom', 'data.grid.margin_bottom')) {
                 $all[$key] = $def->withFields([Field::segmented('data.margin_bottom', 'Jarak Bawah', self::marginBottom(), Spacing::DEFAULT)]);
+            }
+        }
+
+        // Rilis 70: padding samping dan atas-bawah untuk SEMUA blok tingkat atas, dicetak pembungkus di sections.blade.php.
+        // Dikecualikan: pemisah seksi (mengatur padding seksi sendiri) dan kartu (punya padding per kartu di panel kartu).
+        foreach ($all as $key => $def) {
+            if ($def->kind === 'block' && ! in_array($def->type, ['section-divider', 'card-builder'], true) && ! $def->hasField('data.pad_x', 'data.pad_y')) {
+                $all[$key] = $def->withFields([
+                    Field::segmented('data.pad_x', 'Ruang Samping', BoxPadding::options('Tanpa', false), ''),
+                    Field::segmented('data.pad_y', 'Ruang Atas-Bawah', BoxPadding::options('Tanpa', false), ''),
+                ]);
             }
         }
 
