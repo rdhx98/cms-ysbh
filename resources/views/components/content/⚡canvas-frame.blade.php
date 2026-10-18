@@ -94,7 +94,7 @@ new #[Layout('layouts.landing.index')] class extends Component {
     const style = document.createElement('style')
     style.id = 'canvas-focus-style'
     document.head.appendChild(style)
-    const BASE = '[data-block-id]{cursor:pointer}[data-block-id]:hover{outline:1px dashed rgba(6,79,59,.55);outline-offset:-1px}'
+    const BASE = '[data-block-id]{cursor:pointer;scroll-margin-top:12px}[data-block-id]:hover{outline:1px dashed rgba(6,79,59,.55);outline-offset:-1px}'
     let focusedId = null
     const paint = () => {
       style.textContent = inFrame
@@ -105,7 +105,10 @@ new #[Layout('layouts.landing.index')] class extends Component {
 
     const scrollToBlock = (id) => {
       const el = document.querySelector(`[data-block-id="${id}"]`)
-      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      if (! el) return
+      // rilis 76: selalu rata ATAS (sisa 12px lewat scroll-margin-top di gaya sorotan). Blok panjang (Grup Langkah) yang di-center menampilkan
+      // langkah tengahnya, bukan awalnya; rata atas konsisten untuk blok pendek maupun panjang.
+      el.scrollIntoView({ block: 'start', behavior: 'smooth' })
     }
 
     // klik = pilih blok (tautan dan tombol tidak berjalan di dalam kanvas)

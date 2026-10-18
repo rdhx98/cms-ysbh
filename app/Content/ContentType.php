@@ -66,6 +66,22 @@ enum ContentType: string
         return implode('.', [...$prefix, $this->value, $action]);
     }
 
+    /**
+     * Nama rute yang dicoba (berurutan) untuk menaut ke halaman $page ("edit" atau "preview.record") dari halaman dengan nama rute $currentRouteName:
+     * awalan halaman saat ini dipertahankan ("v2.dashboard" -> "v2."), lalu tanpa awalan, lalu "v2." (awalan masa transisi). Pemanggil memakai yang pertama
+     * yang ada (Route::has). Murni supaya bisa diuji.
+     *
+     * @return list<string>
+     */
+    public static function routeCandidates(string $currentRouteName, string $suffix): array
+    {
+        $segments = $currentRouteName === '' ? [] : explode('.', $currentRouteName);
+        array_pop($segments);
+        $prefix = $segments === [] ? '' : implode('.', $segments) . '.';
+
+        return array_values(array_unique([$prefix . $suffix, $suffix, 'v2.' . $suffix]));
+    }
+
     /** Status yang berarti "sudah terbit" (mengisi published_at sekali). */
     public function publishedStatus(): string
     {

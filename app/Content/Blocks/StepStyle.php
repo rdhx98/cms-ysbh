@@ -19,16 +19,24 @@ use App\Content\Palette;
  *   line_color   bg-{slot}               warna garis
  *   line_opacity opacity-30|60|100       kekuatan garis
  *   marker       number (bawaan) | dot     penanda: lingkaran berangka, atau titik kecil dengan label di sisi poros (rilis 74)
- *   axis         side (bawaan) | center  poros di samping, atau di tengah dengan kartu selang-seling (rilis 74; hanya vertikal)
+ *   orientation  vertical (bawaan) | horizontal   (LAMA: horizontal-top / horizontal-bottom, tetap dibaca)
+ *   axis         left (bawaan) | center   poros VERTIKAL: di kiri, atau di tengah dengan kartu selang-seling (LAMA: side = left)
+ *   axis_h       top (bawaan) | bottom | center   poros HORIZONTAL (rilis 77). Bila belum ada: dari orientasi lama (-top / -bottom),
+ *                atau center bila axis lama = center
+ *   reverse      true = urutan dibalik (vertikal: bawah ke atas; horizontal: kanan ke kiri), tanpa mengurutkan ulang blok (rilis 77)
  *   start        right (bawaan) | left   sisi kartu pertama pada poros tengah
  *   dot_size     s | m (bawaan) | l      ukuran titik
  *   label_color  text-{slot}|text-white  warna label pada mode titik
+ *   start_edge   bottom (bawaan) | top   sisi kartu pertama pada poros tengah horizontal (rilis 75)
+ *   fit          fixed (bawaan) | overflow   horizontal: poros memenuhi kontainer, atau selebar isi dan bisa digeser (rilis 75)
+ *   justify      start (bawaan) | center | between   horizontal fixed: sebaran langkah
+ *   step_width   s | m (bawaan) | l          horizontal: lebar tiap langkah (220 / 280 / 340px)
  *   labels       {idAnak: {id, en}}      label per langkah (teks polos); pada mode angka menimpa angka urut bila terisi
  *   node_color   LAMA: "bg-foresty text-white" (dipakai bila node_bg / node_text belum ada)
  *   line_color   LAMA: "bg-foresty/30"   (garis + keburaman dalam satu nilai)
  *
  * Kelas yang harus terbaca pemindai Tailwind (ditulis utuh): rounded-none rounded-full rounded-xl opacity-30 opacity-60 opacity-100
- * bg-white text-white shadow-sm h-3 w-3 mt-1.5 h-4 w-4 mt-1 h-5 w-5 mt-0.5 text-base leading-6 font-bold
+ * bg-white text-white shadow-sm rounded-xs rounded-sm rounded-md h-3 w-3 mt-1.5 h-4 w-4 mt-1 h-5 w-5 mt-0.5 text-base leading-6 font-bold
  */
 final class StepStyle
 {
@@ -39,7 +47,7 @@ final class StepStyle
         'none' => 'Kosong',
         'square' => 'Siku',
         'circle' => 'Lingkaran',
-        'rounded' => 'Rounded',
+        'rounded' => 'Tumpul',
     ];
 
     private const SHAPE_CLASS = [
@@ -56,10 +64,27 @@ final class StepStyle
         'dot' => 'Titik + label',
     ];
 
-    public const AXIS_DEFAULT = 'side';
+    public const ORIENTATION_DEFAULT = 'vertical';
 
+    public const ORIENTATIONS = [
+        'vertical' => 'Vertikal',
+        'horizontal' => 'Horizontal',
+    ];
+
+    public const AXIS_DEFAULT = 'left';
+
+    /** Poros vertikal. */
     public const AXES = [
-        'side' => 'Samping',
+        'left' => 'Kiri',
+        'center' => 'Tengah',
+    ];
+
+    public const AXIS_H_DEFAULT = 'top';
+
+    /** Poros horizontal: garis di atas kartu, di bawah kartu, atau di tengah (kartu selang-seling atas/bawah). */
+    public const AXES_H = [
+        'top' => 'Atas',
+        'bottom' => 'Bawah',
         'center' => 'Tengah',
     ];
 
@@ -69,6 +94,45 @@ final class StepStyle
         'right' => 'Kanan',
         'left' => 'Kiri',
     ];
+
+    public const EDGE_DEFAULT = 'bottom';
+
+    public const EDGES = [
+        'bottom' => 'Bawah',
+        'top' => 'Atas',
+    ];
+
+    public const FIT_DEFAULT = 'fixed';
+
+    public const FITS = [
+        'fixed' => 'Tetap',
+        'overflow' => 'Geser',
+    ];
+
+    public const JUSTIFY_DEFAULT = 'start';
+
+    public const JUSTIFIES = [
+        'start' => 'Kiri',
+        'center' => 'Tengah',
+        'between' => 'Antar',
+    ];
+
+    public const WIDTH_DEFAULT = 'm';
+
+    public const WIDTHS = [
+        's' => 'Sempit',
+        'm' => 'Sedang',
+        'l' => 'Lebar',
+    ];
+
+    /** Lebar langkah (px) per pilihan; dicetak sebagai angka bulat di style (bukan nilai dari browser). */
+    public const WIDTH_PX = ['s' => 220, 'm' => 280, 'l' => 340];
+
+    /** Lebar terkecil langkah pada mode Tetap sebelum poros mulai bisa digeser. */
+    public const WIDTH_MIN = 160;
+
+    /** Jumlah langkah terbanyak pada tata letak horizontal (kelas penempatan kolom ditulis utuh sampai 12). */
+    public const HORIZONTAL_MAX = 12;
 
     public const DOT_DEFAULT = 'm';
 
@@ -84,6 +148,14 @@ final class StepStyle
         'm' => 'h-4 w-4 mt-1',
         'l' => 'h-5 w-5 mt-0.5',
     ];
+
+    private const DOT_PX = ['s' => 12, 'm' => 16, 'l' => 20];
+
+    /**
+     * Sudut bentuk "Tumpul" pada titik. rounded-xl (12px) pada titik 12-20px menjadi lingkaran penuh, jadi sudutnya diperkecil sebanding
+     * dengan ukuran titik (rilis 77, Tailwind v4): kecil rounded-xs 2px, sedang rounded-sm 4px, besar rounded-md 6px.
+     */
+    private const DOT_ROUNDED = ['s' => 'rounded-xs', 'm' => 'rounded-sm', 'l' => 'rounded-md'];
 
     public const LABEL_MAX = 60;
     public const LABEL_COLOR_DEFAULT = 'forest';
@@ -102,8 +174,9 @@ final class StepStyle
     public const LINE_DEFAULT = 'forest';
 
     /**
-     * @return array{shape:string,badge:string,line:string,marker:string,axis:string,start:string,dot:string,label:string}
-     *   badge = kelas lingkaran angka (tanpa ukuran/posisi); line = kelas potongan garis; dot = kelas titik ('' bila bentuk Kosong);
+     * @return array{shape:string,badge:string,line:string,marker:string,axis:string,start:string,dot:string,label:string,edge:string,fit:string,justify:string,width:int,half:int,layout:string,pos:string,reverse:bool}
+     *   layout = vertical | horizontal-top | horizontal-bottom (dipakai renderer); pos = left | top | bottom | center; axis = side | center (turunan pos);
+     *   reverse = urutan langkah dibalik. badge = kelas lingkaran angka (tanpa ukuran/posisi); line = kelas potongan garis; dot = kelas titik ('' bila bentuk Kosong);
      *   label = kelas teks label mode titik
      */
     public static function resolve(array $d): array
@@ -149,15 +222,37 @@ final class StepStyle
 
         // ---- rilis 74: penanda titik + label, poros, sisi awal
         $marker = self::pickKey($d['marker'] ?? null, self::MARKERS, self::MARKER_DEFAULT);
-        $axis = self::pickKey($d['axis'] ?? null, self::AXES, self::AXIS_DEFAULT);
+        // rilis 77: orientasi dua pilihan + poros menurut orientasi. Data lama (horizontal-top / -bottom, axis = side) tetap terbaca sama.
+        $orient = self::str($d['orientation'] ?? null);
+        $horizontal = str_starts_with($orient, 'horizontal');
+        $axisRaw = self::str($d['axis'] ?? null);
+        if ($horizontal) {
+            $legacyPos = $axisRaw === 'center' ? 'center' : (str_ends_with($orient, 'bottom') ? 'bottom' : 'top');
+            $pos = self::pickKey($d['axis_h'] ?? null, self::AXES_H, $legacyPos);
+        } else {
+            $pos = $axisRaw === 'center' ? 'center' : 'left';
+        }
+        $axis = $pos === 'center' ? 'center' : 'side';
+        $layout = !$horizontal ? 'vertical' : ($pos === 'bottom' ? 'horizontal-bottom' : 'horizontal-top');
+        $reverse = ($d['reverse'] ?? false) === true || ($d['reverse'] ?? null) === 1 || ($d['reverse'] ?? null) === '1';
         $start = self::pickKey($d['start_side'] ?? null, self::STARTS, self::START_DEFAULT);
         $dotSize = self::pickKey($d['dot_size'] ?? null, self::DOT_SIZES, self::DOT_DEFAULT);
-        $dot = $shape === 'none' ? '' : $bgClass . ' ' . self::SHAPE_CLASS[$shape] . ' ' . self::DOT_CLASS[$dotSize];
+        $dotRound = $shape === 'rounded' ? self::DOT_ROUNDED[$dotSize] : self::SHAPE_CLASS[$shape];
+        $dot = $shape === 'none' ? '' : $bgClass . ' ' . $dotRound . ' ' . self::DOT_CLASS[$dotSize];
         $labelInk = self::color(self::first($d['label_color'] ?? null), 'text-', true) ?? self::LABEL_COLOR_DEFAULT;
         $label = 'text-base leading-6 font-bold text-' . $labelInk;
 
+        $edge = self::pickKey($d['start_edge'] ?? null, self::EDGES, self::EDGE_DEFAULT);
+        $fit = self::pickKey($d['fit'] ?? null, self::FITS, self::FIT_DEFAULT);
+        $justify = self::pickKey($d['justify'] ?? null, self::JUSTIFIES, self::JUSTIFY_DEFAULT);
+        $width = self::pickKey($d['step_width'] ?? null, self::WIDTHS, self::WIDTH_DEFAULT);
+        // setengah lebar penanda (px): ke mana garis poros horizontal dimulai/berakhir (tengah penanda pertama/terakhir)
+        $half = $marker === 'dot' ? ($shape === 'none' ? 0 : (int) (self::DOT_PX[$dotSize] / 2)) : 20;
+
         return ['shape' => $shape, 'badge' => $badge, 'line' => 'bg-' . $line . ' ' . $opacity,
-            'marker' => $marker, 'axis' => $axis, 'start' => $start, 'dot' => $dot, 'label' => $label];
+            'marker' => $marker, 'axis' => $axis, 'start' => $start, 'dot' => $dot, 'label' => $label,
+            'edge' => $edge, 'fit' => $fit, 'justify' => $justify, 'width' => self::WIDTH_PX[$width], 'half' => $half,
+            'layout' => $layout, 'pos' => $pos, 'reverse' => $reverse];
     }
 
     /**

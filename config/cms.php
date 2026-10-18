@@ -249,6 +249,11 @@ return [
             ["label" => "capitalize", "value" => "capitalize"],
             ["label" => "normal", "value" => "normal-case"],
         ],
+        'site_background' => [
+          ['label'=>'Pure White','value' => '#FFFFFF'],
+          ['label'=>'Paper','value' => '#FBF7EA'],
+          ['label'=>'Dim Paper','value' => '#F3ECD6'],
+        ],
     ],
     "lucidebak" => [
         "activity",
@@ -379,5 +384,5 @@ return [
     'home'    => ['en' => '/',                'id' => '/id'],
     'articles'=> ['en' => '/articles',        'id' => '/id/artikel'],
     'cover'   => '/storage/posts/{file}',   // nama berkas sampul artikel -> alamat gambar (blok Artikel Terbaru)
-],
+  ],
 ];

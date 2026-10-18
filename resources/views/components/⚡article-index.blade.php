@@ -1,26 +1,41 @@
 <?php
 
-use Livewire\Component;
-use App\Models\Post;
-use App\Models\Category;
-use App\Models\Tag;
-
+use App\Content\Languages;
 use App\Livewire\Traits\WithNotifications;
-
+use App\Models\Category;
+use App\Models\Post;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
+use Livewire\Component;
+use Livewire\WithPagination;
 
 new class extends Component {
   use WithNotifications;
+  use WithPagination;
 
-  public string $orderDirection;
-  public string $orderColumn;
+  private const PER_PAGE = 20;
+  private const SORTABLE = ["title", "created_at", "category", "status"];
+  private const DELETABLE = ["draft", "rejected"];
 
-  public function mount()
-  {
-    $this->orderDirection = "desc";
-    $this->orderColumn = "created_at";
-  }
+  // Hanya diubah oleh sortBy() di server; klien tidak bisa mengisinya langsung.
+  #[Locked]
+  public string $orderColumn = "created_at";
+
+  #[Locked]
+  public string $orderDirection = "desc";
+
+  #[Url]
+  public string $titleSearch = "";
+
+  #[Url]
+  public string $selectCategory = "";
+
+  #[Url]
+  public string $selectStatus = "";
+
   #[Computed]
   public function statusList()
   {
@@ -29,98 +44,128 @@ new class extends Component {
       (object) ["id" => "review", "name" => "Review", "icon" => "file-clock"],
       (object) ["id" => "published", "name" => "Published", "icon" => "globe"],
       (object) [
+        "id" => "scheduled",
+        "name" => "Terjadwal",
+        "icon" => "calendar-clock",
+      ],
+      (object) [
         "id" => "archived",
         "name" => "Diarsipkan",
         "icon" => "folder-archive",
       ],
       (object) ["id" => "rejected", "name" => "Ditolak", "icon" => "file-x"],
-    ]);
+    ])->keyBy("id");
   }
-  // #[Computed]
-  // public function tagList()
-  // {
-  //   return \App\Models\Tag::all();
-  // }
-  // #[Computed]
-  // public function categoryList()
-  // {
-  //   return \App\Models\Category::all();
-  // }
-  //
-  #[Url]
-  public $titleSearch = "";
 
-  #[Url]
-  public $selectCategory = "";
+  #[Computed]
+  public function categoryList()
+  {
+    return Category::orderBy("id")->get();
+  }
 
-  #[Url]
-  public $selectStatus = "";
+  #[Computed]
+  public function isStaff(): bool
+  {
+    return (bool) auth()
+      ->user()
+      ?->hasAnyRole(["admin", "editor"]);
+  }
+
+  #[Computed]
+  public function deletableStatuses(): array
+  {
+    return self::DELETABLE;
+  }
+
+  // Kembali ke halaman 1 setiap kali saringan berubah.
+  public function updated(string $name): void
+  {
+    if (
+      in_array($name, ["titleSearch", "selectCategory", "selectStatus"], true)
+    ) {
+      $this->resetPage();
+    }
+  }
 
   #[Computed]
   public function articles()
   {
-    // Mulai dari query builder kosong
-    $query = Post::query();
+    // Hanya kolom yang dipakai tabel (kolom content yang besar tidak ikut); relasi dimuat sekali (tanpa N+1).
+    $query = Post::query()
+      ->select([
+        "posts.id",
+        "posts.title",
+        "posts.status",
+        "posts.category_id",
+        "posts.user_id",
+        "posts.created_at",
+      ])
+      ->with(["author:id,name", "category"]);
 
-    // 1. Filter Pencarian Judul
-    if ($this->titleSearch) {
-      $query->where("title", "like", "%" . $this->titleSearch . "%");
+    // 1. Pencarian judul: judul berupa JSON per bahasa, jadi dicari di setiap bahasa.
+    $term = trim($this->titleSearch);
+    if ($term !== "") {
+      $like = "%" . addcslashes($term, "%_\\") . "%";
+      $query->where(function ($w) use ($like) {
+        foreach (Languages::fromConfig()["locales"] as $code) {
+          $w->orWhere("posts.title->" . $code, "like", $like);
+        }
+      });
     }
 
-    // 2. Filter Kategori
-    if ($this->selectCategory) {
-      $query->where("category_id", $this->selectCategory);
+    // 2. Kategori   3. Status
+    if ($this->selectCategory !== "") {
+      $query->where("posts.category_id", $this->selectCategory);
+    }
+    if ($this->selectStatus !== "") {
+      $query->where("posts.status", $this->selectStatus);
     }
 
-    // 3. Filter Status
-    if ($this->selectStatus) {
-      $query->where("status", $this->selectStatus);
-    }
-
-    // 4. Logika Sorting Dinamis
+    // 4. Urutan. leftJoin supaya artikel tanpa kategori tidak hilang; judul/nama diurutkan menurut bahasa aktif.
+    $direction = $this->orderDirection === "asc" ? "asc" : "desc";
+    $locale = app()->getLocale();
     if ($this->orderColumn === "category") {
-      // Join tabel categories agar bisa diurutkan berdasarkan namanya
       $query
-        ->join("categories", "posts.category_id", "=", "categories.id")
-        ->select("posts.*") // Cegah tabrakan kolom id jika ada
-        ->orderBy("categories.name", $this->orderDirection);
+        ->leftJoin("categories", "posts.category_id", "=", "categories.id")
+        ->orderBy("categories.name->" . $locale, $direction);
+    } elseif ($this->orderColumn === "title") {
+      $query->orderBy("posts.title->" . $locale, $direction);
     } else {
-      // Untuk kolom di tabel posts (title, status, created_at)
-      $query->orderBy("posts." . $this->orderColumn, $this->orderDirection);
+      $query->orderBy("posts." . $this->orderColumn, $direction);
     }
 
-    // Eksekusi query
-    return $query->get();
+    // id sebagai pemutus seri supaya isi halaman tidak bergeser antar permintaan.
+    return $query->orderByDesc("posts.id")->paginate(self::PER_PAGE);
   }
-  public function sortBy($column)
+
+  public function sortBy(string $column): void
   {
-    // Jika kolom yang diklik sama dengan yang aktif, balikkan arahnya
+    if (!in_array($column, self::SORTABLE, true)) {
+      return;
+    }
+
     if ($this->orderColumn === $column) {
       $this->orderDirection = $this->orderDirection === "asc" ? "desc" : "asc";
     } else {
-      // Jika kolom berbeda, set kolom baru dan mulai dari 'asc'
       $this->orderColumn = $column;
       $this->orderDirection = "asc";
     }
+    $this->resetPage();
   }
-  public function deleteArticle($articleId)
-  {
-    $article = \App\Models\Post::find($articleId);
-    $user = auth()->user();
 
-    // ==========================================
-    // 1. GUARD: Cek Eksistensi
-    // ==========================================
-    if (!$article) {
+  public function deleteArticle(int $articleId): void
+  {
+    $user = auth()->user();
+    $article = Post::find($articleId);
+
+    // 1. GUARD: eksistensi
+    if (!$user || !$article) {
       $this->notify("Artikel tidak ditemukan.", "error");
       return;
     }
 
-    // ==========================================
-    // 2. GUARD: Cek Status (Hanya draft & rejected)
-    // ==========================================
-    $allowedStatuses = ["draft", "rejected"];
-    if (!in_array($article->status, $allowedStatuses)) {
+    // 2. GUARD: hanya draft & rejected
+    if (!in_array($article->status, self::DELETABLE, true)) {
       $this->notify(
         "Artikel berstatus '{$article->status}' tidak boleh dihapus.",
         "error",
@@ -128,13 +173,9 @@ new class extends Component {
       return;
     }
 
-    // ==========================================
-    // 3. GUARD: Cek Otorisasi (Peran & Kepemilikan)
-    // ==========================================
-    $isAdminOrEditor = $user->hasRole(["admin", "editor"]); // array dibolehkan di Spatie
-    $isOwner = $article->user_id === $user->id;
-
-    if (!$isAdminOrEditor && !$isOwner) {
+    // 3. GUARD: admin/editor, atau pemilik artikel
+    $isOwner = (int) $article->user_id === (int) $user->id;
+    if (!$this->isStaff && !$isOwner) {
       $this->notify(
         "Anda tidak memiliki otorisasi untuk menghapus artikel ini.",
         "error",
@@ -142,114 +183,38 @@ new class extends Component {
       return;
     }
 
-    // 1. hapus cover
+    $cover = $article->featured_image;
+
+    // 4. Catat log lalu hapus dalam satu transaksi: bila salah satu gagal, tidak ada yang berubah.
+    DB::transaction(function () use ($article, $user) {
+      activity("article_updates")
+        ->performedOn($article)
+        ->causedBy($user)
+        ->withProperties([
+          "title" => $article->title,
+          "status_saat_dihapus" => $article->status,
+        ])
+        ->log("Artikel dihapus permanen");
+
+      $article->delete();
+    });
+
+    // 5. Berkas sampul dihapus SESUDAH baris terhapus, dan hanya bila tidak dipakai artikel lain.
+    //    Gambar di dalam isi tidak lagi dihapus di sini: isi berupa blok JSON, dan gambarnya milik pustaka media.
     if (
-      $article->featured_image &&
-      $article->featured_image !== "default.webp"
+      $cover &&
+      $cover !== "default.webp" &&
+      !Post::where("featured_image", $cover)->exists()
     ) {
-      $coverPath = "articles/" . $article->featured_image;
-      if (Storage::disk("public")->exists($coverPath)) {
-        Storage::disk("public")->delete($coverPath);
+      try {
+        Storage::disk("public")->delete("articles/" . $cover);
+      } catch (\Throwable) {
+        // berkas yatim tidak boleh menggagalkan penghapusan artikel
       }
     }
-    // 2. Hapus Semua Gambar di Dalam Konten Editor
-    if ($article->content) {
-      // Ekstrak semua URL gambar dari HTML
-      preg_match_all('/<img[^>]+src="([^">]+)"/', $article->content, $matches);
-      $contentImages = $matches[1] ?? [];
-
-      foreach ($contentImages as $imageUrl) {
-        // Pastikan kita hanya menghapus gambar lokal (bukan URL dari web luar)
-        if (str_contains($imageUrl, "storage/articles/")) {
-          $filename = basename($imageUrl);
-          $storagePath = "articles/" . $filename;
-
-          if (Storage::disk("public")->exists($storagePath)) {
-            Storage::disk("public")->delete($storagePath);
-          }
-        }
-      }
-    }
-
-    // ==========================================
-    // 4. EKSEKUSI: Log Aktivitas & Penghapusan
-    // ==========================================
-
-    // Kita catat log-nya SEBELUM di-delete, agar data judulnya masih bisa dibaca
-    activity("article_updates")
-      ->performedOn($article)
-      ->causedBy($user)
-      ->withProperties([
-        "title" => $article->title,
-        "status_saat_dihapus" => $article->status,
-      ])
-      ->log("Artikel dihapus permanen");
-
-    // Hapus artikel dari database
-    $article->delete();
 
     $this->notify("Artikel berhasil dihapus.", "success");
   }
-  // public function deleteCategory($categoryId)
-  // {
-  //   $category = \App\Models\Category::find($categoryId);
-  //   if ($category) {
-  //     $category->delete();
-  //     $this->notify("Kategori dihapus.", "success");
-  //   } else {
-  //     $this->notify("Kategori tidak ditemukan.", "error");
-  //   }
-  // }
-  // public function deleteTag($tagId)
-  // {
-  //   $tag = \App\Models\Tag::find($tagId);
-  //   if ($tag) {
-  //     $tag->delete();
-  //     $this->notify("Tag dihapus.", "success");
-  //   } else {
-  //     $this->notify("Tag tidak ditemukan.", "error");
-  //   }
-  // }
-  // public function createCategory($name)
-  // {
-  //   if (empty(trim($name))) {
-  //     $this->notify("Kategori tidak boleh kosong.", "error");
-  //     return;
-  //   }
-
-  //   // Cek apakah sudah ada (opsional)
-  //   if (Category::where("name", $name)->exists()) {
-  //     $this->notify("Kategori sudah ada.", "error");
-  //     return;
-  //   }
-
-  //   Category::create([
-  //     "name" => $name,
-  //     "slug" => Str::slug($name),
-  //   ]);
-
-  //   $this->notify("Kategori berhasil ditambahkan.", "success");
-  // }
-  // public function createTag($name)
-  // {
-  //   if (empty(trim($name))) {
-  //     $this->notify("Tag tidak boleh kosong.", "error");
-  //     return;
-  //   }
-
-  //   // Cek apakah sudah ada (opsional)
-  //   if (Tag::where("name", $name)->exists()) {
-  //     $this->notify("Tag sudah ada.", "error");
-  //     return;
-  //   }
-
-  //   Tag::create([
-  //     "name" => $name,
-  //     "slug" => Str::slug($name),
-  //   ]);
-
-  //   $this->notify("Kategori berhasil ditambahkan.", "success");
-  // }
 };
 ?>
 
@@ -261,16 +226,18 @@ new class extends Component {
   }}
 </x-slot:title>
 
-<x-main-wrapper>
+{{-- <x-main-wrapper> --}}
+<div
+  class="mt-4 flex h-full max-h-screen min-h-0 w-full min-w-0 flex-col items-center justify-start gap-6 overflow-x-hidden overflow-y-auto"
+>
   <div
     x-data="{
       activeSubPanel: 'none',
       showDeleteModal: false,
-      deleteType: '',
       deleteId: null,
       {{-- newItemName: '', --}}
     }"
-    class="flex w-full flex-col items-start gap-4 lg:flex-row"
+    class="flex w-full max-w-7xl flex-col items-start gap-4 rounded-xl bg-white p-4 lg:flex-row"
   >
     <!-- MAIN UX (KONTAINER UTAMA) -->
     <div
@@ -432,9 +399,16 @@ new class extends Component {
                 )
               }}
             </option>
-            {{-- @foreach($this->categoryList as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach --}}
+            @foreach ($this->categoryList as $category)
+              <option value="{{ $category->id }}">
+                {{
+                  is_array($category->name)
+                    ? $category->name[app()->getLocale()] ??
+                      ($category->name["id"] ?? current($category->name))
+                    : $category->name
+                }}
+              </option>
+            @endforeach
           </select>
         </div>
 
@@ -447,20 +421,12 @@ new class extends Component {
             <option value="">
               {{
                 __(
-                  "ui.articles.all_tags",
+                  "ui.articles.all_status",
                 )
               }}
             </option>
             @foreach ($this->statusList as $status)
-              <option value="{{ $status->id }}">
-                <x-dynamic-component
-                  :component="'lucide-globe'"
-                  class="h-4 w-4 md:h-5 md:w-5"
-                  stroke-width="2"
-                />
-                {{-- <x-dynamic-component :component="'lucide-'. $status->icon " class="h-4 w-4 md:h-5 md:w-5" stroke-width="2" /> --}}
-                {{ $status->name }}
-              </option>
+              <option value="{{ $status->id }}">{{ $status->name }}</option>
             @endforeach
           </select>
         </div>
@@ -469,9 +435,9 @@ new class extends Component {
       {{-- REVISI: Penambahan komputasi max-height responsif agar di mobile tidak meluber ke bawah --}}
       <!-- TABEL UTAMA -->
       <div
-        class="max-h-[calc(100vh-450px)] w-full max-w-screen overflow-x-auto overflow-y-auto rounded-xl border border-zinc-200 shadow-sm lg:max-h-[calc(100vh-280px)] dark:border-zinc-700"
+        class="max-h-[calc(100vh-6rem)] w-full overflow-x-auto overflow-y-auto rounded-xl border border-zinc-200 shadow-sm lg:max-h-[calc(100vh-280px)] dark:border-zinc-700"
       >
-        <table class="w-full min-w-max table-fixed border-collapse text-left">
+        <table class="w-full min-w-3xl table-fixed border-collapse text-left">
           <thead
             class="bg-misty text-foresty text-xs dark:bg-green-950 dark:text-green-300"
           >
@@ -584,149 +550,129 @@ new class extends Component {
             class="divide-y divide-zinc-200 bg-white text-zinc-700 dark:divide-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
           >
             @forelse ($this->articles as $article)
-              @foreach (range(1, 1) as $i)
-                <tr
-                  class="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
-                >
-                  <td class="px-4 py-3.5 text-sm">
+              @php
+                $locale = app()->getLocale();
+                $rawTitle = $article->title;
+                $title = is_array($rawTitle)
+                  ? $rawTitle[$locale] ??
+                    ($rawTitle["id"] ?? (current($rawTitle) ?: "Tanpa Judul"))
+                  : ($rawTitle ?:
+                  "Tanpa Judul");
+                $rawCategory = $article->category?->name;
+                $categoryName = is_array($rawCategory)
+                  ? $rawCategory[$locale] ??
+                    ($rawCategory["id"] ?? (current($rawCategory) ?: "-"))
+                  : ($rawCategory ?:
+                  "-");
+                $canDelete =
+                  in_array($article->status, $this->deletableStatuses, true) &&
+                  ($this->isStaff || (int) $article->user_id === (int) auth()->id());
+              @endphp
+              <tr
+                wire:key="article-{{ $article->id }}"
+                class="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+              >
+                <td class="px-4 py-3.5 text-sm">
+                  <div
+                    class="truncate font-medium text-zinc-900 dark:text-white"
+                    title="{{ $title }}"
+                  >
+                    {{ $title }}
+                  </div>
+
+                  <div class="text-xs text-zinc-500 dark:text-zinc-400">
+                    {{
+                      $article->author?->name ??
+                        "-"
+                    }}
+                  </div>
+                </td>
+                <td class="h-full px-4 py-0 align-middle text-sm">
+                  <div
+                    class="flex h-full min-h-[3.5rem] items-center justify-center gap-2"
+                  >
                     <div
-                      class="group relative inline-block w-full font-medium text-zinc-900 dark:text-white"
+                      class="bg-sage-soft text-foresty rounded px-2 py-0.5 text-xs font-medium dark:bg-slate-800 dark:text-slate-300"
                     >
-                      <!-- 2. Teks utama yang di-truncate -->
-                      <div class="truncate">
-                        {{
-                          is_array($article->title)
-                            ? $article->title[app()->getLocale()] ??
-                              ($article->title["id"] ?? (current($article->title) ?? "Tanpa Judul"))
-                            : $article->title
-                        }}
-                      </div>
-
-                      <!-- 3. Elemen Tooltip (Disembunyikan secara default, muncul saat group di-hover) -->
-                      <div
-                        class="bg-mist border-forest text-forest pointer-events-none absolute top-full right-0 z-50 mb-2 w-max max-w-xs rounded border px-3 py-1.5 text-xs break-words whitespace-normal opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100"
-                      >
-                        {{
-                          is_array($article->title)
-                            ? $article->title[app()->getLocale()] ??
-                              ($article->title["id"] ?? (current($article->title) ?? "Tanpa Judul"))
-                            : $article->title
-                        }} <!-- Segitiga Kecil di Bawah Tooltip -->
-                        <div
-                          class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div class="text-xs text-zinc-500 dark:text-zinc-400">
                       {{
-                        $article->author
-                          ->name
+                        $article->created_at->format(
+                          "D, d/m/y",
+                        )
                       }}
                     </div>
-                  </td>
-                  <td class="h-full px-4 py-0 align-middle text-sm">
                     <div
-                      class="flex h-full min-h-[3.5rem] items-center justify-center gap-2"
+                      class="bg-sage-soft text-foresty rounded px-2 py-0.5 text-xs font-medium dark:bg-slate-800 dark:text-slate-300"
                     >
-                      <div
-                        class="bg-sage-soft text-foresty rounded px-2 py-0.5 text-xs font-medium dark:bg-slate-800 dark:text-slate-300"
-                      >
-                        {{
-                          $article->created_at->format(
-                            "D, d/m/y",
-                          )
-                        }}
-                      </div>
-                      <div
-                        class="bg-sage-soft text-foresty rounded px-2 py-0.5 text-xs font-medium dark:bg-slate-800 dark:text-slate-300"
-                      >
-                        {{
-                          $article->created_at->format(
-                            "H:i",
-                          )
-                        }}
-                      </div>
+                      {{
+                        $article->created_at->format(
+                          "H:i",
+                        )
+                      }}
                     </div>
-                  </td>
-                  {{-- <td class="px-4 py-3.5 text-sm flex gap-2 items-center justify-center shrink-0">
+                  </div>
+                </td>
+                {{-- <td class="px-4 py-3.5 text-sm flex gap-2 items-center justify-center shrink-0">
                                         <div class="font-medium text-zinc-900 dark:text-white">{{ $article->created_at->format('D, d/m/y') }} </div>
                                         <div class="font-medium text-zinc-900 dark:text-white">{{ $article->created_at->format('h:m') }} </div>
                                         <!-- {/{ \Carbon\Carbon::parse($article->created_at)->format('d/m/y') }} -->
                                     </td> --}}
-                  <td class="px-4 py-3.5 text-sm">
-                    {{-- {{
-                      $article->category
-                        ->name
-                    }} --}}
+                <td class="px-4 py-3.5 text-sm">{{ $categoryName }}</td>
+                <td class="px-4 py-3.5 text-sm">
+                  <span
+                    class="px-2 py-1 text-xs font-medium rounded-full border-2 {{ $article->status_color }}"
+                  >
                     {{
-                      is_array($article->category->name)
-                        ? $article->category->name[app()->getLocale()] ??
-                          ($article->category->name["id"] ?? current($article->category->name))
-                        : $article->category->name ?? "-"
+                      $this->statusList[$article->status]
+                        ->name ?? ucfirst($article->status)
                     }}
-                  </td>
-                  </td>
-                  <td class="px-4 py-3.5 text-sm">
-                    <span
-                      class="px-2 py-1 text-xs font-medium rounded-full border-2 {{ $article->status_color }}"
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 text-sm">
+                  {{-- BUTTONS CONTAINER --}}
+                  <div class="flex items-center justify-center gap-2">
+                    <a
+                      wire:navigate
+                      {{-- href="{{ route('article.edit', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" --}}
+                      href="{{ route('article.edit',  $article->id) }}"
+                      class="group bg-forest/90 dark:bg-forest/80 hover:bg-forest/70 relative flex cursor-pointer items-center justify-center rounded-md p-1.5 text-white transition-colors"
                     >
-                      {{
-                        ucfirst(
-                          $article->status,
-                        )
-                      }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3.5 text-sm">
-                    {{-- BUTTONS CONTAINER --}}
-                    <div class="flex items-center justify-center gap-2">
-                      <a
-                        wire:navigate
-                        {{-- href="{{ route('article.edit', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" --}}
-                        href="{{ route('article.edit',  $article->id) }}"
-                        class="group bg-forest/90 dark:bg-forest/80 hover:bg-forest/70 relative flex cursor-pointer items-center justify-center rounded-md p-1.5 text-white transition-colors"
+                      <flux:icon
+                        variant="solid"
+                        icon="pencil"
+                        class="size-3.5!"
+                      />
+                      <span
+                        class="pointer-events-none absolute bottom-full left-0 z-30 mb-2 w-max rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900"
                       >
-                        <flux:icon
-                          variant="solid"
-                          icon="pencil"
-                          class="size-3.5!"
-                        />
-                        <span
-                          class="pointer-events-none absolute bottom-full left-0 z-30 mb-2 w-max rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900"
-                        >
-                          Sunting
+                        Sunting
 
-                          <svg class="absolute top-full left-2 h-2 w-4 text-gray-900 dark:text-gray-100" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
-                            <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
-                          </svg>
-                        </span>
-                      </a>
+                        <svg class="absolute top-full left-2 h-2 w-4 text-gray-900 dark:text-gray-100" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
+                          <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
+                        </svg>
+                      </span>
+                    </a>
 
-                      <a
-                        wire:navigate
-                        href="{{
+                    <a
+                      wire:navigate
+                      href="{{
                           route('preview.record', ['type' => 'article', 'id'=> $article->id]) }}"
-                        {{-- href="{{ route('article.preview', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" --}}
-                        class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
+                      {{-- href="{{ route('article.preview', ['category' => $article->category->slug ?? 'uncategorized', 'post'=> $article->slug]) }}" --}}
+                      class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
+                    >
+                      <flux:icon variant="solid" icon="eye" class="size-3.5!" />
+                      <span
+                        class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-max -translate-x-1/2 rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900"
                       >
-                        <flux:icon
-                          variant="solid"
-                          icon="eye"
-                          class="size-3.5!"
-                        />
-                        <span
-                          class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-max -translate-x-1/2 rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900"
-                        >
-                          Pratinjau
-                          <svg class="absolute top-full left-0 h-2 w-full text-gray-900 dark:text-gray-100" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
-                            <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
-                          </svg>
-                        </span>
-                      </a>
+                        Pratinjau
+                        <svg class="absolute top-full left-0 h-2 w-full text-gray-900 dark:text-gray-100" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
+                          <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
+                        </svg>
+                      </span>
+                    </a>
 
+                    @if ($canDelete)
                       <button
-                        @click="deleteType = 'article'; deleteId = {{ $article->id }}; showDeleteModal = true"
+                        @click="deleteId = {{ $article->id }}; showDeleteModal = true"
                         type="button"
                         class="group relative flex cursor-pointer items-center justify-center rounded-md bg-red-600 p-1.5 text-white transition-colors hover:bg-red-700 dark:bg-red-800"
                       >
@@ -746,10 +692,10 @@ new class extends Component {
                           </svg>
                         </span>
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              @endforeach
+                    @endif
+                  </div>
+                </td>
+              </tr>
             @empty
               {{-- INI AKAN MUNCUL JIKA TIDAK ADA DATA ARTIKEL --}}
               <tr>
@@ -771,219 +717,11 @@ new class extends Component {
           </tbody>
         </table>
       </div>
+
+      <div class="mt-4 px-2">{{ $this->articles->links() }}</div>
     </div>
 
     <!-- SECONDARY UX (KONTAINER KEDUA - PANEL/POPUP) -->
-    {{-- <div x-show="activeSubPanel !== 'none'" class="contents">
-      <!-- 1. BACKDROP HITAM MOBILE -->
-      <div
-        x-show="activeSubPanel !== 'none'"
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        @click="activeSubPanel = 'none'"
-        class="fixed inset-0 z-40 bg-black/40 lg:hidden"
-      ></div>
-
-      <!-- 2. BADAN PANEL KEDUA -->
-      <div
-        x-show="activeSubPanel !== 'none'"
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="translate-y-full lg:translate-y-0 lg:translate-x-4 opacity-0 lg:opacity-100"
-        x-transition:enter-end="translate-y-0 lg:translate-x-0 opacity-100"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="translate-y-0 lg:translate-x-0 opacity-100"
-        x-transition:leave-end="translate-y-full lg:translate-y-0 lg:translate-x-4 opacity-0 lg:opacity-100"
-        class="lg:bg-sbh-yellow/10 fixed right-0 bottom-0 left-0 z-50 max-h-[80vh] space-y-4 overflow-y-auto rounded-t-3xl border border-zinc-200 bg-white p-5 shadow-xl lg:relative lg:right-auto lg:bottom-auto lg:left-auto lg:z-10 lg:max-h-none lg:w-1/3 lg:rounded-2xl lg:shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
-      >
-        <div
-          class="mx-auto mb-2 h-1 w-12 rounded-full bg-zinc-300 lg:hidden dark:bg-zinc-700"
-        ></div>
-
-        <!-- Header Kontainer Kedua -->
-        <div
-          class="flex items-center justify-between border-b border-zinc-200 pb-2 dark:border-zinc-800"
-        >
-          <div class="text-sbh-green flex items-center gap-2">
-            {{-- REVISI: Mengubah dari :icon menjadi x-bind:icon --}
-            <flux:icon.folder
-              x-show="activeSubPanel === 'categories'"
-              variant="solid"
-              class="size-4"
-            />
-            <flux:icon.tag
-              x-show="activeSubPanel === 'tags'"
-              variant="solid"
-              class="size-4"
-            />
-            <h3
-              class="text-md font-bold text-zinc-900 dark:text-white"
-              x-text="
-                activeSubPanel === 'categories'
-                  ? 'Kelola Kategori'
-                  : 'Kelola Tag'
-              "
-            ></h3>
-          </div>
-          <button
-            @click="activeSubPanel = 'none'"
-            class="cursor-pointer rounded-lg p-2 text-red-500 transition-colors hover:bg-red-600 hover:text-white dark:hover:text-zinc-200"
-          >
-            <flux:icon variant="outline" icon="x-mark" class="size-6" />
-          </button>
-        </div>
-
-        <!-- KONTEN DINAMIS -->
-        <div class="space-y-4">
-          <div class="space-y-1.5">
-            <label
-              class="text-xs font-semibold text-zinc-500"
-              x-text="
-                activeSubPanel === 'categories'
-                  ? 'Nama Kategori Baru'
-                  : 'Nama Tag Baru'
-              "
-            ></label>
-            <div class="flex gap-2">
-              <input
-                type="text"
-                x-model="newItemName"
-                @keyup.enter="
-                  if (newItemName.trim() !== '') {
-                    activeSubPanel === 'categories'
-                      ? $wire.createCategory(newItemName)
-                      : $wire.createTag(newItemName);
-                    newItemName = ''; // Kosongkan input setelah submit
-                  }
-                "
-                x-bind:placeholder="
-                  activeSubPanel === 'categories'
-                    ? 'Misal: Berita Internal'
-                    : 'Misal: #stunting'
-                "
-                class="focus:ring-sbh-green flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700 focus:ring-1 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-              />
-              <!-- CREATE BUTTON -->
-              <button
-                x-data="{
-                  isAnimating: false,
-                  playAnim() {
-                    this.isAnimating = false;
-                    this.$nextTick(() => {
-                      this.isAnimating = true;
-                      setTimeout(() => (this.isAnimating = false), 500);
-                    });
-                  },
-                }"
-                x-on:click="
-                  playAnim();
-                  if (newItemName.trim() !== '') {
-                    activeSubPanel === 'categories'
-                      ? $wire.createCategory(newItemName)
-                      : $wire.createTag(newItemName);
-                    newItemName = ''; // Kosongkan input setelah submit
-                  }
-                "
-                x-on:mouseenter="playAnim()"
-                class="bg-forest flex cursor-pointer items-center gap-1 rounded-lg p-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
-              >
-                <x-dynamic-component
-                  :component="'lucide-save'"
-                  class="origin-bottom-center group-hover:animate-save h-5 w-5"
-                  stroke-width="2"
-                  x-bind:class="isAnimating ? 'animate-save' : ''"
-                />
-              </button>
-            </div>
-          </div>
-          <div
-            class="max-h-75 divide-y divide-zinc-200 overflow-y-auto rounded-xl border border-zinc-200 bg-zinc-50 p-2 lg:max-h-62.5 dark:divide-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/50"
-          >
-            <template x-if="activeSubPanel === 'categories'">
-              <div class="space-y-1">
-                {{-- @foreach ($this->categoryList as $i)
-                  <div
-                    class="hover:bg-forest flex items-center justify-between rounded-lg px-2 py-2.5 text-sm transition-colors hover:text-white"
-                  >
-                    <span class="font-medium">{{ $i->name }}</span>
-                    <!-- <button
-                                            x-on:click="deleteType = 'category'; deleteId = {{ $i->id }}; showDeleteModal = true"
-                                            class="text-white bg-red-500 p-2 rounded-md cursor-pointer">
-                                            <flux:icon variant="outline" icon="trash" class="size-4" />
-                                        </button> -->
-                    <button
-                      x-data="{
-                        isAnimating: false,
-                        playAnim() {
-                          this.isAnimating = false;
-                          this.$nextTick(() => {
-                            this.isAnimating = true;
-                            setTimeout(() => (this.isAnimating = false), 500);
-                          });
-                        },
-                      }"
-                      x-on:click=" playAnim(); deleteType = 'category'; deleteId = {{ $i->id }}; showDeleteModal = true "
-                      x-on:mouseenter="playAnim()"
-                      class="cursor-pointer rounded-md bg-red-500 p-2 text-white"
-                    >
-                      <x-dynamic-component
-                        :component="'lucide-trash-2'"
-                        class="group-hover:animate-trash h-5 w-5 origin-center"
-                        stroke-width="2"
-                        x-bind:class="isAnimating ? 'animate-trash' : ''"
-                      />
-                    </button>
-                  </div>
-                @endforeach --}
-              </div>
-            </template>
-
-            <template x-if="activeSubPanel === 'tags'">
-              <div class="space-y-1">
-                {{--
-                @foreach ($this->tagList as $i)
-                 <div
-                    class="hover:bg-forest flex items-center justify-between rounded-lg px-2 py-2.5 text-sm transition-colors hover:text-white"
-                  >
-                    <span class="font-medium">{{ $i->name }}</span>
-                    <!-- <button
-                                            @click="deleteType = 'tag'; deleteId = {{ $i->id }}; showDeleteModal = true"
-                                            class="text-white bg-red-500 p-2 rounded-md cursor-pointer">
-                                            <flux:icon variant="outline" icon="trash" class="size-4" />
-                                        </button> -->
-                    <button
-                      x-data="{
-                        isAnimating: false,
-                        playAnim() {
-                          this.isAnimating = false;
-                          this.$nextTick(() => {
-                            this.isAnimating = true;
-                            setTimeout(() => (this.isAnimating = false), 500);
-                          });
-                        },
-                      }"
-                      x-on:click=" playAnim(); deleteType = 'tag'; deleteId = {{ $i->id }}; showDeleteModal = true "
-                      x-on:mouseenter="playAnim()"
-                      class="cursor-pointer rounded-md bg-red-500 p-2 text-white"
-                    >
-                      <x-dynamic-component
-                        :component="'lucide-trash-2'"
-                        class="group-hover:animate-trash h-5 w-5 origin-center"
-                        stroke-width="2"
-                        x-bind:class="isAnimating ? 'animate-trash' : ''"
-                      />
-                    </button>
-                  </div>
-                @endforeach --}
-              </div>
-            </template>
-          </div>
-        </div>
-      </div>
-    </div> --}}
     <div x-show="activeSubPanel !== 'none'" x-cloak class="contents">
       <!-- latar gelap (ponsel) -->
       <div
@@ -1115,12 +853,8 @@ new class extends Component {
                 type="button"
                 class="bg-sage-soft text-forest inline-flex w-full cursor-pointer justify-center rounded-xl px-3 py-2 text-sm font-semibold shadow-sm transition-colors hover:bg-red-600 hover:text-white sm:w-auto"
                 @click="
-                  ({
-                    article: () => $wire.deleteArticle(deleteId),
-                    category: () => $wire.deleteCategory(deleteId),
-                    tag: () => $wire.deleteTag(deleteId),
-                  })[deleteType]();
-
+                  $wire.deleteArticle(deleteId);
+                  deleteId = null;
                   showDeleteModal = false;
                 "
               >
@@ -1130,7 +864,6 @@ new class extends Component {
                 type="button"
                 x-on:click="
                   deleteId = null;
-                  deleteType = '';
                   showDeleteModal = false;
                 "
                 class="inline-flex w-full cursor-pointer justify-center rounded-xl bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 transition-colors ring-inset hover:bg-zinc-50 sm:w-auto dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-700"
@@ -1143,4 +876,5 @@ new class extends Component {
       </div>
     </div>
   </div>
-</x-main-wrapper>
+</div>
+{{-- </x-main-wrapper> --}}

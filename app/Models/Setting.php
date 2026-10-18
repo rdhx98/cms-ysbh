@@ -11,4 +11,10 @@ use Illuminate\Database\Eloquent\Attributes\Table;
 class Setting extends Model
 {
     //
+    protected function casts(): array
+{
+    return [
+        'value' => 'json',
+    ];
+}
 }

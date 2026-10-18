@@ -68,7 +68,7 @@ export function registerCanvas(Alpine) {
       follow()
       this.$watch(() => store().lang, follow)
 
-      this.$watch(() => store().id, (id) => {
+      this.$watch(() => store().activeBlock, (id) => {
         const scroll = !this.fromCanvas
         this.fromCanvas = false
         this.sendFocus(id, scroll)

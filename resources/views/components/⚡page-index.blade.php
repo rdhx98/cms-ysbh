@@ -130,7 +130,10 @@ new class extends Component {
     )
   }}
 </x-slot:title>
-<x-main-wrapper>
+{{-- <x-main-wrapper> --}}
+<div
+  class="mt-4 flex h-full max-h-screen min-h-0 w-full min-w-0 flex-col items-center justify-start gap-6 overflow-x-hidden overflow-y-auto"
+>
   <div
     x-data="{
       activeSubPanel: 'none',
@@ -139,7 +142,7 @@ new class extends Component {
       deleteId: null,
       newItemName: '',
     }"
-    class="flex w-full flex-col items-start gap-4 lg:flex-row"
+    class="flex w-full max-w-7xl flex-col items-start gap-4 rounded-xl bg-white p-4 lg:flex-row"
   >
     <!-- MAIN UX (KONTAINER UTAMA) -->
     <div
@@ -263,7 +266,7 @@ new class extends Component {
       <div
         class="max-h-[calc(100vh-450px)] w-full max-w-screen overflow-x-auto overflow-y-auto rounded-xl border border-zinc-200 shadow-sm lg:max-h-[calc(100vh-280px)] dark:border-zinc-700"
       >
-        <table class="w-full min-w-max table-fixed border-collapse text-left">
+        <table class="w-full min-w-3xl table-fixed border-collapse text-left">
           <thead
             class="bg-misty text-foresty text-xs dark:bg-green-950 dark:text-green-300"
           >
@@ -745,4 +748,5 @@ new class extends Component {
       </div>
     </div>
   </div>
-</x-main-wrapper>
+</div>
+{{-- </x-main-wrapper> --}}

@@ -17,6 +17,9 @@ use App\Content\Blocks\Spacing;
  */
 final class BlockRegistry
 {
+    /** Nilai orientasi Grup Langkah yang berarti horizontal (rilis 77: 'horizontal'; dua nilai lama tetap dikenali). */
+    private const STEP_HORIZONTAL = ['horizontal', 'horizontal-top', 'horizontal-bottom'];
+
     /** @var array<string, BlockType>|null */
     private static ?array $all = null;
 
@@ -145,12 +148,21 @@ final class BlockRegistry
             ], component: 'editor.container-kids', componentFirst: true), // rilis 65: daftar isi per kolom di atas kontrol
 
             new BlockType('step-group', 'Grup Langkah (Timeline)', 'list-ordered', 'block', [
-                Field::segmented('data.orientation', 'Orientasi', ['vertical' => 'Vertikal', 'horizontal-top' => 'Horiz. Atas', 'horizontal-bottom' => 'Horiz. Bawah'], 'vertical'),
-                // Rilis 74: penanda (angka / titik + label) dan poros (samping / tengah, kartu selang-seling). Poros tengah dan titik hanya untuk tata letak vertikal
-                // (horizontal menyusul rilis 75). Label tiap langkah diisi di daftar "Isi langkah" di atas panel ini.
-                Field::segmented('data.marker', 'Penanda', StepStyle::MARKERS, StepStyle::MARKER_DEFAULT, ['data.orientation', 'vertical']),
-                Field::segmented('data.axis', 'Poros', StepStyle::AXES, StepStyle::AXIS_DEFAULT, ['data.orientation', 'vertical']),
-                Field::segmented('data.start_side', 'Kartu Pertama di', StepStyle::STARTS, StepStyle::START_DEFAULT, ['data.axis', 'center'])->withAnd(['data.orientation', 'vertical']),
+                // Rilis 77: Orientasi hanya Vertikal / Horizontal; Poros mengikuti orientasi (vertikal: Kiri, Tengah; horizontal: Atas, Bawah, Tengah).
+                // Data lama (horizontal-top / horizontal-bottom, axis = side) dibaca StepStyle::resolve sama seperti sebelumnya dan dirapikan saat panel dibuka.
+                Field::segmented('data.orientation', 'Orientasi', StepStyle::ORIENTATIONS, StepStyle::ORIENTATION_DEFAULT),
+                Field::segmented('data.axis', 'Poros', StepStyle::AXES, StepStyle::AXIS_DEFAULT, ['data.orientation', ['', 'vertical']]),
+                Field::segmented('data.axis_h', 'Poros', StepStyle::AXES_H, StepStyle::AXIS_H_DEFAULT, ['data.orientation', self::STEP_HORIZONTAL]),
+                Field::toggle('data.reverse', 'Balik urutan: bawah ke atas', ['data.orientation', ['', 'vertical']]),
+                Field::toggle('data.reverse', 'Balik urutan: kanan ke kiri', ['data.orientation', self::STEP_HORIZONTAL]),
+                // Rilis 74-75: penanda (angka / titik + label). Label tiap langkah diisi di daftar "Isi langkah" di atas panel ini.
+                Field::segmented('data.marker', 'Penanda', StepStyle::MARKERS, StepStyle::MARKER_DEFAULT),
+                Field::segmented('data.start_side', 'Kartu Pertama di', StepStyle::STARTS, StepStyle::START_DEFAULT, ['data.axis', 'center'])->withAnd(['data.orientation', ['', 'vertical']]),
+                // Rilis 75: horizontal. Poros tengah horizontal: kartu selang-seling atas/bawah. Lebar poros: Tetap (memenuhi kontainer, ada sebaran) atau Geser (selebar isi).
+                Field::segmented('data.start_edge', 'Kartu Pertama di', StepStyle::EDGES, StepStyle::EDGE_DEFAULT, ['data.axis_h', 'center'])->withAnd(['data.orientation', self::STEP_HORIZONTAL]),
+                Field::segmented('data.fit', 'Lebar Poros', StepStyle::FITS, StepStyle::FIT_DEFAULT, ['data.orientation', self::STEP_HORIZONTAL]),
+                Field::segmented('data.justify', 'Sebaran Langkah', StepStyle::JUSTIFIES, StepStyle::JUSTIFY_DEFAULT, ['data.fit', ['', 'fixed']])->withAnd(['data.orientation', self::STEP_HORIZONTAL]),
+                Field::segmented('data.step_width', 'Lebar Langkah', StepStyle::WIDTHS, StepStyle::WIDTH_DEFAULT, ['data.orientation', self::STEP_HORIZONTAL]),
                 Field::segmented('data.gap', 'Jarak', ['gap-4' => 'Rapat', 'gap-8' => 'Sedang', 'gap-12' => 'Renggang', 'gap-16' => 'Jauh'], 'gap-8'),
                 // Rilis 66: bentuk dan warna penanda dari palet (sebelumnya dua isian kelas Tailwind). StepStyle menerjemahkannya ke kelas.
                 // Rilis 74: bentuk dan warna latar berlaku juga untuk titik ("Kosong" = tanpa titik, label saja).
@@ -164,10 +176,16 @@ final class BlockRegistry
                 Field::swatches('data.line_color', 'Warna Garis', \App\Editor\PaletteOptions::colors('mini_bg_colors'), 'bg-forest', 'bg'),
                 Field::segmented('data.line_opacity', 'Kekuatan Garis', StepStyle::OPACITY, StepStyle::OPACITY_DEFAULT),
             ], defaults: [
-                'orientation' => 'vertical',
+                'orientation' => StepStyle::ORIENTATION_DEFAULT,
                 'marker' => StepStyle::MARKER_DEFAULT,
                 'axis' => StepStyle::AXIS_DEFAULT,
+                'axis_h' => StepStyle::AXIS_H_DEFAULT,
+                'reverse' => false,
                 'start_side' => StepStyle::START_DEFAULT,
+                'start_edge' => StepStyle::EDGE_DEFAULT,
+                'fit' => StepStyle::FIT_DEFAULT,
+                'justify' => StepStyle::JUSTIFY_DEFAULT,
+                'step_width' => StepStyle::WIDTH_DEFAULT,
                 'dot_size' => StepStyle::DOT_DEFAULT,
                 'label_color' => 'text-forest',
                 'gap' => 'gap-8',

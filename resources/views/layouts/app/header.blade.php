@@ -118,7 +118,7 @@
         <div class="flex flex-wrap items-center justify-start gap-x-2 gap-y-1">
           @forelse (auth()->user()->getRoleNames() as $item)
             <div
-              class="inline-flex items-center px-1.5 py-1 rounded-full text-xxs font-semibold border gap-2 {{ auth()->user()->getRoleColor($item) }}"
+              class="inline-flex items-center px-1.5 py-1 rounded-full text-xxs font-semibold gap-2 {{ auth()->user()->getRoleColor($item) }}"
               {{-- class="text-xxs bg-mist inline-flex items-center gap-2 rounded-full border px-1.5 py-1 font-semibold" --}}
             >
               <x-dynamic-component

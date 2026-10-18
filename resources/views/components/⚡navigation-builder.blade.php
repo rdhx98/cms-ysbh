@@ -450,11 +450,15 @@ new class extends Component {
     )
   }}
 </x-slot:title>
-
-<x-main-wrapper>
-  {{-- Rilis 55: tab "Footer" (isi footer situs, komponen content.footer-editor) dan rilis 57: tab "Palet" (warna situs) di samping tab Menu; hanya admin/editor yang melihat tabnya. --}}
-  <div x-data="{ tab: 'menu' }" class="contents">
-    <div class="mb-4 flex w-full items-center justify-between">
+<div
+  x-data="{ tab: 'menu' }"
+  class="mt-4 flex h-full max-h-screen min-h-0 w-full min-w-0 flex-col items-center justify-start gap-6 overflow-x-hidden overflow-y-auto rounded-xl"
+>
+  <div class="w-full max-w-7xl rounded-xl bg-white">
+    {{-- HEADER --}}
+    <div
+      class="sticky top-0 mb-4 flex w-full max-w-7xl items-center justify-between rounded-t-xl border border-white/20 bg-white/30 p-6 pb-4 shadow-lg backdrop-blur-md"
+    >
       <div class="text-2xl font-bold">{{ __("Navigasi") }}</div>
       @if (($footerUser = auth()->user()) &&
         method_exists($footerUser, "hasRole") &&
@@ -486,26 +490,13 @@ new class extends Component {
           >
             Footer
           </button>
-          <button
-            type="button"
-            x-on:click="tab = 'palette'"
-            x-bind:class="
-              tab === 'palette'
-                ? 'bg-white shadow text-foresty'
-                : 'text-gray-500'
-            "
-            class="rounded-md px-3 py-1"
-            data-tab-palette
-          >
-            Palet
-          </button>
         </div>
       @endif
     </div>
 
     <div
       x-show="tab === 'menu'"
-      class="flex max-h-full w-full max-w-screen flex-col gap-8 overflow-x-auto overflow-y-auto rounded-xl md:flex-row"
+      class="flex max-h-full w-full max-w-7xl flex-col gap-8 overflow-x-auto overflow-y-auto rounded-xl p-4 md:flex-row"
     >
       {{-- KOLOM KIRI: FORMULIR --}}
       <div class="flex w-full flex-col gap-4">
@@ -795,16 +786,7 @@ new class extends Component {
       >
         <livewire:content.footer-editor lazy wire:key="footer-editor" />
       </div>
-      {{-- Rilis 57: tab Palet (warna situs; komponen content.palette-editor), dimuat malas seperti Footer --}}
-      <div
-        x-show="tab === 'palette'"
-        x-cloak
-        class="w-full max-w-5xl"
-        data-palette-tab
-      >
-        Pindah ke setting
-        {{-- <livewire:content.palette-editor lazy wire:key="palette-editor" /> --}}
-      </div>
+
     @endif
   </div>
-</x-main-wrapper>
+</div>

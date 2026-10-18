@@ -204,6 +204,11 @@ export function registerEditor(Alpine) {
       this.id = this.parentId = this.base = this.panel = this.via = this.viaZone = this.cardHint = null
       this.tab = 'page'
     },
+    // Rilis 77: blok yang "sedang dikerjakan" = blok yang difokus, atau Pembuat Kartu pemilik elemen yang difokus.
+    // Kanvas memakai ini supaya sorotan dan gulirannya tidak hilang saat Anda masuk ke elemen sebuah kartu.
+    get activeBlock() {
+      return this.id || this.parentId || null
+    },
     showLang(l) {
       return this.lang === 'both' || this.lang === l
     },
@@ -366,6 +371,20 @@ export function registerEditor(Alpine) {
     get marker() {
       return this.group().marker === 'dot' ? 'dot' : 'number'
     },
+    // ---- rilis 77: merapikan data lama saat panel Grup Langkah dibuka. Orientasi kini Vertikal/Horizontal; poros horizontal punya kunci sendiri (axis_h);
+    // axis lama "side" = "left". Hanya mengubah state klien (ikut tersimpan pada simpan berikutnya); tampilan di landing sama persis (StepStyle membaca keduanya).
+    migrate() {
+      const s = Alpine.store('editor')
+      if (!s.id || this.kind !== 'step-group') return
+      const d = this.group()
+      const base = 'content.' + s.id + '.data.'
+      const o = String(d.orientation ?? '')
+      if (o.startsWith('horizontal-')) {
+        if (!d.axis_h) this.$wire.$set(base + 'axis_h', d.axis === 'center' ? 'center' : o.endsWith('bottom') ? 'bottom' : 'top', false)
+        this.$wire.$set(base + 'orientation', 'horizontal', false)
+      }
+      if (d.axis === 'side') this.$wire.$set(base + 'axis', 'left', false)
+    },
     labelAt(id, lang) {
       const l = this.group().labels
       const row = l && typeof l === 'object' && !Array.isArray(l) ? l[id] : null
@@ -416,6 +435,8 @@ export function registerEditor(Alpine) {
       Alpine.store('editor').focusBlock(it.id, it.type)
     },
     init() {
+      this.migrate()
+      this.$watch(() => Alpine.store('editor').id, () => this.$nextTick(() => this.migrate()))
       // asal navigasi berubah: gulir baris/zona itu ke tampilan (setelah panel selesai dirender)
       this.$watch(
         () => [Alpine.store('editor').via, Alpine.store('editor').viaZone, Alpine.store('editor').id],

@@ -18,6 +18,21 @@
   }
   $pad = 6 + $depth * 14;
 
+  // Rilis 77: konfirmasi hapus untuk Pembuat Kartu. Kartunya tersimpan di data.cards (bukan zona), jadi $childTotal tidak
+  // menghitungnya. Sebagai langkah Grup Langkah, menghapusnya juga menghapus satu langkah (dan label penandanya).
+  $cardTotal = $type === 'card-builder' ? count($block['data']['cards'] ?? []) : 0;
+  $inSteps = $parent !== null && \App\Editor\BlockPalette::canonical($content[$parent]['type'] ?? '') === 'step-group';
+  $confirmMsg = null;
+  if ($childTotal > 0) {
+      $confirmMsg = 'Hapus blok ini beserta ' . $childTotal . ' blok di dalamnya?';
+  } elseif ($inSteps) {
+      $confirmMsg = $cardTotal > 0
+          ? 'Hapus langkah ini beserta ' . $cardTotal . ' kartu di dalamnya? Nomor dan label langkah sesudahnya ikut bergeser.'
+          : 'Hapus langkah ini dari Grup Langkah? Nomor dan label langkah sesudahnya ikut bergeser.';
+  } elseif ($cardTotal > 0) {
+      $confirmMsg = 'Hapus blok ini beserta ' . $cardTotal . ' kartu di dalamnya?';
+  }
+
   // Konteks baris untuk menu "⋯" dan pintasan keyboard (rilis 43). Hanya petunjuk tampilan: server memvalidasi ulang SEMUA argumen.
   //   kind   = daftar jenis untuk "Sisipkan di atas/bawah": 'root' atau jenis induk (kontainer)
   //   canAdd = false di zona tersembunyi (server menolak menambah ke sana)
@@ -47,7 +62,7 @@
       class="group flex items-center rounded-md"
       data-outline-row="{{ $id }}"
       data-ctx="{{ json_encode($ctx) }}"
-      x-bind:class="$store.editor.id === @js($id) ? 'bg-foresty text-white' : 'hover:bg-sage-soft'"
+      x-bind:class="$store.editor.id === @js($id) ? 'bg-foresty text-white' : ($store.editor.parentId === @js($id) ? 'bg-sage-soft text-foresty ring-1 ring-foresty/60' : 'hover:bg-sage-soft')"
     >
       <button
         type="button"
@@ -83,7 +98,7 @@
           type="button"
           title="Hapus"
           x-on:click.stop="
-            @if ($childTotal > 0) if (! confirm(@js('Hapus blok ini beserta ' . $childTotal . ' blok di dalamnya?'))) { return };@endif
+            @if ($confirmMsg) if (! confirm(@js($confirmMsg))) { return };@endif
             removed();
             $wire.removeBlock(@js($id));
           "

@@ -63,11 +63,10 @@ class User extends Authenticatable implements PasskeyUser
     public function getRoleColor(string $roleName)
     {
         return match ($roleName) {
-            "admin" => "bg-mist text-forest border-forest dark:bg-mist dark:text-forest",
-            "editor" => "bg-yellow-50 text-yellow-700 border-yellow-700 dark:bg-yellow-950 dark:text-yellow-300",
-            // 'writer' => 'bg-sky-50 text-sky-700 border-sky-700 dark:bg-sky-950 dark:text-sky-300',
-            "writer" => "bg-sky-50 text-sky-700 border-sky-700 dark:bg-sky-950 dark:text-sky-300",
-            default => "bg-zinc-50 text-zinc-700 border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300",
+            "admin" => "bg-forest text-aurum dark:bg-forest dark:text-aurum",
+            "editor" => "bg-forest/90 text-aurum-soft dark:bg-forest/90 dark:text-white",
+            "writer" => "bg-aurum-soft text-forest  dark:bg-aurum-soft dark:text-white",
+            default => "bg-zinc-50 text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300",
         };
     }
     public function getRoleIcon(string $roleName)

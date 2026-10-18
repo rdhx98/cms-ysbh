@@ -54,23 +54,30 @@ final class Placeholders
      */
     public static function hasEmptyImage(mixed $value): bool
     {
+        return self::emptyImageCount($value) > 0;
+    }
+
+    /** Jumlah blok Gambar tanpa berkas dalam dokumen konten (0 bila bukan dokumen blok). */
+    public static function emptyImageCount(mixed $value): int
+    {
         if (is_string($value)) {
             $t = ltrim($value);
             if ($t === '' || $t[0] !== '{') {
-                return false;
+                return 0;
             }
             $value = json_decode($t, true);
         }
         $blocks = is_array($value) ? ($value['blocks'] ?? null) : null;
         if (!is_array($blocks)) {
-            return false;
+            return 0;
         }
+        $n = 0;
         foreach ($blocks as $b) {
             if (is_array($b) && str_replace('_', '-', strtolower((string) ($b['type'] ?? ''))) === 'image' && trim((string) ($b['data']['url'] ?? '')) === '') {
-                return true;
+                $n++;
             }
         }
 
-        return false;
+        return $n;
     }
 }

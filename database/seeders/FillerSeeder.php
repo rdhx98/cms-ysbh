@@ -27,7 +27,7 @@ class FillerSeeder extends Seeder
             'name' => 'Test User',
             'handle' => 'guest',
             'active' => true,
-            'email' => 'test@example.com',
+            'email' => 'test@mail.com',
             'job_title' =>'Staff',
             'password' => Hash::make('husada'),
         ]);
@@ -51,7 +51,7 @@ class FillerSeeder extends Seeder
             'name' => 'Ruth Charlota Yakoba Fouw',
             'handle' => 'rfouw',
             'active' => true,
-            'email' => 'utha@example.com',
+            'email' => 'utha@mail.com',
             'job_title' =>'Program Officer Kesehatan Ibu & Anak',
             'password' => Hash::make('husada'),
         ]);
