@@ -1,122 +1,212 @@
 <?php
 
-use Livewire\Component;
-use App\Models\Page;
-
+use App\Content\Languages;
 use App\Livewire\Traits\WithNotifications;
-
+use App\Models\Page;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
+use Livewire\Component;
+use Livewire\WithPagination;
 
 new class extends Component {
-  //
-
   use WithNotifications;
+  use WithPagination;
 
-  public string $orderDirection;
-  public string $orderColumn;
+  private const PER_PAGE = 20;
+  private const SORTABLE = ["title", "created_at", "status"];
+  private const STATUSES = ["online", "offline"];
 
-  public function mount()
+  // Hanya diubah oleh sortBy() di server; klien tidak bisa mengisinya langsung.
+  #[Locked]
+  public string $orderColumn = "created_at";
+
+  #[Locked]
+  public string $orderDirection = "desc";
+
+  #[Url]
+  public string $statusFilter = "";
+
+  #[Url]
+  public string $titleSearch = "";
+
+  #[Computed]
+  public function isStaff(): bool
   {
-    $this->orderDirection = "desc";
-    $this->orderColumn = "created_at";
+    return (bool) auth()
+      ->user()
+      ?->hasAnyRole(["admin", "editor"]);
   }
 
-  // #[Url(as: 'status')]
-  #[Url]
-  public $statusFilter = "";
-
-  #[Url]
-  public $titleSearch = "";
+  // Kembali ke halaman 1 setiap kali saringan berubah.
+  public function updated(string $name): void
+  {
+    if (in_array($name, ["titleSearch", "statusFilter"], true)) {
+      $this->resetPage();
+    }
+  }
 
   #[Computed]
   public function pages()
   {
-    // Mulai dari query builder kosong
-    $query = Page::query();
+    // Hanya kolom yang dipakai tabel (kolom content yang besar tidak ikut).
+    $columns = [
+      "pages.id",
+      "pages.title",
+      "pages.slug",
+      "pages.status",
+      "pages.created_at",
+    ];
+    if (Schema::hasColumn("pages", "user_id")) {
+      $columns[] = "pages.user_id";
+    }
+    $query = Page::query()->select($columns);
 
-    // 1. Filter Pencarian Judul (Sesuai bahasa yang aktif)
-    // if ($this->titleSearch) {
-    //     // Ambil kode bahasa saat ini (misal: 'id' atau 'en')
-    //     $locale = app()->getLocale();
+    // 1. Pencarian judul: judul berupa JSON per bahasa, dicari di semua bahasa. Kolom JSON MariaDB
+    //    memakai collation biner (peka huruf besar/kecil), jadi kedua sisi diubah ke huruf kecil.
+    $term = mb_strtolower(trim($this->titleSearch));
+    if ($term !== "") {
+      $like = "%" . addcslashes($term, "%_\\") . "%";
+      $query->where(function ($w) use ($like) {
+        foreach (Languages::fromConfig()["locales"] as $code) {
+          $w->orWhereRaw(
+            "LOWER(JSON_UNQUOTE(JSON_EXTRACT(pages.title, ?))) LIKE ?",
+            ['$."' . $code . '"', $like],
+          );
+        }
+      });
+    }
 
-    //     // Cari hanya di dalam JSON key bahasa tersebut
-    //     $query->where("title->{$locale}", 'like', '%' . $this->titleSearch . '%');
-    // }
-    // 1. Filter Pencarian Judul
-    if ($this->titleSearch) {
-      $locale = app()->getLocale();
+    // 2. Status (hanya nilai yang dikenal)
+    if (in_array($this->statusFilter, self::STATUSES, true)) {
+      $query->where("pages.status", $this->statusFilter);
+    }
 
-      // Ubah input user menjadi huruf kecil
-      $searchTerm = strtolower($this->titleSearch);
+    // 3. Urutan
+    $direction = $this->orderDirection === "asc" ? "asc" : "desc";
+    if ($this->orderColumn === "title") {
+      $this->sortByJsonText($query, "pages.title", $direction);
+    } else {
+      $query->orderBy("pages." . $this->orderColumn, $direction);
+    }
 
-      // Gunakan whereRaw dengan JSON_EXTRACT eksplisit
-      $query->whereRaw(
-        "LOWER(JSON_UNQUOTE(JSON_EXTRACT(title, '$.{$locale}'))) LIKE ?",
-        ["%" . $searchTerm . "%"],
+    $paginator = $query->orderByDesc("pages.id")->paginate(self::PER_PAGE);
+
+    // Judul dan path untuk tampilan: bahasa aktif, lalu id, lalu en.
+    $paginator->getCollection()->each(function ($page) {
+      $page->setAttribute(
+        "display_title",
+        $this->pickText($page->getRawOriginal("title"), "(tanpa judul)"),
       );
-    }
+      $page->setAttribute(
+        "display_path",
+        $this->pickText($page->getRawOriginal("slug"), ""),
+      );
+    });
 
-    // 2. Filter Status
-    if ($this->statusFilter) {
-      $query->where("status", $this->statusFilter);
-    }
-
-    // Eksekusi query
-    return $query->get();
+    return $paginator;
   }
-  public function deletePage(int $identifier)
-  {
-    $page = \App\Models\Page::find($identifier);
-    $user = auth()->user();
-    $isAdminOrEditor = $user->hasRole(["admin", "editor"]); // array dibolehkan di Spatie
-    $isOwner = $page->user_id === $user->id;
 
-    if (!$isAdminOrEditor && !$isOwner) {
+  public function sortBy(string $column): void
+  {
+    if (!in_array($column, self::SORTABLE, true)) {
+      return;
+    }
+
+    if ($this->orderColumn === $column) {
+      $this->orderDirection = $this->orderDirection === "asc" ? "desc" : "asc";
+    } else {
+      $this->orderColumn = $column;
+      $this->orderDirection = "asc";
+    }
+    $this->resetPage();
+  }
+
+  // Urutan teks dari kolom JSON per bahasa: tak membedakan huruf besar/kecil, dan memakai id/en bila bahasa aktif kosong.
+  private function sortByJsonText(
+    $query,
+    string $column,
+    string $direction,
+  ): void {
+    $parts = [];
+    $bindings = [];
+    foreach (array_unique([app()->getLocale(), "id", "en"]) as $code) {
+      $parts[] = "NULLIF(JSON_UNQUOTE(JSON_EXTRACT({$column}, ?)), '')";
+      $bindings[] = '$."' . $code . '"';
+    }
+    // JSON_UNQUOTE di MariaDB mengembalikan utf8mb3, jadi diubah dulu ke utf8mb4 sebelum diberi collation.
+    $query->orderByRaw(
+      "CONVERT(COALESCE(" .
+        implode(", ", $parts) .
+        ") USING utf8mb4) COLLATE utf8mb4_unicode_ci {$direction}",
+      $bindings,
+    );
+  }
+
+  // Teks dari kolom JSON per bahasa (atau teks biasa bila kolomnya bukan JSON).
+  private function pickText(?string $raw, string $fallback): string
+  {
+    $data = json_decode((string) $raw, true);
+    if (!is_array($data)) {
+      return trim((string) $raw) !== "" ? (string) $raw : $fallback;
+    }
+    foreach (array_unique([app()->getLocale(), "id", "en"]) as $code) {
+      if (!empty($data[$code]) && is_string($data[$code])) {
+        return $data[$code];
+      }
+    }
+
+    return $fallback;
+  }
+
+  public function deletePage(int $identifier): void
+  {
+    $user = auth()->user();
+    $page = Page::find($identifier);
+
+    // 1. GUARD: eksistensi
+    if (!$user || !$page) {
+      $this->notify("Halaman tidak ditemukan.", "error");
+      return;
+    }
+
+    // 2. GUARD: halaman yang sedang tayang tidak dihapus langsung (menu/tautan publik bisa putus)
+    if ($page->status === "online") {
       $this->notify(
-        "Anda tidak memiliki otorisasi untuk menghapus artikel ini.",
+        "Halaman masih online. Ubah ke offline dulu sebelum menghapus.",
         "error",
       );
       return;
     }
 
-    // 1. hapus cover
-    // if ($page->featured_image && $article->featured_image !== 'default.webp') {
-    //     $coverPath = 'articles/' . $article->featured_image;
-    //     if (Storage::disk('public')->exists($coverPath)) {
-    //         Storage::disk('public')->delete($coverPath);
-    //     }
-    // }
-    // 2. Hapus Semua Gambar di Dalam Konten Editor
-    // if ($page->content) {
-    //     // Ekstrak semua URL gambar dari HTML
-    //     preg_match_all('/<img[^>]+src="([^">]+)"/', $article->content, $matches);
-    //     $contentImages = $matches[1] ?? [];
+    // 3. GUARD: admin/editor, atau pemilik halaman (bila tabel punya user_id)
+    $ownerId = $page->getAttributes()["user_id"] ?? null;
+    $isOwner = $ownerId !== null && (int) $ownerId === (int) $user->id;
+    if (!$this->isStaff && !$isOwner) {
+      $this->notify(
+        "Anda tidak memiliki otorisasi untuk menghapus halaman ini.",
+        "error",
+      );
+      return;
+    }
 
-    //     foreach ($contentImages as $imageUrl) {
-    //         // Pastikan kita hanya menghapus gambar lokal (bukan URL dari web luar)
-    //         if (str_contains($imageUrl, 'storage/articles/')) {
-    //             $filename = basename($imageUrl);
-    //             $storagePath = 'articles/' . $filename;
+    // 4. Catat log lalu hapus dalam satu transaksi: bila salah satu gagal, tidak ada yang berubah.
+    DB::transaction(function () use ($page, $user) {
+      activity("page_updates")
+        ->performedOn($page)
+        ->causedBy($user)
+        ->withProperties([
+          "title" =>
+            json_decode((string) $page->getRawOriginal("title"), true) ??
+            $page->getRawOriginal("title"),
+          "status_saat_dihapus" => $page->status,
+        ])
+        ->log("Halaman dihapus permanen");
 
-    //             if (Storage::disk('public')->exists($storagePath)) {
-    //                 Storage::disk('public')->delete($storagePath);
-    //             }
-    //         }
-    //     }
-    // }
-
-    activity("page_updates")
-      ->performedOn($page)
-      ->causedBy($user)
-      ->withProperties([
-        "title" => $page->title,
-        // 'status_saat_dihapus' => $article->status,
-      ])
-      ->log("Halaman dihapus permanen");
-
-    // Hapus artikel dari database
-    $page->delete();
+      $page->delete();
+    });
 
     $this->notify("Halaman berhasil dihapus.", "success");
   }
@@ -138,9 +228,7 @@ new class extends Component {
     x-data="{
       activeSubPanel: 'none',
       showDeleteModal: false,
-      deleteType: '',
       deleteId: null,
-      newItemName: '',
     }"
     class="flex w-full max-w-7xl flex-col items-start gap-4 rounded-xl bg-white p-4 lg:flex-row"
   >
@@ -217,10 +305,10 @@ new class extends Component {
             type="text"
             placeholder="Cari halaman..."
             class="focus:ring-sbh-green w-full rounded-lg border border-zinc-200 bg-zinc-50 py-2 pr-4 pl-9 text-sm text-zinc-700 focus:border-transparent focus:ring-2 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-            wire:model.live="titleSearch"
+            wire:model.live.debounce.300ms="titleSearch"
           />
         </div>
-        <div class="col-span-2 flex flex-row gap-1.5 gap-2 md:col-span-1">
+        <div class="col-span-2 flex flex-row gap-2 md:col-span-1">
           <button
             type="button"
             x-on:click="
@@ -238,9 +326,10 @@ new class extends Component {
               class="group-hover:animate-stroke h-5 w-5 origin-bottom-left"
               stroke-width="2"
             />
-            <span classs="text-xxs md:text-md"> Online </span>
+            <span> Online </span>
           </button>
           <button
+            type="button"
             x-on:click="
               statusSelected = statusSelected === 'offline' ? '' : 'offline'
             "
@@ -256,7 +345,7 @@ new class extends Component {
               class="group-hover:animate-stroke h-5 w-5 origin-bottom-left"
               stroke-width="2"
             />
-            <span classs="text-xxs md:text-md"> Offline </span>
+            <span> Offline </span>
           </button>
         </div>
       </div>
@@ -264,7 +353,7 @@ new class extends Component {
       {{-- REVISI: Penambahan komputasi max-height responsif agar di mobile tidak meluber ke bawah --}}
       <!-- TABEL UTAMA -->
       <div
-        class="max-h-[calc(100vh-450px)] w-full max-w-screen overflow-x-auto overflow-y-auto rounded-xl border border-zinc-200 shadow-sm lg:max-h-[calc(100vh-280px)] dark:border-zinc-700"
+        class="max-h-[calc(100vh-450px)] w-full overflow-x-auto overflow-y-auto rounded-xl border border-zinc-200 shadow-sm lg:max-h-[calc(100vh-280px)] dark:border-zinc-700"
       >
         <table class="w-full min-w-3xl table-fixed border-collapse text-left">
           <thead
@@ -310,9 +399,13 @@ new class extends Component {
                   class="flex w-full cursor-pointer items-center justify-center gap-2 font-semibold tracking-wider uppercase transition-colors hover:text-zinc-200"
                 >
                   Tanggal & Waktu dibuat
-                  {{-- @if($orderColumn === 'created_at')
-                                        <flux:icon variant="solid" icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
-                                    @endif --}}
+                  @if ($orderColumn === "created_at")
+                    <flux:icon
+                      variant="solid"
+                      icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}"
+                      class="size-4"
+                    />
+                  @endif
                 </button>
               </th>
 
@@ -347,145 +440,101 @@ new class extends Component {
             class="divide-y divide-zinc-200 bg-white text-zinc-700 dark:divide-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
           >
             @forelse ($this->pages as $page)
-              @foreach (range(1, 1) as $i)
-                <tr
-                  class="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
-                >
-                  <!-- TITLE -->
-                  <td class="max-w-[30%] px-4 py-3.5 text-sm">
-                    <div
-                      class="group relative inline-block w-full font-medium text-zinc-900 dark:text-white"
+              @php
+                $ownerId = $page->getAttributes()["user_id"] ?? null;
+                $canDelete =
+                  $page->status !== "online" &&
+                  ($this->isStaff ||
+                    ($ownerId !== null && (int) $ownerId === (int) auth()->id()));
+                $statusLabel =
+                  ["online" => "Online", "offline" => "Offline"][$page->status] ??
+                  ucfirst((string) $page->status);
+              @endphp
+              <tr
+                wire:key="page-{{ $page->id }}"
+                class="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+              >
+                <!-- TITLE -->
+                <td class="px-4 py-3.5 text-sm">
+                  <div
+                    class="truncate font-medium text-zinc-900 dark:text-white"
+                    title="{{ $page->display_title }}"
+                  >
+                    {{ $page->display_title }}
+                  </div>
+                </td>
+
+                <!-- PATH -->
+                <td class="px-4 py-3.5 text-sm">
+                  <div class="truncate" title="/{{ $page->display_path }}">
+                    /{{ $page->display_path }}
+                  </div>
+                </td>
+
+                <!-- DATE -->
+                <td class="px-4 py-3.5 text-sm whitespace-nowrap">
+                  {{
+                    $page->created_at instanceof
+                    \DateTimeInterface
+                      ? $page->created_at->format("d/m/Y H:i")
+                      : $page->created_at
+                  }}
+                </td>
+
+                <!-- STATUS -->
+                <td class="px-2 py-3.5 text-center text-sm">
+                  <span
+                    class="px-2 py-1 text-xs font-medium rounded-full border-2 {{ $page->status_color ?? '' }}"
+                  >
+                    {{ $statusLabel }}
+                  </span>
+                </td>
+
+                {{-- BUTTONS  --}}
+                <td class="px-4 py-3.5 text-sm">
+                  <div class="flex items-center justify-center gap-2">
+                    <a
+                      wire:navigate
+                      {{-- href="{{ route('page.edit', ['pageSlug' => $slugCantik]) }}" --}}
+                      href="{{ route('page.edit', $page->id) }}"
+                      class="group bg-forest/90 dark:bg-forest/80 hover:bg-forest/70 relative flex cursor-pointer items-center justify-center rounded-md p-1.5 text-white transition-colors"
                     >
-                      <!-- 2. Teks utama yang di-truncate -->
-                      <div class="truncate">
-                        {{
-                          $page->getTranslation(
-                            "title",
-                            "id",
-                          )
-                        }}
-                      </div>
-
-                      <!-- 3. Elemen Tooltip (Disembunyikan secara default, muncul saat group di-hover) -->
-                      <div
-                        class="bg-mist border-forest text-forest pointer-events-none absolute top-full right-0 z-50 mb-2 w-max max-w-xs rounded border px-3 py-1.5 text-xs break-words whitespace-normal opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100"
+                      <flux:icon
+                        variant="solid"
+                        icon="pencil"
+                        class="size-3.5!"
+                      />
+                      <span
+                        class="pointer-events-none absolute bottom-full left-0 z-30 mb-2 w-max rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900"
                       >
-                        {{-- {{
-                          is_array($article->title)
-                            ? $article->title[app()->getLocale()] ??
-                              ($article->title["id"] ?? (current($article->title) ?? "Tanpa Judul"))
-                            : $article->title
-                        }} <!-- Segitiga Kecil di Bawah Tooltip --> --}}
-                        {{
-                          $page->getTranslation(
-                            "title",
-                            "id",
-                          )
-                        }}
-                        <div
-                          class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"
-                        ></div>
-                      </div>
-                    </div>
-                  </td>
+                        Sunting
 
-                  <!-- PATH -->
-                  <td class="h-full max-w-[30%] px-4 py-0 align-middle text-sm">
-                    <div
-                      class="flex h-full min-h-14 items-center justify-start gap-2"
+                        <svg class="absolute top-full left-2 h-2 w-4 text-gray-900 dark:text-gray-100" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
+                          <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
+                        </svg>
+                      </span>
+                    </a>
+
+                    <a
+                      wire:navigate
+                      {{-- href="{{ route('page.preview', ['pageSlug' => $slugCantik]) }}" --}}
+                      href="{{ route('preview.record', ['type' => 'page', 'id' => $page->id ]) }}"
+                      class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
                     >
-                      /{{ $page->slug }}
-                      {{-- <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{ $article->created_at->format('D, d/m/y') }} </div> --}}
-                      {{-- <div class="px-2 py-0.5 rounded text-xs font-medium bg-sage-soft text-foresty dark:bg-slate-800 dark:text-slate-300"> {{ $article->created_at->format('H:i') }} </div> --}}
-                    </div>
-                  </td>
-
-                  <!-- DATE -->
-                  <td class="px-4 py-3.5 text-sm">{{ $page->created_at }}</td>
-
-                  <!-- STATUS -->
-                  <td class="px-2 py-3.5 text-center text-sm">
-                    <span
-                      class="px-2 py-1 text-xs font-medium rounded-full border-2 {{ $page->status_color ?? '' }}"
-                    >
-                      {{
-                        ucfirst(
-                          $page->status,
-                        )
-                      }}
-                    </span>
-                  </td>
-
-                  {{-- BUTTONS  --}}
-                  <td class="px-4 py-3.5 text-sm">
-                    <div class="flex items-center justify-center gap-2">
-                      @php
-                        $rawSlug = $page->slug;
-                        // Coba jadikan array jika memungkinkan
-                        $slugData = is_string($rawSlug) ? json_decode($rawSlug, true) : $rawSlug;
-
-                        // Cadangan paling aman (gunakan ID)
-                        $slugCantik = $page->id;
-
-                        // Jika berhasil menjadi array JSON
-                        if (is_array($slugData) && !empty($slugData)) {
-                          $slugCantik =
-                            $slugData[app()->getLocale()] ??
-                            ($slugData["id"] ?? ($slugData["en"] ?? $page->id));
-                        }
-                        // Jika slug di database ternyata cuma teks biasa (bukan JSON)
-                        elseif (is_string($slugData) && !empty(trim($slugData))) {
-                          $slugCantik = $slugData;
-                        } elseif (is_string($rawSlug) && !empty(trim($rawSlug))) {
-                          $slugCantik = $rawSlug;
-                        }
-                      @endphp
-
-                      <a
-                        wire:navigate
-                        {{-- href="{{ route('page.edit', ['pageSlug' => $slugCantik]) }}" --}}
-                        href="{{ route('page.edit', $page->id) }}"
-                        class="group bg-forest/90 dark:bg-forest/80 hover:bg-forest/70 relative flex cursor-pointer items-center justify-center rounded-md p-1.5 text-white transition-colors"
+                      <flux:icon variant="solid" icon="eye" class="size-3.5!" />
+                      <span
+                        class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-max -translate-x-1/2 rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900"
                       >
-                        <flux:icon
-                          variant="solid"
-                          icon="pencil"
-                          class="size-3.5!"
-                        />
-                        <span
-                          class="pointer-events-none absolute bottom-full left-0 z-30 mb-2 w-max rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900"
-                        >
-                          Sunting
+                        Pratinjau
+                        <svg class="absolute top-full left-0 h-2 w-full text-gray-900 dark:text-gray-100" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
+                          <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
+                        </svg>
+                      </span>
+                    </a>
 
-                          <svg class="absolute top-full left-2 h-2 w-4 text-gray-900 dark:text-gray-100" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
-                            <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
-                          </svg>
-                        </span>
-                      </a>
-
-                      <a
-                        wire:navigate
-                        {{-- href="{{ route('page.preview', ['pageSlug' => $slugCantik]) }}" --}}
-                        href="{{ route('preview.record', ['type' => 'page', 'id' => $page->id ]) }}"
-                        class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
-                      >
-                        <flux:icon
-                          variant="solid"
-                          icon="eye"
-                          class="size-3.5!"
-                        />
-                        <span
-                          class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-max -translate-x-1/2 rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900"
-                        >
-                          Pratinjau
-                          <svg class="absolute top-full left-0 h-2 w-full text-gray-900 dark:text-gray-100" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
-                            <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
-                          </svg>
-                        </span>
-                      </a>
-
+                    @if ($canDelete)
                       <button
-                        @click="deleteType = 'page'; deleteId = {{ $page->id }}; showDeleteModal = true"
+                        @click="deleteId = {{ $page->id }}; showDeleteModal = true"
                         type="button"
                         class="group relative flex cursor-pointer items-center justify-center rounded-md bg-red-600 p-1.5 text-white transition-colors hover:bg-red-700 dark:bg-red-800"
                       >
@@ -505,10 +554,10 @@ new class extends Component {
                           </svg>
                         </span>
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              @endforeach
+                    @endif
+                  </div>
+                </td>
+              </tr>
             @empty
               {{-- INI AKAN MUNCUL JIKA TIDAK ADA DATA ARTIKEL --}}
               <tr>
@@ -530,132 +579,11 @@ new class extends Component {
           </tbody>
         </table>
       </div>
+
+      <div class="mt-4 px-2">{{ $this->pages->links() }}</div>
     </div>
 
     <!-- SECONDARY UX (KONTAINER KEDUA - PANEL/POPUP) -->
-    {{-- <div x-show="activeSubPanel !== 'none'" class="contents">
-
-            <!-- 1. BACKDROP HITAM MOBILE -->
-            <div
-                x-show="activeSubPanel !== 'none'"
-                x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0"
-                x-transition:enter-end="opacity-100"
-                x-transition:leave="transition ease-in duration-200"
-                x-transition:leave-start="opacity-100"
-                x-transition:leave-end="opacity-0"
-                @click="activeSubPanel = 'none'"
-                class="fixed inset-0 bg-black/40 z-40 lg:hidden"
-            ></div>
-
-            <!-- 2. BADAN PANEL KEDUA -->
-            <div
-                x-show="activeSubPanel !== 'none'"
-                x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="translate-y-full lg:translate-y-0 lg:translate-x-4 opacity-0 lg:opacity-100"
-                x-transition:enter-end="translate-y-0 lg:translate-x-0 opacity-100"
-                x-transition:leave="transition ease-in duration-200"
-                x-transition:leave-start="translate-y-0 lg:translate-x-0 opacity-100"
-                x-transition:leave-end="translate-y-full lg:translate-y-0 lg:translate-x-4 opacity-0 lg:opacity-100"
-
-                class="fixed bottom-0 left-0 right-0 rounded-t-3xl z-50 max-h-[80vh] overflow-y-auto
-                    lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:rounded-2xl lg:z-10 lg:w-1/3 lg:max-h-none
-                    bg-white lg:bg-sbh-yellow/10 dark:bg-zinc-900 p-5 border border-zinc-200 dark:border-zinc-700 shadow-xl lg:shadow-sm space-y-4" >
-                <div class="w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto lg:hidden mb-2"></div>
-
-                <!-- Header Kontainer Kedua -->
-                <div class="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800 pb-2">
-                    <div class="flex items-center gap-2 text-sbh-green">
-                        <!-- REVISI: Mengubah dari :icon menjadi x-bind:icon -->
-                        <flux:icon.folder x-show="activeSubPanel === 'categories'" variant="solid" class="size-4" />
-                        <flux:icon.tag x-show="activeSubPanel === 'tags'" variant="solid" class="size-4" />
-                        <h3 class="font-bold text-zinc-900 dark:text-white text-md" x-text="activeSubPanel === 'categories' ? 'Kelola Kategori' : 'Kelola Tag'"></h3>
-                    </div>
-                    <button @click="activeSubPanel = 'none'" class="text-red-500 dark:hover:text-zinc-200 p-2 hover:bg-red-600 hover:text-white transition-colors cursor-pointer rounded-lg">
-                        <flux:icon variant="outline" icon="x-mark" class="size-6" />
-                    </button>
-                </div>
-
-                <!-- KONTEN DINAMIS -->
-                <div class="space-y-4">
-                    <div class="space-y-1.5">
-                        <label class="text-xs font-semibold text-zinc-500" x-text="activeSubPanel === 'categories' ? 'Nama Kategori Baru' : 'Nama Tag Baru'"></label>
-                        <div class="flex gap-2">
-                            <input
-                                type="text"
-                                x-model="newItemName"
-                                @keyup.enter="
-                                    if(newItemName.trim() !== '') {
-                                        activeSubPanel === 'categories' ? $wire.createCategory(newItemName) : $wire.createTag(newItemName);
-                                        newItemName = ''; // Kosongkan input setelah submit
-                                    }
-                                "
-                                x-bind:placeholder="activeSubPanel === 'categories' ? 'Misal: Berita Internal' : 'Misal: #stunting'"
-                                class="flex-1 px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-sbh-green text-zinc-700 dark:text-zinc-300">
-                            <!-- CREATE BUTTON -->
-                            <button
-                                x-data="{  isAnimating: false,  playAnim() { this.isAnimating = false;  this.$nextTick(() => { this.isAnimating = true; setTimeout(() => this.isAnimating = false, 500); }); }}"
-                                x-on:click="
-                                    playAnim();
-                                    if(newItemName.trim() !== '') {
-                                        activeSubPanel === 'categories' ? $wire.createCategory(newItemName) : $wire.createTag(newItemName);
-                                        newItemName = ''; // Kosongkan input setelah submit
-                                    }"
-                                x-on:mouseenter="playAnim()"
-                                class="p-2 bg-forest text-white text-sm font-medium rounded-lg hover:bg-green-700 cursor-pointer transition-colors flex items-center gap-1">
-                                <x-dynamic-component :component="'lucide-save'" class="h-5 w-5 origin-bottom-center group-hover:animate-save" stroke-width="2" x-bind:class="isAnimating ? 'animate-save' : ''" />
-                            </button>
-                        </div>
-                    </div>
-                    <div class="max-h-75 lg:max-h-62.5 overflow-y-auto border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 p-2 divide-y divide-zinc-200 dark:divide-zinc-700">
-                        <template x-if="activeSubPanel === 'categories'">
-                            <div class="space-y-1">
-                                @foreach ($this->categoryList as $i)
-                                    <div class="flex justify-between items-center py-2.5 px-2 text-sm hover:bg-forest hover:text-white rounded-lg transition-colors">
-                                        <span class="font-medium">{{ $i->name }}</span>
-                                        <!-- <button
-                                            x-on:click="deleteType = 'category'; deleteId = {{ $i->id }}; showDeleteModal = true"
-                                            class="text-white bg-red-500 p-2 rounded-md cursor-pointer">
-                                            <flux:icon variant="outline" icon="trash" class="size-4" />
-                                        </button> -->
-                                        <button
-                                            x-data="{  isAnimating: false,  playAnim() { this.isAnimating = false;  this.$nextTick(() => { this.isAnimating = true; setTimeout(() => this.isAnimating = false, 500); }); }}"
-                                            x-on:click=" playAnim(); deleteType = 'category'; deleteId = {{ $i->id }}; showDeleteModal = true "
-                                            x-on:mouseenter="playAnim()"
-                                            class="p-2 text-white bg-red-500 rounded-md cursor-pointer">
-                                            <x-dynamic-component :component="'lucide-trash-2'" class="h-5 w-5 origin-center group-hover:animate-trash" stroke-width="2" x-bind:class="isAnimating ? 'animate-trash' : ''" />
-                                        </button>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </template>
-
-                        <template x-if="activeSubPanel === 'tags'">
-                            <div class="space-y-1">
-                                @foreach ($this->tagList as $i)
-                                    <div class="flex justify-between items-center py-2.5 px-2 text-sm hover:bg-forest hover:text-white rounded-lg transition-colors">
-                                        <span class="font-medium">{{ $i->name }}</span>
-                                        <!-- <button
-                                            @click="deleteType = 'tag'; deleteId = {{ $i->id }}; showDeleteModal = true"
-                                            class="text-white bg-red-500 p-2 rounded-md cursor-pointer">
-                                            <flux:icon variant="outline" icon="trash" class="size-4" />
-                                        </button> -->
-                                        <button
-                                            x-data="{  isAnimating: false,  playAnim() { this.isAnimating = false;  this.$nextTick(() => { this.isAnimating = true; setTimeout(() => this.isAnimating = false, 500); }); }}"
-                                            x-on:click=" playAnim(); deleteType = 'tag'; deleteId = {{ $i->id }}; showDeleteModal = true "
-                                            x-on:mouseenter="playAnim()"
-                                            class="p-2 text-white bg-red-500 rounded-md cursor-pointer">
-                                            <x-dynamic-component :component="'lucide-trash-2'" class="h-5 w-5 origin-center group-hover:animate-trash" stroke-width="2" x-bind:class="isAnimating ? 'animate-trash' : ''" />
-                                        </button>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </template>
-                    </div>
-                </div>
-
-            </div>
-        </div> --}}
 
     <!-- DELETE CONFIRMATION MODAL -->
     <div
@@ -710,7 +638,7 @@ new class extends Component {
                   Hapus Halaman
                 </h3>
                 <div class="mt-2">
-                  <p class="text-sm text-zinc-500 dark:text-zinc-400">Apakah Anda yakin ingin menghapus artikel ini? Data yang sudah dihapus tidak dapat dikembalikan.</p>
+                  <p class="text-sm text-zinc-500 dark:text-zinc-400">Apakah Anda yakin ingin menghapus halaman ini? Data yang sudah dihapus tidak dapat dikembalikan.</p>
                 </div>
               </div>
             </div>
@@ -719,13 +647,8 @@ new class extends Component {
                 type="button"
                 class="bg-sage-soft text-forest inline-flex w-full cursor-pointer justify-center rounded-xl px-3 py-2 text-sm font-semibold shadow-sm transition-colors hover:bg-red-600 hover:text-white sm:w-auto"
                 @click="
-                  ({
-                    article: () => $wire.deleteArticle(deleteId),
-                    category: () => $wire.deleteCategory(deleteId),
-                    tag: () => $wire.deleteTag(deleteId),
-                    page: () => $wire.deletePage(deleteId),
-                  })[deleteType]();
-
+                  $wire.deletePage(deleteId);
+                  deleteId = null;
                   showDeleteModal = false;
                 "
               >
@@ -735,7 +658,6 @@ new class extends Component {
                 type="button"
                 @click="
                   deleteId = null;
-                  deleteType = '';
                   showDeleteModal = false;
                 "
                 class="inline-flex w-full cursor-pointer justify-center rounded-xl bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-zinc-300 transition-colors ring-inset hover:bg-zinc-50 sm:w-auto dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-700"

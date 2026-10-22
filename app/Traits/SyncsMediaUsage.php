@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Models\Media;
 use App\Models\MediaUsage;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Tempel trait ini ke model konten mana pun yang menyimpan blok dalam
@@ -57,6 +58,17 @@ trait SyncsMediaUsage
                 $model->syncMediaUsage();
             }
         });
+
+        // Rilis 82: konten yang dihapus tidak boleh meninggalkan catatan pemakaian. Tanpa ini baris media_usages menjadi yatim
+        // dan File Manager menganggap gambarnya "dipakai" selamanya (penjaga hapus tidak pernah mengizinkan membuangnya).
+        // Model ber-SoftDeletes: hapus-lunak MENAHAN catatan (isinya masih bisa dipulihkan, gambarnya tetap terlindungi);
+        // catatan baru dibuang saat dihapus permanen, dan disinkron ulang saat dipulihkan.
+        if (in_array(SoftDeletes::class, class_uses_recursive(static::class), true)) {
+            static::forceDeleted(fn ($model) => $model->mediaUsages()->delete());
+            static::restored(fn ($model) => $model->syncMediaUsage());
+        } else {
+            static::deleted(fn ($model) => $model->mediaUsages()->delete());
+        }
     }
 
     public function mediaUsages(): MorphMany

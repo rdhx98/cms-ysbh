@@ -9,7 +9,7 @@ use Livewire\Component;
  * Editor palet warna situs (rilis 57): warna tiap slot (forest, aurum, coral, ... dan 8 slot kustom) dan warna teks di atasnya
  * (Otomatis = putih/gelap menurut kontras, atau hex sendiri dengan peringatan bila kontras < 4,5).
  *
- * Dipasang di mana saja, mis. sebagai tab "Palet" di halaman Navigation builder (opsional/menu-builder.blade.php):
+ * Dipasang di mana saja, mis. sebagai tab "Palet" di halaman Navigation builder (opsional/navigation-builder.blade.php):
  *
  *   <livewire:content.palette-editor />
  *

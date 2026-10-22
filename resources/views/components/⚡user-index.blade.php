@@ -1,11 +1,9 @@
 <?php
 
-use Livewire\Attributes\Title;
-
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use App\Models\User;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Url;
 use Spatie\Permission\Models\Role;
 use App\Livewire\Traits\WithNotifications;
 
@@ -19,10 +17,14 @@ new class extends Component {
   public int $totalEditor = 0;
   public int $totalWriter = 0;
 
+  // Hanya diubah oleh sortBy() di server. Tanpa #[Locked], browser bisa mengisi nama kolom apa pun
+  // (mis. password) dan membaca urutan datanya.
+  #[Locked]
   public string $orderColumn = "created_at";
+  #[Locked]
   public string $orderDirection = "desc";
 
-  /** Kolom yang boleh diurutkan (properti publik bisa dimanipulasi dari browser). */
+  /** Kolom yang boleh diurutkan. */
   private const SORTABLE = ["name", "handle", "email", "active", "created_at"];
 
   public function mount(): void
@@ -47,9 +49,6 @@ new class extends Component {
 
   public function sortBy(string $column): void
   {
-    // Peta nama kolom di tabel ke kolom basis data
-    $column = ["status" => "active"][$column] ?? $column;
-
     if (!in_array($column, self::SORTABLE, true)) {
       return;
     }
@@ -67,14 +66,12 @@ new class extends Component {
     return User::query()
       ->with("roles") // cegah N+1 saat getRoleNames() dipanggil per baris
       ->orderBy($this->orderColumn, $this->orderDirection)
+      ->orderBy("id") // pemutus seri: urutan baris tidak bergeser antar permintaan
       ->get();
   }
 };
 ?>
 
-{{-- Live as if you were to die tomorrow. Learn as if you were to live forever. - Mahatma Gandhi --}}
-{{-- <div class="">
-    --}}
 <x-slot:title>
   {{
     __(
@@ -238,92 +235,51 @@ new class extends Component {
       class="max-h-[70vh] min-h-[30vh] w-full max-w-screen overflow-x-auto overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-700"
     >
       <table class="w-full min-w-max border-collapse text-left">
-        <thead class="bg-sbh-green text-foresty bg-misty text-xs">
+        <thead class="bg-mist text-foresty text-xs">
+          @php
+            // kunci = kolom yang diurutkan (harus ada di SORTABLE); null = tidak bisa diurutkan
+            $columns = [
+              ["key" => "name", "label" => "Nama", "align" => "justify-start"],
+              ["key" => "handle", "label" => "Handle", "align" => "justify-center"],
+              ["key" => "email", "label" => "E-mail", "align" => "justify-start"],
+              ["key" => "active", "label" => "Status", "align" => "justify-start"],
+            ];
+          @endphp
           <tr>
-            <!-- Header Judul -->
-            <th
-              class="bg-misty sticky top-0 z-10 px-4 py-3 font-semibold tracking-wider uppercase lg:z-20"
-            >
-              <button
-                wire:click="sortBy('name')"
-                class="flex w-full cursor-pointer items-center gap-2 font-semibold tracking-wider uppercase transition-colors hover:text-zinc-200"
+            @foreach ($columns as $col)
+              <th
+                scope="col"
+                aria-sort="{{ $orderColumn === $col['key'] ? ($orderDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}"
+                class="bg-mist sticky top-0 z-10 px-4 py-3 font-semibold tracking-wider uppercase lg:z-20"
               >
-                Nama
-                @if ($orderColumn === "name")
-                  <flux:icon
-                    variant="solid"
-                    icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}"
-                    class="size-4"
-                  />
-                @endif
-              </button>
-            </th>
+                <button
+                  type="button"
+                  wire:click="sortBy('{{ $col['key'] }}')"
+                  class="flex w-full cursor-pointer items-center gap-2 {{ $col['align'] }} font-semibold tracking-wider uppercase transition-colors hover:text-zinc-500"
+                >
+                  {{ $col["label"] }}
+                  @if ($orderColumn === $col["key"])
+                    <flux:icon
+                      variant="solid"
+                      icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}"
+                      class="size-4"
+                    />
+                  @endif
+                </button>
+              </th>
+            @endforeach
 
-            <!-- Tanggal -->
             <th
-              class="bg-misty sticky top-0 z-10 px-4 py-3 font-semibold tracking-wider uppercase lg:z-20"
-            >
-              <button
-                wire:click="sortBy('created_at')"
-                class="flex w-full cursor-pointer items-center justify-center gap-2 font-semibold tracking-wider uppercase transition-colors hover:text-zinc-200"
-              >
-                handle
-                @if ($orderColumn === "created_at")
-                  <flux:icon
-                    variant="solid"
-                    icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}"
-                    class="size-4"
-                  />
-                @endif
-              </button>
-            </th>
-
-            <!-- Header Kategori -->
-            <th
-              class="bg-misty sticky top-0 z-10 px-4 py-3 font-semibold tracking-wider uppercase lg:z-20"
-            >
-              <button
-                wire:click="sortBy('category')"
-                class="flex w-full cursor-pointer items-center gap-2 font-semibold tracking-wider uppercase transition-colors hover:text-zinc-200"
-              >
-                E-mail
-                @if ($orderColumn === "category")
-                  <flux:icon
-                    variant="solid"
-                    icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}"
-                    class="size-4"
-                  />
-                @endif
-              </button>
-            </th>
-
-            <!-- Header Status -->
-            <th
-              class="bg-misty sticky top-0 z-10 px-4 py-3 font-semibold tracking-wider uppercase lg:z-20"
-            >
-              <button
-                wire:click="sortBy('status')"
-                class="flex w-full cursor-pointer items-center gap-2 font-semibold tracking-wider uppercase transition-colors hover:text-zinc-200"
-              >
-                Status
-                @if ($orderColumn === "status")
-                  <flux:icon
-                    variant="solid"
-                    icon="{{ $orderDirection === 'asc' ? 'chevron-up' : 'chevron-down' }}"
-                    class="size-4"
-                  />
-                @endif
-              </button>
-            </th>
-            <th
-              class="bg-misty sticky top-0 z-10 px-4 py-3 text-center font-semibold tracking-wider uppercase lg:z-20"
+              scope="col"
+              class="bg-mist sticky top-0 z-10 px-4 py-3 text-center font-semibold tracking-wider uppercase lg:z-20"
             >
               {{ __("roles") }}
             </th>
 
             <!-- Header Kelola (Tidak perlu sorting) -->
             <th
-              class="bg-misty sticky top-0 z-10 px-4 py-3 text-center font-semibold tracking-wider uppercase lg:z-20"
+              scope="col"
+              class="bg-mist sticky top-0 z-10 px-4 py-3 text-center font-semibold tracking-wider uppercase lg:z-20"
             >
               Kelola
             </th>
@@ -333,102 +289,135 @@ new class extends Component {
           class="divide-y divide-zinc-200 bg-white text-zinc-700 dark:divide-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
         >
           @forelse ($this->userList as $user)
-            @foreach (range(1, 1) as $i)
-              <tr
-                class="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
-              >
-                <td class="px-4 py-3.5 text-sm">
-                  <div class="font-medium text-zinc-900 dark:text-white">
-                    {{ $user->name }}
-                  </div>
-                  <div class="text-xs text-zinc-500 dark:text-zinc-400">
-                    {{ $user->job_title }}
-                  </div>
-                </td>
-                <td class="h-full px-4 py-0 align-middle text-sm">
+            @php
+              // Foto lewat ChatAvatar (User::reviewAvatarUrl()), sama seperti di halaman profil dan header.
+              $avatar = \App\Content\ChatAvatar::url($user);
+            @endphp
+            <tr
+              wire:key="user-{{ $user->id }}"
+              class="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+            >
+              <td class="px-4 py-3.5 text-sm">
+                <div class="flex items-center gap-3">
+                  {{-- Inisial di bawah, foto di atasnya; foto gagal dimuat -> <img> dibuang dan inisial terlihat --}}
                   <div
-                    class="flex h-full min-h-14 items-center justify-center gap-2"
+                    class="bg-mist text-forest relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-bold"
                   >
+                    <span aria-hidden="true">{{
+                      \App\Content\ChatAvatar::initials(
+                        (string) $user->name,
+                      )
+                    }}</span>
+                    @if ($avatar)
+                      <img
+                        src="{{ $avatar }}"
+                        alt=""
+                        width="40"
+                        height="40"
+                        loading="lazy"
+                        decoding="async"
+                        class="absolute inset-0 h-full w-full object-cover"
+                        onerror="this.remove()"
+                      />
+                    @endif
+                  </div>
+                  <div class="min-w-0">
                     <div
-                      class="bg-sage-soft text-foresty rounded px-2 py-0.5 text-xs font-medium dark:bg-slate-800 dark:text-slate-300"
+                      class="truncate font-medium text-zinc-900 dark:text-white"
                     >
-                      {{ $user->handle }}
+                      {{ $user->name }}
+                    </div>
+                    <div
+                      class="truncate text-xs text-zinc-500 dark:text-zinc-400"
+                    >
+                      {{ $user->job_title }}
                     </div>
                   </div>
-                </td>
-                <td class="px-4 py-3.5 text-sm">{{ $user->email }}</td>
-                {{-- Hapus mx-auto, ganti dengan text-center dan align-middle --}}
-                <td class="px-4 py-3.5 text-center align-middle text-sm">
-                  @if ($user->active)
-                    {{-- Tambahkan inline-block agar padding span dirender sempurna --}}
-                    <span
-                      class="bg-misty text-foresty border-foresty bg-misty inline-flex items-center gap-2 rounded-full border-2 px-2.5 py-0.5 text-xs font-medium dark:bg-violet-950 dark:text-violet-300"
-                    >
-                      <span
-                        class="bg-foresty inline-block h-1.5 w-1.5 rounded-full"
-                      ></span
-                      >Aktif
-                    </span>
-                  @else
-                    <span
-                      class="py-0.5text-xs bg-coral-muted inline-flex items-center gap-2 rounded-full border-2 border-red-700 px-2.5 font-medium text-red-700 dark:bg-yellow-950 dark:text-yellow-300"
-                    >
-                      <span
-                        class="inline-block h-1.5 w-1.5 rounded-full bg-red-700"
-                      ></span
-                      >Nonaktif
-                    </span>
-                  @endif
-                </td>
-                <td class="px-4 py-3.5 align-middle text-sm">
-                  <div class="flex items-center gap-4">
-                    @forelse ($user->getRoleNames() as $role)
-                      <div
-                        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold gap-2 {{ $user->getRoleColor($role) }}"
-                      >
-                        <x-dynamic-component
-                          component="{{ $user->getRoleIcon($role) }}"
-                          class="h-4 w-4"
-                          stroke-width="2.5"
-                        />
-                        {{ ucfirst($role) }}
-                      </div>
-                    @empty
-                      <!-- Jika user tidak punya role sama sekali -->
-                      <span
-                        class="inline-flex items-center rounded-full border border-zinc-700 bg-zinc-50 px-2.5 py-0.5 text-xs font-semibold text-zinc-700"
-                      >
-                        Tanpa Wewenang
-                      </span>
-                    @endforelse
+                </div>
+              </td>
+              <td class="h-full px-4 py-0 align-middle text-sm">
+                <div
+                  class="flex h-full min-h-14 items-center justify-center gap-2"
+                >
+                  <div
+                    class="bg-sage-soft text-foresty rounded px-2 py-0.5 text-xs font-medium dark:bg-slate-800 dark:text-slate-300"
+                  >
+                    {{ $user->handle }}
                   </div>
-                </td>
-                <td class="px-4 py-3.5 text-sm">
-                  {{-- BUTTONS CONTAINER --}}
-                  <div class="flex items-center justify-center gap-2">
-                    <a
-                      wire:navigate
-                      href="{{ route('user.detail', $user) }}"
-                      class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
+                </div>
+              </td>
+              <td class="px-4 py-3.5 text-sm">{{ $user->email }}</td>
+              {{-- Hapus mx-auto, ganti dengan text-center dan align-middle --}}
+              <td class="px-4 py-3.5 text-center align-middle text-sm">
+                @if ($user->active)
+                  {{-- Tambahkan inline-block agar padding span dirender sempurna --}}
+                  <span
+                    class="bg-mist text-foresty border-foresty inline-flex items-center gap-2 rounded-full border-2 px-2.5 py-0.5 text-xs font-medium dark:bg-violet-950 dark:text-violet-300"
+                  >
+                    <span
+                      class="bg-foresty inline-block h-1.5 w-1.5 rounded-full"
+                    ></span
+                    >Aktif
+                  </span>
+                @else
+                  <span
+                    class="bg-coral-muted inline-flex items-center gap-2 rounded-full border-2 border-red-700 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-yellow-950 dark:text-yellow-300"
+                  >
+                    <span
+                      class="inline-block h-1.5 w-1.5 rounded-full bg-red-700"
+                    ></span
+                    >Nonaktif
+                  </span>
+                @endif
+              </td>
+              <td class="px-4 py-3.5 align-middle text-sm">
+                <div class="flex items-center gap-4">
+                  @forelse ($user->getRoleNames() as $role)
+                    <div
+                      class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold gap-2 {{ $user->getRoleColor($role) }}"
                     >
-                      <flux:icon variant="solid" icon="eye" class="size-3.5!" />
-                      <span
-                        class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-max -translate-x-1/2 rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900"
-                      >
-                        Detail
-                        <svg class="absolute top-full left-0 h-2 w-full text-gray-900 dark:text-gray-100" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
-                          <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
-                        </svg>
-                      </span>
-                    </a>
-                  </div>
-                </td>
-              </tr>
-            @endforeach
+                      <x-dynamic-component
+                        component="{{ $user->getRoleIcon($role) }}"
+                        class="h-4 w-4"
+                        stroke-width="2.5"
+                      />
+                      {{ ucfirst($role) }}
+                    </div>
+                  @empty
+                    <!-- Jika user tidak punya role sama sekali -->
+                    <span
+                      class="inline-flex items-center rounded-full border border-zinc-700 bg-zinc-50 px-2.5 py-0.5 text-xs font-semibold text-zinc-700"
+                    >
+                      Tanpa Wewenang
+                    </span>
+                  @endforelse
+                </div>
+              </td>
+              <td class="px-4 py-3.5 text-sm">
+                {{-- BUTTONS CONTAINER --}}
+                <div class="flex items-center justify-center gap-2">
+                  <a
+                    wire:navigate
+                    href="{{ route('user.detail', $user) }}"
+                    class="group relative flex cursor-pointer items-center justify-center rounded-md bg-slate-600 p-1.5 text-white transition-colors hover:bg-slate-700 dark:bg-slate-800"
+                  >
+                    <flux:icon variant="solid" icon="eye" class="size-3.5!" />
+                    <span
+                      class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-max -translate-x-1/2 rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 dark:bg-gray-100 dark:text-gray-900"
+                    >
+                      Detail
+                      <svg class="absolute top-full left-0 h-2 w-full text-gray-900 dark:text-gray-100" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve">
+                        <polygon class="fill-current" points="0,0 127.5,127.5 255,0" />
+                      </svg>
+                    </span>
+                  </a>
+                </div>
+              </td>
+            </tr>
           @empty
             {{-- INI AKAN MUNCUL JIKA TIDAK ADA DATA  --}}
             <tr>
-              <td colspan="4" class="px-4 py-12 text-center">
+              <td colspan="6" class="px-4 py-12 text-center">
                 <div class="flex flex-col items-center justify-center">
                   <flux:icon
                     variant="outline"
@@ -437,7 +426,7 @@ new class extends Component {
                   />
                   <span
                     class="text-sm font-medium text-zinc-500 dark:text-zinc-400"
-                    >Nu uh</span
+                    >Belum ada pengguna.</span
                   >
                 </div>
               </td>

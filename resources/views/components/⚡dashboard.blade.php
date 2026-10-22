@@ -24,8 +24,10 @@ new class extends Component {
     <div class="rounded-xl bg-white p-4">
       <livewire:content.site-stats lazy />
     </div>
-    <div class="rounded-xl bg-white p-4">
-      <livewire:content.attention-list />
-    </div>
+    @hasanyrole ("admin|editor")
+      <div class="rounded-xl bg-white p-4">
+        <livewire:content.attention-list />
+      </div>
+    @endhasanyrole
   </div>
 </div>

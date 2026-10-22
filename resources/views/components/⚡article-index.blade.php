@@ -102,13 +102,17 @@ new class extends Component {
       ])
       ->with(["author:id,name", "category"]);
 
-    // 1. Pencarian judul: judul berupa JSON per bahasa, jadi dicari di setiap bahasa.
-    $term = trim($this->titleSearch);
+    // 1. Pencarian judul: judul berupa JSON per bahasa, dicari di semua bahasa. Kolom JSON MariaDB
+    //    memakai collation biner (peka huruf besar/kecil), jadi kedua sisi diubah ke huruf kecil.
+    $term = mb_strtolower(trim($this->titleSearch));
     if ($term !== "") {
       $like = "%" . addcslashes($term, "%_\\") . "%";
       $query->where(function ($w) use ($like) {
         foreach (Languages::fromConfig()["locales"] as $code) {
-          $w->orWhere("posts.title->" . $code, "like", $like);
+          $w->orWhereRaw(
+            "LOWER(JSON_UNQUOTE(JSON_EXTRACT(posts.title, ?))) LIKE ?",
+            ['$."' . $code . '"', $like],
+          );
         }
       });
     }
@@ -123,13 +127,11 @@ new class extends Component {
 
     // 4. Urutan. leftJoin supaya artikel tanpa kategori tidak hilang; judul/nama diurutkan menurut bahasa aktif.
     $direction = $this->orderDirection === "asc" ? "asc" : "desc";
-    $locale = app()->getLocale();
     if ($this->orderColumn === "category") {
-      $query
-        ->leftJoin("categories", "posts.category_id", "=", "categories.id")
-        ->orderBy("categories.name->" . $locale, $direction);
+      $query->leftJoin("categories", "posts.category_id", "=", "categories.id");
+      $this->sortByJsonText($query, "categories.name", $direction);
     } elseif ($this->orderColumn === "title") {
-      $query->orderBy("posts.title->" . $locale, $direction);
+      $this->sortByJsonText($query, "posts.title", $direction);
     } else {
       $query->orderBy("posts." . $this->orderColumn, $direction);
     }
@@ -151,6 +153,27 @@ new class extends Component {
       $this->orderDirection = "asc";
     }
     $this->resetPage();
+  }
+
+  // Urutan teks dari kolom JSON per bahasa: tak membedakan huruf besar/kecil, dan memakai id/en bila bahasa aktif kosong.
+  private function sortByJsonText(
+    $query,
+    string $column,
+    string $direction,
+  ): void {
+    $parts = [];
+    $bindings = [];
+    foreach (array_unique([app()->getLocale(), "id", "en"]) as $code) {
+      $parts[] = "NULLIF(JSON_UNQUOTE(JSON_EXTRACT({$column}, ?)), '')";
+      $bindings[] = '$."' . $code . '"';
+    }
+    // JSON_UNQUOTE di MariaDB mengembalikan utf8mb3, jadi diubah dulu ke utf8mb4 sebelum diberi collation.
+    $query->orderByRaw(
+      "CONVERT(COALESCE(" .
+        implode(", ", $parts) .
+        ") USING utf8mb4) COLLATE utf8mb4_unicode_ci {$direction}",
+      $bindings,
+    );
   }
 
   public function deleteArticle(int $articleId): void

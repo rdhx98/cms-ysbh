@@ -39,19 +39,17 @@ Route::middleware(["auth", "verified"])->group(function () {
     // Route::livewire("/user/create", "user-detail")->middleware("role:admin|editor")->name("user.create");
     // Route::livewire("/user/detail/{user:handle}", "user-detail")->middleware("role:admin|editor")->name("user.detail");
     Route::livewire("/user/detail/{user:handle}", "user-detail")
-    ->middleware(["role:admin|editor|writer", "can:view,user"])
-    ->name("user.detail");
- 
+        ->middleware(["role:admin|editor|writer", "can:view,user"])
+        ->name("user.detail");
+
     // Hanya admin: daftar pengguna dan pembuatan pengguna baru
-    Route::livewire("/user", "user-index")
-        ->middleware("role:admin")
-        ->name("user.index");
-    
+    Route::livewire("/user", "user-index")->middleware("role:admin")->name("user.index");
+
     Route::livewire("/user/create", "user-detail")
         ->middleware(["role:admin", "can:create," . \App\Models\User::class])
         ->name("user.create");
 
-    Route::livewire("/preferences", "settings-manager")->middleware("role:admin|editor")->name("settings.manager");
+    Route::livewire("/preferences", "settings-manager")->middleware("role:admin")->name("settings.manager");
 
     // Route::livewire("/documentation", "json-viewer")->name("documentation");
     Route::view("/documentation", "pages.todo")->name("documentation");
@@ -63,6 +61,8 @@ Route::middleware(["auth", "verified"])->group(function () {
     Route::livewire("/article", "article-index")->name("article.index");
     Route::livewire("/article/write", "content.builder")->name("article.write");
     Route::livewire("/article/edit/{post:id}", "content.builder")->name("article.edit");
+
+    Route::livewire("/banners", "announcement-manager")->middleware("role:admin|editor")->name("banner.index");
 
     Route::livewire("/snippet", "snippet-index")->middleware("role:admin|editor")->name("snippet.index");
     Route::livewire("/snippet/make", "content.builder")->middleware("role:admin|editor")->name("snippet.create");

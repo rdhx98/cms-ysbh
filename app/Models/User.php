@@ -18,7 +18,7 @@ use Spatie\Permission\Traits\HasRoles;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-#[Fillable(["name", "handle", "email", "active", "job_title", "password"])]
+#[Fillable(["name", "handle", "email", "active", "job_title", "password", "avatar"])]
 #[Hidden(["password", "two_factor_secret", "two_factor_recovery_codes", "remember_token"])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -77,5 +77,26 @@ class User extends Authenticatable implements PasskeyUser
             "writer" => "lucide-feather",
             default => "lucide-user", // Ikon default jika role tidak dikenali
         };
+    }
+    public function reviewAvatarUrl(): ?string
+    {
+        $v = trim((string) $this->getAttribute("avatar"));
+        if ($v === "") {
+            return null;
+        }
+        if (preg_match("#^https?://#i", $v)) {
+            return $v;
+        }
+        if (str_starts_with($v, "/storage/")) {
+            $v = rawurldecode(substr($v, 9));
+        } elseif (str_starts_with($v, "/")) {
+            return $v;
+        }
+
+        return preg_replace_callback(
+            '/[\s"\'<>]/',
+            fn($m) => rawurlencode($m[0]),
+            \Illuminate\Support\Facades\Storage::disk("public")->url($v),
+        );
     }
 }

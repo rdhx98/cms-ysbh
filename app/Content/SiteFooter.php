@@ -12,9 +12,11 @@ use App\Content\Links\LinkResolver;
  *   description       paragraf di bawah nama yayasan
  *   columns[2]        {heading: peta, links: [{label: peta, url: "/about-us", new_tab: bool}]}   (maks. 8 tautan per kolom)
  *   contact_heading   judul kolom kontak
- *   contacts[]        {type: phone|address|email|social, text: peta, url: "https://…", badge: "IG"}   (maks. 8)
+ *   contacts[]        {type: phone|address|email|social, text: peta, url: "https://…", icon: "instagram", badge: ""}   (maks. 8)
  *                       phone/email: hanya `text` (nomor / surel); alamat tel:/mailto: dibentuk sendiri dan SAMA di semua bahasa
- *                       address/social: `text` per bahasa + `url` http(s) opsional; social memakai `badge` (maks. 4 huruf) sebagai ikon
+ *                       address/social: `text` per bahasa + `url` http(s) opsional
+ *                       social: `icon` = slug ikon merek (SocialIcons, rilis 86); kosong = ditebak dari `url` saat tampil (instagram.com ->
+ *                       instagram). `badge` (maks. 4 huruf) hanya cadangan terakhir bila ikon tidak bisa ditentukan (data lama rilis 55)
  *   copyright         "© {year} Yayasan …"  ({year} diganti tahun berjalan)
  *   tagline           slogan di kanan bawah
  *
@@ -74,10 +76,10 @@ final class SiteFooter
             ],
             'contact_heading' => self::m('Info Kontak', 'Contact'),
             'contacts' => [
-                ['type' => 'phone', 'text' => self::m('+62 823 8229 5759', '+62 823 8229 5759'), 'url' => '', 'badge' => ''],
-                ['type' => 'address', 'text' => self::m('BTN Umum Blok I No. 155, Jayapura', 'BTN Umum Blok I No. 155, Jayapura'), 'url' => 'https://maps.app.goo.gl/TMx2eBRxoCpo5gkv9', 'badge' => ''],
-                ['type' => 'email', 'text' => self::m('contact@ysbh.org', 'contact@ysbh.org'), 'url' => '', 'badge' => ''],
-                ['type' => 'social', 'text' => self::m('@ysbhusada', '@ysbhusada'), 'url' => 'https://www.instagram.com/ysbhusada/', 'badge' => 'IG'],
+                ['type' => 'phone', 'text' => self::m('+62 823 8229 5759', '+62 823 8229 5759'), 'url' => '', 'icon' => '', 'badge' => ''],
+                ['type' => 'address', 'text' => self::m('BTN Umum Blok I No. 155, Jayapura', 'BTN Umum Blok I No. 155, Jayapura'), 'url' => 'https://maps.app.goo.gl/TMx2eBRxoCpo5gkv9', 'icon' => '', 'badge' => ''],
+                ['type' => 'email', 'text' => self::m('contact@ysbh.org', 'contact@ysbh.org'), 'url' => '', 'icon' => '', 'badge' => ''],
+                ['type' => 'social', 'text' => self::m('@ysbhusada', '@ysbhusada'), 'url' => 'https://www.instagram.com/ysbhusada/', 'icon' => 'instagram', 'badge' => ''],
             ],
             'copyright' => self::m('© {year} Yayasan Sinar Bhakti Husada', '© {year} Yayasan Sinar Bhakti Husada'),
             'tagline' => self::m('Dibuat dengan bhakti, untuk sinar yang terus menyala.', 'Made with devotion, so the light keeps shining.'),
@@ -220,7 +222,8 @@ final class SiteFooter
             $text = $map($contact['text'] ?? [], self::MAX_TEXT, "$where, teks");
             $url = trim(is_scalar($contact['url'] ?? null) ? (string) $contact['url'] : '');
             $badge = self::plain($contact['badge'] ?? '');
-            if (!$any($text) && $url === '' && $badge === '') {
+            $icon = is_scalar($contact['icon'] ?? null) ? trim((string) $contact['icon']) : '';
+            if (!$any($text) && $url === '' && $badge === '' && $icon === '') {
                 continue;
             }
             if (!in_array($type, self::CONTACT_TYPES, true)) {
@@ -242,18 +245,23 @@ final class SiteFooter
                 }
                 $url = '';
                 $badge = '';
+                $icon = '';
             } else {
                 if ($url !== '' && (!preg_match('#^https?://#i', $url) || LinkResolver::safeUrl($url) === null)) {
                     $errors[] = "$where: tautan harus diawali https:// (atau dikosongkan).";
                 }
                 if ($type === 'address') {
                     $badge = '';
+                    $icon = '';
+                } elseif ($icon !== '' && !SocialIcons::has($icon)) {
+                    $errors[] = "$where: ikon \"$icon\" tidak dikenal. Pilih dari daftar ikon.";
+                    $icon = '';
                 } elseif (mb_strlen($badge) > self::MAX_BADGE) {
                     $errors[] = "$where: ikon teks maksimal " . self::MAX_BADGE . ' huruf.';
                     $badge = mb_substr($badge, 0, self::MAX_BADGE);
                 }
             }
-            $contacts[] = ['type' => $type, 'text' => $text, 'url' => $url, 'badge' => $badge];
+            $contacts[] = ['type' => $type, 'text' => $text, 'url' => $url, 'icon' => $icon, 'badge' => $badge];
         }
 
         $data = [
@@ -317,6 +325,7 @@ final class SiteFooter
                 'type' => in_array($type, self::CONTACT_TYPES, true) ? $type : 'address',
                 'text' => $map($contact['text'] ?? []),
                 'url' => is_scalar($contact['url'] ?? null) ? (string) $contact['url'] : '',
+                'icon' => is_scalar($contact['icon'] ?? null) && SocialIcons::has((string) $contact['icon']) ? (string) $contact['icon'] : '',
                 'badge' => is_scalar($contact['badge'] ?? null) ? (string) $contact['badge'] : '',
             ];
         }
@@ -336,7 +345,7 @@ final class SiteFooter
      *
      * @param string[]                   $locales
      * @param callable(string,string):string $localize (url tautan, bahasa) -> alamat bahasa itu (NavLinks lewat PublicLookup::localizeUrl)
-     * @return array{description:string,columns:list<array{heading:string,links:list<array{label:string,href:string,new_tab:bool}>}>,contact_heading:string,contacts:list<array{type:string,text:string,href:?string,badge:string,external:bool}>,copyright:string,tagline:string}
+     * @return array{description:string,columns:list<array{heading:string,links:list<array{label:string,href:string,new_tab:bool}>}>,contact_heading:string,contacts:list<array{type:string,text:string,href:?string,icon:string,badge:string,external:bool}>,copyright:string,tagline:string}
      */
     public static function view(array $data, string $locale, array $locales, string $default, callable $localize, ?int $year = null): array
     {
@@ -376,11 +385,13 @@ final class SiteFooter
                 'email' => filter_var($label, FILTER_VALIDATE_EMAIL) ? 'mailto:' . $label : null,
                 default => preg_match('#^https?://#i', $url) && LinkResolver::safeUrl($url) !== null ? $url : null,
             };
-            $badge = $type === 'social' ? self::plain($contact['badge'] ?? '') : '';
-            if ($type === 'social' && $badge === '') {
+            // rilis 86: ikon merek (pilihan, atau ditebak dari tautan); huruf hanya cadangan terakhir
+            $icon = $type === 'social' ? SocialIcons::resolve($contact['icon'] ?? null, $url) : '';
+            $badge = $type === 'social' && $icon === '' ? self::plain($contact['badge'] ?? '') : '';
+            if ($type === 'social' && $icon === '' && $badge === '') {
                 $badge = mb_strtoupper(mb_substr(ltrim($label, '@'), 0, 2));   // tanpa ikon teks: dua huruf pertama
             }
-            $contacts[] = ['type' => $type, 'text' => $label, 'href' => $href, 'badge' => mb_substr($badge, 0, self::MAX_BADGE), 'external' => in_array($type, ['address', 'social'], true) && $href !== null];
+            $contacts[] = ['type' => $type, 'text' => $label, 'href' => $href, 'icon' => $icon, 'badge' => mb_substr($badge, 0, self::MAX_BADGE), 'external' => in_array($type, ['address', 'social'], true) && $href !== null];
         }
 
         $copyright = str_replace('{year}', (string) ($year ?? (int) date('Y')), $text($data['copyright'] ?? []));

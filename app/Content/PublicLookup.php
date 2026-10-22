@@ -34,11 +34,31 @@ final class PublicLookup
 
     private static bool $paletteLoaded = false;
 
+    /** Profil situs mentah dari tabel site_settings (rilis 83), diingat per permintaan. */
+    private static ?string $profileRaw = null;
+
+    private static bool $profileLoaded = false;
+
+    /** Alamat gambar profil (id media => alamat) per permintaan, supaya tiga gambar tidak dicari tiga kali. @var array<int,string> */
+    private static array $profileMedia = [];
+
+    /** Pengumuman mentah dari tabel site_settings (rilis 85), diingat per permintaan. */
+    private static ?string $announcementRaw = null;
+
+    private static bool $announcementLoaded = false;
+
+    /** Alamat gambar pengumuman (id media => alamat) per permintaan. @var array<int,string> */
+    private static array $announcementMedia = [];
+
     public static function flush(): void
     {
         self::$siblings = [];
+        self::$announcementLoaded = false;
+        self::$announcementMedia = [];
         self::$footerLoaded = false;
         self::$paletteLoaded = false;
+        self::$profileLoaded = false;
+        self::$profileMedia = [];
         self::$categoriesStale = true;
         self::$tagsStale = true;
     }
@@ -71,6 +91,120 @@ final class PublicLookup
         }
 
         return SiteFooter::view($data, $locale, $locales, $default, fn (string $url, string $l) => self::localizeUrl($url, $l));
+    }
+
+    /**
+     * Rilis 83: profil situs & SEO untuk bahasa $locale, siap tampil (SiteProfile::view). Sumber: tabel site_settings, kunci "profile".
+     * Belum diatur / tabel belum ada / data rusak = profil kosong (nama kosong, tanpa gambar); landing lalu memakai kebiasaan lamanya.
+     * Gambar disimpan sebagai id media dan di sini diubah menjadi alamat lewat model Media (MEDIA_URL lingkungan saat ini); media yang
+     * dihapus / tidak ada = alamat kosong. TIDAK PERNAH melempar galat.
+     */
+    public static function profile(string $locale): array
+    {
+        try {
+            $lang = Languages::fromConfig();
+            $locales = $lang['locales'];
+            $default = $lang['default'];
+        } catch (\Throwable) {
+            $locales = ['en', 'id'];
+            $default = 'en';
+        }
+        try {
+            if (!self::$profileLoaded) {
+                $value = \Illuminate\Support\Facades\DB::table('site_settings')->where('key', SiteProfile::KEY)->value('value');
+                self::$profileRaw = is_string($value) ? $value : null;
+                self::$profileLoaded = true;
+            }
+            $data = SiteProfile::resolve(self::$profileRaw);
+        } catch (\Throwable) {
+            $data = SiteProfile::defaults();   // tabel belum ada atau basis data bermasalah
+            self::$profileLoaded = true;
+            self::$profileRaw = null;
+        }
+
+        $ids = SiteProfile::mediaIds($data);
+        $missing = array_values(array_diff($ids, array_keys(self::$profileMedia)));
+        if ($missing !== []) {
+            try {
+                foreach (Blocks\MediaUrls::fromModel($missing) as $id => $url) {
+                    self::$profileMedia[(int) $id] = $url;
+                }
+            } catch (\Throwable) {
+                // gambar tidak tersedia: alamat kosong, halaman tetap tampil
+            }
+        }
+        try {
+            $production = function_exists('app') && app()->environment('production');
+        } catch (\Throwable) {
+            $production = false;
+        }
+
+        return SiteProfile::view($data, $locale, $locales, $default, self::$profileMedia, $production);
+    }
+
+    /**
+     * Rilis 85: pengumuman yang harus tampil SEKARANG untuk bahasa $locale: ['banner' => ?array, 'popup' => ?array] (Announcement::view).
+     * Sumber: tabel site_settings, kunci "announcement". Belum diatur / tabel belum ada / data rusak / basis data bermasalah = tidak ada
+     * pengumuman. TIDAK PERNAH melempar galat. $now (cap UNIX) untuk pengujian; bawaan: sekarang.
+     *
+     * @return array{banner:?array<string,mixed>,popup:?array<string,mixed>}
+     */
+    public static function announcement(string $locale, bool $isHome = false, ?int $now = null): array
+    {
+        $none = ['banner' => null, 'popup' => null];
+        try {
+            $lang = Languages::fromConfig();
+            $locales = $lang['locales'];
+            $default = $lang['default'];
+        } catch (\Throwable) {
+            $locales = ['en', 'id'];
+            $default = 'en';
+        }
+        try {
+            if (!self::$announcementLoaded) {
+                $value = \Illuminate\Support\Facades\DB::table('site_settings')->where('key', Announcement::KEY)->value('value');
+                self::$announcementRaw = is_string($value) ? $value : null;
+                self::$announcementLoaded = true;
+            }
+            if (self::$announcementRaw === null) {
+                return $none;
+            }
+            $data = Announcement::resolve(self::$announcementRaw);
+            $active = Announcement::pickActive($data, $now ?? time(), $isHome);
+            $ids = [];
+            foreach ($active as $item) {
+                if ($item !== null && $item['type'] === 'popup' && $item['image_media'] !== null) {
+                    $ids[] = (int) $item['image_media'];
+                }
+            }
+            $missing = array_values(array_diff($ids, array_keys(self::$announcementMedia)));
+            if ($missing !== []) {
+                try {
+                    foreach (Blocks\MediaUrls::fromModel($missing) as $id => $url) {
+                        self::$announcementMedia[(int) $id] = $url;
+                    }
+                } catch (\Throwable) {
+                    // gambar tidak tersedia: popup tampil tanpa gambar
+                }
+            }
+
+            return Announcement::view($data, $locale, $locales, $default, self::$announcementMedia, fn (string $url, string $l) => self::localizeUrl($url, $l), $now ?? time(), $isHome);
+        } catch (\Throwable) {
+            self::$announcementLoaded = true;
+            self::$announcementRaw = null;
+
+            return $none;
+        }
+    }
+
+    /** Rilis 83: teks JSON-LD Organization untuk <head> (kosong bila dimatikan / tanpa nama). Tidak pernah melempar galat. */
+    public static function jsonLd(string $locale, string $base): string
+    {
+        try {
+            return SiteProfile::jsonLd(self::profile($locale), self::footer($locale), $base);
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     /**

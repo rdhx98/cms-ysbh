@@ -52,7 +52,24 @@ class Media extends Model
      */
     public function isInUse(): bool
     {
-        return $this->usages()->exists();
+        return $this->usages()->exists() || $this->usedBySiteProfile() || $this->usedByAnnouncement();
+    }
+
+    /**
+     * Rilis 83: logo / favicon / gambar berbagi di Pengaturan > Profil & SEO menyimpan id media di site_settings (bukan di media_usages,
+     * karena bukan Halaman/Artikel), jadi dicek terpisah. Tidak pernah galat: gagal membaca = dianggap tidak dipakai profil.
+     */
+    public function usedBySiteProfile(): bool
+    {
+        return class_exists(\App\Content\ProfileSettings::class) && in_array((int) $this->id, \App\Content\ProfileSettings::mediaIds(), true);
+    }
+
+    /**
+     * Rilis 85: gambar popup pengumuman menyimpan id media di site_settings (kunci "announcement"), bukan di media_usages. Tidak pernah galat.
+     */
+    public function usedByAnnouncement(): bool
+    {
+        return class_exists(\App\Content\AnnouncementSettings::class) && in_array((int) $this->id, \App\Content\AnnouncementSettings::mediaIds(), true);
     }
 
     /**

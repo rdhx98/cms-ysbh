@@ -14,8 +14,18 @@ namespace App\Content;
  */
 final class SiteText
 {
-    /** @return array<string,list<array{0:string,1:array<string,string>}>> */
+    /**
+     * Semua halaman: 13 halaman pertama (teks di bawah) + lima kerangka rilis 84 (SiteTextExtra, memakai blok Akordion/Tabel/Callout/Artikel terbaru).
+     *
+     * @return array<string,list<array{0:string,1:mixed}>>
+     */
     public static function all(): array
+    {
+        return self::core() + SiteTextExtra::all();
+    }
+
+    /** @return array<string,list<array{0:string,1:array<string,string>}>> 13 halaman pertama: hanya h1/h2/h3 dan p */
+    private static function core(): array
     {
         return [
             'home' => [
@@ -263,7 +273,7 @@ final class SiteText
         ];
     }
 
-    /** @return list<array{0:string,1:array<string,string>}> blok halaman $key, atau [] bila halaman itu belum punya teks */
+    /** @return list<array{0:string,1:mixed}> blok halaman $key, atau [] bila halaman itu belum punya teks */
     public static function items(string $key): array
     {
         return self::all()[$key] ?? [];

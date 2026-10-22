@@ -34,6 +34,12 @@ final class SitePages
             ['key' => 'transparency', 'title' => ['en' => 'Transparency', 'id' => 'Transparansi'], 'slug' => ['en' => 'transparency', 'id' => 'transparansi'], 'snippet' => self::SNIPPET_KEY],
             ['key' => 'donation', 'title' => ['en' => 'Donate', 'id' => 'Donasi'], 'slug' => ['en' => 'donate', 'id' => 'donasi']],
             ['key' => 'contact', 'title' => ['en' => 'Contact Us', 'id' => 'Hubungi Kami'], 'slug' => ['en' => 'contact', 'id' => 'kontak']],
+            // Rilis 84: kerangka (offline, berpenanda) dengan blok Akordion / Tabel / Callout / Artikel terbaru
+            ['key' => 'structure', 'title' => ['en' => 'Organizational Structure', 'id' => 'Struktur Organisasi'], 'slug' => ['en' => 'organizational-structure', 'id' => 'struktur-organisasi']],
+            ['key' => 'inventory', 'title' => ['en' => 'Facilities and Inventory', 'id' => 'Sarana dan Inventaris'], 'slug' => ['en' => 'inventory', 'id' => 'inventaris']],
+            ['key' => 'partners', 'title' => ['en' => 'Partners and Donors', 'id' => 'Mitra dan Donatur'], 'slug' => ['en' => 'partners-and-donors', 'id' => 'mitra-dan-donatur']],
+            ['key' => 'faq', 'title' => ['en' => 'FAQ', 'id' => 'FAQ'], 'slug' => ['en' => 'faq', 'id' => 'tanya-jawab']],
+            ['key' => 'research', 'title' => ['en' => 'Research', 'id' => 'Penelitian'], 'slug' => ['en' => 'research', 'id' => 'penelitian']],
         ];
     }
 
@@ -72,6 +78,14 @@ final class SitePages
         $order = [];
         foreach (SiteText::items((string) ($page['key'] ?? '')) as $i => [$kind, $texts]) {
             $id = sprintf('b%02d', $i + 1);
+            if (!in_array($kind, ['h1', 'h2', 'h3', 'p'], true)) {
+                $rich = self::richBlock($id, (string) $kind, is_array($texts) ? $texts : [], $locales);
+                if ($rich !== null) {
+                    $blocks[$id] = $rich;
+                    $order[] = $id;
+                }
+                continue;
+            }
             $text = [];
             foreach ($locales as $l) {
                 $t = (string) ($texts[$l] ?? '');
@@ -102,6 +116,46 @@ final class SitePages
         }
 
         return ['blocks' => $blocks, 'order' => $order, 'settings' => []];
+    }
+
+    /** Blok tata letak kerangka (rilis 84) dari butir SiteTextExtra, dibersihkan oleh modul blok. Jenis tak dikenal = null (dilewati). */
+    private static function richBlock(string $id, string $kind, array $spec, array $locales): ?array
+    {
+        $n = 0;
+        $itemId = function () use ($id, &$n): string { return sprintf('itm_%s%03d', substr(md5($id), 0, 5), ++$n); };   // deterministik dan unik per blok
+        switch ($kind) {
+            case 'accordion':
+                $data = ['style' => 'boxed', 'color' => 'foresty', 'marker' => 'chevron', 'first_open' => false, 'allow_multiple' => false, 'schema' => true, 'items' => []];
+                foreach ($spec['items'] ?? [] as [$q, $a]) {
+                    $data['items'][] = ['id' => $itemId(), 'question' => $q, 'answer' => $a];
+                }
+                $type = 'accordion-builder';
+                $clean = \App\Editor\Blocks\AccordionBlock::sanitize($data, $locales);
+                break;
+            case 'table':
+                $data = ['caption' => $spec['caption'] ?? [], 'note' => [], 'header' => true, 'first_col_header' => true, 'striped' => true, 'border' => 'rows', 'density' => 'normal', 'color' => 'foresty', 'columns' => [], 'rows' => []];
+                foreach ($spec['columns'] ?? [] as [$label, $align]) {
+                    $data['columns'][] = ['id' => $itemId(), 'label' => $label, 'align' => $align];
+                }
+                foreach ($spec['rows'] ?? [] as $cells) {
+                    $data['rows'][] = ['id' => $itemId(), 'cells' => array_values($cells)];
+                }
+                $type = 'table-builder';
+                $clean = \App\Editor\Blocks\TableBlock::sanitize($data, $locales);
+                break;
+            case 'callout':
+                $type = 'callout-builder';
+                $clean = \App\Editor\Blocks\CalloutBlock::sanitize($spec + ['style' => 'soft', 'show_icon' => true], $locales);
+                break;
+            case 'latest':
+                $type = 'latest-articles-builder';
+                $clean = \App\Editor\Blocks\LatestArticlesBlock::sanitize($spec, $locales);
+                break;
+            default:
+                return null;
+        }
+
+        return ['id' => $id, 'type' => $type, 'data' => $clean];
     }
 
     /**
