@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hiasan latar: Gelombang berlapis. Bentuk lebar (7,5 : 1), tiga lapisan.
+     Warna utama = currentColor (mengikuti warna teks seksi pada "Warna asli"), aksen = #E5C423.
+     Saran: Posisi Tengah/Bawah + Utuh di dalam, Ukuran Besar, Gerak Diam, Kepekatan 100. Warna latar seksi = warna di atas gelombang. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 160">
+  <path d="M0 70 C150 15 300 20 450 58 S750 112 900 62 S1100 18 1200 48 V160 H0 Z" fill="currentColor" fill-opacity="0.3"/>
+  <path d="M0 95 C170 45 320 60 480 92 S780 140 940 96 S1110 58 1200 84 V160 H0 Z" fill="#E5C423" fill-opacity="0.6"/>
+  <path d="M0 122 C200 82 340 100 520 126 S820 160 1000 126 S1130 100 1200 116 V160 H0 Z" fill="currentColor"/>
+</svg>

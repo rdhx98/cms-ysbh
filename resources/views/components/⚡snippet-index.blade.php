@@ -128,9 +128,8 @@ new class extends Component {
   Index Snippets
 </x-slot:title>
 
-<div
-  class="mt-4 flex h-full max-h-screen min-h-0 w-full min-w-0 flex-col items-center justify-start gap-6 overflow-x-hidden overflow-y-auto"
->
+{{-- <div class="mt-4 flex h-full max-h-screen min-h-0 w-full min-w-0 flex-col items-center justify-start gap-6 overflow-x-hidden overflow-y-auto"> --}}
+<x-main-wrapper class="bg-white p-2">
   <div
     x-data="{
       activeSubPanel: 'none',
@@ -675,4 +674,5 @@ new class extends Component {
       </div>
     </div>
   </div>
-</div>
+</x-main-wrapper>
+{{-- </div> --}}

@@ -85,6 +85,7 @@ new class extends Component {
       "appearance" => ["Tampilan", "paint-brush"],
       "palette" => ["Palet", "swatch"],
       "profile" => ["Profil & SEO", "globe-alt"],
+      "language" => ["Bahasa", "language"],
     ];
   @endphp
 
@@ -215,6 +216,19 @@ new class extends Component {
           <livewire:content.site-profile-editor
             lazy
             wire:key="site-profile-editor"
+          />
+        </div>
+
+        {{-- Bahasa (rilis 104): pil bahasa melayang dan pil di header --}}
+        <div
+          x-show="activeTab === 'language'"
+          x-cloak
+          style="display: none"
+          class="p-6"
+        >
+          <livewire:content.language-switch-editor
+            lazy
+            wire:key="language-switch-editor"
           />
         </div>
       </div>

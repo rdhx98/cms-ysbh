@@ -1,0 +1,428 @@
+/*
+ * YSBH kit: palet warna + pemindaian kelas (DIBUAT OTOMATIS, jangan disunting: php tools/palette-theme.php --file)
+ *
+ * Pasang di CMS dan landing:
+ *   1. Salin berkas ini ke resources/css/ysbh-kit.css (folder yang sama dengan app.css).
+ *   2. Di app.css, tepat di bawah @import "tailwindcss";  tambahkan:   @import "./ysbh-kit.css";
+ *   3. Di blok @theme app.css Anda, HAPUS baris warna yang kini diatur palet (daftar: php tools/palette-theme.php --names).
+ *   4. npm run build, lalu muat ulang keras (Ctrl+F5).
+ * Periksa: php tools/palette-theme.php --check resources/css/app.css   (mengikuti @import)
+ */
+@theme static {
+  --color-forest: var(--pal-forest, #064f3b);
+  --color-forest-on: var(--pal-forest-on, #ffffff);
+  --color-foresty: var(
+    --pal-forest,
+    #064f3b
+  ); /* nama lama, dilebur ke forest */
+  --color-aurum: var(--pal-aurum, #e5c423);
+  --color-aurum-on: var(--pal-aurum-on, #1f2937);
+  --color-goldy: var(--pal-aurum, #e5c423); /* nama lama, dilebur ke aurum */
+  --color-aurum-soft: var(--pal-aurum-soft, #f7ebaf);
+  --color-aurum-soft-on: var(--pal-aurum-soft-on, #1f2937);
+  --color-goldy-soft: var(
+    --pal-aurum-soft,
+    #f7ebaf
+  ); /* nama lama, dilebur ke aurum-soft */
+  --color-coral: var(--pal-coral, #e42326);
+  --color-coral-on: var(--pal-coral-on, #ffffff);
+  --color-charcoal: var(--pal-charcoal, #1f2937);
+  --color-charcoal-on: var(--pal-charcoal-on, #ffffff);
+  --color-ink-soft: var(--pal-ink-soft, #4b5d53);
+  --color-ink-soft-on: var(--pal-ink-soft-on, #ffffff);
+  --color-paper: var(--pal-paper, #fbf7ea);
+  --color-paper-on: var(--pal-paper-on, #1f2937);
+  --color-mist: var(--pal-mist, #e9f1eb);
+  --color-mist-on: var(--pal-mist-on, #1f2937);
+  --color-misty: var(--pal-mist, #e9f1eb); /* nama lama, dilebur ke mist */
+  --color-sage-soft: var(--pal-sage-soft, #d2e7df);
+  --color-sage-soft-on: var(--pal-sage-soft-on, #1f2937);
+  --color-amber: var(--pal-amber, #d97706);
+  --color-amber-on: var(--pal-amber-on, #1f2937);
+  --color-kia: var(--pal-kia, #e0679a);
+  --color-kia-on: var(--pal-kia-on, #1f2937);
+  --color-kia-soft: var(--pal-kia-soft, #fcdcec);
+  --color-kia-soft-on: var(--pal-kia-soft-on, #1f2937);
+  --color-imunisasi: var(--pal-imunisasi, #1a4793);
+  --color-imunisasi-on: var(--pal-imunisasi-on, #ffffff);
+  --color-imunisasi-soft: var(--pal-imunisasi-soft, #dbe9fa);
+  --color-imunisasi-soft-on: var(--pal-imunisasi-soft-on, #1f2937);
+  --color-malaria: var(--pal-malaria, #a347c2);
+  --color-malaria-on: var(--pal-malaria-on, #ffffff);
+  --color-malaria-soft: var(--pal-malaria-soft, #ebe0f8);
+  --color-malaria-soft-on: var(--pal-malaria-soft-on, #1f2937);
+  --color-hiv: var(--pal-hiv, #a3153a);
+  --color-hiv-on: var(--pal-hiv-on, #ffffff);
+  --color-hiv-soft: var(--pal-hiv-soft, #fbd1cb);
+  --color-hiv-soft-on: var(--pal-hiv-soft-on, #1f2937);
+  --color-tbc: var(--pal-tbc, #57a630);
+  --color-tbc-on: var(--pal-tbc-on, #1f2937);
+  --color-tbc-soft: var(--pal-tbc-soft, #dff2d4);
+  --color-tbc-soft-on: var(--pal-tbc-soft-on, #1f2937);
+  --color-custom-1: var(--pal-custom-1, transparent);
+  --color-custom-1-on: var(--pal-custom-1-on, #ffffff);
+  --color-custom-2: var(--pal-custom-2, transparent);
+  --color-custom-2-on: var(--pal-custom-2-on, #ffffff);
+  --color-custom-3: var(--pal-custom-3, transparent);
+  --color-custom-3-on: var(--pal-custom-3-on, #ffffff);
+  --color-custom-4: var(--pal-custom-4, transparent);
+  --color-custom-4-on: var(--pal-custom-4-on, #ffffff);
+  --color-custom-5: var(--pal-custom-5, transparent);
+  --color-custom-5-on: var(--pal-custom-5-on, #ffffff);
+  --color-custom-6: var(--pal-custom-6, transparent);
+  --color-custom-6-on: var(--pal-custom-6-on, #ffffff);
+  --color-custom-7: var(--pal-custom-7, transparent);
+  --color-custom-7-on: var(--pal-custom-7-on, #ffffff);
+  --color-custom-8: var(--pal-custom-8, transparent);
+  --color-custom-8-on: var(--pal-custom-8-on, #ffffff);
+}
+
+/* Folder yang pasti dipindai (jalur relatif terhadap berkas ini: resources/css/). Aman bila sudah dipindai otomatis. */
+@source "../views";
+@source "../../app";
+@source inline(
+  "{bg,text,border}-{forest,aurum,aurum-soft,coral,charcoal,ink-soft,paper,mist,sage-soft,amber,kia,kia-soft,imunisasi,imunisasi-soft,malaria,malaria-soft,hiv,hiv-soft,tbc,tbc-soft,custom-1,custom-2,custom-3,custom-4,custom-5,custom-6,custom-7,custom-8}"
+);
+@source inline(
+  "text-{forest,aurum,aurum-soft,coral,charcoal,ink-soft,paper,mist,sage-soft,amber,kia,kia-soft,imunisasi,imunisasi-soft,malaria,malaria-soft,hiv,hiv-soft,tbc,tbc-soft,custom-1,custom-2,custom-3,custom-4,custom-5,custom-6,custom-7,custom-8}-on"
+);
+
+/* Cadangan: kelas palet sebagai CSS biasa di layer components (kalah dari semua utilitas Tailwind, tidak pernah menimpa). */
+@layer components {
+  .bg-forest {
+    background-color: var(--color-forest);
+  }
+  .text-forest {
+    color: var(--color-forest);
+  }
+  .border-forest {
+    border-color: var(--color-forest);
+  }
+  .text-forest-on {
+    color: var(--color-forest-on);
+  }
+  .bg-aurum {
+    background-color: var(--color-aurum);
+  }
+  .text-aurum {
+    color: var(--color-aurum);
+  }
+  .border-aurum {
+    border-color: var(--color-aurum);
+  }
+  .text-aurum-on {
+    color: var(--color-aurum-on);
+  }
+  .bg-aurum-soft {
+    background-color: var(--color-aurum-soft);
+  }
+  .text-aurum-soft {
+    color: var(--color-aurum-soft);
+  }
+  .border-aurum-soft {
+    border-color: var(--color-aurum-soft);
+  }
+  .text-aurum-soft-on {
+    color: var(--color-aurum-soft-on);
+  }
+  .bg-coral {
+    background-color: var(--color-coral);
+  }
+  .text-coral {
+    color: var(--color-coral);
+  }
+  .border-coral {
+    border-color: var(--color-coral);
+  }
+  .text-coral-on {
+    color: var(--color-coral-on);
+  }
+  .bg-charcoal {
+    background-color: var(--color-charcoal);
+  }
+  .text-charcoal {
+    color: var(--color-charcoal);
+  }
+  .border-charcoal {
+    border-color: var(--color-charcoal);
+  }
+  .text-charcoal-on {
+    color: var(--color-charcoal-on);
+  }
+  .bg-ink-soft {
+    background-color: var(--color-ink-soft);
+  }
+  .text-ink-soft {
+    color: var(--color-ink-soft);
+  }
+  .border-ink-soft {
+    border-color: var(--color-ink-soft);
+  }
+  .text-ink-soft-on {
+    color: var(--color-ink-soft-on);
+  }
+  .bg-paper {
+    background-color: var(--color-paper);
+  }
+  .text-paper {
+    color: var(--color-paper);
+  }
+  .border-paper {
+    border-color: var(--color-paper);
+  }
+  .text-paper-on {
+    color: var(--color-paper-on);
+  }
+  .bg-mist {
+    background-color: var(--color-mist);
+  }
+  .text-mist {
+    color: var(--color-mist);
+  }
+  .border-mist {
+    border-color: var(--color-mist);
+  }
+  .text-mist-on {
+    color: var(--color-mist-on);
+  }
+  .bg-sage-soft {
+    background-color: var(--color-sage-soft);
+  }
+  .text-sage-soft {
+    color: var(--color-sage-soft);
+  }
+  .border-sage-soft {
+    border-color: var(--color-sage-soft);
+  }
+  .text-sage-soft-on {
+    color: var(--color-sage-soft-on);
+  }
+  .bg-amber {
+    background-color: var(--color-amber);
+  }
+  .text-amber {
+    color: var(--color-amber);
+  }
+  .border-amber {
+    border-color: var(--color-amber);
+  }
+  .text-amber-on {
+    color: var(--color-amber-on);
+  }
+  .bg-kia {
+    background-color: var(--color-kia);
+  }
+  .text-kia {
+    color: var(--color-kia);
+  }
+  .border-kia {
+    border-color: var(--color-kia);
+  }
+  .text-kia-on {
+    color: var(--color-kia-on);
+  }
+  .bg-kia-soft {
+    background-color: var(--color-kia-soft);
+  }
+  .text-kia-soft {
+    color: var(--color-kia-soft);
+  }
+  .border-kia-soft {
+    border-color: var(--color-kia-soft);
+  }
+  .text-kia-soft-on {
+    color: var(--color-kia-soft-on);
+  }
+  .bg-imunisasi {
+    background-color: var(--color-imunisasi);
+  }
+  .text-imunisasi {
+    color: var(--color-imunisasi);
+  }
+  .border-imunisasi {
+    border-color: var(--color-imunisasi);
+  }
+  .text-imunisasi-on {
+    color: var(--color-imunisasi-on);
+  }
+  .bg-imunisasi-soft {
+    background-color: var(--color-imunisasi-soft);
+  }
+  .text-imunisasi-soft {
+    color: var(--color-imunisasi-soft);
+  }
+  .border-imunisasi-soft {
+    border-color: var(--color-imunisasi-soft);
+  }
+  .text-imunisasi-soft-on {
+    color: var(--color-imunisasi-soft-on);
+  }
+  .bg-malaria {
+    background-color: var(--color-malaria);
+  }
+  .text-malaria {
+    color: var(--color-malaria);
+  }
+  .border-malaria {
+    border-color: var(--color-malaria);
+  }
+  .text-malaria-on {
+    color: var(--color-malaria-on);
+  }
+  .bg-malaria-soft {
+    background-color: var(--color-malaria-soft);
+  }
+  .text-malaria-soft {
+    color: var(--color-malaria-soft);
+  }
+  .border-malaria-soft {
+    border-color: var(--color-malaria-soft);
+  }
+  .text-malaria-soft-on {
+    color: var(--color-malaria-soft-on);
+  }
+  .bg-hiv {
+    background-color: var(--color-hiv);
+  }
+  .text-hiv {
+    color: var(--color-hiv);
+  }
+  .border-hiv {
+    border-color: var(--color-hiv);
+  }
+  .text-hiv-on {
+    color: var(--color-hiv-on);
+  }
+  .bg-hiv-soft {
+    background-color: var(--color-hiv-soft);
+  }
+  .text-hiv-soft {
+    color: var(--color-hiv-soft);
+  }
+  .border-hiv-soft {
+    border-color: var(--color-hiv-soft);
+  }
+  .text-hiv-soft-on {
+    color: var(--color-hiv-soft-on);
+  }
+  .bg-tbc {
+    background-color: var(--color-tbc);
+  }
+  .text-tbc {
+    color: var(--color-tbc);
+  }
+  .border-tbc {
+    border-color: var(--color-tbc);
+  }
+  .text-tbc-on {
+    color: var(--color-tbc-on);
+  }
+  .bg-tbc-soft {
+    background-color: var(--color-tbc-soft);
+  }
+  .text-tbc-soft {
+    color: var(--color-tbc-soft);
+  }
+  .border-tbc-soft {
+    border-color: var(--color-tbc-soft);
+  }
+  .text-tbc-soft-on {
+    color: var(--color-tbc-soft-on);
+  }
+  .bg-custom-1 {
+    background-color: var(--color-custom-1);
+  }
+  .text-custom-1 {
+    color: var(--color-custom-1);
+  }
+  .border-custom-1 {
+    border-color: var(--color-custom-1);
+  }
+  .text-custom-1-on {
+    color: var(--color-custom-1-on);
+  }
+  .bg-custom-2 {
+    background-color: var(--color-custom-2);
+  }
+  .text-custom-2 {
+    color: var(--color-custom-2);
+  }
+  .border-custom-2 {
+    border-color: var(--color-custom-2);
+  }
+  .text-custom-2-on {
+    color: var(--color-custom-2-on);
+  }
+  .bg-custom-3 {
+    background-color: var(--color-custom-3);
+  }
+  .text-custom-3 {
+    color: var(--color-custom-3);
+  }
+  .border-custom-3 {
+    border-color: var(--color-custom-3);
+  }
+  .text-custom-3-on {
+    color: var(--color-custom-3-on);
+  }
+  .bg-custom-4 {
+    background-color: var(--color-custom-4);
+  }
+  .text-custom-4 {
+    color: var(--color-custom-4);
+  }
+  .border-custom-4 {
+    border-color: var(--color-custom-4);
+  }
+  .text-custom-4-on {
+    color: var(--color-custom-4-on);
+  }
+  .bg-custom-5 {
+    background-color: var(--color-custom-5);
+  }
+  .text-custom-5 {
+    color: var(--color-custom-5);
+  }
+  .border-custom-5 {
+    border-color: var(--color-custom-5);
+  }
+  .text-custom-5-on {
+    color: var(--color-custom-5-on);
+  }
+  .bg-custom-6 {
+    background-color: var(--color-custom-6);
+  }
+  .text-custom-6 {
+    color: var(--color-custom-6);
+  }
+  .border-custom-6 {
+    border-color: var(--color-custom-6);
+  }
+  .text-custom-6-on {
+    color: var(--color-custom-6-on);
+  }
+  .bg-custom-7 {
+    background-color: var(--color-custom-7);
+  }
+  .text-custom-7 {
+    color: var(--color-custom-7);
+  }
+  .border-custom-7 {
+    border-color: var(--color-custom-7);
+  }
+  .text-custom-7-on {
+    color: var(--color-custom-7-on);
+  }
+  .bg-custom-8 {
+    background-color: var(--color-custom-8);
+  }
+  .text-custom-8 {
+    color: var(--color-custom-8);
+  }
+  .border-custom-8 {
+    border-color: var(--color-custom-8);
+  }
+  .text-custom-8-on {
+    color: var(--color-custom-8-on);
+  }
+}

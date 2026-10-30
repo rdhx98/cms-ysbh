@@ -1,7 +1,7 @@
 {{--
   <x-editor.media> — tombol File Manager. path/rel menunjuk ke objek konten ({url, media_id, alt_text}).
   accept = jenis berkas yang ditawarkan File Manager ('image' bawaan). accept = '' -> TANPA filter (semua berkas, mis. dokumen) dan
-  nama berkas yang dipilih ditampilkan di bawah tombol.
+  nama berkas yang dipilih ditampilkan di bawah tombol; juga untuk accept = 'svg' (rilis 107: hanya berkas SVG, mis. Hiasan latar).
 --}}
 @props(['path' => null, 'rel' => null,
   'relExpr' => null, 'label' => 'Jelajahi File Manager', 'accept' => 'image'])
@@ -22,7 +22,7 @@
     <span>{{ $label }}</span>
   </button>
 
-  @if ($accept === '')
+  @if ($accept === '' || $accept === 'svg')
     <p
       x-show="p && $wire.$get(p + '.url')"
       x-cloak

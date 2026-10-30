@@ -44,13 +44,16 @@ final class BlockSanitizer
     {
         $type = str_replace('_', '-', strtolower($type));
         if ($type === 'button-builder') {
-            return Spacing::keep($data, self::buttonBuilder($data, $locales));
+            return BoxPadding::keep($data, Spacing::keep($data, self::buttonBuilder($data, $locales)));
         }
         if (class_exists(\App\Editor\Modules::class) && ($module = \App\Editor\Modules::for($type))) {
-            return Spacing::keep($data, $module::sanitize($data, $locales));
+            return BoxPadding::keep($data, Spacing::keep($data, $module::sanitize($data, $locales)));
         }
         if (CoreBlocks::handles($type)) {
             return CoreBlocks::clean($type, $data);   // tujuh blok inti: hanya kolom berisiko; non-destruktif
+        }
+        if ($type === 'section-divider') {
+            return SectionOrnament::keep($data);   // rilis 107: kunci orn_* (hiasan latar) divalidasi; kunci lain tidak disentuh
         }
 
         return $data;
@@ -159,7 +162,7 @@ final class BlockSanitizer
             $link = is_array($b['link'] ?? null) ? $b['link'] : [];
             $kind = in_array($link['kind'] ?? null, LinkResolver::KINDS, true) ? $link['kind'] : 'url';
 
-            $buttons[] = [
+            $item = [
                 'id' => is_string($b['id'] ?? null) && preg_match('/^[A-Za-z0-9_-]{1,40}$/D', $b['id']) ? $b['id'] : 'itm_' . substr(bin2hex(random_bytes(5)), 0, 8),
                 'label' => self::locales($b['label'] ?? [], $locales, 60),
                 'link' => self::link($kind, $link),
@@ -169,6 +172,22 @@ final class BlockSanitizer
                 'icon' => is_string($b['icon'] ?? null) && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/D', $b['icon']) && strlen($b['icon']) <= 40 ? $b['icon'] : '',
                 'icon_position' => ($b['icon_position'] ?? null) === 'right' ? 'right' : 'left',
             ];
+            // Rilis 102: aksi "salin teks". Kunci baru ini hanya ditulis bila ada di masukan, supaya data lama (tanpa kunci ini) lolos
+            // pembersih TANPA berubah. Hanya 'copy' yang dikenal; selain itu tautan biasa.
+            if (array_key_exists('action', $b)) {
+                $item['action'] = $b['action'] === 'copy' ? 'copy' : 'link';
+            }
+            if (array_key_exists('copy_text', $b)) {
+                $item['copy_text'] = self::copyText($b['copy_text']);
+            }
+            if (array_key_exists('copied_label', $b)) {
+                $item['copied_label'] = self::locales($b['copied_label'], $locales, 30);
+            }
+            // Rilis 103: kebulatan sudut; ditulis hanya bila ada di masukan (data lama tidak berubah). Di luar daftar = pil (bawaan).
+            if (array_key_exists('radius', $b)) {
+                $item['radius'] = is_string($b['radius']) && isset(ButtonStyle::RADII[$b['radius']]) ? $b['radius'] : ButtonStyle::RADIUS_DEFAULT;
+            }
+            $buttons[] = $item;
         }
 
         return [
@@ -225,6 +244,18 @@ final class BlockSanitizer
         }
 
         return $out;
+    }
+
+    /**
+     * Teks yang disalin tombol "salin" (rilis 102): apa adanya (tag TIDAK dibuang, nomor rekening tidak boleh berubah), tetapi karakter kontrol
+     * dibuang, spasi beruntun dirapikan, dan dipotong 200. Dicetak lewat atribut ter-escape di renderer, tidak pernah sebagai HTML.
+     */
+    public static function copyText(mixed $value): string
+    {
+        $s = is_scalar($value) ? trim((string) $value) : '';
+        $s = preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $s) ?? '';
+
+        return mb_substr(trim(preg_replace('/ {2,}/u', ' ', $s) ?? ''), 0, 200);
     }
 
     /** Teks polos: tag dibuang, spasi dirapikan, dipotong. (Dicetak dengan {{ }} di renderer, jadi escape tetap berlapis.) */

@@ -7,7 +7,7 @@ namespace App\Editor;
  * dan titik awal kartu. Bentuk data kartu (yang SUDAH ada, ditulis addCardItem() dan kawan-kawan di trait):
  *
  *   data.grid        {cols, margin_bottom}
- *   data.cards[]     {id, container{bg,padding,border_width,border_style,border_color,radius,shadow,hover,align_y,url,url_label},
+ *   data.cards[]     {id, container{bg,glass,glass_blur,padding,border_width,border_style,border_color,radius,shadow,hover,align_y,url,url_label},
  *                     layout{type:"row", children[] kolom}}
  *   kolom            {id, type:"column", width (1..12 | "auto"), align, children[] elemen}
  *   elemen           {id, type:"element", elementType, data{content, style}}   (panelnya: BlockRegistry::element($elementType))
@@ -62,7 +62,11 @@ final class CardPanel
         $d = fn (string $k) => config('cms.design.' . $k, []);
 
         return [
-            Field::swatches('bg', 'Warna Latar', PaletteOptions::colors('card_bg_colors'), 'bg-white', 'bg'),
+            // Rilis 101: kaca (tembus pandang + blur) menggantikan Warna Latar, jadi pemilih warna hanya tampil saat kaca mati
+            Field::swatches('bg', 'Warna Latar', PaletteOptions::colors('card_bg_colors'), 'bg-white', 'bg', ['glass', '']),
+            Field::segmented('glass', 'Efek Kaca', ['' => 'Mati', 'light' => 'Terang', 'dark' => 'Gelap'], ''),
+            // Rilis 110: kekaburan kaca; tampil hanya saat kaca menyala. Halus = latar di belakang masih terbaca, Kuat = kabut
+            Field::segmented('glass_blur', 'Kekaburan Kaca', ['halus' => 'Halus', 'sedang' => 'Sedang', 'kuat' => 'Kuat'], \App\Content\Blocks\ElementStyle::GLASS_BLUR_DEFAULT, ['glass', ['light', 'dark']]),
             Field::segmented('padding', 'Ruang Dalam', self::labelled($d('card_paddings')), 'p-2 md:p-4'),
             // Rilis 70: menimpa satu sumbu dari "Ruang Dalam"; "Ikuti" = tidak menimpa
             Field::segmented('pad_x', 'Ruang Samping', \App\Content\Blocks\BoxPadding::options('Ikuti'), ''),

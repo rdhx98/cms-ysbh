@@ -473,7 +473,7 @@ new class extends Component {
   }
   $sections['contact'] = ['Kontak', 'phone'];
   $sections['bottom'] = ['Hak cipta', 'copyright'];
-  $pal = \App\Content\Palette::defaults();
+  $pal = \App\Content\PublicLookup::palette();
   $pvBg = $pal['forest']['hex'];
   $pvGold = $pal['aurum']['hex'];
   $pvIcons = ['phone' => 'phone', 'address' => 'pin', 'email' => 'mail'];
@@ -483,7 +483,7 @@ new class extends Component {
   }
 @endphp
 
-<div class="relative flex flex-col gap-4" data-footer-editor x-effect="if ($store.editor.lang !== 'both') pv = $store.editor.lang" x-data="{ pv: @js($defaultLocale), sec: 'desc', insertYear(l) { const el = this.$root.querySelector('[data-copyright] [data-lang-field=' + l + '] input'); if (!el || el.value.includes('{year}')) return; el.value = (el.value + ' {year}').trim(); el.dispatchEvent(new Event('input', { bubbles: true })); el.focus(); } }">
+<div class="relative flex flex-col gap-4" data-footer-editor x-effect="if ($store.editor.lang !== 'both') pv = $store.editor.lang" x-data="{ pv: @js(in_array(app()->getLocale(), $activeLocales, true) ? app()->getLocale() : $defaultLocale), sec: 'desc', insertYear(l) { const el = this.$root.querySelector('[data-copyright] [data-lang-field=' + l + '] input'); if (!el || el.value.includes('{year}')) return; el.value = (el.value + ' {year}').trim(); el.dispatchEvent(new Event('input', { bubbles: true })); el.focus(); } }">
   @if (! $ready)
     <div class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" data-footer-not-ready>
       <x-content.icon name="alert" class="mt-0.5 h-4 w-4" />

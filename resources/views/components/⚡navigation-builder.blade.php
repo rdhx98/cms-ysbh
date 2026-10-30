@@ -512,7 +512,7 @@ new class extends Component {
   }}
 </x-slot:title>
 
-<x-main-wrapper>
+<x-main-wrapper class="bg-white p-2">
   {{-- Tab (Header | Footer) bertahan setelah dimuat ulang: alamat #tab-… dulu, lalu ingatan peramban; tab yang tidak ada jatuh ke tab pertama. --}}
   <div
     class="relative flex w-full max-w-6xl min-w-0 flex-col gap-4"

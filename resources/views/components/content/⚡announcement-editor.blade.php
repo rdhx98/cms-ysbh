@@ -2,6 +2,7 @@
 
 use App\Content\Announcement;
 use App\Content\AnnouncementSettings;
+use App\Content\CategoryLookup;
 use App\Content\Languages;
 use App\Content\MenuTarget;
 use App\Content\Names;
@@ -22,7 +23,7 @@ use Livewire\Component;
  *   <livewire:content.announcement-editor lazy wire:key="announcement-editor" />
  *
  * Gambar popup dipilih lewat File Manager (event openFileManager -> mediaSelected) dan disimpan sebagai ID media. Tautan memakai aturan menu
- * dan footer (MenuTarget). Hanya admin. Aturan isi di App\Content\Announcement (diuji di tests/announcement-test.php).
+ * dan footer (MenuTarget); sejak rilis 88 tujuannya dipilih lewat chip (<x-content.link-target>), bukan diketik. Admin dan editor. Aturan isi di App\Content\Announcement (diuji di tests/announcement-test.php).
  * Tersimpan di site_settings (kunci "announcement"). Landing menampilkannya lewat <x-announcement />.
  */
 new class extends Component {
@@ -107,14 +108,14 @@ new class extends Component {
       $this->stored = false;
       $data = Announcement::defaults();
     }
-    $this->f = Announcement::forEditor($data, $this->activeLocales, $this->defaultLocale);
+    $this->f = $this->withDest(Announcement::forEditor($data, $this->activeLocales, $this->defaultLocale));
     $this->openId = count($this->f['items']) === 1 ? (string) $this->f['items'][0]['id'] : '';
     $this->forgetComputed();
   }
 
   private function forgetComputed(): void
   {
-    unset($this->imageUrls, $this->previews, $this->pageResults, $this->statuses, $this->gaps, $this->summaries);
+    unset($this->imageUrls, $this->previews, $this->pageResults, $this->statuses, $this->gaps, $this->summaries, $this->categoryOptions);
   }
 
   /** @return array<int,string> id media => alamat (hanya yang masih ada) */
@@ -220,6 +221,13 @@ new class extends Component {
     $out = [];
     foreach ($this->f['items'] ?? [] as $i => $item) {
       $url = trim((string) ($item['url'] ?? ''));
+      $kind = (string) ($item['dest_kind'] ?? 'none');
+      $ref = trim((string) ($item['dest_ref'] ?? ''));
+      if ($url === '' && $kind !== 'none' && $ref !== '') {
+        $typed = MenuTarget::build($kind, $ref, $this->articlesSlug());
+        $out[$i] = ['error' => $typed['error'] ?? 'Tujuan ini tidak sah.'];   // diketik tetapi ditolak: tampilkan alasannya, bukan diam
+        continue;
+      }
       if ($url === '') {
         continue;
       }
@@ -325,6 +333,7 @@ new class extends Component {
       return;
     }
     $item = Announcement::blank($this->activeLocales, $this->defaultLocale);
+    $item += ['dest_kind' => 'none', 'dest_ref' => ''];
     $item['type'] = in_array($type, Announcement::TYPES, true) ? $type : 'banner';
     if ($item['type'] === 'popup') {
       $item['tone'] = 'sorotan';
@@ -363,10 +372,98 @@ new class extends Component {
     $this->forgetComputed();
   }
 
+  /** Jenis tujuan yang bisa dipilih di <x-content.link-target>. */
+  private const DEST_KINDS = ['none', 'page', 'home', 'articles', 'category', 'url', 'mailto', 'tel', 'anchor'];
+
+  /**
+   * Isian khusus tampilan per pengumuman (dest_kind, dest_ref): jenis tujuan tombol dan nilainya, diturunkan dari `url` yang tersimpan.
+   * Tidak ikut tersimpan (sanitize hanya membaca isian yang dikenal); `url` tetap satu-satunya data tujuan.
+   */
+  private function withDest(array $form): array
+  {
+    foreach ($form['items'] ?? [] as $i => $item) {
+      $form['items'][$i] = $item + $this->destOf((string) ($item['url'] ?? ''));
+    }
+
+    return $form;
+  }
+
+  /** @return array{dest_kind:string,dest_ref:string} */
+  private function destOf(string $url): array
+  {
+    $url = trim($url);
+    if ($url === '') {
+      return ['dest_kind' => 'none', 'dest_ref' => ''];
+    }
+    $t = MenuTarget::parse($url, null, $this->indexSlugs, $this->activeLocales, $this->defaultLocale);
+
+    return ['dest_kind' => $t['kind'] ?? 'url', 'dest_ref' => $t['kind'] === null ? $url : $t['ref']];
+  }
+
+  /** Bentuk ulang `url` pengumuman $i dari jenis dan nilai pilihannya. Tidak sah / belum dipilih = '' (tanpa tombol); galat tampil di pratinjau. */
+  private function syncDest(int $i): void
+  {
+    if (!isset($this->f['items'][$i])) {
+      return;
+    }
+    $kind = (string) ($this->f['items'][$i]['dest_kind'] ?? 'none');
+    $ref = trim((string) ($this->f['items'][$i]['dest_ref'] ?? ''));
+    $url = '';
+    if ($kind !== 'none' && in_array($kind, self::DEST_KINDS, true)) {
+      $built = MenuTarget::build($kind, $ref, $this->articlesSlug());
+      if ($built['error'] === null && $kind === 'category' && !array_key_exists($ref, $this->categoryOptions)) {
+        $built = ['url' => null, 'error' => 'Kategori itu tidak ditemukan. Pilih dari daftar.'];   // nilai dari browser tidak dipercaya
+      }
+      $url = $built['error'] === null ? (string) $built['url'] : '';
+    }
+    $this->f['items'][$i]['url'] = $url;
+  }
+
+  /** Pilih jenis tujuan tombol pengumuman $i. Berganti jenis mengosongkan nilai lama. */
+  public function setDestKind(int $i, string $kind): void
+  {
+    if (!$this->guard() || !isset($this->f['items'][$i]) || !in_array($kind, self::DEST_KINDS, true)) {
+      return;
+    }
+    if (($this->f['items'][$i]['dest_kind'] ?? 'none') !== $kind) {
+      $this->f['items'][$i]['dest_kind'] = $kind;
+      $this->f['items'][$i]['dest_ref'] = '';
+    }
+    $this->syncDest($i);
+    $this->pickFor = $kind === 'page' ? (string) $i : '';
+    $this->pageQuery = '';
+    $this->forgetComputed();
+  }
+
+  /** Kategori yang bisa dituju: [slug => nama]. Kategori tanpa slug dilewati. */
+  #[Computed]
+  public function categoryOptions(): array
+  {
+    $out = [];
+    try {
+      foreach (\App\Models\Category::query()->orderBy('id')->limit(500)->get() as $category) {
+        $row = ['id' => $category->getKey(), 'name' => $category->getRawOriginal('name'), 'slug' => $category->getRawOriginal('slug')];
+        $slugs = CategoryLookup::slugs($row, $this->activeLocales);
+        $slug = $slugs[$this->defaultLocale] ?? (array_values($slugs)[0] ?? null);
+        if ($slug !== null) {
+          $out[$slug] = CategoryLookup::name($row, $this->defaultLocale, $this->activeLocales) ?: $slug;
+        }
+      }
+    } catch (\Throwable) {
+      return [];   // tabel categories belum siap: pilihan kosong, bagian lain tetap berfungsi
+    }
+    asort($out, SORT_NATURAL | SORT_FLAG_CASE);
+
+    return $out;
+  }
+
   public function startPick(int $i): void
   {
+    $same = $this->pickFor === (string) $i;
     $this->pickFor = isset($this->f['items'][$i]) ? (string) $i : '';
-    $this->pageQuery = '';
+    if (!$same) {
+      $this->pageQuery = '';   // fokus berulang di kotak cari yang sama tidak menghapus ketikan
+    }
     unset($this->pageResults);
   }
 
@@ -375,18 +472,6 @@ new class extends Component {
     $this->pickFor = '';
     $this->pageQuery = '';
     unset($this->pageResults);
-  }
-
-  /** Tujuan siap pakai: 'home' (beranda) atau 'articles' (daftar artikel). */
-  public function pickPreset(string $kind): void
-  {
-    if (!$this->guard() || !in_array($kind, ['home', 'articles'], true)) {
-      return;
-    }
-    $built = MenuTarget::build($kind, '', $this->articlesSlug());
-    if ($built['error'] === null) {
-      $this->applyPick($built['url']);
-    }
   }
 
   public function pickPage(int $id): void
@@ -401,14 +486,16 @@ new class extends Component {
 
       return;
     }
-    $this->applyPick('/' . $slug);
+    $this->applyPick($slug);
   }
 
-  private function applyPick(string $url): void
+  private function applyPick(string $slug): void
   {
     $i = $this->pickFor === '' ? -1 : (int) $this->pickFor;
     if (isset($this->f['items'][$i])) {
-      $this->f['items'][$i]['url'] = $url;
+      $this->f['items'][$i]['dest_kind'] = 'page';
+      $this->f['items'][$i]['dest_ref'] = $slug;
+      $this->syncDest($i);
     }
     $this->cancelPick();
     $this->forgetComputed();
@@ -416,7 +503,10 @@ new class extends Component {
 
   public function updated(string $name): void
   {
-    // pratinjau alamat ikut berubah saat tujuan diketik; status ikut berubah saat jadwal / centang diubah
+    // tujuan tombol diketik / dipilih: bentuk ulang url; pratinjau alamat dan status ikut berubah saat jadwal / centang diubah
+    if (preg_match('/^f\.items\.(\d+)\.dest_ref$/D', $name, $m)) {
+      $this->syncDest((int) $m[1]);
+    }
     $this->forgetComputed();
   }
 
@@ -454,7 +544,7 @@ new class extends Component {
 
       return;
     }
-    $this->f = Announcement::forEditor($result['data'], $this->activeLocales, $this->defaultLocale);
+    $this->f = $this->withDest(Announcement::forEditor($result['data'], $this->activeLocales, $this->defaultLocale));
     $this->stored = true;
     $this->forgetComputed();
     $this->audit('Pengumuman situs diperbarui');
@@ -516,7 +606,7 @@ new class extends Component {
   ];
   $max = \App\Content\Announcement::MAX_ITEMS;
   $count = count($f['items']);
-  $pal = \App\Content\Palette::defaults();
+  $pal = \App\Content\PublicLookup::palette();   // palet tersimpan, sama dengan yang dilihat pembaca
   $toneBg = fn (string $tone): string => $pal[\App\Content\Announcement::TONE_SLOTS[$tone] ?? 'forest']['hex'];
   $toneFg = fn (string $tone): string => \App\Content\Palette::on($pal[\App\Content\Announcement::TONE_SLOTS[$tone] ?? 'forest']);
   $pick = fn (array $map, string $l): string => \App\Content\SiteFooter::pick($map, $l, $defaultLocale, $activeLocales);
@@ -533,7 +623,7 @@ new class extends Component {
   }
 @endphp
 
-<div class="relative flex flex-col gap-4" data-announcement-editor x-effect="if ($store.editor.lang !== 'both') pv = $store.editor.lang" x-data="{ pv: @js($defaultLocale) }">
+<div class="relative flex flex-col gap-4" data-announcement-editor x-effect="if ($store.editor.lang !== 'both') pv = $store.editor.lang" x-data="{ pv: @js(in_array(app()->getLocale(), $activeLocales, true) ? app()->getLocale() : $defaultLocale) }">
   @if (! $ready)
     <div class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" data-announcement-not-ready>
       <x-content.icon name="alert" class="mt-0.5 h-4 w-4" />
@@ -700,43 +790,12 @@ new class extends Component {
             <div class="flex flex-col gap-2" data-announcement-button>
               <p class="{{ $heading }}"><x-content.icon name="link" class="text-gray-400" /> Tombol</p>
               <x-content.lang-field :path="'f.items.' . $i . '.button'" :values="$item['button']" :locales="$activeLocales" :default="$defaultLocale" label="Teks tombol" :max="\App\Content\Announcement::MAX_BUTTON" placeholder="Teks tombol, mis. Selengkapnya" />
-              <div class="flex items-start gap-1">
-                <div class="relative flex-1">
-                  <x-content.icon name="link" class="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-                  <input type="text" wire:model.live.debounce.500ms="f.items.{{ $i }}.url" aria-label="Tujuan tombol" placeholder="Tujuan tombol. Kosong = tanpa tombol" class="{{ $field }} pl-8 font-mono text-xs">
-                </div>
-                <button type="button" wire:click="startPick({{ $i }})" class="{{ $iconBtn }} !h-9 !w-9" title="Pilih dari halaman situs" aria-label="Pilih halaman"><x-content.icon name="search" /></button>
-                <label class="relative inline-flex cursor-pointer" title="Buka di tab baru">
-                  <input type="checkbox" wire:model.live="f.items.{{ $i }}.new_tab" class="peer sr-only" aria-label="Buka di tab baru">
-                  <span class="{{ $iconBtn }} !h-9 !w-9 peer-checked:bg-emerald-50 peer-checked:text-foresty peer-focus-visible:ring-2 peer-focus-visible:ring-foresty"><x-content.icon name="external" /></span>
-                </label>
-              </div>
-
-              @if ($pickFor === (string) $i)
-                <div class="rounded-xl border border-gray-200 bg-gray-50 p-2.5" data-announcement-picker x-init="$el.querySelector('input[type=search]')?.focus()">
-                  <div class="flex flex-wrap items-center gap-1.5">
-                    <div class="relative min-w-[11rem] flex-1">
-                      <x-content.icon name="search" class="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-                      <input type="search" wire:model.live.debounce.300ms="pageQuery" placeholder="Cari halaman…" class="{{ $field }} pl-8" autocomplete="off" aria-label="Cari halaman">
-                    </div>
-                    <button type="button" wire:click="pickPreset('home')" class="{{ $chip }}"><x-content.icon name="home" /> Beranda</button>
-                    <button type="button" wire:click="pickPreset('articles')" class="{{ $chip }}"><x-content.icon name="list" /> Artikel</button>
-                    <button type="button" wire:click="cancelPick" class="{{ $iconBtn }}" aria-label="Tutup pemilih"><x-content.icon name="x" /></button>
-                  </div>
-                  @if (count($this->pageResults) > 0)
-                    <ul class="mt-2 divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white text-sm">
-                      @foreach ($this->pageResults as $r)
-                        <li wire:key="ap-{{ $i }}-{{ $r['id'] }}">
-                          <button type="button" wire:click="pickPage({{ $r['id'] }})" class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-emerald-50 focus:bg-emerald-50 focus:outline-none">
-                            <span class="flex min-w-0 items-center gap-2"><x-content.icon name="file" class="text-gray-400" /><span class="truncate">{{ $r['label'] }}</span></span>
-                            <span class="shrink-0 text-xs text-gray-400">{{ $r['hint'] }}</span>
-                          </button>
-                        </li>
-                      @endforeach
-                    </ul>
-                  @endif
-                </div>
-              @endif
+              <x-content.link-target :index="$i" :kind="$item['dest_kind'] ?? 'none'" :ref="$item['dest_ref'] ?? ''" :picking="$pickFor === (string) $i" :page-results="$pickFor === (string) $i ? $this->pageResults : []" :categories="$this->categoryOptions" />
+              <label class="relative inline-flex cursor-pointer items-center gap-2 self-start text-sm text-gray-700" title="Buka di tab baru">
+                <input type="checkbox" wire:model.live="f.items.{{ $i }}.new_tab" class="peer sr-only" aria-label="Buka di tab baru">
+                <span class="{{ $iconBtn }} !h-9 !w-9 peer-checked:bg-emerald-50 peer-checked:text-foresty peer-focus-visible:ring-2 peer-focus-visible:ring-foresty"><x-content.icon name="external" /></span>
+                Buka di tab baru
+              </label>
 
               @if ($pv !== null && isset($pv['error']))
                 <p class="flex items-start gap-1.5 px-1 text-xs text-red-600"><x-content.icon name="alert" class="mt-px h-3.5 w-3.5" /> {{ $pv['error'] }}</p>

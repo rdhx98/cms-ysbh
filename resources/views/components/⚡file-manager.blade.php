@@ -6,6 +6,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use App\Models\MediaFolder;
 use App\Models\Media;
+use Illuminate\Support\Facades\Storage;
 use App\Livewire\Traits\WithNotifications;
 use Livewire\WithPagination;
 
@@ -17,6 +18,8 @@ new class extends Component {
   public $forceModal = false;
 
   public $currentFolderId = null;
+  // Rilis 99: true = sedang melihat Sampah (berkas yang sudah dihapus, bisa dipulihkan)
+  public $showTrash = false;
   public $search = "";
   public $uploadFiles = [];
 
@@ -63,6 +66,7 @@ new class extends Component {
     $this->targetComponentId = $targetComponentId;
     $this->allowedFileType = $allowedFileType;
     $this->search = "";
+    $this->showTrash = false;
     $this->selectedMedia = [];
     $this->dispatch("show-file-manager-modal");
   }
@@ -70,7 +74,10 @@ new class extends Component {
   public function selectMedia($mediaId, $mediaUrl)
   {
     $media = Media::find($mediaId);
-    $altText = $media ? $media->alt_text : '';
+    if (!$media) {
+      return; // sudah di Sampah / terhapus: tidak boleh dipakai
+    }
+    $altText = $media ? $media->alt_text : "";
     $this->dispatch($this->targetEvent, [
       "id" => $mediaId,
       "url" => $mediaUrl,
@@ -87,6 +94,7 @@ new class extends Component {
 
   public function openFolder($folderId = null)
   {
+    $this->showTrash = false;
     $this->currentFolderId =
       $folderId === "null" || $folderId === "" ? null : $folderId;
 
@@ -101,6 +109,67 @@ new class extends Component {
   {
     $this->openFolder($folderId);
     $this->closeInfoPanel();
+  }
+
+  // ==========================================
+  // SAMPAH (rilis 99)
+  // ==========================================
+
+  /** Berkas menurut tampilan aktif: di Sampah hanya yang sudah dihapus, di folder hanya yang masih aktif. */
+  protected function findMedia($id)
+  {
+    return $this->showTrash
+      ? Media::onlyTrashed()->find($id)
+      : Media::find($id);
+  }
+
+  public function openTrash()
+  {
+    // Berkas yang sudah lewat 30 hari dibuang permanen setiap kali Sampah dibuka (tanpa perlu cron)
+    try {
+      Media::purgeExpiredTrash();
+    } catch (\Throwable $e) {
+      report($e);
+    }
+
+    $this->showTrash = true;
+    $this->currentFolderId = null;
+    $this->search = "";
+    $this->selectedMedia = [];
+    $this->closeInfoPanel();
+    $this->dispatch("folder-navigated", path: []);
+  }
+
+  /** Teks "Halaman A, Artikel B" untuk berkas yang masih dipakai (pesan penolakan hapus). */
+  protected function usageNames(Media $media): array
+  {
+    $names = [];
+    try {
+      foreach ($media->usedIn() as $model) {
+        $title = null;
+        if (method_exists($model, "getTranslation")) {
+          $title = $model->getTranslation("title", app()->getLocale(), true);
+        }
+        $title = $title ?: $model->title ?? ($model->name ?? null);
+        if (is_array($title)) {
+          $title = reset($title);
+        }
+        $names[] =
+          trim((string) $title) !== ""
+            ? (string) $title
+            : class_basename($model) . " #" . $model->getKey();
+      }
+    } catch (\Throwable $e) {
+      report($e);
+    }
+    if ($media->usedBySiteProfile()) {
+      $names[] = "Pengaturan Profil";
+    }
+    if ($media->usedByAnnouncement()) {
+      $names[] = "Pengumuman";
+    }
+
+    return array_values(array_unique($names));
   }
 
   // ==========================================
@@ -125,7 +194,7 @@ new class extends Component {
     // $this->isInfoPanelOpen = true;
 
     if ($type === "media") {
-      $media = Media::find($id);
+      $media = $this->findMedia($id);
       $this->activeAltText = $media->alt_text ?? "";
     } elseif ($type === "folder") {
       // 🌟 PERBAIKAN: Bersihkan keranjang seleksi file saat folder diklik!
@@ -149,6 +218,9 @@ new class extends Component {
 
   public function updatedActiveAltText($value)
   {
+    if ($this->showTrash) {
+      return; // berkas di Sampah tidak diubah
+    }
     if ($this->selectedItemType === "media" && $this->selectedItemId) {
       $media = Media::find($this->selectedItemId);
       if ($media) {
@@ -181,6 +253,14 @@ new class extends Component {
     if (empty($this->uploadFiles)) {
       return;
     }
+    if ($this->showTrash) {
+      $this->uploadFiles = [];
+      $this->notify(
+        "Tidak bisa mengunggah saat melihat Sampah. Buka Folder Utama dulu.",
+        "warning",
+      );
+      return;
+    }
     // 🌟 Atur aturan dan pesan error secara dinamis
     // $mimes = 'file|mimes:jpg,jpeg,png,webp,gif,svg,pdf|max:25600';
     // $errorMessage = 'Format ditolak: Hanya menerima Gambar atau PDF.';
@@ -211,6 +291,10 @@ new class extends Component {
     } elseif ($this->allowedFileType === "pdf") {
       $mimes = "file|mimes:pdf|max:25600";
       $errorMessage = "Format ditolak: Form ini HANYA menerima PDF.";
+    } elseif ($this->allowedFileType === "svg") {
+      // Rilis 107: Hiasan latar hanya menerima SVG. Cek ekstensi (finfo sering menebak SVG sebagai teks biasa) + isi di bawah.
+      $mimes = "file|extensions:svg|max:25600";
+      $errorMessage = "Format ditolak: Form ini HANYA menerima SVG.";
     }
 
     $validator = \Illuminate\Support\Facades\Validator::make(
@@ -219,6 +303,7 @@ new class extends Component {
       ["uploadFiles.*" => $mimes],
       [
         "uploadFiles.*.mimes" => $errorMessage,
+        "uploadFiles.*.extensions" => $errorMessage,
         "uploadFiles.*.max" => "Ukuran ditolak: Maksimal 25MB per berkas.",
       ],
     );
@@ -231,15 +316,47 @@ new class extends Component {
 
     $count = 0;
     foreach ($this->uploadFiles as $file) {
+      // Rilis 107: label jenis yang benar untuk SVG (finfo sering menebak teks biasa), supaya penyaring "SVG" dan "Gambar" menemukannya
+      $mime = (string) $file->getMimeType();
+      if (
+        strtolower($file->getClientOriginalExtension()) === "svg" &&
+        !str_starts_with($mime, "image/svg")
+      ) {
+        $head = (string) @file_get_contents(
+          $file->getRealPath(),
+          false,
+          null,
+          0,
+          4096,
+        );
+        if (stripos($head, "<svg") === false) {
+          if ($this->allowedFileType === "svg") {
+            $this->notify(
+              "Ditolak: '{$file->getClientOriginalName()}' bukan berkas SVG yang sah.",
+              "error",
+            );
+            continue;
+          }
+        } else {
+          $mime = "image/svg+xml";
+        }
+      }
       $path = $file->store("media/" . date("Y/m"), "public");
+
+      // Dimensi gambar disimpan sekali saat unggah (SVG/PDF: kosong)
+      $dim = str_starts_with($mime, "image/")
+        ? @getimagesize($file->getRealPath())
+        : false;
 
       $media = Media::create([
         "folder_id" => $this->currentFolderId,
         "disk" => "public",
         "path" => $path,
         "original_name" => $file->getClientOriginalName(),
-        "mime_type" => $file->getMimeType(),
+        "mime_type" => $mime,
         "size" => $file->getSize(),
+        "width" => $dim ? $dim[0] : null,
+        "height" => $dim ? $dim[1] : null,
         "uploaded_by" => auth()->id(),
       ]);
 
@@ -255,9 +372,33 @@ new class extends Component {
     $this->notify("$count berkas berhasil diunggah!", "success");
   }
 
+  /** Sudah ada folder bernama sama (huruf besar/kecil dan spasi di tepi diabaikan) di folder induk yang sama? */
+  protected function folderNameTaken(
+    string $name,
+    $parentId,
+    $ignoreId = null,
+  ): bool {
+    return MediaFolder::query()
+      ->where("parent_id", $parentId ?: null)
+      ->when($ignoreId, fn($q) => $q->where("id", "!=", $ignoreId))
+      ->whereRaw("LOWER(name) = ?", [mb_strtolower(trim($name))])
+      ->exists();
+  }
+
   public function createFolder()
   {
     $this->validate(["newFolderName" => "required|string|max:40"]);
+    $this->newFolderName = trim($this->newFolderName);
+
+    if ($this->folderNameTaken($this->newFolderName, $this->currentFolderId)) {
+      $this->notify(
+        __(
+          "Sudah ada folder bernama '{$this->newFolderName}' di sini. Pakai nama lain.",
+        ),
+        "warning",
+      );
+      return;
+    }
 
     if ($this->currentDepth >= 3) {
       $this->notify(
@@ -282,7 +423,8 @@ new class extends Component {
     $this->notify(__("Folder Dibuat"), "success");
   }
 
-  public function deleteMedia($mediaId)
+  /** Hapus biasa = pindah ke Sampah (berkas fisik belum dibuang; bisa dipulihkan). */
+  public function trashMedia($mediaId)
   {
     $media = Media::find($mediaId);
     if (!$media) {
@@ -290,50 +432,170 @@ new class extends Component {
     }
 
     if ($media->isInUse()) {
-      $this->notify(__("Media sedang digunakan pada halaman aktif!"), "error");
+      $this->notify($this->inUseMessage($media), "error");
       return;
     }
 
     $this->logActivity(
       "deleted",
       $media,
-      "Menghapus file secara permanen: {$media->original_name}",
+      "Memindahkan file ke Sampah: {$media->original_name}",
     );
 
-    $media->deleteWithFile();
+    $media->moveToTrash();
     $this->closeInfoPanel();
-    $this->notify(__("Terhapus"), "success");
+    $this->notify(__("Dipindahkan ke Sampah"), "success");
   }
 
-  public function bulkDelete()
+  public function bulkTrash()
   {
     $medias = Media::whereIn("id", $this->selectedMedia)->get();
-    $deletedCount = 0;
+    $movedCount = 0;
     $inUseCount = 0;
 
     foreach ($medias as $media) {
-      if ($media->isInUse()) {
+      if ($media->isInUse() || !$media->moveToTrash()) {
         $inUseCount++;
-      } else {
-        $this->logActivity(
-          "deleted",
-          $media,
-          "Menghapus file massal: {$media->original_name}",
-        );
-        $media->deleteWithFile();
-        $deletedCount++;
+        continue;
       }
+      $this->logActivity(
+        "deleted",
+        $media,
+        "Memindahkan file ke Sampah (massal): {$media->original_name}",
+      );
+      $movedCount++;
     }
 
     $this->selectedMedia = [];
+    $this->closeInfoPanel();
     if ($inUseCount > 0) {
       $this->notify(
-        "$deletedCount terhapus. $inUseCount DILEWATI karena dipakai artikel.",
-        "success",
+        "$movedCount dipindahkan ke Sampah. $inUseCount DILEWATI karena masih dipakai.",
+        "warning",
       );
     } else {
-      $this->notify("$deletedCount file terhapus.", "success");
+      $this->notify("$movedCount file dipindahkan ke Sampah.", "success");
     }
+  }
+
+  protected function inUseMessage(Media $media): string
+  {
+    $names = $this->usageNames($media);
+
+    return $names
+      ? "Tidak bisa dihapus, masih dipakai di: " .
+          implode(", ", array_slice($names, 0, 3)) .
+          (count($names) > 3
+            ? " dan " . (count($names) - 3) . " lainnya"
+            : "") .
+          ". Lepas dulu dari sana."
+      : __("Media sedang digunakan pada halaman aktif!");
+  }
+
+  public function restoreMedia($mediaId)
+  {
+    $media = Media::onlyTrashed()->find($mediaId);
+    if (!$media) {
+      return;
+    }
+
+    $media->restoreFromTrash();
+    $this->logActivity(
+      "restored",
+      $media,
+      "Memulihkan file dari Sampah: {$media->original_name}",
+    );
+    $this->closeInfoPanel();
+    $this->notify(__("Dipulihkan"), "success");
+  }
+
+  public function bulkRestore()
+  {
+    $medias = Media::onlyTrashed()->whereIn("id", $this->selectedMedia)->get();
+    foreach ($medias as $media) {
+      $media->restoreFromTrash();
+      $this->logActivity(
+        "restored",
+        $media,
+        "Memulihkan file dari Sampah (massal): {$media->original_name}",
+      );
+    }
+
+    $this->closeInfoPanel();
+    $this->notify($medias->count() . " file dipulihkan.", "success");
+  }
+
+  /** Buang PERMANEN satu berkas dari Sampah (berkas fisik ikut dihapus). */
+  public function purgeMedia($mediaId)
+  {
+    $media = Media::onlyTrashed()->find($mediaId);
+    if (!$media) {
+      return;
+    }
+
+    $name = $media->original_name;
+    if (!$media->forceDeleteWithFile()) {
+      $this->notify($this->inUseMessage($media), "error");
+      return;
+    }
+
+    $this->logActivity(
+      "deleted",
+      $media,
+      "Menghapus file secara permanen dari Sampah: {$name}",
+    );
+    $this->closeInfoPanel();
+    $this->notify(__("Dihapus permanen"), "success");
+  }
+
+  public function bulkPurge()
+  {
+    $medias = Media::onlyTrashed()->whereIn("id", $this->selectedMedia)->get();
+    $done = 0;
+    foreach ($medias as $media) {
+      $name = $media->original_name;
+      if ($media->forceDeleteWithFile()) {
+        $this->logActivity(
+          "deleted",
+          $media,
+          "Menghapus file permanen dari Sampah (massal): {$name}",
+        );
+        $done++;
+      }
+    }
+
+    $this->closeInfoPanel();
+    $this->notify("$done file dihapus permanen.", "success");
+  }
+
+  public function emptyTrash()
+  {
+    $done = 0;
+    $skipped = 0;
+    Media::onlyTrashed()->eachById(function (Media $media) use (
+      &$done,
+      &$skipped,
+    ) {
+      $name = $media->original_name;
+      if ($media->forceDeleteWithFile()) {
+        $this->logActivity(
+          "deleted",
+          $media,
+          "Mengosongkan Sampah, menghapus permanen: {$name}",
+        );
+        $done++;
+      } else {
+        $skipped++;
+      }
+    });
+
+    $this->closeInfoPanel();
+    $this->notify(
+      $skipped > 0
+        ? "$done file dihapus permanen. $skipped dilewati karena masih dipakai."
+        : "Sampah dikosongkan ($done file).",
+      $skipped > 0 ? "warning" : "success",
+    );
   }
 
   public function renameMedia($mediaId, $newName)
@@ -399,7 +661,7 @@ new class extends Component {
       if (count($value) === 1) {
         // Set ID pertama sebagai referensi dan tarik Alt Text
         $this->selectedItemId = $value[0];
-        $media = Media::find($value[0]);
+        $media = $this->findMedia($value[0]);
         $this->activeAltText = $media ? $media->alt_text ?? "" : "";
       } else {
         $this->selectedItemId = null;
@@ -441,6 +703,7 @@ new class extends Component {
         "type" => "multiple",
         "count" => $mediaCount,
         "name" => $mediaCount . " File Dipilih",
+        "trashed" => $this->showTrash,
       ];
     }
 
@@ -467,23 +730,32 @@ new class extends Component {
     // }
     // Jika persis 1 file dipilih (paksa ambil data)
     if ($mediaCount === 1) {
-      $media = Media::with("uploader")->find($this->selectedMedia[0]);
+      $media = ($this->showTrash ? Media::onlyTrashed() : Media::query())
+        ->with("uploader")
+        ->find($this->selectedMedia[0]);
       if ($media) {
-        // 🌟 PERBAIKAN: Baca dimensi asli dari file fisik di server
+        // Dimensi: pakai yang tersimpan saat unggah; berkas lama (belum tersimpan) dibaca dari disk yang dipakai berkasnya
         $dimensions = "-";
         if ($media->isImage()) {
-          // Dapatkan path lengkap file di folder storage/app/public/
-          $fullPath = storage_path("app/public/" . $media->path);
-
-          if (file_exists($fullPath)) {
-            $imageSize = @getimagesize($fullPath); // Ambil [lebar, tinggi]
-            if ($imageSize) {
-              $dimensions = $imageSize[0] . " x " . $imageSize[1] . " px";
-            }
+          if ($media->width && $media->height) {
+            $dimensions = $media->width . " x " . $media->height . " px";
           } else {
-            $dimensions = "File tidak ditemukan";
+            try {
+              $fullPath = Storage::disk($media->disk)->path($media->path);
+              if (is_file($fullPath)) {
+                $imageSize = @getimagesize($fullPath); // [lebar, tinggi]
+                if ($imageSize) {
+                  $dimensions = $imageSize[0] . " x " . $imageSize[1] . " px";
+                }
+              } else {
+                $dimensions = "File tidak ditemukan";
+              }
+            } catch (\Throwable $e) {
+              // disk non-lokal tanpa path fisik: biarkan "-"
+            }
           }
         }
+        $usedNames = $this->showTrash ? [] : $this->usageNames($media);
 
         return [
           "id" => $media->id,
@@ -491,14 +763,19 @@ new class extends Component {
           "is_image" => $media->isImage(),
           "url" => $media->url(),
           "name" => $media->original_name,
-          "path" => $this->getFullPath($media->folder_id),
+          "path" =>
+            ($this->showTrash ? "Sampah · asal: " : "") .
+            $this->getFullPath($media->folder_id),
           "size" => round($media->size / 1024) . " KB",
-          "dimensions" => $dimensions, // 🌟 Gunakan variabel dinamis hasil bacaan
+          "dimensions" => $dimensions,
+          "trashed" => $this->showTrash,
+          "days_left" => $media->daysUntilPurge(),
+          "used_in" => $usedNames,
           "created_at" => $media->created_at->translatedFormat("d M Y"),
           "uploader" => $media->uploader
             ? $media->uploader->name
             : "Administrator",
-          "is_used" => $media->isInUse(),
+          "is_used" => $this->showTrash ? false : $media->isInUse(),
         ];
       }
     }
@@ -517,6 +794,7 @@ new class extends Component {
           "uploader" => "Sistem",
           "count" => $folder->media()->count() . " File",
           "is_used" => false,
+          "trashed" => false,
         ];
       }
     }
@@ -626,6 +904,10 @@ new class extends Component {
   #[Computed]
   public function folders()
   {
+    if ($this->showTrash) {
+      return collect(); // Sampah hanya berisi berkas
+    }
+
     return MediaFolder::query()
       ->when(
         $this->search,
@@ -651,6 +933,16 @@ new class extends Component {
         $this->notify(
           __("Nama folder terlalu panjang (Maks. 40 karakter)."),
           "error",
+        );
+        return;
+      }
+
+      if ($this->folderNameTaken($newName, $folder->parent_id, $folder->id)) {
+        $this->notify(
+          __(
+            "Sudah ada folder bernama '{$newName}' di folder yang sama. Pakai nama lain.",
+          ),
+          "warning",
         );
         return;
       }
@@ -792,10 +1084,7 @@ new class extends Component {
       $this->dispatch("folder-navigated", path: $this->activePathIds);
     }
 
-    $this->notify(
-      __("Folder '{$folderName}' beserta isinya berhasil dihapus."),
-      "success",
-    );
+    $this->notify(__("Folder '{$folderName}' berhasil dihapus."), "success");
     $this->closeInfoPanel();
   }
 
@@ -836,10 +1125,14 @@ new class extends Component {
   public function mediaItems()
   {
     return Media::query()
+      ->when($this->showTrash, fn($q) => $q->onlyTrashed())
       ->when(
         $this->search,
         fn($q) => $q->where("original_name", "like", "%{$this->search}%"), // Pencarian Global
-        fn($q) => $q->where("folder_id", $this->currentFolderId), // Jika kosong, tampilkan file aktif
+        // Jika kosong: file di folder aktif; di Sampah: semua yang dihapus, tanpa melihat folder asal
+        fn($q) => $this->showTrash
+          ? $q
+          : $q->where("folder_id", $this->currentFolderId),
       )
       ->when(
         $this->allowedFileType === "image",
@@ -849,8 +1142,26 @@ new class extends Component {
         $this->allowedFileType === "pdf",
         fn($q) => $q->where("mime_type", "application/pdf"),
       )
-      ->latest()
+      ->when(
+        $this->allowedFileType === "svg",
+        fn($q) => $q->where(
+          fn($w) => $w
+            ->where("mime_type", "image/svg+xml")
+            ->orWhere("path", "like", "%.svg"),
+        ),
+      )
+      ->when(
+        $this->showTrash,
+        fn($q) => $q->orderByDesc("deleted_at"),
+        fn($q) => $q->latest(),
+      )
       ->paginate(40);
+  }
+
+  #[Computed]
+  public function trashCount()
+  {
+    return Media::onlyTrashed()->count();
   }
 
   #[Computed]
@@ -959,10 +1270,24 @@ new class extends Component {
         >
           <button
             wire:click="openFolder(null)"
-            class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold hover:bg-gray-200 transition-colors outline-none cursor-pointer {{ !$this->currentFolderId ? 'bg-sage-soft text-foresty' : 'text-gray-700' }}"
+            class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold hover:bg-gray-200 transition-colors outline-none cursor-pointer {{ !$this->currentFolderId && !$showTrash ? 'bg-sage-soft text-foresty' : 'text-gray-700' }}"
           >
             <x-dynamic-component component="lucide-home" class="h-4 w-4" />
             Folder Utama
+          </button>
+          <button
+            type="button"
+            wire:click="openTrash"
+            class="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold hover:bg-gray-200 transition-colors outline-none cursor-pointer {{ $showTrash ? 'bg-sage-soft text-foresty' : 'text-gray-700' }}"
+          >
+            <x-dynamic-component component="lucide-trash-2" class="h-4 w-4" />
+            <span class="flex-1 text-left">Sampah</span>
+            @if ($this->trashCount > 0)
+              <span
+                class="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-extrabold text-gray-600"
+                >{{ $this->trashCount }}</span
+              >
+            @endif
           </button>
           <div class="my-4 border-t border-gray-200"></div>
           <span
@@ -1154,8 +1479,14 @@ new class extends Component {
         prosesUnggahan(files) {
             if (!files || files.length === 0) return;
 
+            // Sampah hanya untuk berkas yang sudah dihapus: jangan unggah dari sana
+            if ($wire.showTrash) {
+                $wire.notify('Tidak bisa mengunggah saat melihat Sampah. Buka Folder Utama dulu.', 'warning');
+                return;
+            }
+
             let validFiles = [];
-            let maxSize = 25 * 1024 * 1024; // Batas 15 MB dalam Bytes
+            let maxSize = 25 * 1024 * 1024; // Batas 25 MB dalam Bytes (sama dengan aturan server)
 
             // Loop untuk memvalidasi setiap file satu per satu
             for (let i = 0; i < files.length; i++) {
@@ -1163,7 +1494,7 @@ new class extends Component {
 
                 // 1. Validasi Ukuran (Langsung tolak jika kebesaran)
                 if (file.size > maxSize) {
-                    $wire.notify(`Ditolak: Ukuran '${file.name}' terlalu besar (Maks 15MB).`, 'error');
+                    $wire.notify(`Ditolak: Ukuran '${file.name}' terlalu besar (Maks 25MB).`, 'error');
                     continue; // Lewati file ini
                 }
 
@@ -1175,6 +1506,10 @@ new class extends Component {
                 }
                 if (allowed === 'pdf' && file.type !== 'application/pdf') {
                     $wire.notify(`Ditolak: Form ini hanya menerima PDF.`, 'error');
+                    continue;
+                }
+                if (allowed === 'svg' && file.type !== 'image/svg+xml' && !/\.svg$/i.test(file.name)) {
+                    $wire.notify(`Ditolak: Form ini hanya menerima SVG.`, 'error');
                     continue;
                 }
 
@@ -1298,7 +1633,22 @@ new class extends Component {
             class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3"
           >
             <div wire:key="toolbar-left" class="flex items-center gap-2">
-              @if ($this->currentFolder)
+              @if ($showTrash)
+                <div wire:key="toolbar-trash" class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    wire:click="openFolder(null)"
+                    title="Kembali ke Semua Media"
+                    class="cursor-pointer rounded-lg bg-gray-100 p-1.5 text-gray-600 transition-colors outline-none hover:bg-gray-200"
+                  >
+                    <x-dynamic-component
+                      component="lucide-arrow-left"
+                      class="h-4 w-4"
+                    />
+                  </button>
+                  <span class="text-sm font-bold text-gray-700">Sampah</span>
+                </div>
+              @elseif ($this->currentFolder)
                 <div
                   wire:key="toolbar-has-folder"
                   class="flex items-center gap-2"
@@ -1330,7 +1680,7 @@ new class extends Component {
             </div>
 
             <div class="flex items-center gap-3">
-              @if ($this->currentDepth < 2)
+              @if (!$showTrash && $this->currentDepth < 2)
                 <form
                   wire:key="form-create-folder"
                   wire:submit.prevent="createFolder"
@@ -1413,43 +1763,89 @@ new class extends Component {
                 </button>
               </div>
 
-              <label
-                class="bg-foresty relative flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
-              >
-                <x-dynamic-component
-                  component="lucide-upload-cloud"
-                  class="h-4 w-4 shrink-0"
-                />
-                <span class="hidden sm:inline">Unggah</span>
-                <input
-                  type="file"
-                  multiple
-                  class="hidden"
-                  {{-- accept="image/*,application/pdf" --}}
-                  x-bind:accept="
-                    $wire.allowedFileType === 'image'
-                      ? 'image/*'
-                      : $wire.allowedFileType === 'pdf'
-                        ? 'application/pdf'
-                        : 'image/*,application/pdf'
-                  "
-                  x-on:change="
-                    prosesUnggahan($event.target.files);
-                    $event.target.value = '';
+              @if ($showTrash)
+                @if ($this->trashCount > 0)
+                  <button
+                    type="button"
+                    wire:click="emptyTrash"
+                    wire:confirm="Kosongkan Sampah? {{ $this->trashCount }} berkas akan dihapus PERMANEN dari server dan TIDAK bisa dipulihkan."
+                    class="flex cursor-pointer items-center gap-2 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
+                  >
+                    <x-dynamic-component
+                      component="lucide-trash-2"
+                      class="h-4 w-4 shrink-0"
+                    />
+                    <span class="hidden sm:inline">Kosongkan Sampah</span>
+                  </button>
+                @endif
+              @else
+                <button
+                  type="button"
+                  wire:click="openTrash"
+                  title="Sampah"
+                  class="relative cursor-pointer rounded-lg bg-gray-100 p-1.5 text-gray-600 transition-colors outline-none hover:bg-gray-200 md:hidden"
+                >
+                  <x-dynamic-component
+                    component="lucide-trash-2"
+                    class="h-4 w-4"
+                  />
+                  @if ($this->trashCount > 0)
+                    <span
+                      class="absolute -top-1 -right-1 rounded-full bg-gray-600 px-1 text-[9px] font-extrabold text-white"
+                      >{{ $this->trashCount }}</span
+                    >
+                  @endif
+                </button>
+                <label
+                  class="bg-foresty relative flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
+                >
+                  <x-dynamic-component
+                    component="lucide-upload-cloud"
+                    class="h-4 w-4 shrink-0"
+                  />
+                  <span class="hidden sm:inline">Unggah</span>
+                  <input
+                    type="file"
+                    multiple
+                    class="hidden"
+                    {{-- accept="image/*,application/pdf" --}}
+                    x-bind:accept="
+                      $wire.allowedFileType === 'image'
+                        ? 'image/*'
+                        : $wire.allowedFileType === 'pdf'
+                          ? 'application/pdf'
+                          : $wire.allowedFileType === 'svg'
+                            ? 'image/svg+xml,.svg'
+                            : 'image/*,application/pdf'
+                    "
+                    x-on:change="
+                      prosesUnggahan($event.target.files);
+                      $event.target.value = '';
 
-                    //if ($event.target.files.length > 0) {
-                    //  $wire.uploadMultiple(
-                    //    'uploadFiles',
-                    //    $event.target.files,
-                    //    () => { isUploading = false; $wire.saveUploads(); $event.target.value = ''; },
-                    //    () => { isUploading = false; $wire.notify('Gagal mengunggah berkas. Mungkin ukurannya melebihi batas server.', 'error'); $event.target.value = ''; }
-                    //  );
-                    //}
-                  "
-                />
-              </label>
+                      //if ($event.target.files.length > 0) {
+                      //  $wire.uploadMultiple(
+                      //    'uploadFiles',
+                      //    $event.target.files,
+                      //    () => { isUploading = false; $wire.saveUploads(); $event.target.value = ''; },
+                      //    () => { isUploading = false; $wire.notify('Gagal mengunggah berkas. Mungkin ukurannya melebihi batas server.', 'error'); $event.target.value = ''; }
+                      //  );
+                      //}
+                    "
+                  />
+                </label>
+              @endif
             </div>
           </div>
+
+          @if ($showTrash)
+            <div
+              wire:key="trash-note"
+              class="border-b border-gray-100 bg-amber-50 px-4 py-2 text-[11px] font-semibold text-amber-800"
+            >
+              Berkas di Sampah dihapus permanen otomatis setelah {{ \App\Models\Media::TRASH_DAYS }} hari.
+              Pilih berkas untuk memulihkannya atau menghapusnya sekarang.
+            </div>
+          @endif
 
           <div
             x-show="isUploading"
@@ -1524,8 +1920,13 @@ new class extends Component {
                   component="lucide-folder-open"
                   class="mb-3 h-12 w-12 opacity-20"
                 />
-                <p class="text-sm font-bold">Folder Kosong</p>
-                <p class="text-xs">Seret & lepas, atau <span class="text-foresty font-extrabold">CTRL+V</span> file ke sini untuk mengunggah.</p>
+                @if ($showTrash)
+                  <p class="text-sm font-bold">Sampah kosong</p>
+                  <p class="text-xs">Berkas yang Anda hapus akan muncul di sini dan bisa dipulihkan.</p>
+                @else
+                  <p class="text-sm font-bold">Folder Kosong</p>
+                  <p class="text-xs">Seret & lepas, atau <span class="text-foresty font-extrabold">CTRL+V</span> file ke sini untuk mengunggah.</p>
+                @endif
               </div>
             @else
               <!-- GRID -->
@@ -1618,7 +2019,7 @@ new class extends Component {
                       <button
                         type="button"
                         wire:click="deleteFolder({{ $folder->id }})"
-                        wire:confirm="Hapus folder ini? Pastikan kosong."
+                        wire:confirm="Hapus folder '{{ $folder->name }}'? Folder hanya bisa dihapus bila tidak ada berkas di dalamnya."
                         class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-bold text-red-500 transition-colors outline-none hover:bg-red-50 hover:text-red-700"
                       >
                         <x-dynamic-component
@@ -1715,12 +2116,16 @@ new class extends Component {
                           {{ $media->original_name }}
                         </p>
                         <p class="text-[9px] font-semibold text-gray-400">
-                          {{
-                            round(
-                              $media->size / 1024,
-                              1,
-                            )
-                          }} KB
+                          @if ($showTrash)
+                            Sisa {{ $media->daysUntilPurge() }} hari
+                          @else
+                            {{
+                              round(
+                                $media->size / 1024,
+                                1,
+                              )
+                            }} KB
+                          @endif
                         </p>
                       </div>
 
@@ -1745,75 +2150,104 @@ new class extends Component {
                       x-cloak
                       class="absolute top-auto right-2 bottom-8 z-50 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-xl"
                     >
-                      <!-- 🌟 TOMBOL GUNAKAN DI MENU KEBAB (Khusus Modal) -->
-                      @if ($isModal)
+                      @if ($showTrash)
                         <button
                           type="button"
-                          wire:click="selectMedia({{ $media->id }}, '{{ $media->url() }}')"
+                          wire:click="restoreMedia({{ $media->id }})"
+                          x-on:click="openMenu = false"
                           class="text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-bold transition-colors outline-none hover:bg-emerald-50"
                         >
                           <x-dynamic-component
-                            component="lucide-check-circle"
+                            component="lucide-undo-2"
                             class="h-3.5 w-3.5"
                           />
-                          Gunakan
+                          Pulihkan
                         </button>
                         <div class="my-1 border-t border-gray-100"></div>
+                        <button
+                          type="button"
+                          wire:click="purgeMedia({{ $media->id }})"
+                          wire:confirm="Hapus permanen '{{ $media->original_name }}'? Berkas dibuang dari server dan TIDAK bisa dipulihkan."
+                          x-on:click="openMenu = false"
+                          class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-bold text-red-500 transition-colors outline-none hover:bg-red-50 hover:text-red-700"
+                        >
+                          <x-dynamic-component
+                            component="lucide-trash-2"
+                            class="h-3.5 w-3.5"
+                          />
+                          Hapus Permanen
+                        </button>
+                      @else
+                        <!-- 🌟 TOMBOL GUNAKAN DI MENU KEBAB (Khusus Modal) -->
+                        @if ($isModal)
+                          <button
+                            type="button"
+                            wire:click="selectMedia({{ $media->id }}, '{{ $media->url() }}')"
+                            class="text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-bold transition-colors outline-none hover:bg-emerald-50"
+                          >
+                            <x-dynamic-component
+                              component="lucide-check-circle"
+                              class="h-3.5 w-3.5"
+                            />
+                            Gunakan
+                          </button>
+                          <div class="my-1 border-t border-gray-100"></div>
+                        @endif
+                        <!-- 🌟 TOMBOL LIHAT DETAIL (Hanya terlihat di Mobile) -->
+                        <button
+                          type="button"
+                          @click="
+                            isInfoOpen = true;
+                            openMenu = false;
+                          "
+                          class="hover:text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100 md:hidden"
+                        >
+                          <x-dynamic-component
+                            component="lucide-info"
+                            class="h-3.5 w-3.5"
+                          />
+                          Lihat Detail
+                        </button>
+                        <div
+                          class="my-1 border-t border-gray-100 md:hidden"
+                        ></div>
+                        <button
+                          type="button"
+                          x-on:click="let n = prompt('Ganti nama file:', '{{ addslashes($media->original_name) }}'); if(n) { $wire.renameMedia({{ $media->id }}, n); } openMenu = false;"
+                          class="hover:text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100"
+                        >
+                          <x-dynamic-component
+                            component="lucide-pencil"
+                            class="h-3.5 w-3.5"
+                          />
+                          Ganti Nama
+                        </button>
+                        <button
+                          type="button"
+                          wire:click="openMovePanel({{ $media->id }})"
+                          x-on:click="openMenu = false"
+                          class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100 hover:text-blue-600"
+                        >
+                          <x-dynamic-component
+                            component="lucide-folder-symlink"
+                            class="h-3.5 w-3.5"
+                          />
+                          Pindah Folder
+                        </button>
+                        <div class="my-1 border-t border-gray-100"></div>
+                        <button
+                          type="button"
+                          wire:click="trashMedia({{ $media->id }})"
+                          wire:confirm="Pindahkan '{{ $media->original_name }}' ke Sampah? Berkas masih bisa dipulihkan dari Sampah selama {{ \App\Models\Media::TRASH_DAYS }} hari."
+                          class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-bold text-red-500 transition-colors outline-none hover:bg-red-50 hover:text-red-700"
+                        >
+                          <x-dynamic-component
+                            component="lucide-trash-2"
+                            class="h-3.5 w-3.5"
+                          />
+                          Pindah ke Sampah
+                        </button>
                       @endif
-                      <!-- 🌟 TOMBOL LIHAT DETAIL (Hanya terlihat di Mobile) -->
-                      <button
-                        type="button"
-                        @click="
-                          isInfoOpen = true;
-                          openMenu = false;
-                        "
-                        class="hover:text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100 md:hidden"
-                      >
-                        <x-dynamic-component
-                          component="lucide-info"
-                          class="h-3.5 w-3.5"
-                        />
-                        Lihat Detail
-                      </button>
-                      <div
-                        class="my-1 border-t border-gray-100 md:hidden"
-                      ></div>
-                      <button
-                        type="button"
-                        x-on:click="let n = prompt('Ganti nama file:', '{{ addslashes($media->original_name) }}'); if(n) { $wire.renameMedia({{ $media->id }}, n); } openMenu = false;"
-                        class="hover:text-foresty flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100"
-                      >
-                        <x-dynamic-component
-                          component="lucide-pencil"
-                          class="h-3.5 w-3.5"
-                        />
-                        Ganti Nama
-                      </button>
-                      <button
-                        type="button"
-                        wire:click="openMovePanel({{ $media->id }})"
-                        x-on:click="openMenu = false"
-                        class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors outline-none hover:bg-gray-100 hover:text-blue-600"
-                      >
-                        <x-dynamic-component
-                          component="lucide-folder-symlink"
-                          class="h-3.5 w-3.5"
-                        />
-                        Pindah Folder
-                      </button>
-                      <div class="my-1 border-t border-gray-100"></div>
-                      <button
-                        type="button"
-                        wire:click="deleteMedia({{ $media->id }})"
-                        wire:confirm="Hapus gambar ini secara permanen?"
-                        class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-xs font-bold text-red-500 transition-colors outline-none hover:bg-red-50 hover:text-red-700"
-                      >
-                        <x-dynamic-component
-                          component="lucide-trash-2"
-                          class="h-3.5 w-3.5"
-                        />
-                        Hapus
-                      </button>
                     </div>
                   </div>
                 @endforeach
@@ -1834,7 +2268,13 @@ new class extends Component {
                   <div class="w-10 shrink-0 text-center">#</div>
                   <div class="flex-1">Nama File</div>
                   <div class="hidden w-24 md:block">Ukuran</div>
-                  <div class="hidden w-32 md:block">Diunggah</div>
+                  <div class="hidden w-32 md:block">
+                    {{
+                      $showTrash
+                        ? "Dihapus"
+                        : "Diunggah"
+                    }}
+                  </div>
                 </div>
 
                 <!-- 1. Folder dalam Mode List -->
@@ -1943,9 +2383,10 @@ new class extends Component {
                       class="hidden w-32 text-xs font-semibold text-gray-400 md:block"
                     >
                       {{
-                        $media->created_at->translatedFormat(
-                          "d M Y",
-                        )
+                        ($showTrash && $media->deleted_at
+                          ? $media->deleted_at
+                          : $media->created_at
+                        )->translatedFormat("d M Y")
                       }}
                     </div>
                   </div>
@@ -2041,29 +2482,55 @@ new class extends Component {
                   <p class="mb-8 text-sm text-gray-500">Pilih aksi massal untuk file-file ini.</p>
 
                   <div class="mt-auto w-full space-y-3">
-                    <button
-                      type="button"
-                      wire:click="openMovePanel"
-                      class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
-                    >
-                      <x-dynamic-component
-                        component="lucide-folder-symlink"
-                        class="h-4 w-4"
-                      />
-                      Pindahkan Semua
-                    </button>
-                    <button
-                      type="button"
-                      wire:click="bulkDelete"
-                      wire:confirm="Hapus {{ $this->selectedDetails['count'] }} file secara permanen?"
-                      class="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
-                    >
-                      <x-dynamic-component
-                        component="lucide-trash-2"
-                        class="h-4 w-4"
-                      />
-                      Hapus Semua
-                    </button>
+                    @if ($this->selectedDetails["trashed"])
+                      <button
+                        type="button"
+                        wire:click="bulkRestore"
+                        class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
+                      >
+                        <x-dynamic-component
+                          component="lucide-undo-2"
+                          class="h-4 w-4"
+                        />
+                        Pulihkan Semua
+                      </button>
+                      <button
+                        type="button"
+                        wire:click="bulkPurge"
+                        wire:confirm="Hapus permanen {{ $this->selectedDetails['count'] }} file? Berkas dibuang dari server dan TIDAK bisa dipulihkan."
+                        class="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
+                      >
+                        <x-dynamic-component
+                          component="lucide-trash-2"
+                          class="h-4 w-4"
+                        />
+                        Hapus Permanen Semua
+                      </button>
+                    @else
+                      <button
+                        type="button"
+                        wire:click="openMovePanel"
+                        class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
+                      >
+                        <x-dynamic-component
+                          component="lucide-folder-symlink"
+                          class="h-4 w-4"
+                        />
+                        Pindahkan Semua
+                      </button>
+                      <button
+                        type="button"
+                        wire:click="bulkTrash"
+                        wire:confirm="Pindahkan {{ $this->selectedDetails['count'] }} file ke Sampah? Berkas yang masih dipakai dilewati, dan yang lain bisa dipulihkan dari Sampah selama {{ \App\Models\Media::TRASH_DAYS }} hari."
+                        class="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
+                      >
+                        <x-dynamic-component
+                          component="lucide-trash-2"
+                          class="h-4 w-4"
+                        />
+                        Pindah ke Sampah
+                      </button>
+                    @endif
                   </div>
                 </div>
 
@@ -2145,37 +2612,47 @@ new class extends Component {
                     class="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1"
                   >
                     <div
-                      class="h-2 w-2 rounded-full {{ $this->selectedDetails['is_used'] ? 'bg-orange-500' : 'bg-foresty' }}"
+                      class="h-2 w-2 rounded-full {{ $this->selectedDetails['trashed'] ? 'bg-gray-500' : ($this->selectedDetails['is_used'] ? 'bg-orange-500' : 'bg-foresty') }}"
                     ></div>
                     <span
-                      class="text-[11px] font-bold {{ $this->selectedDetails['is_used'] ? 'text-orange-700' : 'text-foresty' }}"
+                      class="text-[11px] font-bold {{ $this->selectedDetails['trashed'] ? 'text-gray-600' : ($this->selectedDetails['is_used'] ? 'text-orange-700' : 'text-foresty') }}"
                     >
-                      {{
-                        $this->selectedDetails["is_used"]
-                          ? "Terpakai"
-                          : "Belum dipakai"
-                      }}
+                      @if ($this->selectedDetails["trashed"])
+                        Di Sampah · sisa {{
+                          $this->selectedDetails[
+                            "days_left"
+                          ]
+                        }} hari
+                      @else
+                        {{
+                          $this->selectedDetails["is_used"]
+                            ? "Terpakai"
+                            : "Belum dipakai"
+                        }}
+                      @endif
                     </span>
                   </div>
-                  @if ($this->selectedDetails["type"] === "media")
-                      @if ($isModal)
-                        <button
-                          type="button"
-                          wire:click="selectMedia({{ $this->selectedDetails['id'] }}, '{{ $this->selectedDetails['url'] }}')"
-                          class="bg-foresty border border-white hover:border-aurum flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-md transition-colors outline-none hover:text-aurum"
-                        >
-                          <x-dynamic-component
-                            component="lucide-check-circle"
-                            class="h-4 w-4"
-                          />
-                          Gunakan Berkas Ini
-                        </button>
-                        <div class="my-3 border-t border-gray-100"></div>
-                      @endif
-                      @endif
+                  @if ($this->selectedDetails["type"] === "media" &&
+                    !$this->selectedDetails["trashed"])
+                    @if ($isModal)
+                      <button
+                        type="button"
+                        wire:click="selectMedia({{ $this->selectedDetails['id'] }}, '{{ $this->selectedDetails['url'] }}')"
+                        class="bg-foresty hover:border-aurum hover:text-aurum flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-white px-4 py-3 text-sm font-bold text-white shadow-md transition-colors outline-none"
+                      >
+                        <x-dynamic-component
+                          component="lucide-check-circle"
+                          class="h-4 w-4"
+                        />
+                        Gunakan Berkas Ini
+                      </button>
+                      <div class="my-3 border-t border-gray-100"></div>
+                    @endif
+                  @endif
 
                   @if ($this->selectedDetails["type"] === "media" &&
-                    $this->selectedDetails["is_image"])
+                    $this->selectedDetails["is_image"] &&
+                    !$this->selectedDetails["trashed"])
                     {{-- <div class="mb-6">
                       <label
                         class="mb-2 flex items-center gap-2 text-[10px] font-bold tracking-widest text-gray-500"
@@ -2197,58 +2674,93 @@ new class extends Component {
                       @endif
                     </div> --}}
                     <div
-    class="mb-6 rounded-xl border p-4 transition-all duration-300"
-    x-data
-    x-bind:class="$wire.activeAltText === '' ? 'border-orange-200 bg-orange-50/50' : 'border-gray-200 bg-gray-50'"
-  >
-    <div class="mb-3 flex items-center justify-between">
-      <label
-        class="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase transition-colors"
-        x-bind:class="$wire.activeAltText === '' ? 'text-orange-600' : 'text-gray-500'"
-      >
-        <x-dynamic-component component="lucide-image" class="h-3 w-3" />
-        Teks Alternatif (Alt)
-      </label>
+                      class="mb-6 rounded-xl border p-4 transition-all duration-300"
+                      x-data
+                      x-bind:class="
+                        $wire.activeAltText === ''
+                          ? 'border-orange-200 bg-orange-50/50'
+                          : 'border-gray-200 bg-gray-50'
+                      "
+                    >
+                      <div class="mb-3 flex items-center justify-between">
+                        <label
+                          class="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase transition-colors"
+                          x-bind:class="
+                            $wire.activeAltText === ''
+                              ? 'text-orange-600'
+                              : 'text-gray-500'
+                          "
+                        >
+                          <x-dynamic-component
+                            component="lucide-image"
+                            class="h-3 w-3"
+                          />
+                          Teks Alternatif (Alt)
+                        </label>
 
-      <!-- Indikator Menyimpan (Livewire) -->
-      <div wire:loading wire:target="activeAltText" class="flex items-center gap-1 text-[10px] font-bold text-gray-500">
-        <x-dynamic-component component="lucide-loader-2" class="h-3 w-3 animate-spin" />
-        Menyimpan...
-      </div>
+                        <!-- Indikator Menyimpan (Livewire) -->
+                        <div
+                          wire:loading
+                          wire:target="activeAltText"
+                          class="flex items-center gap-1 text-[10px] font-bold text-gray-500"
+                        >
+                          <x-dynamic-component
+                            component="lucide-loader-2"
+                            class="h-3 w-3 animate-spin"
+                          />
+                          Menyimpan...
+                        </div>
 
-      <!-- Indikator Selesai/Tersimpan -->
-      <div wire:loading.remove wire:target="activeAltText">
-        <span
-          x-show="$wire.activeAltText !== ''"
-          class="flex items-center gap-1 text-[10px] font-bold text-foresty"
-          style="display: none;"
-        >
-          <x-dynamic-component component="lucide-check-circle" class="h-3 w-3" />
-          Tersimpan
-        </span>
-      </div>
-    </div>
+                        <!-- Indikator Selesai/Tersimpan -->
+                        <div wire:loading.remove wire:target="activeAltText">
+                          <span
+                            x-show="$wire.activeAltText !== ''"
+                            class="text-foresty flex items-center gap-1 text-[10px] font-bold"
+                            style="display: none"
+                          >
+                            <x-dynamic-component
+                              component="lucide-check-circle"
+                              class="h-3 w-3"
+                            />
+                            Tersimpan
+                          </span>
+                        </div>
+                      </div>
 
-    <textarea
-      wire:model.blur="activeAltText"
-      rows="2"
-      placeholder="Contoh: 'Tiga relawan membagikan buku di pedalaman desa...'"
-      class="w-full resize-none rounded-lg border bg-white p-3 text-xs shadow-sm transition-all focus:outline-none focus:ring-2"
-      x-bind:class="$wire.activeAltText === '' ? 'border-orange-300 focus:border-orange-400 focus:ring-orange-200 text-orange-900 placeholder-orange-300/80' : 'border-gray-300 focus:border-foresty focus:ring-foresty/20 text-gray-700'"
-    ></textarea>
+                      <textarea
+                        wire:model.blur="activeAltText"
+                        rows="2"
+                        placeholder="Contoh: 'Tiga relawan membagikan buku di pedalaman desa...'"
+                        class="w-full resize-none rounded-lg border bg-white p-3 text-xs shadow-sm transition-all focus:ring-2 focus:outline-none"
+                        x-bind:class="
+                          $wire.activeAltText === ''
+                            ? 'border-orange-300 focus:border-orange-400 focus:ring-orange-200 text-orange-900 placeholder-orange-300/80'
+                            : 'border-gray-300 focus:border-foresty focus:ring-foresty/20 text-gray-700'
+                        "
+                      ></textarea>
 
-    <p
-      class="mt-2 text-[10px] leading-relaxed transition-colors"
-      x-bind:class="$wire.activeAltText === '' ? 'text-orange-600 font-semibold' : 'text-gray-400'"
-    >
-      <span x-show="$wire.activeAltText === ''">
-        ⚠️ <strong>Wajib untuk SEO:</strong> Gambar tanpa Alt Text tidak bisa dibaca oleh Google dan menurunkan skor halaman.
-      </span>
-      <span x-show="$wire.activeAltText !== ''" style="display: none;">
-        Sempurna! Mesin pencari dan pembaca layar (tunanetra) sekarang dapat memahami isi gambar ini.
-      </span>
-    </p>
-  </div>
+                      <p
+                        class="mt-2 text-[10px] leading-relaxed transition-colors"
+                        x-bind:class="
+                          $wire.activeAltText === ''
+                            ? 'text-orange-600 font-semibold'
+                            : 'text-gray-400'
+                        "
+                      >
+                        <span x-show="$wire.activeAltText === ''">
+                          ⚠️ <strong>Wajib untuk SEO:</strong> Gambar tanpa Alt
+                          Text tidak bisa dibaca oleh Google dan menurunkan skor
+                          halaman.
+                        </span>
+                        <span
+                          x-show="$wire.activeAltText !== ''"
+                          style="display: none"
+                        >
+                          Sempurna! Mesin pencari dan pembaca layar (tunanetra)
+                          sekarang dapat memahami isi gambar ini.
+                        </span>
+                      </p>
+                    </div>
                   @endif
 
                   <div class="mb-6 space-y-3">
@@ -2324,13 +2836,25 @@ new class extends Component {
                     >
                       DIGUNAKAN DI
                     </h3>
-                    <p class="text-xs text-gray-400 italic">
-                      {{
-                        $this->selectedDetails["is_used"]
-                          ? "Digunakan pada artikel/halaman."
-                          : "Belum dipakai di halaman mana pun."
-                      }}
-                    </p>
+                    @if ($this->selectedDetails["trashed"])
+                      <p class="text-xs text-gray-400 italic">Tidak dipakai di mana pun (berkas ada di Sampah).</p>
+                    @elseif (!empty($this->selectedDetails["used_in"]))
+                      <ul class="space-y-1 text-xs font-semibold text-gray-600">
+                        @foreach ($this->selectedDetails["used_in"] as $usedName)
+                          <li class="truncate" title="{{ $usedName }}">
+                            • {{ $usedName }}
+                          </li>
+                        @endforeach
+                      </ul>
+                    @else
+                      <p class="text-xs text-gray-400 italic">
+                        {{
+                          $this->selectedDetails["is_used"]
+                            ? "Digunakan pada artikel/halaman."
+                            : "Belum dipakai di halaman mana pun."
+                        }}
+                      </p>
+                    @endif
                   </div>
 
                   <!-- Tombol Aksi -->
@@ -2362,41 +2886,83 @@ new class extends Component {
                         />
                         Unduh
                       </a>
+                      @unless ($this->selectedDetails["trashed"])
+                        <button
+                          type="button"
+                          @click="navigator.clipboard.writeText('{{ $this->selectedDetails['url'] }}'); $wire.notify('Tautan disalin!', 'success')"
+                          class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
+                        >
+                          <x-dynamic-component
+                            component="lucide-link"
+                            class="h-4 w-4"
+                          />
+                          Salin Tautan
+                        </button>
+                        <button
+                          type="button"
+                          @click="let n = prompt('Ganti nama file:', '{{ addslashes($this->selectedDetails['name']) }}'); if(n) { $wire.renameMedia({{ $this->selectedDetails['id'] }}, n); }"
+                          class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
+                        >
+                          <x-dynamic-component
+                            component="lucide-pencil"
+                            class="h-4 w-4"
+                          />
+                          Ganti Nama
+                        </button>
+                      @endunless
+                    @endif
+                    @if ($this->selectedDetails["type"] === "folder")
+                      {{-- Folder BUKAN media: jangan pernah memakai aksi media (id folder dan id media bisa sama) --}}
                       <button
                         type="button"
-                        @click="navigator.clipboard.writeText('{{ $this->selectedDetails['url'] }}'); $wire.notify('Tautan disalin!', 'success')"
-                        class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
+                        wire:click="deleteFolder({{ $this->selectedDetails['id'] }})"
+                        wire:confirm="Hapus folder '{{ $this->selectedDetails['name'] }}'? Folder hanya bisa dihapus bila tidak ada berkas di dalamnya."
+                        class="mt-4 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
                       >
                         <x-dynamic-component
-                          component="lucide-link"
+                          component="lucide-trash-2"
                           class="h-4 w-4"
                         />
-                        Salin Tautan
+                        Hapus Folder
+                      </button>
+                    @elseif ($this->selectedDetails["trashed"])
+                      <button
+                        type="button"
+                        wire:click="restoreMedia({{ $this->selectedDetails['id'] }})"
+                        class="bg-foresty mt-4 flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-md transition-colors outline-none hover:bg-emerald-800"
+                      >
+                        <x-dynamic-component
+                          component="lucide-undo-2"
+                          class="h-4 w-4"
+                        />
+                        Pulihkan
                       </button>
                       <button
                         type="button"
-                        @click="let n = prompt('Ganti nama file:', '{{ addslashes($this->selectedDetails['name']) }}'); if(n) { $wire.renameMedia({{ $this->selectedDetails['id'] }}, n); }"
-                        class="bg-sage-soft/40 text-foresty hover:bg-sage-soft flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors outline-none"
+                        wire:click="purgeMedia({{ $this->selectedDetails['id'] }})"
+                        wire:confirm="Hapus permanen '{{ $this->selectedDetails['name'] }}'? Berkas dibuang dari server dan TIDAK bisa dipulihkan."
+                        class="flex w-full cursor-pointer items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
                       >
                         <x-dynamic-component
-                          component="lucide-pencil"
+                          component="lucide-trash-2"
                           class="h-4 w-4"
                         />
-                        Ganti Nama
+                        Hapus Permanen
+                      </button>
+                    @else
+                      <button
+                        type="button"
+                        wire:click="trashMedia({{ $this->selectedDetails['id'] }})"
+                        wire:confirm="Pindahkan '{{ $this->selectedDetails['name'] }}' ke Sampah? Berkas masih bisa dipulihkan dari Sampah selama {{ \App\Models\Media::TRASH_DAYS }} hari."
+                        class="mt-4 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
+                      >
+                        <x-dynamic-component
+                          component="lucide-trash-2"
+                          class="h-4 w-4"
+                        />
+                        Pindah ke Sampah
                       </button>
                     @endif
-                    <button
-                      type="button"
-                      wire:click="deleteMedia({{ $this->selectedDetails['id'] }})"
-                      wire:confirm="Hapus item ini secara permanen?"
-                      class="mt-4 flex w-full cursor-pointer items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors outline-none hover:bg-red-100"
-                    >
-                      <x-dynamic-component
-                        component="lucide-trash-2"
-                        class="h-4 w-4"
-                      />
-                      Pindah ke Sampah
-                    </button>
                   </div>
                 </div>
               @endif

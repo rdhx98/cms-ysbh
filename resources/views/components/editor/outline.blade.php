@@ -9,6 +9,16 @@
   Rilis 43 — SEMUA operasi struktur dari outline (kanvas sengaja tanpa kontrol tambahan). Satu menu "⋯" untuk seluruh pohon:
   baris menyimpan konteksnya di data-ctx; menu ditaruh `fixed` di dekat tombol supaya tidak terpotong sidebar yang overflow.
   Daftar jenis untuk "Sisipkan di atas/bawah" dirender SEKALI per jenis daftar (tingkat atas + tiap jenis kontainer), bukan per baris.
+
+  Rilis 98: tanpa pembungkus terluar (tanpa latar, bingkai, dan padding di sekeliling semua seksi).
+
+  Rilis 96: tiap blok adalah kartu terpisah (jarak 3px) berlatar tipis dari warna seksinya; seksi dan kontainer digambar sebagai pohon bersiku
+  (kepala seksi = induk blok-blok seksinya). Gaya di <style> di bawah. Bagian di bawah ini (rilis 95) tetap berlaku untuk penghitungan seksi.
+
+  Rilis 95: blok tingkat atas dikelompokkan per SEKSI (dari satu Pemisah Seksi sampai pemisah berikutnya). Tiap seksi diberi latar tipis dari
+  warna latar seksi yang sebenarnya (data.background -> slot palet -> hex) dan garis tepi kiri 3px, sehingga outline mencerminkan ritme warna
+  halaman. Blok sebelum pemisah pertama tidak diberi latar. Semua nilai warna yang dicetak berasal dari palet (hex divalidasi), bukan dari
+  teks penulis.
 --}}
 @props(['content' => [], 'order' => []])
 
@@ -18,18 +28,98 @@
   foreach (\App\Editor\BlockPalette::CONTAINERS as $container) {
       $lists[$container] = \App\Editor\BlockPalette::childTypes($container);
   }
+  // Rilis 95: kelompok seksi. Satu elemen daftar = ['divider' => id|null, 'items' => [indeks => id], 'tint' => hex|null].
+  $palette = [];
+  try {
+      $palette = class_exists(\App\Content\PublicLookup::class) ? \App\Content\PublicLookup::palette() : \App\Content\Palette::defaults();
+  } catch (\Throwable) {
+      $palette = [];
+  }
+  $tintOf = function (?string $bg) use ($palette): ?string {
+      $slot = $bg !== null && str_starts_with($bg, 'bg-') && class_exists(\App\Content\Palette::class) ? \App\Content\Palette::slotFor(substr($bg, 3)) : null;
+      $hex = $slot !== null ? ($palette[$slot]['hex'] ?? null) : null;
+
+      return is_string($hex) && preg_match('/^#[0-9a-fA-F]{6}$/', $hex) === 1 ? $hex : null;
+  };
+  $sections = [];
+  $cur = ['divider' => null, 'items' => [], 'tint' => null];
+  foreach ($order as $i => $oid) {
+      if (\App\Editor\BlockPalette::canonical($content[$oid]['type'] ?? '') === 'section-divider') {
+          if ($cur['items']) {
+              $sections[] = $cur;
+          }
+          $cur = ['divider' => $oid, 'items' => [], 'tint' => $tintOf($content[$oid]['data']['background'] ?? 'bg-paper')];
+      }
+      $cur['items'][$i] = $oid;
+  }
+  if ($cur['items']) {
+      $sections[] = $cur;
+  }
+  // Teks daftar jenis: SATU rupa untuk semua jenis (tanpa cabang per jenis), supaya semua nama jenis tampil sama.
+  $itemText = 'block min-w-0 flex-1 text-[11px] leading-tight font-semibold tracking-normal normal-case';
   $item = 'hover:bg-sage-soft hover:text-foresty flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] font-semibold text-gray-600 transition-colors disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent';
 @endphp
+
+<style>
+  /* Rilis 96: kartu terpisah + pohon bersiku. Sengaja CSS biasa (bukan kelas Tailwind): garis pohon memakai ::before/::after dan variabel, dan
+     tidak boleh bergantung pada pemindaian/`npm run build`. Warna: --ol-bg / --ol-bd diisi per baris (warna seksi), keadaan terpilih menimpanya. */
+  /* Rilis 98: pembungkus terluar dihapus (wadah seksi sudah membungkus); .ol-panel kini hanya pembawa variabel garis pohon. */
+  .ol-panel { --ol-line: #b4bdb7; }
+  /* Rilis 97: seksi = wadah yang bergantian putih / abu-abu sedikit lebih gelap; kartu di dalamnya selalu putih. */
+  .ol-sw { border-radius: 8px; padding: 4px 5px 5px; margin-bottom: 6px; border: 1px solid #d4d8d1; }
+  .ol-sw-a { background: #ffffff; }
+  .ol-sw-b { background: #e4e7e2; }
+  .ol-item { position: relative; padding-top: 3px; --y: 17px; }
+  .ol-item.ol-z { --y: 12px; }
+  .ol-row { background: var(--ol-bg, #fff); border: 1px solid var(--ol-bd, #e5e7eb); color: #1f2937; }
+  .ol-row.ol-sec { font-weight: 700; border-left: 5px solid var(--ol-bar, #cfd3cc); }
+  .ol-chip { flex: none; width: 10px; height: 10px; margin-top: 2px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, .18); }
+  .ol-row:hover, .ol-row:focus-within { background: var(--color-sage-soft, #e3ede6); }
+  .ol-row.is-par { background: var(--color-sage-soft, #e3ede6); border-color: color-mix(in srgb, var(--color-foresty, #064f3b) 60%, transparent); color: var(--color-foresty, #064f3b); }
+  /* Terpilih (rilis 97): latar forest, border aurum, teks putih; cincin tipis aurum supaya mudah ditemukan di outline yang panjang. */
+  .ol-row.is-sel { background: var(--color-foresty, #064f3b); border-color: var(--color-aurum, #e5c423); color: #fff; box-shadow: 0 0 0 1px var(--color-aurum, #e5c423), 0 0 0 3px rgba(229, 196, 35, .3); }
+  .ol-zone { display: flex; align-items: center; gap: 5px; margin: 0; padding: 4px 2px 0; font-size: 10px; font-weight: 700; color: #6b7280; }
+  .ol-zone::before { content: ""; width: 8px; height: 8px; border: 1.5px solid #9ca3af; border-radius: 2px; flex: none; }
+  .ol-kids { position: relative; margin-left: 13px; padding-left: 12px; }
+  .ol-kids > .ol-item::before { content: ""; position: absolute; left: -12px; top: 0; bottom: 0; border-left: 1.5px solid var(--ol-line); }
+  .ol-kids > .ol-item::after { content: ""; position: absolute; left: -12px; top: calc(var(--y) + 3px); width: 11px; border-top: 1.5px solid var(--ol-line); }
+  .ol-kids > .ol-item:last-child::before { bottom: auto; width: 12px; height: calc(var(--y) + 3px); border-bottom: 1.5px solid var(--ol-line); border-bottom-left-radius: 6px; }
+  .ol-kids > .ol-item:last-child::after { display: none; }
+</style>
 
 <nav
   x-data="outline"
   x-on:block-added.window="added($event)"
   x-on:keydown.escape.window="if (menu.open) { closeMenu(true) }"
   aria-label="Struktur halaman"
-  class="flex flex-col gap-0.5 text-xs"
+  class="ol-panel flex flex-col text-xs"
 >
-  @forelse ($order as $i => $id)
-    <x-editor.outline-node :id="$id" :content="$content" :index="$i" :count="count($order)" :prev="$order[$i - 1] ?? null" />
+  @forelse ($sections as $section)
+    @php $head = $section['divider'] ? array_key_first($section['items']) : null; @endphp
+    <div @class(['ol-sw', $loop->index % 2 ? 'ol-sw-b' : 'ol-sw-a']) data-outline-section @if ($section['divider']) data-outline-section-of="{{ $section['divider'] }}" @endif>
+      @foreach ($section['items'] as $i => $id)
+        @if ($i === $head)
+          {{-- kepala seksi (Pemisah Seksi) --}}
+          <x-editor.outline-node :id="$id" :content="$content" :index="$i" :count="count($order)" :prev="$order[$i - 1] ?? null" :tint="$section['tint']" />
+        @break
+        @endif
+      @endforeach
+      {{-- isi seksi: anak kepala seksi di pohon (hanya tampilan; urutan, naik/turun, dan data-ctx tetap daftar tingkat atas) --}}
+      @if ($section['divider'])
+        @if (count($section['items']) > 1)
+          <div class="ol-kids" data-outline-section-kids>
+            @foreach ($section['items'] as $i => $id)
+              @continue ($i === $head)
+              <x-editor.outline-node :id="$id" :content="$content" :index="$i" :count="count($order)" :prev="$order[$i - 1] ?? null" />
+            @endforeach
+          </div>
+        @endif
+      @else
+        @foreach ($section['items'] as $i => $id)
+          <x-editor.outline-node :id="$id" :content="$content" :index="$i" :count="count($order)" :prev="$order[$i - 1] ?? null" />
+        @endforeach
+      @endif
+    </div>
   @empty
     <p class="rounded-lg bg-gray-50 p-3 leading-relaxed text-gray-500">Belum ada blok. Tambahkan yang pertama di bawah.</p>
   @endforelse
@@ -80,7 +170,7 @@
           @foreach ($items as $t)
             <button type="button" role="menuitem" x-on:click="insert(@js($t['type']))" class="{{ $item }}" data-insert="{{ $t['type'] }}">
               <svg class="h-3.5 w-3.5 shrink-0"><use href="#icon-{{ $t['icon'] }}"></use></svg>
-              <span class="leading-tight">{{ $t['label'] }}</span>
+              <span class="{{ $itemText }}">{{ $t['label'] }}</span>
             </button>
           @endforeach
         @endforeach

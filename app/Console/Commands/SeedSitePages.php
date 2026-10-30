@@ -14,10 +14,12 @@ use Illuminate\Console\Command;
  * Membuat halaman situs (docs/HALAMAN-SITUS.md): beranda, tentang, program (indeks + lima program), kredibilitas, dampak, transparansi,
  * kontak, dan snippet `legal-details` (tempat NPWP/rekening). Semua OFFLINE; berisi DRAF teks dua bahasa (SiteText) dengan penanda [ISI-DULU] pada hal yang belum diputuskan; tidak ada nilai NPWP/rekening.
  * Bawaannya hanya MELIHAT rencana. Halaman yang slug-nya sudah dipakai (bahasa mana pun) dilewati, tidak pernah ditimpa; dijalankan ulang aman.
+ * Rilis 105: --replace=kunci,kunci mengganti ISI halaman yang SUDAH ada dengan draf terbaru (mis. setelah data legal baru masuk ke SiteText). Hanya halaman
+ * yang masih OFFLINE; cadangan JSON isi lama dibuat lebih dulu (storage/app/cms-backup); judul, slug, dan status tidak diubah.
  */
 class SeedSitePages extends Command
 {
-    protected $signature = 'cms:seed-pages {--apply : benar-benar membuat (tanpa ini hanya rencana)}';
+    protected $signature = 'cms:seed-pages {--apply : benar-benar membuat (tanpa ini hanya rencana)} {--replace= : kunci halaman yang SUDAH ada dan isinya diganti draf terbaru, dipisah koma (mis. about,credibility); hanya halaman offline, cadangan dibuat lebih dulu}';
 
     protected $description = 'Membuat halaman situs berisi draf teks (offline, penanda [ISI-DULU] pada yang belum diputuskan) dan snippet NPWP/rekening kosong';
 
@@ -41,6 +43,14 @@ class SeedSitePages extends Command
             return self::FAILURE;
         }
 
+        $replaceKeys = array_values(array_filter(array_map('trim', explode(',', (string) $this->option('replace')))));
+        $unknown = array_diff($replaceKeys, array_column($pages, 'key'));
+        if ($unknown !== []) {
+            $this->error('Kunci --replace tidak dikenal: ' . implode(', ', $unknown) . '. Kunci yang ada: ' . implode(', ', array_column($pages, 'key')));
+
+            return self::FAILURE;
+        }
+
         // slug yang sudah dipakai halaman mana pun, per bahasa
         $used = [];
         foreach (Page::query()->get(['id', 'slug']) as $page) {
@@ -54,12 +64,28 @@ class SeedSitePages extends Command
 
         $rows = [];
         $todo = [];
+        $replace = [];
         foreach ($pages as $p) {
             $clash = null;
+            $existingId = null;
             foreach ($locales as $l) {
-                $clash ??= isset($used["$l|" . ($p['slug'][$l] ?? '')]) ? ($p['slug'][$l] ?? '') : null;
+                $hit = $used["$l|" . ($p['slug'][$l] ?? '')] ?? null;
+                if ($hit !== null) {
+                    $clash ??= $p['slug'][$l];
+                    $existingId ??= $hit;
+                }
             }
-            $rows[] = [$p['key'], implode(' | ', array_map(fn ($l) => ($l === $cfg['default'] ? '' : '/' . $l) . '/' . ($p['slug'][$l] ?? ''), $locales)), $clash === null ? 'BARU' : "ADA (slug \"$clash\"), dilewati"];
+            $plan = $clash === null ? 'BARU' : "ADA (slug \"$clash\"), dilewati";
+            if ($clash !== null && in_array($p['key'], $replaceKeys, true)) {
+                $existing = Page::query()->find($existingId);
+                if ($existing !== null && (string) $existing->status !== 'offline') {
+                    $plan = "ADA (slug \"$clash\"), TIDAK diganti: halaman sedang online (jadikan offline dulu)";
+                } else {
+                    $plan = "ADA (slug \"$clash\"), ISI DIGANTI draf terbaru (cadangan dibuat lebih dulu; judul, slug, status tetap)";
+                    $replace[] = [$p, $existingId];
+                }
+            }
+            $rows[] = [$p['key'], implode(' | ', array_map(fn ($l) => ($l === $cfg['default'] ? '' : '/' . $l) . '/' . ($p['slug'][$l] ?? ''), $locales)), $plan];
             if ($clash === null) {
                 $todo[] = $p;
             }
@@ -69,7 +95,7 @@ class SeedSitePages extends Command
 
         $this->table(['Halaman', 'Alamat', 'Rencana'], $rows);
         if (!$this->option('apply')) {
-            $this->line("\nIni baru rencana. Semua dibuat OFFLINE. Untuk membuat: php artisan cms:seed-pages --apply");
+            $this->line("\nIni baru rencana. Semua dibuat OFFLINE. Untuk membuat: php artisan cms:seed-pages --apply (halaman yang sudah ada: tambahkan --replace=kunci,kunci untuk mengganti isinya)");
 
             return self::SUCCESS;
         }
@@ -105,6 +131,25 @@ class SeedSitePages extends Command
             } catch (\Throwable $e) {
                 $failed++;
                 $this->error("Gagal membuat {$p['key']}: " . $e->getMessage());
+            }
+        }
+
+        foreach ($replace as [$p, $pageId]) {
+            try {
+                $page = Page::query()->findOrFail($pageId);
+                $dir = storage_path('app/cms-backup');
+                if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
+                    throw new \RuntimeException('folder cadangan tidak bisa dibuat: ' . $dir);
+                }
+                $file = $dir . '/' . $p['key'] . '-' . date('Ymd-His') . '.json';
+                if (@file_put_contents($file, json_encode($page->content, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PARTIAL_OUTPUT_ON_ERROR)) === false) {
+                    throw new \RuntimeException('cadangan tidak bisa ditulis: ' . $file);
+                }
+                $page->forceFill(['content' => SitePages::content($p, $locales, $snippetId)])->save();
+                $this->info("Isi diganti: {$p['key']} (cadangan: $file)");
+            } catch (\Throwable $e) {
+                $failed++;
+                $this->error("Gagal mengganti {$p['key']}: " . $e->getMessage() . ' (halaman itu tidak diubah)');
             }
         }
 

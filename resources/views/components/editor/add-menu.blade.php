@@ -91,7 +91,7 @@
               class="hover:bg-sage-soft hover:text-foresty flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] font-semibold text-gray-600 transition-colors"
             >
               <svg class="h-3.5 w-3.5 shrink-0"><use href="#icon-{{ $t['icon'] }}"></use></svg>
-              <span class="leading-tight">{{ $t['label'] }}</span>
+              <span class="block min-w-0 flex-1 text-[11px] leading-tight font-semibold tracking-normal normal-case">{{ $t['label'] }}</span>
             </button>
           @endforeach
         </div>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hiasan latar: Garis detak jantung (EKG). Satu garis denyut dengan titik aksen di ujung (4,3 : 1).
+     Warna utama = currentColor (mengikuti warna teks seksi pada "Warna asli"), aksen = #E5C423.
+     Saran: Posisi Tengah, Utuh di dalam, Ukuran Sedang, Gerak Diam atau Melayang, Kepekatan 20-40 di belakang judul. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 140">
+  <path d="M0 70 H175 L205 70 L228 22 L262 112 L292 40 L312 70 H600" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="588" cy="70" r="9" fill="#E5C423"/>
+</svg>

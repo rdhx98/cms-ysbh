@@ -1306,9 +1306,12 @@ new class extends Component {
     </div>
   @endif
 
-  <div class="grid min-h-0 flex-1 grid-cols-[250px_1fr_330px]">
+  {{-- Rilis 97: lebar kolom kiri/kanan mengikuti lebar layar (dulu tetap 250px / 330px). Kiri (outline) 250..420px, kanan (inspektur) 330..380px;
+         di 1920px: 365 / kanvas 1190 / 365. Layar kecil tidak berubah (250 / 330). Kanvas tidak pernah lebih sempit dari sebelumnya di layar <= 1536px. --}}
+  <div class="grid min-h-0 flex-1 grid-cols-[clamp(250px,19vw,420px)_1fr_clamp(330px,19vw,380px)]">
     {{-- ======= KIRI: pohon struktur (tambah / pindah / duplikat / hapus) ======= --}}
-    <div class="overflow-y-auto border-r p-3">
+    {{-- Rilis 98: padding p-2 (dulu p-3): wadah seksi di outline kini langsung di atas kolom, tanpa pembungkus terluar. --}}
+    <div class="overflow-y-auto border-r p-2">
       <x-editor.outline :content="$content" :order="$blockOrder" />
     </div>
 

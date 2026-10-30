@@ -182,6 +182,10 @@ final class CoreBlocks
                 $d['col_count'] = $n;   // hanya bila tidak sah atau di luar jangkauan: "3" yang sah tidak diubah menjadi 3
             }
         }
+        // Rilis 100: pola lebar kolom hanya teks pendek berbentuk angka:angka atau equal/custom; selain itu dibuang (renderer jatuh ke sama rata)
+        if (array_key_exists('col_ratio', $d) && (!is_string($d['col_ratio']) || preg_match('/^(?:equal|custom|\d{1,2}(?::\d{1,2}){1,5})$/D', $d['col_ratio']) !== 1)) {
+            unset($d['col_ratio']);
+        }
         for ($i = 1; $i <= 6; $i++) {
             if (array_key_exists("col_{$i}_zone_width", $d)) {
                 $d["col_{$i}_zone_width"] = self::fraction($d["col_{$i}_zone_width"]);
@@ -228,6 +232,13 @@ final class CoreBlocks
                     $d['cards'][$i]['layout']['children'][$c]['width'] = self::fraction($col['width']);
                 }
                 foreach (is_array($col['children'] ?? null) ? $col['children'] : [] as $e => $el) {
+                    // Rilis 102: elemen Tombol berbentuk data blok Tombol (align, stack_mobile, buttons) + style; tidak punya `content`,
+                    // jadi dibersihkan di sini oleh pembersih blok Tombol (aksi salin, tautan, warna, ukuran); `style` (jarak bawah) dipertahankan.
+                    if (is_array($el) && ($el['elementType'] ?? null) === 'button-builder' && is_array($el['data'] ?? null)) {
+                        $d['cards'][$i]['layout']['children'][$c]['children'][$e]['data'] = array_replace($el['data'], BlockSanitizer::buttonBuilder($el['data']));
+
+                        continue;
+                    }
                     if (!is_array($el) || !isset($el['data']['content']) || !is_array($el['data']['content'])) {
                         continue;
                     }

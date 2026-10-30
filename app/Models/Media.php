@@ -2,15 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class Media extends Model
 {
     use SoftDeletes;
+
+    /** Berkas di Sampah dibuang permanen setelah sekian hari (tampilan Sampah dan cms:purge-media-trash memakai angka ini). */
+    public const TRASH_DAYS = 30;
 
     protected $table = 'media';
 
@@ -110,7 +115,52 @@ class Media extends Model
      */
     public function restoreFromTrash(): bool
     {
+        // Folder asal yang sudah dihapus: kolom folder_id sudah dikosongkan oleh basis data (nullOnDelete), jadi berkas kembali ke Folder Utama.
         return (bool) $this->restore();
+    }
+
+    /**
+     * Sisa hari sebelum berkas di Sampah dibuang permanen (0 = sudah waktunya). Null bila berkas tidak ada di Sampah.
+     */
+    public function daysUntilPurge(int $days = self::TRASH_DAYS): ?int
+    {
+        if ($this->deleted_at === null) {
+            return null;
+        }
+        $left = (int) ceil(($this->deleted_at->copy()->addDays($days)->getTimestamp() - Carbon::now()->getTimestamp()) / 86400);
+
+        return max(0, $left);
+    }
+
+    /** Berkas di Sampah yang sudah lewat batas hari. */
+    public function scopeExpiredTrash(Builder $query, int $days = self::TRASH_DAYS): Builder
+    {
+        return $query->onlyTrashed()->where('deleted_at', '<=', Carbon::now()->subDays($days));
+    }
+
+    /**
+     * Buang permanen semua berkas di Sampah yang sudah lewat batas hari. Berkas yang ternyata dipakai lagi dilewati (tidak dibuang).
+     * Dipanggil saat Sampah dibuka di File Manager dan oleh `php artisan cms:purge-media-trash`. Mengembalikan jumlah per hasil.
+     *
+     * @return array{purged: int, skipped: int}
+     */
+    public static function purgeExpiredTrash(int $days = self::TRASH_DAYS, bool $dryRun = false): array
+    {
+        $purged = $skipped = 0;
+        static::expiredTrash($days)->eachById(function (Media $media) use (&$purged, &$skipped, $dryRun) {
+            if ($media->isInUse()) {
+                $skipped++;
+
+                return;
+            }
+            if ($dryRun || $media->forceDeleteWithFile()) {
+                $purged++;
+            } else {
+                $skipped++;
+            }
+        });
+
+        return ['purged' => $purged, 'skipped' => $skipped];
     }
 
     /**

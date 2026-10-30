@@ -30,77 +30,77 @@
 
 @php
   /*
-        'image'      => [
-          'url' => '',
-          'margin_bottom' => 'mb-4 md:mb-6',
-          'caption'       => $emptyLocales,  // 🌟 Mendukung terjemahan multi-bahasa
-          'width'         => 'w-full',       // Default menyesuaikan lebar kontainer induk
-          'align'         => 'mx-auto',      // Rata tengah
-          'radius'        => 'rounded-xl',   // Sudut melengkung halus
-          'max_height'    => 'max-h-none',   // Tanpa batasan tinggi bawaan
-          'object_fit'    => 'object-cover',
-          'space_y'       => 'gap-3',
-        ],
-        ============================================================================================
-        Saran Pilihan Konfigurasi untuk Editor Anda (Backend/UI)
-        Di file Livewire / UI Builder Anda, Anda bisa menyediakan pilihan pengaturan (seperti yang Anda buat di Card Builder sebelumnya) dengan value sebagai berikut:
+          'image'      => [
+            'url' => '',
+            'margin_bottom' => 'mb-4 md:mb-6',
+            'caption'       => $emptyLocales,  // 🌟 Mendukung terjemahan multi-bahasa
+            'width'         => 'w-full',       // Default menyesuaikan lebar kontainer induk
+            'align'         => 'mx-auto',      // Rata tengah
+            'radius'        => 'rounded-xl',   // Sudut melengkung halus
+            'max_height'    => 'max-h-none',   // Tanpa batasan tinggi bawaan
+            'object_fit'    => 'object-cover',
+            'space_y'       => 'gap-3',
+          ],
+          ============================================================================================
+          Saran Pilihan Konfigurasi untuk Editor Anda (Backend/UI)
+          Di file Livewire / UI Builder Anda, Anda bisa menyediakan pilihan pengaturan (seperti yang Anda buat di Card Builder sebelumnya) dengan value sebagai berikut:
 
-        1. Lebar Gambar (width):
+          1. Lebar Gambar (width):
 
-        w-full (Lebar Penuh Layar - Cocok untuk Banner)
+          w-full (Lebar Penuh Layar - Cocok untuk Banner)
 
-        max-w-4xl (Lebar Artikel Standar)
+          max-w-4xl (Lebar Artikel Standar)
 
-        max-w-md (Gambar Medium / Portrait)
+          max-w-md (Gambar Medium / Portrait)
 
-        max-w-xs (Gambar Kecil / Logo)
+          max-w-xs (Gambar Kecil / Logo)
 
-        2. Perataan Posisi (align):
-        (Hanya terlihat perbedaannya jika gambar bukan w-full)
+          2. Perataan Posisi (align):
+          (Hanya terlihat perbedaannya jika gambar bukan w-full)
 
-        mr-auto (Rata Kiri)
+          mr-auto (Rata Kiri)
 
-        mx-auto (Rata Tengah)
+          mx-auto (Rata Tengah)
 
-        ml-auto (Rata Kanan)
+          ml-auto (Rata Kanan)
 
-        3. Radius Sudut (radius):
+          3. Radius Sudut (radius):
 
-        rounded-none (Tajam/Siku)
+          rounded-none (Tajam/Siku)
 
-        rounded-xl (Normal)
+          rounded-xl (Normal)
 
-        rounded-3xl (Sangat Melengkung)
-        ============================================================================================
-        Rekomendasi Nilai untuk UI Builder Admin
-        Untuk melengkapi fitur di atas, Anda bisa menambahkan opsi dropdown atau button group di antar muka penulis Anda dengan nilai berikut:
+          rounded-3xl (Sangat Melengkung)
+          ============================================================================================
+          Rekomendasi Nilai untuk UI Builder Admin
+          Untuk melengkapi fitur di atas, Anda bisa menambahkan opsi dropdown atau button group di antar muka penulis Anda dengan nilai berikut:
 
-        1. Lebar Gambar (width)
+          1. Lebar Gambar (width)
 
-        max-w-4xl : Lebar Artikel (Standar)
+          max-w-4xl : Lebar Artikel (Standar)
 
-        w-full : Lebar Kontainer (Mentok di batas max-w-7xl)
+          w-full : Lebar Kontainer (Mentok di batas max-w-7xl)
 
-        w-screen : Layar Penuh (Banner Baru)
+          w-screen : Layar Penuh (Banner Baru)
 
-        2. Batasan Tinggi (Height Limit) - Sangat Berguna untuk Banner
+          2. Batasan Tinggi (Height Limit) - Sangat Berguna untuk Banner
 
-        max-h-none : Asli (Tidak Dibatasi)
+          max-h-none : Asli (Tidak Dibatasi)
 
-        max-h-[50vh] : Setengah Layar
+          max-h-[50vh] : Setengah Layar
 
-        max-h-[70vh] : 70% Layar
+          max-h-[70vh] : 70% Layar
 
-        max-h-96 : Kotak Pendek (sekitar 384px)
+          max-h-96 : Kotak Pendek (sekitar 384px)
 
-        3. Perilaku Gambar (object_fit)
+          3. Perilaku Gambar (object_fit)
 
-        object-cover : Penuhi Kotak (Dipotong Otomatis) — Wajib digunakan jika Anda mengaktifkan Batasan Tinggi agar gambar tidak gepeng.
+          object-cover : Penuhi Kotak (Dipotong Otomatis) — Wajib digunakan jika Anda mengaktifkan Batasan Tinggi agar gambar tidak gepeng.
 
-        object-contain : Muat Utuh — Akan ada ruang kosong jika rasio gambar dan layar berbeda.
+          object-contain : Muat Utuh — Akan ada ruang kosong jika rasio gambar dan layar berbeda.
 
-        object-fill : Tarik/Gepengkan (Sangat tidak disarankan, namun kadang diminta klien).
-    */
+          object-fill : Tarik/Gepengkan (Sangat tidak disarankan, namun kadang diminta klien).
+      */
 @endphp
 
 @props (["block", "data", "lang", "allContent" => []])
@@ -114,10 +114,21 @@
   $width = $data["width"] ?? "w-full";
   $align = $data["align"] ?? "mx-auto";
 
-  $maxHeight = $data["max_height"] ?? "max-h-none"; // Contoh: max-h-[60vh]
+  $maxHeight = $data["max_height"] ?? "max-h-none"; // Contoh: max-h-[60vh] (dipakai bila Tinggi = Otomatis)
   $objectFit = $data["object_fit"] ?? "object-cover"; // Contoh: object-contain
   $radius = $data["radius"] ?? "rounded-xl";
+  // Bayangan (rilis 100): sakelar "Bayangan" di panel; kunci belum ada = menyala (dulu semua gambar berbayangan)
+  $shadow = \App\Content\Blocks\LayoutStyle::imageShadow($data["shadow"] ?? null);
   $spaceY = $data["space-y"] ?? "gap-3";
+
+  // Tinggi (rilis 35): h-auto (otomatis) | h-full (penuh: mengisi tinggi kolom) | h-48 | h-72 | h-96 | h-[32rem].
+  // Daftar sah + kelas utuh ada di app/Content/Blocks/LayoutStyle.php. Tinggi tetap/penuh mengabaikan max-height.
+  $heightKey = \App\Content\Blocks\LayoutStyle::imageHeight(
+    $data["height"] ?? null,
+  );
+  $heightAuto = $heightKey === "h-auto";
+  $figureHeight = \App\Content\Blocks\LayoutStyle::figureClass($heightKey);
+  $imgHeight = \App\Content\Blocks\LayoutStyle::imageClass($heightKey);
 
   // Jika dibuat layar penuh (Banner), otomatis matikan efek melengkung agar menempel sempurna di tepi browser
   if ($width === "w-screen") {
@@ -129,15 +140,15 @@
   <figure
     id="{{ $block['anchor'] ?? '' }}"
     {{-- Ubah w-screen menjadi w-full murni di tingkat CSS figure agar tidak memicu scroll horizontal --}}
-    class="flex flex-col {{ $spaceY }} {{ $marginBottom }} {{ $width === 'w-screen' ? 'w-full' : $width }} {{ $align }} reveal animate-scroll-reveal"
+    class="flex flex-col {{ $spaceY }} {{ $marginBottom }} {{ $width === 'w-screen' ? 'w-full' : $width }} {{ $align }} {{ $figureHeight }} reveal animate-scroll-reveal"
   >
     <img
       src="{{ $imageUrl }}"
       alt="{{ $caption ?: 'Ilustrasi' }}"
       loading="lazy"
       decoding="async"
-      {{-- 🌟 Suntikkan class max-height dan object-fit di sini --}}
-      class="w-full {{ $maxHeight }} {{ $objectFit }} {{ $radius }} shadow-sm md:shadow-md"
+      {{-- 🌟 Suntikkan class tinggi, max-height (hanya bila otomatis) dan object-fit di sini --}}
+      class="w-full {{ $imgHeight }} {{ $heightAuto ? $maxHeight : '' }} {{ $objectFit }} {{ $radius }} {{ $shadow }}"
     />
 
     @if (!empty($caption))

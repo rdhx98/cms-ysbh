@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hiasan latar: Pegunungan dan matahari terbit. Dua barisan gunung bergerigi dan matahari di belakangnya (4 : 1).
+     Warna utama = currentColor (mengikuti warna teks seksi pada "Warna asli"), aksen = #E5C423.
+     Saran: Posisi Tengah/Bawah + Utuh di dalam, Ukuran Besar, Gerak Diam. Cocok di atas footer atau seksi penutup. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300">
+  <path d="M0 300 V205 L120 140 L205 178 L335 62 L425 150 L525 98 L645 192 L765 118 L905 205 L1025 130 L1125 172 L1200 140 V300 Z" fill="currentColor" fill-opacity="0.42"/>
+  <circle cx="880" cy="118" r="48" fill="#E5C423" fill-opacity="0.9"/>
+  <path d="M0 300 V252 L95 214 L175 246 L295 178 L385 236 L505 198 L605 256 L725 214 L835 250 L955 190 L1065 242 L1150 214 L1200 236 V300 Z" fill="currentColor"/>
+</svg>

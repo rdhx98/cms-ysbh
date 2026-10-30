@@ -42,6 +42,11 @@ final class PublicLookup
     /** Alamat gambar profil (id media => alamat) per permintaan, supaya tiga gambar tidak dicari tiga kali. @var array<int,string> */
     private static array $profileMedia = [];
 
+    /** Pengaturan pengganti bahasa mentah dari tabel site_settings (rilis 104), diingat per permintaan. */
+    private static ?string $langSwitchRaw = null;
+
+    private static bool $langSwitchLoaded = false;
+
     /** Pengumuman mentah dari tabel site_settings (rilis 85), diingat per permintaan. */
     private static ?string $announcementRaw = null;
 
@@ -57,6 +62,7 @@ final class PublicLookup
         self::$announcementMedia = [];
         self::$footerLoaded = false;
         self::$paletteLoaded = false;
+        self::$langSwitchLoaded = false;
         self::$profileLoaded = false;
         self::$profileMedia = [];
         self::$categoriesStale = true;
@@ -233,6 +239,28 @@ final class PublicLookup
         }
 
         return Palette::resolve($raw);
+    }
+
+    /**
+     * Rilis 104: pengaturan pengganti bahasa (pil melayang dan pil header), LanguageSwitch::resolve. Belum diatur / tabel belum ada / data rusak /
+     * basis data bermasalah = bawaan (pil nyala). TIDAK PERNAH melempar galat.
+     *
+     * @return array{floating:bool,position:string,appear:string,style:string,mobile:bool,header:bool}
+     */
+    public static function languageSwitch(): array
+    {
+        try {
+            if (!self::$langSwitchLoaded) {
+                $value = \Illuminate\Support\Facades\DB::table('site_settings')->where('key', LanguageSwitch::KEY)->value('value');
+                self::$langSwitchRaw = is_string($value) ? $value : null;
+                self::$langSwitchLoaded = true;
+            }
+        } catch (\Throwable) {
+            self::$langSwitchRaw = null;   // tabel belum ada atau basis data bermasalah
+            self::$langSwitchLoaded = true;
+        }
+
+        return LanguageSwitch::resolve(self::$langSwitchRaw);
     }
 
     /**

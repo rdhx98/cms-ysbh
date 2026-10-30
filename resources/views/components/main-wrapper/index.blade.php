@@ -43,7 +43,7 @@
     }}
   >
     <div
-      class="flex h-full max-h-[calc(100vh-6rem)] min-h-0 w-full max-w-7xl min-w-0 flex-col items-center justify-start"
+      class="flex h-full max-h-[calc(100vh-6rem)] min-h-0 w-full max-w-7xl min-w-0 scrollbar-thin flex-col items-center justify-start overflow-y-auto **:scrollbar-thin"
     >
       {{ $slot }}
     </div>

@@ -34,8 +34,6 @@
             {{ strtoupper($l) }}
             @if ($l !== $default && $gap > 0)
                 <span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800" title="{{ $gap }} teks belum diisi: pembaca melihat teks bahasa bawaan" data-lang-gap="{{ $gap }}">{{ $gap }} kosong</span>
-            @elseif ($l !== $default)
-                <x-content.icon name="check" class="h-3.5 w-3.5 text-emerald-600" />
             @endif
         </button>
     @endforeach

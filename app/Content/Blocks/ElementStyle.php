@@ -17,7 +17,7 @@ namespace App\Content\Blocks;
  *   align           text-left | text-center | text-right | text-justify | "" (bawaan = ikuti kolom; klik lagi = kembali ke ikuti kolom). Bila dipilih,
  *                   elemen dibuat selebar kolom (w-full), kalau tidak, kotaknya selebar teks dan rata tidak terlihat.
  * Semua elemen: margin  mb-0 | mb-2 | mb-3 | mb-4 | mb-6 (panel); renderer juga menerima mb-1 mb-1.5 mb-5 mb-8 (data lama).
- * Gambar (data.style): ratio auto|1/1|4/3|3/2|16/9, fit cover|contain, radius.
+ * Gambar (data.style): ratio auto|1/1|4/3|3/2|16/9, fit cover|contain, radius, shadow (bool, bawaan mati; rilis 100).
  *
  * Kelas yang harus terbaca pemindai Tailwind (ditulis utuh):
  * text-[11px] text-[13px] text-[15px] text-[18px] text-[21px] text-[28px] text-[16px] md:text-[18px] text-[18px] md:text-[21px] text-[22px] md:text-[28px] font-normal font-semibold font-bold italic underline line-through
@@ -97,6 +97,28 @@ final class ElementStyle
     public const MARGIN_TEXT = 'mb-2';
     public const MARGIN_OTHER = 'mb-3';
 
+    /**
+     * Efek kaca pada kartu (rilis 101): latar tembus pandang + blur ala iOS ("frosted glass") dengan garis tepi tipis di dalam (ring-inset,
+     * jadi tidak mengubah ukuran dan tidak bentrok dengan "Garis Tepi"). Menggantikan "Warna Latar" kartu. Hanya dua nilai yang dikenal;
+     * kelas ditulis utuh agar terbaca Tailwind. Tampak bila ada warna atau gambar di belakang kartu.
+     *
+     * Rilis 110: kekaburan dipisah (`container.glass_blur`): halus 4px, sedang 8px (bawaan), kuat 24px (satu-satunya nilai sebelum rilis 110).
+     * Blur 24px melumatkan garis tipis di belakang kartu (mis. sinar Hiasan latar) menjadi kabut, sehingga kartu tampak tidak tembus pandang.
+     * Tailwind v4: backdrop-blur-xs = 4px, -sm = 8px, -xl = 24px.
+     */
+    public const GLASS = [
+        'light' => 'bg-white/15 backdrop-saturate-150 ring-1 ring-inset ring-white/30',
+        'dark' => 'bg-black/20 backdrop-saturate-150 ring-1 ring-inset ring-white/10',
+    ];
+
+    public const GLASS_BLUR = [
+        'halus' => 'backdrop-blur-xs',
+        'sedang' => 'backdrop-blur-sm',
+        'kuat' => 'backdrop-blur-xl',
+    ];
+
+    public const GLASS_BLUR_DEFAULT = 'sedang';
+
     public const RATIO_DEFAULT = 'auto';
 
     public const RATIOS = [
@@ -138,6 +160,21 @@ final class ElementStyle
      *
      * @param array<mixed> $style
      */
+    /**
+     * Kelas efek kaca untuk `container.glass` ('light' | 'dark'); nilai lain atau kosong = '' (kartu memakai Warna Latar biasa).
+     * $blur = `container.glass_blur` ('halus' | 'sedang' | 'kuat'); kosong / tak dikenal = bawaan 'sedang'.
+     */
+    public static function glass(mixed $value, mixed $blur = null): string
+    {
+        $base = is_string($value) ? (self::GLASS[$value] ?? '') : '';
+        if ($base === '') {
+            return '';
+        }
+        $blurClass = self::GLASS_BLUR[is_string($blur) && isset(self::GLASS_BLUR[$blur]) ? $blur : self::GLASS_BLUR_DEFAULT];
+
+        return $base . ' ' . $blurClass;
+    }
+
     public static function textClasses(array $style): string
     {
         $size = self::pick($style['size'] ?? null, array_keys(self::SIZES), self::SIZE_DEFAULT);
@@ -208,8 +245,11 @@ final class ElementStyle
             ? 'block h-auto w-full ' . $radius
             : 'block h-full w-full ' . self::FIT_CLASS[$fit] . ' ' . $radius;
 
+        // Rilis 100: bayangan opsional (bawaan mati). Dipasang di PEMBUNGKUS, bukan <img>: pembungkus ber-overflow-hidden memotong bayangan di dalamnya.
+        $shadow = LayoutStyle::imageShadow($style['shadow'] ?? null, false);
+
         return [
-            'wrap' => implode(' ', array_filter(['w-full overflow-hidden', $radius, $box], fn ($c) => $c !== '')),
+            'wrap' => implode(' ', array_filter(['w-full overflow-hidden', $radius, $box, $shadow], fn ($c) => $c !== '')),
             'margin' => $margin,
             'img' => $img,
             'ratio' => $ratio,

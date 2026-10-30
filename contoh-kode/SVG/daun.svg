@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hiasan latar: Ranting berdaun. Satu ranting melengkung dengan sembilan daun (1 : 1).
+     Warna utama = currentColor (mengikuti warna teks seksi pada "Warna asli"), aksen = #E5C423.
+     Saran: Posisi Kiri/Kanan + Terpotong di tepi, Ukuran Sedang-Besar, Gerak Melayang, Kepekatan 20-40. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <path d="M60 380 C120 250 180 180 330 40" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+  <path d="M0 0 C18 -24 58 -26 84 0 C58 26 18 24 0 0 Z" transform="translate(81.8 335.6) rotate(-10.4) scale(1.15)" fill="currentColor"/>
+  <path d="M0 0 C18 -24 58 -26 84 0 C58 26 18 24 0 0 Z" transform="translate(100.6 301.5) rotate(-111.6) scale(1.07)" fill="currentColor"/>
+  <path d="M0 0 C18 -24 58 -26 84 0 C58 26 18 24 0 0 Z" transform="translate(124.7 263.1) rotate(-4.0) scale(0.99)" fill="#E5C423"/>
+  <path d="M0 0 C18 -24 58 -26 84 0 C58 26 18 24 0 0 Z" transform="translate(151.6 226.0) rotate(-104.3) scale(0.91)" fill="currentColor"/>
+  <path d="M0 0 C18 -24 58 -26 84 0 C58 26 18 24 0 0 Z" transform="translate(182.0 189.0) rotate(2.9) scale(0.83)" fill="currentColor"/>
+  <path d="M0 0 C18 -24 58 -26 84 0 C58 26 18 24 0 0 Z" transform="translate(216.9 150.6) rotate(-98.5) scale(0.75)" fill="#E5C423"/>
+  <path d="M0 0 C18 -24 58 -26 84 0 C58 26 18 24 0 0 Z" transform="translate(257.2 109.6) rotate(7.4) scale(0.67)" fill="currentColor"/>
+  <path d="M0 0 C18 -24 58 -26 84 0 C58 26 18 24 0 0 Z" transform="translate(299.8 68.4) rotate(-95.5) scale(0.60)" fill="currentColor"/>
+  <path d="M0 0 C18 -24 58 -26 84 0 C58 26 18 24 0 0 Z" transform="translate(330.0 40.0) rotate(-43.0) scale(0.7)" fill="currentColor"/>
+</svg>

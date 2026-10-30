@@ -25,7 +25,7 @@ final class SectionBuilder
     /**
      * @param array<string,array> $blocks id => blok
      * @param string[]            $order  urutan ID tingkat atas
-     * @return array{sections: list<array{bgClass:string,textClass:string,padding:string,anchor:string,dividerId:?string,blocks:list<string>}>, toc: list<array{title:string,anchor:string}>, tocPosition:string}
+     * @return array{sections: list<array{bgClass:string,textClass:string,padding:string,anchor:string,dividerId:?string,blocks:list<string>,ornament?:array}>, toc: list<array{title:string,anchor:string}>, tocPosition:string}
      */
     public static function group(array $blocks, array $order, array $settings, string $lang): array
     {
@@ -75,6 +75,10 @@ final class SectionBuilder
                     'dividerId' => (string) $blockId,
                     'blocks' => [],
                 ];
+                // Rilis 107: hiasan latar (SVG dari File Manager). Kunci HANYA ada bila menyala dan sah, sehingga seksi lain tidak berubah bentuk.
+                if (($orn = Blocks\SectionOrnament::fromData(is_array($block['data'] ?? null) ? $block['data'] : [])) !== null) {
+                    $current['ornament'] = $orn;
+                }
                 continue;
             }
 

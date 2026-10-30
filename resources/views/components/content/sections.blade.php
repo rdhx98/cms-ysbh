@@ -106,6 +106,15 @@
       @if ($canvas && $section['dividerId']) data-block-id="{{ $section['dividerId'] }}" data-block-type="section-divider" @endif
       class="relative w-full {{ $section['bgClass'] }} {{ $section['textClass'] }} {{ $section['padding'] }}"
     >
+      {{-- Rilis 107: hiasan latar (SVG sebaris, disaring SvgSanitizer). Diposisikan mutlak di dalam pembungkus pemotong seukuran seksi,
+           jadi tidak menambah tinggi seksi. Kosong bila SVG tidak terbaca. CSS kecilnya ikut dicetak di tiap hiasan (tanpa @once: aman untuk Octane, ganda tidak berbahaya). --}}
+      @if (! empty($section['ornament']))
+        @php $ornamentHtml = \App\Content\Blocks\SectionOrnament::html($section['ornament'], 'o' . $section['ornament']['media_id'] . 's' . $loop->index . '-'); @endphp
+        @if ($ornamentHtml !== '')
+          {!! \App\Content\Blocks\SectionOrnament::css() !!}
+          {!! $ornamentHtml !!}
+        @endif
+      @endif
       {{-- max-w-7xl ada per blok (bukan per seksi) supaya blok bertanda w-screen bisa memenuhi layar --}}
       <div class="flex w-full flex-col">
         @foreach ($section['blocks'] as $index => $blockId)
@@ -120,6 +129,8 @@
             $spacing = \App\Content\Blocks\Spacing::wrapperClass($block, $marginChoices);
             // Rata teks Judul (rilis 33): data.align, dicetak pembungkus karena Judul tidak punya <p>; kiri = tidak mencetak apa pun
             $textAlign = \App\Content\Blocks\Align::wrapperClass($block);
+            // Jarak antar baris Judul (rilis 106): data.line_height, diwarisi renderer Judul; bawaan "sedang" (1.25)
+            $lineHeight = \App\Content\Blocks\LineHeight::wrapperClass($block);
             // Padding blok (rilis 70): data.pad_x / data.pad_y dari daftar putih BoxPadding; kosong = tidak ada pembungkus tambahan
             $boxPad = \App\Content\Blocks\BoxPadding::classes(is_array($block['data'] ?? null) ? $block['data'] : []);
           @endphp
@@ -135,8 +146,13 @@
               :class="shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
               style="transition-delay: {{ $delay }}ms"
             @endunless
-            class="{{ $canvas ? '' : 'transition-all duration-700 ease-out' }} {{ $isFullScreen ? 'w-full px-0' : 'mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8' }} {{ $spacing }} {{ $textAlign }}"
+            class="{{ $canvas ? '' : 'transition-all duration-700 ease-out' }} {{ $isFullScreen ? 'w-full px-0' : 'mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8' }} {{ $textAlign }} {{ $lineHeight }}"
           >
+            {{-- Rilis 91: jarak bawah (blok non-OWN) dicetak pada pembungkus DALAM, bukan pada pembungkus ber-data-block-id; padding di dalamnya lagi. Margin anak langsung
+                 pembungkus (item flex = konteks format blok sendiri) tidak runtuh ke luar, jadi garis sorotan kanvas ikut membesar seperti pada Judul. --}}
+            @if ($spacing !== '')
+              <div class="{{ $spacing }}">
+            @endif
             @if ($boxPad !== '')
               <div class="{{ $boxPad }}">
             @endif
@@ -171,6 +187,9 @@
               </div>
             @endif
             @if ($boxPad !== '')
+              </div>
+            @endif
+            @if ($spacing !== '')
               </div>
             @endif
           </div>

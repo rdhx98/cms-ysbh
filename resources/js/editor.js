@@ -9,6 +9,30 @@
  * (registerEditor mengembalikan { wireFieldFactory, extend } untuk registerRich di rich-field.js, rilis 31.)
  */
 // ---------------------------------------------------------------------------------------------------------------------------------
+// Lebar kolom (rilis 100): padanan JavaScript App\Content\Blocks\LayoutStyle::columnPercents(). MURNI (bisa diuji di Node).
+//   d = data blok Kolom; presets = {2: ['1:2', ...], 3: [...]} dari PHP. Mengembalikan persen bulat tiap kolom ('auto' = 0).
+// ---------------------------------------------------------------------------------------------------------------------------------
+export function columnSharesOf(d, presets = {}) {
+  const data = d && typeof d === 'object' ? d : {}
+  const n = Math.max(1, Math.min(6, parseInt(data.col_count, 10) || 2))
+  const share = (v) => {
+    if (v === 'auto') return 0
+    const x = typeof v === 'number' ? v : typeof v === 'string' && /^\d{1,2}(\.\d{1,2})?$/.test(v) ? parseFloat(v) : NaN
+    return x > 0 && x <= 12 ? x : 1
+  }
+  const ratio = data.col_ratio
+  if (typeof ratio === 'string' && Array.isArray(presets[n]) && presets[n].includes(ratio)) return ratio.split(':').map(Number)
+  if (ratio === undefined || ratio === null || ratio === 'custom') return Array.from({ length: n }, (_, i) => share(data['col_' + (i + 1) + '_zone_width']))
+  return Array(n).fill(1)
+}
+
+export function columnPercentsOf(d, presets = {}) {
+  const shares = columnSharesOf(d, presets)
+  const sum = shares.reduce((a, b) => a + b, 0)
+  return shares.map((x) => (sum > 0 ? Math.round((x / sum) * 100) : 0))
+}
+
+// ---------------------------------------------------------------------------------------------------------------------------------
 // Blok Tabel (rilis 34): operasi MURNI atas {columns, rows}. Tidak menyentuh Alpine/Livewire, jadi bisa diuji di Node.
 //   columns[] {id, label{loc}, align}     rows[] {id, cells[] {loc}}  (cells SEJAJAR dengan columns)
 // Semua fungsi mengembalikan salinan baru; masukan tidak diubah.
@@ -232,6 +256,60 @@ export function registerEditor(Alpine) {
     }
     return null
   }
+
+  // ---------------------------------------------------------------------------------------------------------------------------
+  // Lebar kolom (rilis 100): keterangan persen + peringatan kolom sempit di mode Kustom, dan reset pola saat jumlah kolom berganti.
+  // presets = App\Content\Blocks\LayoutStyle::COLUMN_PRESETS (satu sumber: dikirim dari Blade, tidak ditulis ulang di sini).
+  // ---------------------------------------------------------------------------------------------------------------------------
+  Alpine.data('columnShares', (presets = {}, narrow = 15) => ({
+    // Data lama / beranda bawaan rilis lama punya lebar per kolom tanpa col_ratio: panel harus menampilkan "Kustom", bukan "sama rata".
+    // Hanya mengisi state klien (tanpa request); tersimpan bersama perubahan berikutnya.
+    legacy() {
+      const b = Alpine.store('editor').base
+      if (!b) return
+      const d = this.$wire.$get(b + '.data') || {}
+      if (d.col_ratio !== undefined && d.col_ratio !== null) return
+      if (new Set(columnSharesOf(d, presets)).size > 1) this.$wire.$set(b + '.data.col_ratio', 'custom', false)
+    },
+    init() {
+      this.legacy()
+      // Jumlah kolom berganti pada blok YANG SAMA: pola per jumlah kolom (mis. "1:2") tak berlaku lagi -> kembali sama rata.
+      // Berpindah ke blok lain mengubah base, bukan jumlah kolom, jadi tidak memicu apa pun.
+      this.$watch(() => this.key, (now, before) => {
+        if (!now || !before) return
+        const [nb, nc] = now.split('|')
+        const [ob, oc] = before.split('|')
+        if (nb !== ob) return this.legacy()   // blok lain difokus
+        if (nc === oc) return
+        const base = nb + '.data.'
+        for (let i = 1; i <= 6; i++) {
+          if (this.$wire.$get(base + 'col_' + i + '_zone_width') !== undefined) this.$wire.$set(base + 'col_' + i + '_zone_width', 1, false)
+        }
+        this.$wire.$set(base + 'col_ratio', 'equal', true)
+      })
+    },
+    get key() {
+      const b = Alpine.store('editor').base
+      if (!b) return ''
+      return b + '|' + (this.$wire.$get(b + '.data.col_count') ?? 2)
+    },
+    get data() {
+      const b = Alpine.store('editor').base
+      return b ? this.$wire.$get(b + '.data') || {} : {}
+    },
+    get custom() {
+      return this.data.col_ratio === 'custom'
+    },
+    get percents() {
+      return columnPercentsOf(this.data, presets)
+    },
+    get summary() {
+      return this.percents.map((p, i) => 'Kolom ' + (i + 1) + ' ' + p + '%').join(' · ')
+    },
+    get narrowCols() {
+      return this.percents.map((p, i) => ({ no: i + 1, pct: p })).filter((c) => c.pct > 0 && c.pct < narrow)
+    },
+  }))
 
   /**
    * Breadcrumb panel kanan (<x-editor.crumbs>): Grup Langkah › Langkah 2 › Kartu 3 › Teks. Dibangun dari state klien: rantai induk blok
@@ -594,17 +672,144 @@ export function registerEditor(Alpine) {
     },
   }))
 
+  // ------------------------------------------------------------------ label outline (rilis 95)
+  // Murni: tidak membaca DOM selain bahasa halaman. Dipisah dari komponen supaya mudah diuji (lihat tests/outline-label-test.php).
+  const OUTLINE_MAX = 90
+  const outlineLoc = () => document.documentElement.lang || 'id'
+  const outlinePick = (v) => {
+    const loc = outlineLoc()
+    if (v && typeof v === 'object' && !Array.isArray(v)) v = v[loc] || v.id || Object.values(v).find((x) => typeof x === 'string' && x.trim())
+    return typeof v === 'string' ? v.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim() : ''
+  }
+  const outlineClip = (t, n = OUTLINE_MAX) => (t.length > n ? t.slice(0, n).trimEnd() + '…' : t)
+  // Teks pertama yang ditemukan di dalam kartu-kartu sebuah Pembuat Kartu (kartu -> kolom -> elemen teks/tombol).
+  const outlineCardText = (cards) => {
+    for (const card of Array.isArray(cards) ? cards : []) {
+      const cols = (card && card.layout && card.layout.children) || []
+      for (const col of cols) {
+        for (const el of (col && col.children) || []) {
+          if (!el || el.elementType !== 'text') continue
+          const c = el.data && el.data.content
+          const t = c && typeof c === 'object' && !Array.isArray(c) ? outlinePick(c.text !== undefined ? c.text : c) : outlinePick(c)
+          if (t) return t
+        }
+      }
+    }
+    return ''
+  }
+  const outlineFileName = (url) => {
+    const u = typeof url === 'string' ? url.split(/[?#]/)[0] : ''
+    const last = u.split('/').filter(Boolean).pop() || ''
+    try { return decodeURIComponent(last) } catch (e) { return last }
+  }
+  // Judul pertama di sebuah seksi: telusuri blok seksi itu, juga yang bersarang di kolom / langkah.
+  const outlineFirstHeading = (ids, content) => {
+    const stack = [...ids].reverse()
+    const seen = new Set()
+    while (stack.length) {
+      const id = stack.pop()
+      if (seen.has(id)) continue
+      seen.add(id)
+      const b = content[id]
+      if (!b) continue
+      if (String(b.type || '').replace(/_/g, '-') === 'heading') {
+        const t = outlinePick((b.data || {}).text)
+        if (t) return t
+      }
+      for (const [k, v] of Object.entries(b.data || {})) {
+        if (isZoneKey(k) && Array.isArray(v)) for (const ch of [...v].reverse()) stack.push(ch)
+      }
+    }
+    return ''
+  }
+  const outlineLabel = (type, d, id, content, order) => {
+    switch (type) {
+      case 'heading':
+      case 'eyebrow':
+        return outlineClip(outlinePick(d.text), 200)
+      case 'paragraph':
+      case 'simple-text':
+        return outlineClip(outlinePick(d.text), 200)
+      case 'button-builder': {
+        const btns = Array.isArray(d.buttons) ? d.buttons : []
+        const first = btns.map((b) => outlinePick(b && b.label)).find((t) => t)
+        if (!first) return ''
+        return btns.length > 1 ? first + ' +' + (btns.length - 1) : first
+      }
+      case 'card-builder':
+        return outlineClip(outlineCardText(d.cards))
+      case 'image':
+        return outlineClip(outlinePick(d.alt_text) || outlinePick(d.caption) || outlineFileName(d.url))
+      case 'callout-builder':
+        return outlineClip(outlinePick(d.title) || outlinePick(d.body))
+      case 'multi-columns': {
+        const n = parseInt(d.col_count, 10)
+        return n > 0 ? n + ' kolom' : ''
+      }
+      case 'latest-articles-builder': {
+        const t = outlinePick(d.title)
+        if (t) return outlineClip(t)
+        const cats = Array.isArray(d.categories) ? d.categories.length : 0
+        const src = d.source === 'categories' ? (cats ? cats + ' kategori' : 'kategori dipilih') : 'semua artikel'
+        return src + ', ' + (parseInt(d.limit, 10) || 3) + ' artikel'
+      }
+      case 'accordion-builder': {
+        const items = Array.isArray(d.items) ? d.items : []
+        return outlineClip(items.map((i) => outlinePick(i && i.question)).find((t) => t) || '')
+      }
+      case 'gallery-builder':
+        return Array.isArray(d.items) && d.items.length ? d.items.length + ' gambar' : ''
+      case 'downloads-builder':
+        return Array.isArray(d.items) && d.items.length ? d.items.length + ' berkas' : ''
+      case 'table-builder':
+        return outlineClip(outlinePick(d.caption))
+      case 'video-builder':
+        return outlineClip(outlinePick(d.title) || outlinePick(d.caption))
+      case 'section-divider': {
+        const dividers = order.filter((x) => String((content[x] || {}).type || '').replace(/_/g, '-') === 'section-divider')
+        const n = dividers.indexOf(id) + 1
+        if (n < 1) return ''
+        const at = order.indexOf(id)
+        const rest = []
+        for (let i = at + 1; i < order.length; i++) {
+          if (String((content[order[i]] || {}).type || '').replace(/_/g, '-') === 'section-divider') break
+          rest.push(order[i])
+        }
+        const h = outlineFirstHeading(rest, content)
+        return 'Seksi ' + n + (h ? ' · ' + outlineClip(h, 60) : '')
+      }
+      default:
+        return outlineClip(outlinePick(d.text) || outlinePick(d.title) || outlinePick(d.label))
+    }
+  }
+
   /** Outline (pohon struktur): label baris dan fokus otomatis. Strukturnya sendiri dirender server. */
   Alpine.data('outline', () => ({
-    // Label dari isi blok (teks/judul) dalam bahasa halaman; kosong bila blok belum berisi teks.
+    // Label dari isi blok dalam bahasa halaman; kosong bila blok belum berisi teks (baris lalu menampilkan nama jenisnya).
+    // Rilis 95: aturan per jenis blok, supaya daftar bisa dibaca sekilas:
+    //   Judul / Eyebrow = teks penuh; Paragraf / Paragraf Biasa = awal teks; Tombol = teks tombol pertama (+N bila ada lainnya);
+    //   Kartu Builder (juga sebagai langkah) = teks pertama kartu pertama; Gambar = teks alternatif atau nama berkas; Callout = judul;
+    //   Kolom = "2 kolom"; Artikel Terbaru = judul bagian, atau sumber + jumlah; Akordion = pertanyaan pertama; Galeri / Unduhan = jumlah;
+    //   Tabel = judul tabel; Video = judul; Pemisah Seksi = "Seksi n · judul pertama di seksi itu".
     label(id) {
-      const d = this.$wire.$get('content.' + id + '.data') || {}
-      const loc = document.documentElement.lang || 'id'
-      const pick = (v) => {
-        if (v && typeof v === 'object') v = v[loc] || v.id || Object.values(v).find((x) => typeof x === 'string' && x)
-        return typeof v === 'string' ? v.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() : ''
-      }
-      return pick(d.text) || pick(d.title) || pick(d.label) || ''
+      const w = this.$wire
+      const node = w.$get('content.' + id) || {}
+      const d = node.data || {}
+      const type = String(node.type || '').replace(/_/g, '-')
+      return outlineLabel(type, d, id, w.content || {}, w.blockOrder || [])
+    },
+    // Tooltip baris: teks penuh + jenis blok.
+    tip(id, typeLabel) {
+      const t = this.label(id)
+      return t ? t + ' — ' + typeLabel : typeLabel
+    },
+    // Pesan konfirmasi hapus. Pesan polos ("Hapus blok Judul?") dilengkapi label blok agar jelas yang mana: Hapus blok Judul “Kami hadir…”?
+    confirmText(id, message, plain) {
+      if (!plain) return message
+      const t = this.label(id)
+      if (!t) return message
+      const clip = t.length > 60 ? t.slice(0, 60) + '…' : t
+      return message.replace(/\?$/, ' “' + clip + '”?')
     },
     // Event "block-added" dari server (aksi tambah): fokuskan blok baru.
     added(e) {

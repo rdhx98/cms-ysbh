@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hiasan latar: Bercak lembut 1. Dua bentuk organik bertumpuk (1 : 1).
+     Warna utama = currentColor (mengikuti warna teks seksi pada "Warna asli"), aksen = #E5C423.
+     Saran: Posisi Kiri atau Kanan + Terpotong di tepi, Ukuran Besar, Gerak Melayang, Kepekatan 20-40. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <path d="M376.9 200.0 C375.9 231.7 333.8 258.2 310.4 292.6 C286.9 327.0 271.9 392.1 236.4 406.4 C200.8 420.7 129.2 403.3 97.0 378.4 C64.7 353.6 54.5 297.4 42.9 257.2 C31.2 217.0 13.2 167.7 27.2 137.1 C41.2 106.5 94.1 87.3 127.1 73.8 C160.2 60.3 193.9 51.1 225.4 55.9 C257.0 60.6 291.2 78.3 316.5 102.3 C341.7 126.3 377.9 168.3 376.9 200.0 Z" fill="currentColor" fill-opacity="0.85"/>
+  <path d="M359.9 120.0 C360.3 143.6 369.3 179.2 356.8 191.8 C344.4 204.5 309.6 195.5 285.0 196.2 C260.4 196.8 226.1 208.4 209.3 195.7 C192.4 183.0 181.6 143.0 183.9 120.0 C186.1 97.0 205.6 74.4 222.5 57.5 C239.3 40.5 262.9 19.5 285.0 18.3 C307.1 17.1 342.4 33.2 354.8 50.2 C367.3 67.1 359.6 96.4 359.9 120.0 Z" fill="#E5C423" fill-opacity="0.85"/>
+</svg>

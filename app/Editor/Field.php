@@ -62,9 +62,9 @@ final class Field
     }
 
     /** Tautan: jenis (halaman, artikel, berkas, URL, telepon, surel, anchor) + tujuannya. Nilai: {kind, ref, ref_label, media_id, url, new_tab}. */
-    public static function link(string $key, string $label): self
+    public static function link(string $key, string $label, ?array $when = null): self
     {
-        return new self('link', $key, $label);
+        return new self('link', $key, $label, [], null, $when);
     }
 
     /**
@@ -104,20 +104,30 @@ final class Field
         return new self('glyphs', $key, $label, $options, $default, $when, ['mode' => $mode === 'many' ? 'many' : 'one']);
     }
 
-    public static function toggle(string $key, string $label, ?array $when = null): self
+    /** $default = keadaan yang tampil selama kunci belum ada di data (rilis 100: "Bayangan" gambar menyala bila penulis belum memilih). */
+    public static function toggle(string $key, string $label, ?array $when = null, bool $default = false): self
     {
-        return new self('toggle', $key, $label, [], false, $when);
+        return new self('toggle', $key, $label, [], $default, $when);
     }
 
-    public static function text(string $key, string $label, array $extra = []): self
+    /**
+     * Keterangan lebar kolom (rilis 100): persen tiap kolom dan peringatan kolom sempit di mode Kustom; juga mengembalikan pola ke
+     * "sama rata" saat jumlah kolom berganti. Menunjuk data.col_ratio.
+     */
+    public static function columnShares(): self
     {
-        return new self('text', $key, $label, [], null, null, $extra);
+        return new self('column-shares', 'data.col_ratio', '', [], null, null);
+    }
+
+    public static function text(string $key, string $label, array $extra = [], ?array $when = null): self
+    {
+        return new self('text', $key, $label, [], null, $when, $extra);
     }
 
     /** Tombol File Manager; key menunjuk ke objek konten ({url, media_id, alt_text}). */
-    public static function media(string $key, string $label, string $accept = 'image'): self
+    public static function media(string $key, string $label, string $accept = 'image', ?array $when = null, ?string $button = null): self
     {
-        return new self('media', $key, $label, [], null, null, ['accept' => $accept]);
+        return new self('media', $key, $label, [], null, $when, ['accept' => $accept] + ($button !== null ? ['button' => $button] : []));
     }
 
     /**

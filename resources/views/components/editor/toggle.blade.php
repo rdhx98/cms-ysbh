@@ -1,12 +1,12 @@
 {{-- <x-editor.toggle> — kotak centang boolean. path ATAU rel. --}}
 @props(['path' => null, 'rel' => null,
-  'relExpr' => null, 'label' => null, 'live' => null])
+  'relExpr' => null, 'label' => null, 'live' => null, 'default' => false])
 
 @php
   $isLive = $live ?? ! config('cms.editor.defer_style_sync', false);
 @endphp
 
-<label x-data="wireField(@js($path), {!! \App\Editor\Rel::js($rel, $relExpr ?? null) !!}, false, @js($isLive))" {{ $attributes->class('flex cursor-pointer items-center gap-1.5') }}>
+<label x-data="wireField(@js($path), {!! \App\Editor\Rel::js($rel, $relExpr ?? null) !!}, @js((bool) $default), @js($isLive))" {{ $attributes->class('flex cursor-pointer items-center gap-1.5') }}>
   <input
     type="checkbox"
     x-bind:checked="!! v"

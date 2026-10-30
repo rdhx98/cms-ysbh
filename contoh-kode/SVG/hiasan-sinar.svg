@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Contoh Hiasan latar (rilis 107): 16 sinar, sama dengan segel di galeri desain. Satu warna (putih), jadi cocok untuk mode
+     "Satu warna" di panel Pemisah Seksi. Unggah berkas ini ke File Manager lalu pilih di Hiasan latar. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <g stroke="#FFFFFF" stroke-width="7" stroke-linecap="round">
+    <line x1="208.0" y1="150.0" x2="288.0" y2="150.0"/>
+    <line x1="203.6" y1="172.2" x2="249.8" y2="191.3"/>
+    <line x1="191.0" y1="191.0" x2="247.6" y2="247.6"/>
+    <line x1="172.2" y1="203.6" x2="191.3" y2="249.8"/>
+    <line x1="150.0" y1="208.0" x2="150.0" y2="288.0"/>
+    <line x1="127.8" y1="203.6" x2="108.7" y2="249.8"/>
+    <line x1="109.0" y1="191.0" x2="52.4" y2="247.6"/>
+    <line x1="96.4" y1="172.2" x2="50.2" y2="191.3"/>
+    <line x1="92.0" y1="150.0" x2="12.0" y2="150.0"/>
+    <line x1="96.4" y1="127.8" x2="50.2" y2="108.7"/>
+    <line x1="109.0" y1="109.0" x2="52.4" y2="52.4"/>
+    <line x1="127.8" y1="96.4" x2="108.7" y2="50.2"/>
+    <line x1="150.0" y1="92.0" x2="150.0" y2="12.0"/>
+    <line x1="172.2" y1="96.4" x2="191.3" y2="50.2"/>
+    <line x1="191.0" y1="109.0" x2="247.6" y2="52.4"/>
+    <line x1="203.6" y1="127.8" x2="249.8" y2="108.7"/>
+  </g>
+</svg>

@@ -13,6 +13,15 @@
     @php
       $container = $card["container"] ?? [];
       $bg = $container["bg"] ?? "bg-white";
+      // Rilis 101: efek kaca (tembus pandang + blur) menggantikan warna latar; nilai tak dikenal = latar biasa.
+      // Rilis 110: kekaburan (glass_blur: halus / sedang / kuat) dipilih terpisah; bawaan sedang.
+      $glass = \App\Content\Blocks\ElementStyle::glass(
+        $container["glass"] ?? null,
+        $container["glass_blur"] ?? null,
+      );
+      if ($glass !== "") {
+        $bg = $glass;
+      }
       $borderWidth = $container["border_width"] ?? "border";
       $borderStyle = $container["border_style"] ?? "border-solid";
       $borderColor = $container["border_color"] ?? "border-gray-200";
@@ -326,6 +335,18 @@
                       </{{ $cardUrl ? 'span' : 'a' }}>
                     </div>
                   @endif
+
+                  {{-- 4b. RENDER TOMBOL BUILDER (rilis 102): tombol tautan atau "Salin teks"; renderer blok Tombol yang sama --}}
+                @elseif ($type === "button-builder")
+                  <div
+                    class="w-full {{ \App\Content\Blocks\ElementStyle::margin($style["margin"] ?? null) }}"
+                  >
+                    <x-blocks.render.button-builder
+                      :data="$el['data'] ?? []"
+                      :lang="$lang"
+                      :in-link="$cardUrl !== ''"
+                    />
+                  </div>
 
                   {{-- 5. RENDER AKORDION / FAQ --}}
                 @elseif ($type === "accordion")

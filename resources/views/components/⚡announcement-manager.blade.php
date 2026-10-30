@@ -28,7 +28,7 @@ new class extends Component {
   }}
 </x-slot:title>
 
-<x-main-wrapper>
+<x-main-wrapper class="bg-white p-2">
   <div class="flex min-h-0 w-full flex-col" data-announcement-page>
     <livewire:content.announcement-editor lazy wire:key="announcement-editor" />
   </div>

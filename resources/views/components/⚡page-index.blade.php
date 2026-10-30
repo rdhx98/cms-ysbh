@@ -216,21 +216,21 @@ new class extends Component {
 <x-slot:title>
   {{
     __(
-      "ui.header.page",
+      "ui.header.page_index",
     )
   }}
 </x-slot:title>
-{{-- <x-main-wrapper> --}}
-<div
+<x-main-wrapper class="bg-white p-2">
+  {{-- <div
   class="mt-4 flex h-full max-h-screen min-h-0 w-full min-w-0 flex-col items-center justify-start gap-6 overflow-x-hidden overflow-y-auto"
->
+> --}}
   <div
     x-data="{
       activeSubPanel: 'none',
       showDeleteModal: false,
       deleteId: null,
     }"
-    class="flex w-full max-w-7xl flex-col items-start gap-4 rounded-xl bg-white p-4 lg:flex-row"
+    class="flex w-full max-w-7xl flex-col items-start gap-4 rounded-xl lg:flex-row"
   >
     <!-- MAIN UX (KONTAINER UTAMA) -->
     <div
@@ -670,5 +670,5 @@ new class extends Component {
       </div>
     </div>
   </div>
-</div>
-{{-- </x-main-wrapper> --}}
+  {{-- </div> --}}
+</x-main-wrapper>

@@ -48,6 +48,7 @@ final class SiteTextExtra
             [$m('Location', 'Lokasi'), 'left'], [$m('Year acquired', 'Tahun perolehan'), 'center'],
         ];
         $blank = $todo('fill in', 'isi');
+        $src = $m('Ministry decree, 25 Mar 2026', 'SK Kemenkum, 25 Mar 2026');
 
         return [
             'structure' => [
@@ -56,7 +57,11 @@ final class SiteTextExtra
                     'Yayasan Sinar Bhakti Husada is led by a Board of Trustees (Pembina), a Management Board (Pengurus) and a Supervisory Board (Pengawas), as set out in the foundation\'s deed of establishment. This page shows who they are and how the foundation is organized.',
                     'Yayasan Sinar Bhakti Husada dipimpin oleh Pembina, Pengurus, dan Pengawas sebagaimana diatur dalam akta pendirian yayasan. Halaman ini menunjukkan siapa mereka dan bagaimana yayasan diorganisasi.'
                 )],
-                ['p', $todo('Confirm the names and positions below against the latest deed and its amendments before publishing.', 'Cocokkan nama dan jabatan di bawah dengan akta terakhir dan perubahannya sebelum diterbitkan.')],
+                ['p', $m(
+                    'The names and positions below follow the decree of the Ministry of Law and Human Rights of 25 March 2026 approving the amendment to the foundation\'s articles of association.',
+                    'Nama dan jabatan di bawah mengikuti keputusan Menteri Hukum dan HAM tanggal 25 Maret 2026 tentang persetujuan perubahan anggaran dasar yayasan.'
+                )],
+                ['p', $todo('Confirm each person\'s consent to be listed by name before publishing.', 'Konfirmasi persetujuan tiap orang untuk dicantumkan namanya sebelum diterbitkan.')],
                 ['h2', $m('Organization chart', 'Bagan organisasi')],
                 ['p', $m(
                     $T . ' <em>Photo: Organization chart of the foundation (upload as an image and write a text description for screen readers)</em>',
@@ -65,13 +70,16 @@ final class SiteTextExtra
                 ['h2', $m('Foundation organs', 'Organ yayasan')],
                 ['table', [
                     'caption' => $m('Members of the foundation\'s organs', 'Anggota organ yayasan'),
-                    'columns' => [[$m('Position', 'Jabatan'), 'left'], [$m('Name', 'Nama'), 'left'], [$m('Since', 'Sejak'), 'center']],
+                    'columns' => [[$m('Position', 'Jabatan'), 'left'], [$m('Name', 'Nama'), 'left'], [$m('Source', 'Sumber'), 'left']],
                     'rows' => [
-                        [$m('Board of Trustees (Pembina)', 'Pembina'), $todo('Name', 'Nama'), $todo('Year', 'Tahun')],
-                        [$m('Chair of the Management Board', 'Ketua Pengurus'), $todo('Name', 'Nama'), $todo('Year', 'Tahun')],
-                        [$m('Secretary', 'Sekretaris'), $todo('Name', 'Nama'), $todo('Year', 'Tahun')],
-                        [$m('Treasurer', 'Bendahara'), $todo('Name', 'Nama'), $todo('Year', 'Tahun')],
-                        [$m('Supervisory Board (Pengawas)', 'Pengawas'), $todo('Name', 'Nama'), $todo('Year', 'Tahun')],
+                        [$m('Founders (Pendiri)', 'Pendiri'), $m('I Kadek Hermanta, S.KM, M.Si; drg. Agnes Ang', 'I Kadek Hermanta, S.KM, M.Si; drg. Agnes Ang'), $src],
+                        [$m('Board of Trustees (Pembina): Chair', 'Pembina: Ketua'), $m('drg. Agnes Ang', 'drg. Agnes Ang'), $src],
+                        [$m('Board of Trustees (Pembina): Member', 'Pembina: Anggota'), $m('Saryono, S.KM', 'Saryono, S.KM'), $src],
+                        [$m('Management Board (Pengurus): General Chair', 'Pengurus: Ketua Umum'), $m('I Kadek Hermanta, S.KM, M.Si', 'I Kadek Hermanta, S.KM, M.Si'), $src],
+                        [$m('Management Board (Pengurus): Secretary', 'Pengurus: Sekretaris'), $m('Putu Yuga Andacara', 'Putu Yuga Andacara'), $src],
+                        [$m('Management Board (Pengurus): General Treasurer', 'Pengurus: Bendahara Umum'), $m('Kusdiyana, S.I.Kom', 'Kusdiyana, S.I.Kom'), $src],
+                        [$m('Supervisory Board (Pengawas): Chair', 'Pengawas: Ketua'), $m('Sriyana, S.KM', 'Sriyana, S.KM'), $src],
+                        [$m('Supervisory Board (Pengawas): Member', 'Pengawas: Anggota'), $m('Julianingsih Bakker', 'Julianingsih Bakker'), $src],
                     ],
                 ]],
                 ['p', $todo('Add each person\'s photo and a two-sentence background in the editor (for example with Cards), only with their written consent.', 'Tambahkan foto dan latar belakang singkat (dua kalimat) tiap orang di editor (mis. dengan Kartu), hanya dengan persetujuan tertulis mereka.')],

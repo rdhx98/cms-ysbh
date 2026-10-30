@@ -3,8 +3,10 @@
 namespace App\Editor;
 
 use App\Content\Blocks\BoxPadding;
+use App\Content\Blocks\ButtonStyle;
 use App\Content\Blocks\ElementStyle;
 use App\Content\Blocks\LayoutStyle;
+use App\Content\Blocks\SectionOrnament;
 use App\Content\Blocks\StepStyle;
 use App\Content\Blocks\Spacing;
 
@@ -52,6 +54,17 @@ final class BlockRegistry
 
     // ------------------------------------------------------------------ opsi bersama
 
+    /** value => label  ->  [['value'=>..,'label'=>..], ...] untuk kontrol segmented */
+    private static function opts(array $map): array
+    {
+        $out = [];
+        foreach ($map as $value => $label) {
+            $out[] = ['value' => $value, 'label' => $label];
+        }
+
+        return $out;
+    }
+
     private static function marginBottom(): array
     {
         return array_map(
@@ -61,6 +74,55 @@ final class BlockRegistry
     }
 
     /** Rilis 69: "Jarak Bawah" standar untuk SETIAP elemen kartu (key data.style.margin; tiap elemen mengatur sendiri). */
+    /** Satu tombol baru (blok Tombol dan elemen Tombol di kartu memakai bentuk yang sama). Rilis 102: aksi Tautan / Salin teks. */
+    private static function buttonItem(): array
+    {
+        return [
+            'id' => '@id',
+            'label' => '@locales', // kosong: tombol tanpa teks tidak dirender di halaman publik (tidak ada isi palsu)
+            'link' => ['kind' => 'url', 'ref' => '', 'ref_label' => '', 'media_id' => null, 'url' => '', 'new_tab' => false],
+            'variant' => 'solid', 'color' => 'foresty', 'size' => 'md', 'icon' => '', 'icon_position' => 'left',
+            // urutan sama dengan keluaran BlockSanitizer::buttonBuilder (kunci rilis 102 ditulis terakhir)
+            'action' => 'link',
+            'copy_text' => '',
+            'copied_label' => '@locales',
+            'radius' => ButtonStyle::RADIUS_DEFAULT,
+        ];
+    }
+
+    private static function buttonRepeater(): Field
+    {
+        $link = ['action', 'link'];
+        $copy = ['action', 'copy'];
+
+        return Field::repeater('data.buttons', 'Tombol', [
+            Field::i18n('label', 'Teks Tombol'),
+            Field::segmented('action', 'Aksi', ['link' => 'Tautan', 'copy' => 'Salin teks'], 'link'),
+            Field::link('link', 'Tautan', $link),
+            Field::toggle('link.new_tab', 'Buka di tab baru', $link),
+            Field::text('copy_text', 'Teks yang disalin (mis. nomor rekening)', ['placeholder' => 'mis. 1234567890', 'maxlength' => 200], $copy),
+            Field::i18n('copied_label', 'Teks setelah disalin (kosong = "Tersalin ✓")', when: $copy),
+            Field::segmented('variant', 'Gaya', ['solid' => 'Isi', 'outline' => 'Garis', 'ghost' => 'Teks'], 'solid'),
+            Field::segmented('color', 'Warna', [
+                self::dot('foresty', 'Foresty', 'bg-foresty'),
+                self::dot('coral', 'Coral', 'bg-coral'),
+                self::dot('aurum', 'Aurum', 'bg-aurum'),
+                self::dot('charcoal', 'Charcoal', 'bg-charcoal'),
+                self::dot('white', 'Putih', 'bg-white', true),
+            ], 'foresty'),
+            Field::segmented('size', 'Ukuran', ['sm' => 'S', 'md' => 'M', 'lg' => 'L'], 'md'),
+            // Rilis 103: kebulatan sudut (Siku / Agak bulat / Bulat / Pil); bawaan Pil = tampilan lama
+            Field::segmented('radius', 'Sudut', self::shapes([
+                'none' => ['Siku', 'rounded-none'],
+                'sm' => ['Agak Bulat', 'rounded-md'],
+                'md' => ['Bulat', 'rounded-xl'],
+                'full' => ['Pil', 'rounded-full'],
+            ]), ButtonStyle::RADIUS_DEFAULT, null, ['compact' => true]),
+            Field::icon('icon', 'Ikon (opsional)', '', true),
+            Field::segmented('icon_position', 'Posisi ikon', ['left' => 'Kiri', 'right' => 'Kanan'], 'left', ['icon', true]),
+        ], self::buttonItem(), 12, 'tombol');
+    }
+
     private static function elementMargin(bool $text = false): Field
     {
         return Field::segmented('data.style.margin', 'Jarak Bawah', ElementStyle::MARGINS, $text ? ElementStyle::MARGIN_TEXT : ElementStyle::MARGIN_OTHER);
@@ -101,6 +163,8 @@ final class BlockRegistry
             new BlockType('heading', 'Judul', 'heading', 'block', [
                 Field::rich('data.text', 'Teks Judul', align: true),
                 Field::segmented('data.level', 'Level', ['h1' => 'H1', 'h2' => 'H2', 'h3' => 'H3'], 'h2'),
+                // Rilis 106: jarak antar baris Judul yang membungkus (dicetak pembungkus blok, lihat LineHeight)
+                Field::segmented('data.line_height', 'Jarak Antar Baris', \App\Content\Blocks\LineHeight::OPTIONS, \App\Content\Blocks\LineHeight::DEFAULT),
                 Field::segmented('data.margin_bottom', 'Jarak Bawah', self::marginBottom(), 'mb-4 md:mb-6'),
             ]),
 
@@ -122,6 +186,19 @@ final class BlockRegistry
                     ['value' => 'py-16 sm:py-24', 'label' => 'Normal'],
                     ['value' => 'py-24 sm:py-[96px]', 'label' => 'Lebar'],
                 ], 'py-16 sm:py-24'),
+                // Rilis 107: Hiasan latar. SVG dari File Manager, dicetak sebaris (disaring) supaya warnanya bisa diganti dari palet. Bawaan MATI.
+                Field::toggle('data.orn_on', 'Hiasan latar (SVG)'),
+                Field::media('data.orn_svg', 'Berkas SVG', 'svg', ['data.orn_on', true], 'Pilih SVG dari File Manager'),
+                Field::segmented('data.orn_x', 'Hiasan: Posisi Horizontal', self::opts(SectionOrnament::X), SectionOrnament::DEFAULTS['x'], ['data.orn_on', true]),
+                Field::segmented('data.orn_y', 'Hiasan: Posisi Vertikal', self::opts(SectionOrnament::Y), SectionOrnament::DEFAULTS['y'], ['data.orn_on', true]),
+                Field::segmented('data.orn_edge', 'Hiasan: Terhadap Tepi Seksi', self::opts(SectionOrnament::EDGE), SectionOrnament::DEFAULTS['edge'], ['data.orn_on', true]),
+                Field::segmented('data.orn_anchor', 'Hiasan: Patokan Pinggir', self::opts(SectionOrnament::ANCHOR), SectionOrnament::DEFAULTS['anchor'], ['data.orn_on', true]),
+                Field::segmented('data.orn_size', 'Hiasan: Ukuran', self::opts(SectionOrnament::SIZE), SectionOrnament::DEFAULTS['size'], ['data.orn_on', true]),
+                Field::segmented('data.orn_motion', 'Hiasan: Gerak', self::opts(SectionOrnament::MOTION), SectionOrnament::DEFAULTS['motion'], ['data.orn_on', true]),
+                Field::segmented('data.orn_color', 'Hiasan: Warna', self::opts(SectionOrnament::COLOR), SectionOrnament::DEFAULTS['color'], ['data.orn_on', true]),
+                Field::swatches('data.orn_c1', 'Hiasan: Warna 1', \App\Editor\PaletteOptions::colors('eyebrow_colors'), SectionOrnament::DEFAULTS['c1'], 'hex', ['data.orn_color', ['satu', 'dua']])->withAnd(['data.orn_on', true]),
+                Field::swatches('data.orn_c2', 'Hiasan: Warna 2', \App\Editor\PaletteOptions::colors('eyebrow_colors'), SectionOrnament::DEFAULTS['c2'], 'hex', ['data.orn_color', 'dua'])->withAnd(['data.orn_on', true]),
+                Field::segmented('data.orn_opacity', 'Hiasan: Kepekatan', array_map(fn (int $o) => ['value' => $o, 'label' => $o . '%'], SectionOrnament::OPACITY), SectionOrnament::DEFAULTS['opacity'], ['data.orn_on', true]),
             ]),
 
             // Kolom. Tinggi baris grid = kolom TERTINGGI; kolom lain diregangkan sebesar itu, lalu isinya disejajarkan pada sumbu Y
@@ -133,6 +210,17 @@ final class BlockRegistry
                     ['value' => 2, 'label' => '2'], ['value' => 3, 'label' => '3'], ['value' => 4, 'label' => '4'],
                     ['value' => 5, 'label' => '5'], ['value' => 6, 'label' => '6'],
                 ], 2, null, ['live' => true]),
+                // Rilis 100: lebar kolom. Pola siap pakai per jumlah kolom (batang mini; persen di tooltip), "Kustom" membuka angka per kolom.
+                Field::segmented('data.col_ratio', 'Lebar Kolom', LayoutStyle::ratioOptions(2), LayoutStyle::RATIO_EQUAL, ['data.col_count', 2]),
+                Field::segmented('data.col_ratio', 'Lebar Kolom', LayoutStyle::ratioOptions(3), LayoutStyle::RATIO_EQUAL, ['data.col_count', 3]),
+                Field::segmented('data.col_ratio', 'Lebar Kolom', LayoutStyle::ratioOptions(4), LayoutStyle::RATIO_EQUAL, ['data.col_count', [4, 5, 6]]),
+                Field::segmented('data.col_1_zone_width', 'Lebar Kolom 1 (bagian)', LayoutStyle::partOptions(), 1, ['data.col_ratio', LayoutStyle::RATIO_CUSTOM]),
+                Field::segmented('data.col_2_zone_width', 'Lebar Kolom 2 (bagian)', LayoutStyle::partOptions(), 1, ['data.col_ratio', LayoutStyle::RATIO_CUSTOM]),
+                Field::segmented('data.col_3_zone_width', 'Lebar Kolom 3 (bagian)', LayoutStyle::partOptions(), 1, ['data.col_ratio', LayoutStyle::RATIO_CUSTOM])->withAnd(['data.col_count', [3, 4, 5, 6]]),
+                Field::segmented('data.col_4_zone_width', 'Lebar Kolom 4 (bagian)', LayoutStyle::partOptions(), 1, ['data.col_ratio', LayoutStyle::RATIO_CUSTOM])->withAnd(['data.col_count', [4, 5, 6]]),
+                Field::segmented('data.col_5_zone_width', 'Lebar Kolom 5 (bagian)', LayoutStyle::partOptions(), 1, ['data.col_ratio', LayoutStyle::RATIO_CUSTOM])->withAnd(['data.col_count', [5, 6]]),
+                Field::segmented('data.col_6_zone_width', 'Lebar Kolom 6 (bagian)', LayoutStyle::partOptions(), 1, ['data.col_ratio', LayoutStyle::RATIO_CUSTOM])->withAnd(['data.col_count', 6]),
+                Field::columnShares(),
                 Field::toggle('data.mobile_reverse', 'Kolom kanan di atas (urutan HP)', ['data.col_count', 2]),
                 Field::segmented('data.align_y', 'Rata Vertikal (terhadap kolom tertinggi)', LayoutStyle::ALIGN_Y, LayoutStyle::ALIGN_Y_DEFAULT),
                 Field::segmented('data.align_x', 'Rata Horizontal', ['items-start' => 'Kiri', 'items-center' => 'Tengah', 'items-end' => 'Kanan'], 'items-start'),
@@ -140,6 +228,7 @@ final class BlockRegistry
                 Field::segmented('data.gap', 'Jarak Antar Blok di Kolom', ['gap-0' => '0px', 'gap-4' => '16px', 'gap-8' => '32px'], 'gap-4'),
             ], defaults: [
                 'col_count' => 2,
+                'col_ratio' => LayoutStyle::RATIO_EQUAL,
                 'mobile_reverse' => false,
                 'align_x' => 'items-start',
                 'align_y' => LayoutStyle::ALIGN_Y_DEFAULT,
@@ -219,6 +308,8 @@ final class BlockRegistry
                 Field::segmented('data.radius', 'Sudut', [
                     'rounded-none' => 'Siku', 'rounded-lg' => 'Halus', 'rounded-2xl' => 'Bulat', 'rounded-3xl' => 'Sangat bulat',
                 ], 'rounded-none'),
+                // Rilis 100: nyala bila belum dipilih (dulu semua gambar berbayangan; data lama tidak berubah)
+                Field::toggle('data.shadow', 'Bayangan', null, true),
                 // Tinggi (rilis 35): Otomatis = mengikuti rasio gambar; Penuh = mengisi tinggi kolom (di dalam Kolom yang diregangkan ke
                 // kolom tertinggi); angka = tinggi tetap, gambar dipotong/diletakkan sesuai "Pemotongan".
                 Field::segmented('data.height', 'Tinggi (angka = rem)', LayoutStyle::IMAGE_HEIGHT, LayoutStyle::IMAGE_HEIGHT_DEFAULT),
@@ -239,37 +330,13 @@ final class BlockRegistry
 
             // Tombol / ajakan bertindak. Tautan internal memakai ID (bukan slug) supaya mengganti slug tidak mematahkan tombol.
             new BlockType('button-builder', 'Tombol', 'mouse-pointer-click', 'block', [
-                Field::repeater('data.buttons', 'Tombol', [
-                    Field::i18n('label', 'Teks Tombol'),
-                    Field::link('link', 'Tautan'),
-                    Field::toggle('link.new_tab', 'Buka di tab baru'),
-                    Field::segmented('variant', 'Gaya', ['solid' => 'Isi', 'outline' => 'Garis', 'ghost' => 'Teks'], 'solid'),
-                    Field::segmented('color', 'Warna', [
-                        self::dot('foresty', 'Foresty', 'bg-foresty'),
-                        self::dot('coral', 'Coral', 'bg-coral'),
-                        self::dot('aurum', 'Aurum', 'bg-aurum'),
-                        self::dot('charcoal', 'Charcoal', 'bg-charcoal'),
-                    ], 'foresty'),
-                    Field::segmented('size', 'Ukuran', ['sm' => 'S', 'md' => 'M', 'lg' => 'L'], 'md'),
-                    Field::icon('icon', 'Ikon (opsional)', '', true),
-                    Field::segmented('icon_position', 'Posisi ikon', ['left' => 'Kiri', 'right' => 'Kanan'], 'left', ['icon', true]),
-                ], [
-                    'id' => '@id',
-                    'label' => '@locales', // kosong: tombol tanpa teks tidak dirender di halaman publik (tidak ada isi palsu)
-                    'link' => ['kind' => 'url', 'ref' => '', 'ref_label' => '', 'media_id' => null, 'url' => '', 'new_tab' => false],
-                    'variant' => 'solid', 'color' => 'foresty', 'size' => 'md', 'icon' => '', 'icon_position' => 'left',
-                ], 12, 'tombol'),
+                self::buttonRepeater(),
                 Field::segmented('data.align', 'Perataan', ['left' => 'Kiri', 'center' => 'Tengah', 'right' => 'Kanan'], 'left'),
                 Field::toggle('data.stack_mobile', 'Tumpuk ke bawah di layar kecil'),
             ], defaults: [
                 'align' => 'left',
                 'stack_mobile' => true,
-                'buttons' => [[
-                    'id' => '@id',
-                    'label' => '@locales',
-                    'link' => ['kind' => 'url', 'ref' => '', 'ref_label' => '', 'media_id' => null, 'url' => '', 'new_tab' => false],
-                    'variant' => 'solid', 'color' => 'foresty', 'size' => 'md', 'icon' => '', 'icon_position' => 'left',
-                ]],
+                'buttons' => [self::buttonItem()],
             ]),
 
             // ========================= ELEMEN KARTU =========================
@@ -395,10 +462,26 @@ final class BlockRegistry
                 Field::segmented('data.style.ratio', 'Rasio', ElementStyle::RATIOS, ElementStyle::RATIO_DEFAULT),
                 Field::segmented('data.style.fit', 'Isi Kotak', ElementStyle::FITS, ElementStyle::FIT_DEFAULT, ['data.style.ratio', ['1/1', '4/3', '3/2', '16/9']]),
                 Field::segmented('data.style.radius', 'Sudut', ElementStyle::RADII, ElementStyle::RADIUS_DEFAULT),
+                // Rilis 100: mati bila belum dipilih (elemen Gambar di kartu selama ini tanpa bayangan)
+                Field::toggle('data.style.shadow', 'Bayangan', null, false),
                 self::elementMargin(),
             ], defaults: [
                 'content' => ['url' => '', 'media_id' => null, 'alt' => '', 'caption' => '@locales', 'link' => '', 'link_label' => ''],
-                'style' => ['ratio' => ElementStyle::RATIO_DEFAULT, 'fit' => ElementStyle::FIT_DEFAULT, 'radius' => ElementStyle::RADIUS_DEFAULT, 'margin' => ElementStyle::MARGIN_OTHER],
+                'style' => ['ratio' => ElementStyle::RATIO_DEFAULT, 'fit' => ElementStyle::FIT_DEFAULT, 'radius' => ElementStyle::RADIUS_DEFAULT, 'shadow' => false, 'margin' => ElementStyle::MARGIN_OTHER],
+            ]),
+
+            // Rilis 102: Tombol di dalam kartu (nama jenis sama dengan blok Tombol; blok dan elemen dipisah oleh `kind`, seperti Gambar).
+            // Data elemen berbentuk sama dengan blok (align, stack_mobile, buttons) ditambah style.margin; dirender oleh renderer blok yang sama.
+            new BlockType('button-builder', 'Tombol', 'mouse-pointer-click', 'element', [
+                self::buttonRepeater(),
+                Field::segmented('data.align', 'Perataan', ['left' => 'Kiri', 'center' => 'Tengah', 'right' => 'Kanan'], 'left'),
+                Field::toggle('data.stack_mobile', 'Tumpuk ke bawah di layar kecil', null, true),
+                self::elementMargin(),
+            ], defaults: [
+                'align' => 'left',
+                'stack_mobile' => true,
+                'buttons' => [self::buttonItem()],
+                'style' => ['margin' => ElementStyle::MARGIN_OTHER],
             ]),
 
             new BlockType('accordion', 'FAQ / Akordion', 'list-chevrons-up-down', 'element', [

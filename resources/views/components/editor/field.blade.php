@@ -67,7 +67,11 @@
       @break
 
     @case('toggle')
-      <x-editor.toggle :rel="$key" :rel-expr="$relExpr" :label="$field->label" :live="$x['live'] ?? null" />
+      <x-editor.toggle :rel="$key" :rel-expr="$relExpr" :label="$field->label" :default="(bool) $field->default" :live="$x['live'] ?? null" />
+      @break
+
+    @case('column-shares')
+      <x-editor.column-shares class="w-full" />
       @break
 
     @case('i18n')

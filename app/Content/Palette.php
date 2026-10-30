@@ -311,6 +311,52 @@ final class Palette
         return implode("\n", $out) . "\n";
     }
 
+    /**
+     * Rilis 93: SATU berkas CSS lengkap untuk di-impor ke app.css CMS dan landing (resources/css/ysbh-kit.css, dibuat oleh
+     * `php tools/palette-theme.php --file`). Isinya, berurutan:
+     *   1. @theme static   : variabel warna palet (dan nama lama yang dilebur), bawaan hex bila --pal-* belum ada;
+     *   2. @source          : folder yang dipindai (tampilan, kode kit) dan @source inline untuk kelas palet (Tailwind >= 4.1);
+     *   3. @layer components: cadangan kelas palet (bg-/text-/border-/-on) sebagai CSS biasa, supaya warna tetap tampil walau pemindai
+     *      Tailwind tidak menemukan kelasnya (Tailwind < 4.1, pemindaian terbatas, kelas dibentuk PHP). Sengaja di layer `components`:
+     *      kelas utilitas Tailwind (termasuk varian md:/hover:) SELALU menang, jadi cadangan ini tidak pernah menimpa apa pun.
+     * Murni.
+     */
+    public static function cssFile(): string
+    {
+        $head = <<<'CSS'
+/*
+ * YSBH kit: palet warna + pemindaian kelas (DIBUAT OTOMATIS, jangan disunting: php tools/palette-theme.php --file)
+ *
+ * Berkas ini dipasang OTOMATIS ke resources/css/ysbh-kit.css di CMS (pasang-cms) dan landing (pasang-landing / sync-landing).
+ * Yang harus Anda lakukan SEKALI di app.css CMS dan landing (berkas app.css milik Anda, tidak pernah ditimpa alat kit):
+ *   1. Tepat di bawah @import "tailwindcss";  tambahkan:   @import "./ysbh-kit.css";
+ *   2. Di blok @theme app.css, HAPUS baris warna yang kini diatur palet (daftar: php tools/palette-theme.php --names).
+ *   3. npm run build, lalu muat ulang keras (Ctrl+F5).
+ * Periksa: php tools/palette-theme.php --check resources/css/app.css   (mengikuti @import)
+ */
+
+CSS;
+
+        $sources = <<<'CSS'
+
+/* Folder yang pasti dipindai (jalur relatif terhadap berkas ini: resources/css/). Aman bila sudah dipindai otomatis. */
+@source "../views";
+@source "../../app";
+
+CSS;
+
+        $fallback = ["", "/* Cadangan: kelas palet sebagai CSS biasa di layer components (kalah dari semua utilitas Tailwind, tidak pernah menimpa). */", '@layer components {'];
+        foreach (self::keys() as $k) {
+            $fallback[] = "    .bg-$k { background-color: var(--color-$k); }";
+            $fallback[] = "    .text-$k { color: var(--color-$k); }";
+            $fallback[] = "    .border-$k { border-color: var(--color-$k); }";
+            $fallback[] = "    .text-$k-on { color: var(--color-$k-on); }";
+        }
+        $fallback[] = '}';
+
+        return $head . self::themeBlock() . $sources . self::sourceBlock() . implode("\n", $fallback) . "\n";
+    }
+
     /** Rilis 67c: versi Tailwind -> true bila mengenal @source inline (>= 4.1.0); null bila versi tidak terbaca. */
     public static function supportsSourceInline(?string $version): ?bool
     {

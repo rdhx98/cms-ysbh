@@ -69,6 +69,43 @@ new class extends Component {
       ->orderBy("id") // pemutus seri: urutan baris tidak bergeser antar permintaan
       ->get();
   }
+  #[\Livewire\Attributes\Computed]
+  public function stats()
+  {
+    return [
+      [
+        "label" => "Total Pengguna",
+        "value" => $this->totalUsers,
+        "color" => "text-forest",
+        "highlight" => true,
+      ],
+      [
+        "label" => "Akun Aktif",
+        "value" => $this->totalActiveUsers,
+        "color" => "text-forest",
+      ],
+      [
+        "label" => "Akun Non-Aktif",
+        "value" => $this->totalNonActiveUsers,
+        "color" => "text-coral",
+      ],
+      [
+        "label" => "Admin",
+        "value" => $this->totalAdmin,
+        "color" => "text-forest",
+      ],
+      [
+        "label" => "Editor",
+        "value" => $this->totalEditor,
+        "color" => "text-forest",
+      ],
+      [
+        "label" => "Writer",
+        "value" => $this->totalWriter,
+        "color" => "text-forest",
+      ],
+    ];
+  }
 };
 ?>
 
@@ -79,64 +116,37 @@ new class extends Component {
     )
   }}
 </x-slot:title>
-<div
+{{-- <div
   class="mt-4 flex h-full max-h-screen min-h-0 w-full min-w-0 flex-col items-center justify-start gap-6 overflow-x-hidden overflow-y-auto"
->
+> --}}
+<x-main-wrapper class="bg-white p-2">
   {{-- USERS --}}
   <div
-    class="flex w-full max-w-7xl flex-wrap items-start justify-start gap-4 md:shrink-0 md:flex-nowrap"
+    class="mb-6 flex w-full max-w-7xl flex-wrap items-start justify-start gap-4 md:shrink-0 md:flex-nowrap"
   >
-    <div class="flex flex-col gap-2 rounded-xl bg-white p-4 md:p-6">
-      <span
-        class="font-fraunces text-forest text-xl md:text-5xl"
-        >{{ $totalUsers }}</span
+    @foreach ($this->stats as $stat)
+      <div
+        wire:key="stat-{{ $loop->index }}"
+        @class ([
+          "flex flex-col gap-2 rounded-xl bg-white p-4 md:p-6 border border-white/50 shadow-xl drop-shadow-sm",
+          "" => $stat["highlight"] ?? false
+        ])
       >
-      <span class="font-jakarta text-forest tracking-widest"
-        >Total Pengguna
-      </span>
-    </div>
-    <div class="flex flex-col gap-2 rounded-xl bg-white p-4 md:p-6">
-      <span
-        class="font-fraunces text-forest text-xl md:text-5xl"
-        >{{ $totalActiveUsers }}</span
-      >
-      <span class="font-jakarta text-forest tracking-widest">Akun Aktif </span>
-    </div>
-    <div class="flex flex-col gap-2 rounded-xl bg-white p-4 md:p-6">
-      <span
-        class="font-fraunces text-coral text-xl md:text-5xl"
-        >{{ $totalNonActiveUsers }}</span
-      >
-      <span class="font-jakarta text-forest tracking-widest"
-        >Akun Non-Aktif
-      </span>
-    </div>
-    <div class="flex flex-col gap-2 rounded-xl bg-white p-4 md:p-6">
-      <span
-        class="font-fraunces text-forest text-xl md:text-5xl"
-        >{{ $totalAdmin }}</span
-      >
-      <span class="font-jakarta text-forest tracking-widest">Admin </span>
-    </div>
-    <div class="flex flex-col gap-2 rounded-xl bg-white p-4 md:p-6">
-      <span
-        class="font-fraunces text-forest text-xl md:text-5xl"
-        >{{ $totalEditor }}</span
-      >
-      <span class="font-jakarta text-forest tracking-widest">Editor </span>
-    </div>
-    <div class="flex flex-col gap-2 rounded-xl bg-white p-4 md:p-6">
-      <span
-        class="font-fraunces text-forest text-xl md:text-5xl"
-        >{{ $totalWriter }}</span
-      >
-      <span class="font-jakarta text-forest tracking-widest">Writer </span>
-    </div>
+        <span
+          class="font-fraunces {{ $stat['color'] }} text-xl md:text-5xl"
+          >{{ $stat["value"] }}</span
+        >
+        <span
+          class="font-jakarta text-forest tracking-widest"
+          >{{ $stat["label"] }}</span
+        >
+      </div>
+    @endforeach
   </div>
 
   {{-- ROLES --}}
   <div
-    class="flex w-full max-w-7xl shrink-0 flex-col items-start justify-center gap-4 rounded-xl bg-white p-4"
+    class="mb-6 flex w-full max-w-7xl shrink-0 flex-col items-start justify-center gap-4 rounded-xl bg-white p-4"
   >
     <span class="font-jakarta text-forest text-xl font-black tracking-widest"
       >Tingkat Peran</span
@@ -171,7 +181,9 @@ new class extends Component {
       class="flex h-full flex-col items-start justify-between gap-4 md:flex-row"
     >
       @foreach ($roles as $item)
-        <div class="bg-mist flex h-full w-full flex-col gap-2 rounded-xl p-6">
+        <div
+          class="bg-mist flex h-full w-full flex-col gap-2 rounded-xl p-6 shadow-xl drop-shadow-sm"
+        >
           <div
             class="flex gap-2 font-jakarta w-fit self-start items-center rounded-full px-3 py-1 font-bold tracking-widest capitalize {{ $item['attr'] }}"
           >
@@ -190,7 +202,7 @@ new class extends Component {
 
   {{-- USERS LIST --}}
   <div
-    class="mb-4 flex w-full max-w-7xl shrink-0 flex-col overflow-y-auto rounded-xl bg-white p-4"
+    class="mb-4 flex max-h-[66vh] w-full max-w-7xl shrink-0 flex-col overflow-y-auto rounded-xl bg-white p-4"
   >
     <!--HEADER CONTAINER -->
     <div class="mb-4 flex w-full items-center justify-between">
@@ -436,4 +448,5 @@ new class extends Component {
       </table>
     </div>
   </div>
-</div>
+</x-main-wrapper>
+{{-- </div> --}}

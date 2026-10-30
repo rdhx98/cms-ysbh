@@ -79,4 +79,23 @@ final class BoxPadding
     {
         return trim(self::x($data['pad_x'] ?? null) . ' ' . self::y($data['pad_y'] ?? null));
     }
+
+    /**
+     * Pembersih modul hanya mengembalikan kunci miliknya. Panggil ini sesudahnya supaya pad_x / pad_y yang sah tidak ikut terbuang
+     * (rilis 91: sebelumnya hanya margin_bottom yang dipertahankan, jadi Ruang Samping / Atas-Bawah hilang di Callout dan semua blok modul).
+     *
+     * @param array<string,mixed> $before data sebelum dibersihkan
+     * @param array<string,mixed> $after  data hasil pembersih modul
+     * @return array<string,mixed>
+     */
+    public static function keep(array $before, array $after): array
+    {
+        foreach (['pad_x' => self::X, 'pad_y' => self::Y] as $key => $map) {
+            if (isset($before[$key]) && is_string($before[$key]) && isset($map[$before[$key]])) {
+                $after[$key] = $before[$key];
+            }
+        }
+
+        return $after;
+    }
 }
