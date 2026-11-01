@@ -141,6 +141,12 @@ return [
         "title" => "Page Title",
         "dates_created" => "Date & time created",
         "dates_updated" => "Date & time updated",
+        
+        "table_title" => "Page Title",
+        "table_path" => "Path",
+        "table_dates" => "Date & Time Created",
+        "table_status" => "Status",
+        "table_manage" => "Manage",
         // '' => 'Documentations',
     ],
     "placeholder" => [

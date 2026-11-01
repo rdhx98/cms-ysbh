@@ -16,10 +16,10 @@
       // fixed top-0 left-0 z-50 -translate-x-full h-screen md:h-[calc(100vh-1rem)]
       // md:relative md:translate-x-0
       "class" => '
-                                                                                                                                                                    fixed top-0 left-0 z-50 -translate-x-full h-screen md:h-[calc(100vh-1rem)]
-                                                                                                                                                                    md:sticky md:top-2 md:translate-x-0
+                        fixed top-0 left-0 z-50 -translate-x-full h-screen md:h-[calc(100vh-1rem)]
+                        md:sticky md:top-2 md:translate-x-0
 
-                                                                                                                                                                    transform-gpu transition-all duration-300 ease-in-out overflow-x-hidden flex flex-col items-start bg-white text-white p-1 md:mx-1.5  md:my-2 md:rounded-lg max-h-dvh md:border-0 border-r-2 border-forest',
+                        transform-gpu transition-all duration-300 ease-in-out overflow-x-hidden flex flex-col items-start bg-white text-white p-1 md:mx-1.5  md:my-2 md:rounded-lg max-h-dvh md:border-0 border-r-2 border-forest',
     ])
   }}
   {{-- :class="isExpanded ? 'w-64' : 'w-20'" --}}
@@ -108,6 +108,7 @@
           activeIcon="book-open-text"
           iconSize="5"
           x-cloak
+          title="Pages"
           x-show="admin | editor"
         >
           {{

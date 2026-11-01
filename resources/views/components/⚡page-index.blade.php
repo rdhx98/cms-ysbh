@@ -357,18 +357,22 @@ new class extends Component {
       >
         <table class="w-full min-w-3xl table-fixed border-collapse text-left">
           <thead
-            class="bg-misty text-foresty text-xs dark:bg-green-950 dark:text-green-300"
+            class="bg-misty text-forest text-xs dark:bg-green-950 dark:text-green-300"
           >
             <tr>
               <!-- Header Judul -->
               <th
-                class="bg-misty border-sage-soft sticky top-0 z-10 w-2/5 border-r-2 px-4 py-3 font-semibold tracking-wider uppercase lg:z-20"
+                class="bg-mist border-sage-soft sticky top-0 z-10 w-2/5 border-r-2 font-semibold tracking-wider uppercase lg:z-20"
               >
                 <button
                   wire:click="sortBy('title')"
-                  class="flex w-full cursor-pointer items-center gap-2 font-semibold tracking-wider uppercase transition-colors hover:text-zinc-200"
+                  class="bg-coral flex w-full cursor-pointer items-center gap-2 px-4 py-3 font-semibold tracking-wider uppercase transition-colors"
                 >
-                  Judul Halaman
+                  {{
+                    __(
+                      "ui.page.table_title",
+                    )
+                  }}
                   @if ($orderColumn === "title")
                     <flux:icon
                       variant="solid"
