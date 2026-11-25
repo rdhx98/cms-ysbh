@@ -21,8 +21,15 @@
     variabel CSS (--ol-bg, --ol-bd, --ol-bar) supaya keadaan terpilih/sorot (kelas is-sel / is-par, diatur Alpine) bisa menimpanya. Gaya ada di <style> pada outline.blade.php (kelas ol-*), tidak bergantung pada pemindaian Tailwind.
   - Anak (di kolom, langkah, atau seksi) berada di dalam .ol-kids dan disambung ke induknya dengan garis pohon bersiku (├ └) lewat CSS.
     Indentasi datang dari .ol-kids, bukan dari padding baris, jadi kedalaman tak terbatas tanpa perhitungan.
+
+  Rilis 117 (Pemisah Seksi sebagai pembungkus):
+  - `section` (hanya untuk kepala seksi, dari outline.blade.php): n = jumlah blok di bawahnya, first = pemisah pertama, lockUp = pemisah pertama saat masih ada
+    blok "Awal halaman" (tidak bisa naik), last = seksi terakhir (tidak bisa turun), sample = hingga 5 blok pertama untuk dialog. Disimpan di data-ctx (`sec`).
+  - `head` = blok ini ada di "Awal halaman" (data-ctx `head`): menu "⋯" menawarkan "Mulai seksi dari blok ini".
+  - Kepala seksi yang punya blok: panah lipat/buka (keadaan `folded` di Alpine outline) dan lencana "N blok" saat terlipat; Naik/Turun menggeser seluruh
+    seksi; Duplikat dan Hapus membuka dialog pilihan (hanya pemisah / seluruh seksi). Pemisah tanpa blok: salin langsung, hapus dengan konfirmasi biasa.
 --}}
-@props(['id', 'content', 'depth' => 0, 'index' => 0, 'count' => 1, 'parent' => null, 'zone' => null, 'prev' => null, 'zoneHidden' => false, 'tint' => null])
+@props(['id', 'content', 'depth' => 0, 'index' => 0, 'count' => 1, 'parent' => null, 'zone' => null, 'prev' => null, 'zoneHidden' => false, 'tint' => null, 'section' => null, 'head' => false])
 
 @php
   $block = $content[$id] ?? null;
@@ -76,12 +83,21 @@
           'out' => $parent !== null,
           'in' => $inLabel !== null, 'inLabel' => $inLabel,
       ];
+      if ($head) {
+          $ctx['head'] = true;
+      }
+      if (is_array($section)) {
+          $ctx['sec'] = $section;
+      }
   }
 @endphp
 
 @if ($block)
   @php
     $isDivider = $type === 'section-divider';
+    $secN = $isDivider && is_array($section) ? (int) $section['n'] : 0;   // blok di bawah pemisah ini (0 = seksi kosong)
+    $lockUp = $isDivider && is_array($section) && ! empty($section['lockUp']);
+    $secLast = $isDivider && is_array($section) && ! empty($section['last']);
     $hex = is_string($tint) && preg_match('/^#[0-9a-fA-F]{6}$/', $tint) === 1 ? $tint : null;
     // Rilis 97: kartu SELALU putih. Warna seksi hanya muncul di kepala seksi: garis tepi kiri 5px + kotak kecil di kanan label. Warna yang sangat
     // terang (paper, mist) dipakai untuk kotak apa adanya, tetapi garis tepinya digelapkan sedikit supaya tetap terlihat.
@@ -103,6 +119,11 @@
       data-ctx="{{ json_encode($ctx) }}"
       x-bind:class="{ 'is-sel': $store.editor.id === @js($id), 'is-par': $store.editor.parentId === @js($id) }"
     >
+      @if ($secN > 0)
+        <button type="button" class="ol-fold" data-outline-fold="{{ $id }}" x-on:click.stop="fold(@js($id))" x-bind:aria-expanded="folded[@js($id)] ? 'false' : 'true'" title="Lipat / buka isi seksi" aria-label="Lipat atau buka isi seksi">
+          <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+        </button>
+      @endif
       <button
         type="button"
         x-on:click="$store.editor.focusBlock(@js($id), @js($type))"
@@ -118,6 +139,10 @@
         @endif
       </button>
 
+      @if ($secN > 0)
+        <span class="ol-count" x-show="folded[@js($id)]" x-cloak data-outline-count>{{ $secN }} blok</span>
+      @endif
+
       {{-- Kontrol: lapisan di kanan baris, latar penuh sewarna baris (bukan transparan), tampil saat hover / fokus keyboard.
            Tanpa hover (layar sentuh) ia kembali ke aliran normal dan selalu tampak. --}}
       <div
@@ -132,13 +157,13 @@
         <button type="button" title="Menu: sisipkan, pindahkan, masuk/keluar kontainer" aria-label="Menu blok" aria-haspopup="menu" x-on:click.stop="openMenu($event)" class="rounded p-1 hover:bg-black/10">
           <svg class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2.2" /><circle cx="12" cy="12" r="2.2" /><circle cx="19" cy="12" r="2.2" /></svg>
         </button>
-        <button type="button" title="Naik" aria-label="Naik" @disabled($index === 0) x-on:click.stop="$wire.moveBlock(@js($id), -1)" class="rounded p-1 hover:bg-black/10 disabled:opacity-30">
+        <button type="button" title="{{ $lockUp ? 'Tidak bisa naik: masih ada blok di Awal halaman. Gunakan “Bungkus dalam seksi” di baris Awal halaman.' : ($isDivider ? 'Naik (seluruh seksi)' : 'Naik') }}" aria-label="Naik" @disabled($index === 0 || $lockUp) x-on:click.stop="$wire.moveBlock(@js($id), -1)" class="rounded p-1 hover:bg-black/10 disabled:opacity-30" @if ($lockUp) data-locked @endif>
           <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6" /></svg>
         </button>
-        <button type="button" title="Turun" aria-label="Turun" @disabled($index === $count - 1) x-on:click.stop="$wire.moveBlock(@js($id), 1)" class="rounded p-1 hover:bg-black/10 disabled:opacity-30">
+        <button type="button" title="{{ $isDivider ? 'Turun (seluruh seksi)' : 'Turun' }}" aria-label="Turun" @disabled($index === $count - 1 || $secLast) x-on:click.stop="$wire.moveBlock(@js($id), 1)" class="rounded p-1 hover:bg-black/10 disabled:opacity-30">
           <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
         </button>
-        <button type="button" title="Duplikat" aria-label="Duplikat" x-on:click.stop="$wire.duplicateBlock(@js($id))" class="rounded p-1 hover:bg-black/10">
+        <button type="button" title="Duplikat" aria-label="Duplikat" @if ($isDivider) data-outline-copy x-on:click.stop="sectionDialog('copy', $event)" @else x-on:click.stop="$wire.duplicateBlock(@js($id))" @endif class="rounded p-1 hover:bg-black/10">
           <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>
         </button>
         <button
@@ -146,11 +171,15 @@
           title="Hapus"
           aria-label="Hapus"
           data-outline-delete
-          x-on:click.stop="
-            if (! confirm(confirmText(@js($id), @js($confirmMsg), @js($plain)))) { return };
-            removed();
-            $wire.removeBlock(@js($id));
-          "
+          @if ($secN > 0)
+            x-on:click.stop="sectionDialog('delete', $event)"
+          @else
+            x-on:click.stop="
+              if (! confirm(confirmText(@js($id), @js($confirmMsg), @js($plain)))) { return };
+              removed();
+              $wire.removeBlock(@js($id));
+            "
+          @endif
           class="rounded p-1 hover:bg-red-500/20"
         >
           <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></svg>

@@ -783,8 +783,66 @@ export function registerEditor(Alpine) {
     }
   }
 
+  // Rilis 114: gulirkan wadah gulir terdekat (sidebar outline) hanya bila $row berada di luar bagian yang terlihat. Baris yang sudah terlihat
+  // (mis. karena pemilihan berasal dari klik di outline itu sendiri) tidak digeser. Tidak menyentuh gulir halaman. $smooth=false: tanpa animasi.
+  const outlineReveal = (row, smooth = true, pad = 8) => {
+    if (!row || row.offsetParent === null) return false // tidak terlihat (tab lain / disembunyikan)
+    let sp = row.parentElement
+    while (sp && sp !== document.body) {
+      const oy = getComputedStyle(sp).overflowY
+      if ((oy === 'auto' || oy === 'scroll') && sp.scrollHeight > sp.clientHeight) break
+      sp = sp.parentElement
+    }
+    if (!sp || sp === document.body) return false
+    const r = row.getBoundingClientRect()
+    const c = sp.getBoundingClientRect()
+    let dy = 0
+    if (r.top < c.top + pad) dy = r.top - c.top - pad
+    else if (r.bottom > c.bottom - pad) dy = r.bottom - c.bottom + pad
+    if (r.height > c.height - pad * 2 && dy > 0) dy = r.top - c.top - pad // baris lebih tinggi dari wadah: utamakan bagian atasnya
+    if (dy === 0) return false
+    sp.scrollBy({ top: dy, behavior: smooth ? 'smooth' : 'auto' })
+    return true
+  }
+
   /** Outline (pohon struktur): label baris dan fokus otomatis. Strukturnya sendiri dirender server. */
   Alpine.data('outline', () => ({
+    // Rilis 114: memilih blok di kanvas (atau lewat breadcrumb / blok baru) menggulir outline ke barisnya bila di luar jangkauan pandang.
+    init() {
+      this.$watch('$store.editor.id', (id) => {
+        if (!id) return
+        // Rilis 117: blok yang dipilih berada di seksi yang terlipat -> buka seksinya dulu (menunggu x-show selesai), lalu gulirkan.
+        const row0 = this.$el.querySelector('[data-outline-row="' + CSS.escape(id) + '"]')
+        this.unfoldFor(row0)
+        this.$nextTick(() => {
+          const row = this.$el.querySelector('[data-outline-row="' + CSS.escape(id) + '"]')
+          outlineReveal(row, !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+        })
+      })
+    },
+
+    // ------------------------------------------------------------------ lipat / buka seksi (rilis 117)
+    // Keadaan hanya di klien dan hanya selama halaman terbuka (tidak disimpan). Kunci = id Pemisah Seksi, atau 'head' untuk "Awal halaman".
+    folded: {},
+    fold(key) {
+      this.folded[key] = !this.folded[key]
+    },
+    // Lipat / buka SEMUA yang bisa dilipat (tombol panah ber-data-outline-fold di DOM).
+    foldAll(on) {
+      this.$root.querySelectorAll('[data-outline-fold]').forEach((b) => {
+        this.folded[b.dataset.outlineFold] = on
+      })
+    },
+    // Kunci lipat wadah isi yang memuat baris ini (null bila baris di luar isi seksi, mis. kepala seksi sendiri).
+    foldKeyOf(row) {
+      const kids = row && row.closest ? row.closest('[data-outline-section-kids]') : null
+      const sec = kids && kids.closest('[data-outline-section]')
+      return sec ? sec.dataset.outlineSectionOf || 'head' : null
+    },
+    unfoldFor(row) {
+      const k = this.foldKeyOf(row)
+      if (k && this.folded[k]) this.folded[k] = false
+    },
     // Label dari isi blok dalam bahasa halaman; kosong bila blok belum berisi teks (baris lalu menampilkan nama jenisnya).
     // Rilis 95: aturan per jenis blok, supaya daftar bisa dibaca sekilas:
     //   Judul / Eyebrow = teks penuh; Paragraf / Paragraf Biasa = awal teks; Tombol = teks tombol pertama (+N bila ada lainnya);
@@ -905,7 +963,7 @@ export function registerEditor(Alpine) {
       const c = this.menu.ctx
       if (!c || t.current) return
       this.closeMenu()
-      return this.act(c.id, () => this.$wire.moveBlockTo(c.id, t.parent, t.zone, null))
+      return this.act(c.id, () => this.$wire.moveBlockTo(c.id, t.parent, t.zone, t.index ?? null))
     },
     outdent() {
       const c = this.menu.ctx
@@ -917,6 +975,72 @@ export function registerEditor(Alpine) {
       this.closeMenu()
       if (c) return this.act(c.id, () => this.$wire.indentBlock(c.id))
     },
+    // "Mulai seksi dari blok ini" (blok di Awal halaman): Pemisah Seksi baru tepat di atasnya; ia terfokus lewat event block-added.
+    startSection() {
+      const c = this.menu.ctx
+      this.closeMenu()
+      if (c && c.head) return this.$wire.startSectionAt(c.id)
+    },
+
+    // ------------------------------------------------------------------ dialog salin / hapus seksi (rilis 117)
+    // Hanya untuk Pemisah Seksi yang punya blok di bawahnya (ctx.sec.n > 0). Tanpa blok: salin langsung; hapus tetap lewat konfirmasi biasa di Blade.
+    // Pilihan bawaan: salin = seluruh seksi; hapus = hanya pemisah (paling tidak merusak). Server menghitung ulang rentang seksinya sendiri.
+    dlg: { open: false, kind: 'copy', id: null, n: 0, title: '', first: false, sample: [], more: 0, choice: 'all' },
+    sectionDialog(kind, ev) {
+      const c = this.rowCtx(ev.currentTarget)
+      if (!c || !c.sec) return
+      if (c.sec.n < 1) {
+        if (kind === 'copy') return this.act(c.id, () => this.$wire.duplicateSection(c.id, false))
+        return
+      }
+      this.dlg = {
+        open: true,
+        kind,
+        id: c.id,
+        n: c.sec.n,
+        title: this.label(c.id) || 'Seksi ini',
+        first: !!c.sec.first,
+        sample: c.sec.sample.map((b) => this.label(b.id) || b.type),
+        more: Math.max(0, c.sec.n - c.sec.sample.length),
+        choice: kind === 'copy' ? 'all' : 'self',
+      }
+      this.closeMenu()
+      // fokus pada pilihan bawaan (pilihan yang sedang dicentang)
+      this.$nextTick(() => {
+        const r = this.$root.querySelector('[data-outline-dialog] input[type=radio]:checked')
+        if (r) r.focus()
+      })
+    },
+    closeDlg() {
+      const id = this.dlg.id
+      this.dlg.open = false
+      if (id) this.refocus(id)
+    },
+    async dlgConfirm() {
+      const d = { ...this.dlg }
+      if (!d.open) return
+      this.dlg.open = false
+      if (d.kind === 'copy') {
+        return this.act(d.id, () => this.$wire.duplicateSection(d.id, d.choice === 'all'))
+      }
+      this.removed()
+      return this.$wire.removeSection(d.id, d.choice === 'all')
+    },
+    // Tab berputar di dalam dialog (fokus tidak keluar ke outline di belakangnya).
+    trapTab(ev) {
+      const els = Array.from(ev.currentTarget.querySelectorAll('input,button')).filter((e) => !e.disabled && e.offsetParent !== null)
+      if (!els.length) return
+      const first = els[0]
+      const last = els[els.length - 1]
+      if (ev.shiftKey && document.activeElement === first) {
+        ev.preventDefault()
+        last.focus()
+      } else if (!ev.shiftKey && document.activeElement === last) {
+        ev.preventDefault()
+        first.focus()
+      }
+    },
+
     // Jalankan aksi struktur lalu kembalikan fokus keyboard ke baris yang sama (DOM baris dipindah saat render ulang).
     async act(id, fn) {
       try {
@@ -938,8 +1062,9 @@ export function registerEditor(Alpine) {
       const c = this.rowCtx(ev.currentTarget)
       if (!c) return
       let fn = null
-      if (!ev.shiftKey && ev.key === 'ArrowUp' && c.index > 0) fn = () => this.$wire.moveBlock(c.id, -1)
-      else if (!ev.shiftKey && ev.key === 'ArrowDown' && c.index < c.count - 1) fn = () => this.$wire.moveBlock(c.id, 1)
+      // Rilis 117: Pemisah Seksi menggeser seluruh seksinya; pemisah pertama tidak bisa naik bila masih ada blok Awal halaman; seksi terakhir tidak bisa turun.
+      if (!ev.shiftKey && ev.key === 'ArrowUp' && c.index > 0 && !(c.sec && c.sec.lockUp)) fn = () => this.$wire.moveBlock(c.id, -1)
+      else if (!ev.shiftKey && ev.key === 'ArrowDown' && c.index < c.count - 1 && !(c.sec && c.sec.last)) fn = () => this.$wire.moveBlock(c.id, 1)
       else if (ev.shiftKey && ev.key === 'ArrowLeft' && c.out) fn = () => this.$wire.outdentBlock(c.id)
       else if (ev.shiftKey && ev.key === 'ArrowRight' && c.in) fn = () => this.$wire.indentBlock(c.id)
       if (!fn) return

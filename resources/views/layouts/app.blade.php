@@ -19,7 +19,7 @@
   >
     <x-layouts::app.sidebar />
     <main
-      class="flex min-w-0 flex-1 flex-col space-y-2 p-[0.5rem_0.5rem_0.5rem_0.5rem] md:p-[0.5rem_0.5rem_0.5rem_0rem]"
+      class="flex min-w-0 flex-1 scrollbar-thin flex-col space-y-2 p-[0.5rem_0.5rem_0.5rem_0.5rem] **:scrollbar-thin md:p-[0.5rem_0.5rem_0.5rem_0rem]"
     >
       <x-layouts::app.header :header="$header ?? ''" :title="$title ?? ''" />
       {{ $slot }}

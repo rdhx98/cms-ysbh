@@ -5,6 +5,11 @@
   - Carousel: scroll-snap bawaan peramban (bisa digeser/digulir/papan ketik tanpa JavaScript); panah dan "berjalan otomatis" hanya dengan Alpine.
     Berjalan otomatis berhenti saat disorot/difokus, bisa dijeda, dan TIDAK dijalankan bila pengguna memilih "kurangi gerakan".
   - Pembesar foto: <dialog> bawaan (fokus terkunci, Esc menutup). Tanpa JavaScript, foto adalah tautan ke berkas gambarnya.
+  Rilis 113: lebar kartu bisa mengikuti gambar (tinggi tetap, lebar mengikuti gambar), warna latar kartu dari palet atau tanpa latar, dua efek saat
+  disorot yang berdiri sendiri: hitam-putih lalu berwarna, dan skala membesar (rilis 115: tanpa sakelar induk), animasi masuk per butir (rilis 116: tiap gambar muncul saat ia sendiri masuk ke layar, jeda hanya antar gambar yang masuk bersamaan; keadaan
+  tersembunyi ada di HTML pertama; tidak di kanvas dan tidak bila "kurangi gerakan"), dan keterangan kini tampil juga pada mode Logo (dan di kanvas).
+  Rilis 119: keterangan bisa disembunyikan (juga di pembesar) dan diberi gaya: tebal, miring, garis bawah, warna (abu-abu bawaan, putih, palet).
+  Rilis 120: batas baris (1-3, dipotong "…") dan keterangan yang menimpa gambar saat disorot (bilah gelap di dasar petak; selalu tampak di layar sentuh dan di kanvas).
   Butir tanpa gambar sah dilewati di situs; di kanvas ($canvasMode) tampil pudar bertepi putus-putus. Prop `files` dan `resolver` hanya untuk pengujian.
   Penanda arah Blade ditulis hanya sebagai direktif nyata; JavaScript Alpine memakai x-on:, bukan singkatan dengan tanda at.
 --}}
@@ -31,13 +36,25 @@
   $items = GalleryList::prepare($clean, $files, $resolver, $lang, $inCanvas);
 
   $logos = $clean['mode'] === 'logos';
+  // Rilis 119: keterangan bisa disembunyikan (juga di pembesar) dan diberi gaya (tebal, miring, garis bawah, warna).
+  $hideCaption = $clean['hide_caption'];
+  $capOverlay = $clean['caption_overlay'];
+  $capClass = GalleryStyle::caption($clean['caption_bold'], $clean['caption_italic'], $clean['caption_underline'], $clean['caption_color'], $clean['caption_lines'], $capOverlay, $inCanvas);
   $carousel = $clean['layout'] === 'carousel';
   $cols = $clean['columns'];
-  $tile = GalleryStyle::tile($clean['mode'], $clean['ratio']);
-  $imgClass = GalleryStyle::image($clean['mode'], $clean['grayscale']);
+  $follow = $clean['follow'];
+  $tile = GalleryStyle::tile($clean['mode'], $clean['ratio'], $follow, $clean['height'], $clean['card_bg'], $clean['border_color']);
+  $imgClass = GalleryStyle::image($clean['mode'], $clean['grayscale'], $clean['hover_scale'], $follow);
   $lightbox = ! $logos && $clean['lightbox'] && ! $inCanvas;
   $autoplay = $carousel && $clean['autoplay'] && ! $inCanvas;
-  $needsJs = $carousel || $lightbox;
+  // Animasi masuk: hanya di situs publik. Di kanvas semua butir langsung terlihat.
+  $animate = $inCanvas ? 'none' : $clean['animate'];
+  [$enterFrom, $enterMotion] = GalleryStyle::enter($animate);
+  $animated = $animate !== 'none';
+  $needsJs = $carousel || $lightbox || $animated;
+  // Rilis 116: keadaan tersembunyi dicetak di HTML pertama (kelas $enterFrom); skrip mencabutnya saat gambar masuk ke layar. data-gi = nomor urut butir.
+  $enterAttrs = fn (int $i): string => $animated ? ' data-gi="' . $i . '" data-from="' . e($enterFrom) . '"' : '';
+
   $id = ['id' => ['prev' => 'Sebelumnya', 'next' => 'Berikutnya', 'pause' => 'Jeda', 'play' => 'Putar', 'close' => 'Tutup', 'zoom' => 'Perbesar', 'label' => $logos ? 'Logo mitra' : 'Galeri foto', 'empty' => 'Gambar belum dipilih'],
          'en' => ['prev' => 'Previous', 'next' => 'Next', 'pause' => 'Pause', 'play' => 'Play', 'close' => 'Close', 'zoom' => 'Enlarge', 'label' => $logos ? 'Partner logos' : 'Photo gallery', 'empty' => 'No image selected']];
   $t = $id[$lang === 'id' ? 'id' : 'en'];
@@ -48,22 +65,33 @@
       $items[$k]['pi'] = null;
       if (! $it['incomplete']) {
           $items[$k]['pi'] = count($photos);
-          $photos[] = ['src' => $it['src'], 'alt' => $it['alt'], 'caption' => $it['caption']];
+          $photos[] = ['src' => $it['src'], 'alt' => $it['alt'], 'caption' => $hideCaption ? '' : $it['caption']];
       }
   }
 
   // Keadaan Alpine disusun di sini (di dalam @php, bukan di dalam {{ }}), lalu dicetak sebagai satu atribut yang di-escape.
-  $cfg = json_encode(['autoplay' => $autoplay, 'interval' => 4000, 'photos' => $lightbox ? $photos : []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+  $cfg = json_encode(['autoplay' => $autoplay, 'animate' => $animated, 'interval' => 4000, 'photos' => $lightbox ? $photos : []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
   $xdata = str_replace('__CFG__', $cfg, <<<'JS'
 {
   cfg: __CFG__,
-  atStart: true, atEnd: false, playing: false, paused: false, timer: null, reduce: false, current: null,
+  atStart: true, atEnd: false, playing: false, paused: false, timer: null, reduce: false, current: null, io: null,
   init() {
     this.reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (this.cfg.animate) this.reveal();
     this.$nextTick(() => this.sync());
     if (this.cfg.autoplay && !this.reduce) { this.playing = true; this.start(); }
   },
-  destroy() { this.stop(); },
+  destroy() { this.stop(); if (this.io) this.io.disconnect(); },
+  // Animasi masuk per gambar: satu pengamat untuk semua butir; jeda 80 md hanya antar butir yang masuk BERSAMAAN (satu kelompok), maks. 480 md.
+  reveal() {
+    const items = Array.from(this.$el.querySelectorAll('[data-gi]'));
+    const show = (el, d) => { el.style.transitionDelay = d + 'ms'; (el.dataset.from || '').split(' ').forEach((c) => c && el.classList.remove(c)); el.removeAttribute('data-gi'); };
+    if (this.reduce || !('IntersectionObserver' in window)) { items.forEach((el) => show(el, 0)); return; }
+    this.io = new IntersectionObserver((es) => {
+      es.filter((e) => e.isIntersecting).sort((a, b) => (+a.target.dataset.gi) - (+b.target.dataset.gi)).forEach((e, k) => { this.io.unobserve(e.target); show(e.target, Math.min(k * 80, 480)); });
+    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.1 });
+    items.forEach((el) => this.io.observe(el));
+  },
   step() { const t = this.$refs.track; if (!t || !t.firstElementChild) return 0; return t.firstElementChild.getBoundingClientRect().width + (parseFloat(getComputedStyle(t).columnGap) || 0); },
   sync() { const t = this.$refs.track; if (!t) return; this.atStart = t.scrollLeft <= 1; this.atEnd = t.scrollLeft + t.clientWidth >= t.scrollWidth - 1; },
   go(dir) { const t = this.$refs.track; if (t) t.scrollBy({ left: dir * this.step(), behavior: this.reduce ? 'auto' : 'smooth' }); },
@@ -77,7 +105,7 @@
 JS);
 
   // Satu petak (dipakai grid dan carousel). Semua bagian dinamis di-escape dengan e().
-  $renderTile = function (array $item) use ($lightbox, $tile, $imgClass, $logos, $t): string {
+  $renderTile = function (array $item) use ($lightbox, $tile, $imgClass, $logos, $follow, $t, $hideCaption, $capClass, $capOverlay): string {
       $img = $item['incomplete']
           ? '<span class="px-2 text-center text-xs text-gray-400">' . e($t['empty']) . '</span>'
           : '<img src="' . e($item['src']) . '" alt="' . e($item['alt']) . '" loading="lazy" decoding="async" class="' . e($imgClass) . '">';
@@ -93,9 +121,13 @@ JS);
       } else {
           $a = '<div' . $title . ' class="' . e($cls) . '">' . $img . '</div>';
       }
-      $cap = ! $logos && $item['caption'] !== '' ? '<figcaption class="mt-2 text-sm text-gray-600">' . e($item['caption']) . '</figcaption>' : '';
+      // Keterangan tampil di semua mode (juga Logo) dan di kanvas. "w-0 min-w-full": keterangan panjang membungkus, tidak melebarkan petak yang lebarnya mengikuti gambar.
+      $cap = ($item['caption'] !== '' && ! $hideCaption)
+          ? '<figcaption class="' . $capClass . ($logos ? ' text-center' : '') . (($follow && ! $capOverlay) ? ' w-0 min-w-full' : '') . '">' . e($item['caption']) . '</figcaption>'
+          : '';
 
-      return '<figure class="w-full">' . $a . $cap . '</figure>';
+      // group/fig: kelompok bernama supaya keterangan yang menimpa bereaksi pada sorotan di MANA SAJA pada petak (bukan hanya pada keterangannya sendiri).
+      return '<figure class="' . ($capOverlay ? 'group/fig relative ' : '') . ($follow ? 'w-fit max-w-full' : 'w-full') . '">' . $a . $cap . '</figure>';
   };
 @endphp
 
@@ -104,10 +136,14 @@ JS);
     data-gallery
     data-mode="{{ $clean['mode'] }}"
     data-layout="{{ $clean['layout'] }}"
+    data-width="{{ $follow ? 'follow' : 'equal' }}"
     @if ($needsJs) x-data="{{ $xdata }}" @endif
     @if ($autoplay) x-on:mouseenter="paused = true" x-on:mouseleave="paused = false" x-on:focusin="paused = true" x-on:focusout="paused = false" @endif
     class="relative"
   >
+    @if ($animated)
+      <noscript><style>[data-gi]{opacity:1!important;translate:none!important;scale:none!important}</style></noscript>
+    @endif
     @if ($carousel)
       <div role="region" aria-roledescription="carousel" aria-label="{{ $t['label'] }}" class="relative">
         <div
@@ -117,8 +153,8 @@ JS);
           tabindex="0"
           class="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foresty/60 [&::-webkit-scrollbar]:hidden"
         >
-          @foreach ($items as $item)
-            <div class="shrink-0 snap-start {{ GalleryStyle::basis($cols) }}">{!! $renderTile($item) !!}</div>
+          @foreach ($items as $n => $item)
+            <div class="shrink-0 snap-start {{ $follow ? 'max-w-full' : GalleryStyle::basis($cols) }} {{ $enterFrom }} {{ $enterMotion }}"{!! $enterAttrs($n) !!}>{!! $renderTile($item) !!}</div>
           @endforeach
         </div>
 
@@ -137,9 +173,9 @@ JS);
         </div>
       </div>
     @else
-      <ul role="list" class="{{ GalleryStyle::grid($cols) }}">
-        @foreach ($items as $item)
-          <li>{!! $renderTile($item) !!}</li>
+      <ul role="list" class="{{ $follow ? GalleryStyle::followWrap($clean['mode']) : GalleryStyle::grid($cols) }}">
+        @foreach ($items as $n => $item)
+          <li class="{{ $follow ? 'max-w-full ' : '' }}{{ $enterFrom }} {{ $enterMotion }}"{!! $enterAttrs($n) !!}>{!! $renderTile($item) !!}</li>
         @endforeach
       </ul>
     @endif

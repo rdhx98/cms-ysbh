@@ -23,7 +23,7 @@ new class extends Component {
 <x-slot:title>
   {{
     __(
-      "Pengumuman",
+      "ui.title.announcement.manage",
     )
   }}
 </x-slot:title>

@@ -19,6 +19,12 @@
   warna latar seksi yang sebenarnya (data.background -> slot palet -> hex) dan garis tepi kiri 3px, sehingga outline mencerminkan ritme warna
   halaman. Blok sebelum pemisah pertama tidak diberi latar. Semua nilai warna yang dicetak berasal dari palet (hex divalidasi), bukan dari
   teks penulis.
+
+  Rilis 117 — Pemisah Seksi sebagai PEMBUNGKUS: blok sebelum pemisah pertama adalah "Awal halaman" (baris maya, bukan blok; tidak bisa dipindah atau
+  dihapus) dengan tombol "Bungkus dalam seksi"; kepala seksi punya panah lipat/buka dan menampilkan "N blok" saat terlipat; "Lipat semua / Buka semua"
+  di atas; salin/hapus pada pemisah yang punya blok membuka dialog pilihan (hanya pemisah / seluruh seksi). Data tetap datar; yang baru hanya
+  tampilan, aksi server (duplicateSection, removeSection, wrapPageStart, startSectionAt, dan moveBlock yang menggeser seluruh seksi), dan keadaan
+  lipat di Alpine (hanya hidup selama halaman terbuka).
 --}}
 @props(['content' => [], 'order' => []])
 
@@ -55,6 +61,33 @@
   if ($cur['items']) {
       $sections[] = $cur;
   }
+  // Rilis 117: metadata seksi untuk ctx baris. Seksi pertama tanpa pemisah = "Awal halaman".
+  $hasHead = isset($sections[0]) && $sections[0]['divider'] === null;
+  $firstDividerKey = null;
+  foreach ($sections as $k => $sec) {
+      if ($sec['divider'] !== null) {
+          $firstDividerKey = $k;
+          break;
+      }
+  }
+  $secMeta = function (int $k) use ($sections, $hasHead, $firstDividerKey, $order, $content): ?array {
+      $sec = $sections[$k] ?? null;
+      if (! $sec || $sec['divider'] === null) {
+          return null;
+      }
+      $ids = array_values(array_slice($sec['items'], 1));
+      $sample = [];
+      foreach (array_slice($ids, 0, 5) as $bid) {
+          $sample[] = ['id' => $bid, 'type' => \App\Editor\BlockPalette::label(\App\Editor\BlockPalette::canonical($content[$bid]['type'] ?? ''))];
+      }
+      $first = $k === $firstDividerKey;
+
+      return [
+          'n' => count($ids), 'first' => $first, 'lockUp' => $first && $hasHead,
+          'last' => array_key_last($sec['items']) === count($order) - 1, 'sample' => $sample,
+      ];
+  };
+  $foldable = collect($sections)->filter(fn ($sec) => $sec['divider'] === null || count($sec['items']) > 1)->count();
   // Teks daftar jenis: SATU rupa untuk semua jenis (tanpa cabang per jenis), supaya semua nama jenis tampil sama.
   $itemText = 'block min-w-0 flex-1 text-[11px] leading-tight font-semibold tracking-normal normal-case';
   $item = 'hover:bg-sage-soft hover:text-foresty flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] font-semibold text-gray-600 transition-colors disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent';
@@ -80,6 +113,16 @@
   .ol-row.is-sel { background: var(--color-foresty, #064f3b); border-color: var(--color-aurum, #e5c423); color: #fff; box-shadow: 0 0 0 1px var(--color-aurum, #e5c423), 0 0 0 3px rgba(229, 196, 35, .3); }
   .ol-zone { display: flex; align-items: center; gap: 5px; margin: 0; padding: 4px 2px 0; font-size: 10px; font-weight: 700; color: #6b7280; }
   .ol-zone::before { content: ""; width: 8px; height: 8px; border: 1.5px solid #9ca3af; border-radius: 2px; flex: none; }
+  /* Rilis 117: panah lipat, baris "Awal halaman" (maya), jumlah blok saat terlipat, dialog seksi */
+  .ol-fold { flex: none; display: flex; align-items: center; justify-content: center; width: 20px; margin-left: 2px; color: inherit; border-radius: 5px; }
+  .ol-fold:hover { background: rgba(0, 0, 0, .08); }
+  .ol-fold svg { transition: transform .15s; }
+  .ol-fold[aria-expanded="false"] svg { transform: rotate(-90deg); }
+  .ol-count { flex: none; align-self: center; margin-right: 6px; padding: 1px 6px; border-radius: 999px; background: #eceee9; color: #4b5563; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .ol-row.is-sel .ol-count { background: rgba(255, 255, 255, .2); color: #fff; }
+  .ol-row.ol-headrow { font-weight: 700; border-left: 5px solid #cfd3cc; border-style: dashed; border-left-style: solid; }
+  .ol-wrap { flex: none; align-self: center; margin-right: 4px; padding: 2px 7px; border-radius: 6px; border: 1px solid #cfd3cc; background: #fff; color: var(--color-foresty, #064f3b); font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .ol-wrap:hover { background: var(--color-sage-soft, #e3ede6); border-color: var(--color-foresty, #064f3b); }
   .ol-kids { position: relative; margin-left: 13px; padding-left: 12px; }
   .ol-kids > .ol-item::before { content: ""; position: absolute; left: -12px; top: 0; bottom: 0; border-left: 1.5px solid var(--ol-line); }
   .ol-kids > .ol-item::after { content: ""; position: absolute; left: -12px; top: calc(var(--y) + 3px); width: 11px; border-top: 1.5px solid var(--ol-line); }
@@ -90,24 +133,30 @@
 <nav
   x-data="outline"
   x-on:block-added.window="added($event)"
-  x-on:keydown.escape.window="if (menu.open) { closeMenu(true) }"
+  x-on:keydown.escape.window="if (dlg.open) { closeDlg() } else if (menu.open) { closeMenu(true) }"
   aria-label="Struktur halaman"
   class="ol-panel flex flex-col text-xs"
 >
+  @if ($foldable > 0)
+    <div class="mb-1 flex justify-end gap-1 px-1 text-[10px] font-bold text-gray-500" data-outline-fold-all>
+      <button type="button" x-on:click="foldAll(true)" class="rounded px-1.5 py-0.5 hover:bg-black/5 hover:text-foresty" data-act="fold-all">Lipat semua</button>
+      <button type="button" x-on:click="foldAll(false)" class="rounded px-1.5 py-0.5 hover:bg-black/5 hover:text-foresty" data-act="unfold-all">Buka semua</button>
+    </div>
+  @endif
   @forelse ($sections as $section)
-    @php $head = $section['divider'] ? array_key_first($section['items']) : null; @endphp
-    <div @class(['ol-sw', $loop->index % 2 ? 'ol-sw-b' : 'ol-sw-a']) data-outline-section @if ($section['divider']) data-outline-section-of="{{ $section['divider'] }}" @endif>
-      @foreach ($section['items'] as $i => $id)
-        @if ($i === $head)
-          {{-- kepala seksi (Pemisah Seksi) --}}
-          <x-editor.outline-node :id="$id" :content="$content" :index="$i" :count="count($order)" :prev="$order[$i - 1] ?? null" :tint="$section['tint']" />
-        @break
-        @endif
-      @endforeach
-      {{-- isi seksi: anak kepala seksi di pohon (hanya tampilan; urutan, naik/turun, dan data-ctx tetap daftar tingkat atas) --}}
+    @php $head = $section['divider'] ? array_key_first($section['items']) : null; $k = $loop->index; $meta = $secMeta($k); @endphp
+    <div wire:key="outline-sec-{{ $section['divider'] ?? 'head' }}" @class(['ol-sw', $loop->index % 2 ? 'ol-sw-b' : 'ol-sw-a']) data-outline-section @if ($section['divider']) data-outline-section-of="{{ $section['divider'] }}" @endif>
       @if ($section['divider'])
+        @foreach ($section['items'] as $i => $id)
+          @if ($i === $head)
+            {{-- kepala seksi (Pemisah Seksi) --}}
+            <x-editor.outline-node :id="$id" :content="$content" :index="$i" :count="count($order)" :prev="$order[$i - 1] ?? null" :tint="$section['tint']" :section="$meta" />
+          @break
+          @endif
+        @endforeach
+        {{-- isi seksi: anak kepala seksi di pohon (hanya tampilan; urutan, naik/turun, dan data-ctx tetap daftar tingkat atas) --}}
         @if (count($section['items']) > 1)
-          <div class="ol-kids" data-outline-section-kids>
+          <div class="ol-kids" data-outline-section-kids x-show="! folded[@js($section['divider'])]">
             @foreach ($section['items'] as $i => $id)
               @continue ($i === $head)
               <x-editor.outline-node :id="$id" :content="$content" :index="$i" :count="count($order)" :prev="$order[$i - 1] ?? null" />
@@ -115,9 +164,25 @@
           </div>
         @endif
       @else
-        @foreach ($section['items'] as $i => $id)
-          <x-editor.outline-node :id="$id" :content="$content" :index="$i" :count="count($order)" :prev="$order[$i - 1] ?? null" />
-        @endforeach
+        {{-- "Awal halaman": baris maya (bukan blok), blok-bloknya di wadah pohon seperti isi seksi --}}
+        <div class="ol-item" data-outline-head>
+          <div class="ol-row ol-headrow flex rounded-md" style="--ol-bg: #ffffff; --ol-bd: #cfd3cc">
+            <button type="button" class="ol-fold" data-outline-fold="head" x-on:click.stop="fold('head')" x-bind:aria-expanded="folded.head ? 'false' : 'true'" title="Lipat / buka" aria-label="Lipat atau buka Awal halaman">
+              <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            <span class="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pr-2 pl-2 text-xs font-semibold" title="Blok di atas Pemisah Seksi pertama. Pemisah seksi tidak bisa melewati bagian ini.">
+              <svg class="h-3.5 w-3.5 shrink-0"><use href="#icon-between-horizontal-start"></use></svg>
+              <span class="min-w-0 flex-1 truncate" data-outline-head-label>Awal halaman</span>
+            </span>
+            <span class="ol-count" x-show="folded.head" x-cloak data-outline-count>{{ count($section['items']) }} blok</span>
+            <button type="button" class="ol-wrap" data-outline-wrap x-on:click.stop="$wire.wrapPageStart()" title="Buat Pemisah Seksi di paling atas yang membungkus semua blok di Awal halaman">Bungkus dalam seksi</button>
+          </div>
+        </div>
+        <div class="ol-kids" data-outline-section-kids x-show="! folded.head">
+          @foreach ($section['items'] as $i => $id)
+            <x-editor.outline-node :id="$id" :content="$content" :index="$i" :count="count($order)" :prev="$order[$i - 1] ?? null" :head="true" />
+          @endforeach
+        </div>
       @endif
     </div>
   @empty
@@ -145,6 +210,9 @@
       </button>
       <button type="button" role="menuitem" x-show="menu.ctx && menu.ctx.canAdd" x-on:click="show('below')" class="{{ $item }}" data-act="below">
         <span class="flex-1">Sisipkan di bawah…</span>
+      </button>
+      <button type="button" role="menuitem" x-show="menu.ctx && menu.ctx.head" x-on:click="startSection()" class="{{ $item }}" data-act="start">
+        <span class="flex-1">Mulai seksi dari blok ini</span>
       </button>
       <button type="button" role="menuitem" x-on:click="show('move')" class="{{ $item }}" data-act="move">
         <span class="flex-1">Pindahkan ke…</span>
@@ -193,5 +261,59 @@
         </button>
       </template>
     </div>
+  </div>
+
+  {{-- Dialog Salin / Hapus seksi (rilis 117): hanya untuk Pemisah Seksi yang punya blok di bawahnya. Satu dialog untuk seluruh outline. --}}
+  <div x-show="dlg.open" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" data-outline-dialog x-on:click.self="closeDlg()">
+    <form
+      x-on:submit.prevent="dlgConfirm()"
+      x-on:keydown.tab="trapTab($event)"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ol-dlg-title"
+      class="max-h-full w-full max-w-sm overflow-y-auto rounded-2xl bg-white p-4 text-xs text-gray-700 shadow-2xl"
+    >
+      <h2 id="ol-dlg-title" class="text-sm font-bold text-gray-900" x-text="dlg.kind === 'copy' ? 'Salin seksi' : 'Hapus seksi'"></h2>
+      <p class="mt-1 leading-relaxed">
+        <span class="font-semibold" x-text="dlg.title"></span> berisi <span x-text="dlg.n"></span> blok.
+      </p>
+
+      <fieldset class="mt-3 flex flex-col gap-2">
+        <legend class="sr-only" x-text="dlg.kind === 'copy' ? 'Yang disalin' : 'Yang dihapus'"></legend>
+        <label class="flex cursor-pointer gap-2 rounded-lg border p-2.5 has-[:checked]:border-foresty has-[:checked]:bg-sage-soft" x-bind:class="dlg.choice === 'self' ? 'border-foresty bg-sage-soft' : 'border-gray-200'">
+          <input type="radio" name="ol-dlg-choice" value="self" x-model="dlg.choice" data-dlg-choice="self" class="mt-0.5 shrink-0 accent-[#064f3b]" />
+          <span>
+            <span class="block font-bold text-gray-900" x-text="dlg.kind === 'copy' ? 'Hanya pemisah ini' : 'Hanya pemisah'"></span>
+            <span class="block leading-snug text-gray-500" x-text="dlg.kind === 'copy' ? 'Membuat pemisah seksi kosong baru tepat setelah seksi ini.' : (dlg.first ? 'Blok di bawahnya tetap ada dan menjadi bagian dari “Awal halaman”.' : 'Blok di bawahnya tetap ada dan bergabung ke seksi di atasnya.')"></span>
+          </span>
+        </label>
+        <label class="flex cursor-pointer gap-2 rounded-lg border p-2.5 has-[:checked]:border-foresty has-[:checked]:bg-sage-soft" x-bind:class="dlg.choice === 'all' ? (dlg.kind === 'delete' ? 'border-red-600 bg-red-50' : 'border-foresty bg-sage-soft') : 'border-gray-200'">
+          <input type="radio" name="ol-dlg-choice" value="all" x-model="dlg.choice" data-dlg-choice="all" class="mt-0.5 shrink-0 accent-[#064f3b]" />
+          <span>
+            <span class="block font-bold text-gray-900" x-text="dlg.kind === 'copy' ? 'Pemisah + ' + dlg.n + ' blok di bawahnya' : 'Pemisah + ' + dlg.n + ' blok'"></span>
+            <span class="block leading-snug text-gray-500" x-text="dlg.kind === 'copy' ? 'Seluruh seksi disalin, termasuk isi kolom dan langkah, lalu diletakkan tepat setelah seksi ini.' : 'Semua isi seksi ikut terhapus, termasuk isi kolom dan langkah.'"></span>
+          </span>
+        </label>
+      </fieldset>
+
+      <div class="mt-3 rounded-lg bg-gray-50 p-2.5" data-dlg-list>
+        <p class="mb-1 text-[10px] font-bold text-gray-400">Isi seksi ini</p>
+        <ul class="flex flex-col gap-0.5">
+          <template x-for="(b, n) in dlg.sample" x-bind:key="n"><li class="truncate" x-text="'• ' + b"></li></template>
+        </ul>
+        <p x-show="dlg.more > 0" class="mt-0.5 text-gray-500" x-text="'+' + dlg.more + ' lainnya'"></p>
+      </div>
+
+      <div class="mt-4 flex justify-end gap-2">
+        <button type="button" x-on:click="closeDlg()" class="rounded-lg px-3 py-1.5 font-bold text-gray-600 hover:bg-gray-100" data-dlg-cancel>Batal</button>
+        <button
+          type="submit"
+          data-dlg-ok
+          class="rounded-lg px-3 py-1.5 font-bold text-white"
+          x-bind:class="dlg.kind === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-foresty hover:bg-foresty/90'"
+          x-text="dlg.kind === 'copy' ? (dlg.choice === 'all' ? 'Salin seksi dan ' + dlg.n + ' blok' : 'Salin pemisah') : (dlg.choice === 'all' ? 'Hapus seksi dan ' + dlg.n + ' blok' : 'Hapus pemisah')"
+        ></button>
+      </div>
+    </form>
   </div>
 </nav>

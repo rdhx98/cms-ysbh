@@ -366,7 +366,7 @@ new class extends Component {
               >
                 <button
                   wire:click="sortBy('title')"
-                  class="bg-coral flex w-full cursor-pointer items-center gap-2 px-4 py-3 font-semibold tracking-wider uppercase transition-colors"
+                  class="bg-mist hover:bg-forest hover:text-mist flex w-full cursor-pointer items-center gap-2 px-4 py-3 font-semibold tracking-wider uppercase transition-colors"
                 >
                   {{
                     __(
@@ -384,7 +384,8 @@ new class extends Component {
               </th>
               <!-- PATH -->
               <th
-                class="bg-misty border-sage-soft sticky top-0 z-10 border-r-2 px-4 py-3 font-semibold tracking-wider uppercase select-none lg:z-20"
+                {{-- class="bg-misty border-sage-soft sticky top-0 z-10 border-r-2 px-4 py-3 font-semibold tracking-wider uppercase select-none lg:z-20" --}}
+                class="bg-mist border-sage-soft sticky top-0 z-10 border-r-2 px-4 font-semibold tracking-wider uppercase select-none lg:z-20"
               >
                 {{-- <button wire:click="sortBy('title')" class="flex justify-center items-center gap-2 w-full uppercase tracking-wider font-semibold cursor-pointer hover:text-zinc-200 transition-colors"> --}}
                 Path
@@ -396,13 +397,16 @@ new class extends Component {
 
               <!-- Tanggal -->
               <th
-                class="bg-misty border-sage-soft sticky top-0 z-10 border-r-2 px-4 py-3 font-semibold tracking-wider whitespace-nowrap uppercase lg:z-20"
+                {{-- class="bg-misty border-sage-soft sticky top-0 z-10 border-r-2 px-4 py-3 font-semibold tracking-wider whitespace-nowrap uppercase lg:z-20" --}}
+                class="bg-mist border-sage-soft sticky top-0 z-10 border-r-2 font-semibold tracking-wider whitespace-nowrap uppercase lg:z-20"
               >
                 <button
                   wire:click="sortBy('created_at')"
-                  class="flex w-full cursor-pointer items-center justify-center gap-2 font-semibold tracking-wider uppercase transition-colors hover:text-zinc-200"
+                  {{-- class="flex w-full cursor-pointer items-center justify-center gap-2 font-semibold tracking-wider uppercase transition-colors hover:text-zinc-200"
+                   --}}
+                  class="bg-mist hover:bg-forest hover:text-mist flex w-full cursor-pointer items-center gap-2 px-4 py-3 font-semibold tracking-wider uppercase transition-colors"
                 >
-                  Tanggal & Waktu dibuat
+                  Created At
                   @if ($orderColumn === "created_at")
                     <flux:icon
                       variant="solid"
@@ -415,11 +419,12 @@ new class extends Component {
 
               <!-- STATUS -->
               <th
-                class="bg-misty border-sage-soft sticky top-0 z-10 border-r-2 px-4 py-3 font-semibold tracking-wider uppercase lg:z-20"
+                class="bg-misty border-sage-soft sticky top-0 z-10 border-r-2 font-semibold tracking-wider uppercase lg:z-20"
               >
                 <button
                   wire:click="sortBy('status')"
-                  class="flex w-full cursor-pointer items-center justify-center gap-2 font-semibold tracking-wider uppercase transition-colors hover:text-zinc-200"
+                  {{-- class="flex w-full cursor-pointer items-center justify-center gap-2 font-semibold tracking-wider uppercase transition-colors hover:text-zinc-200" --}}
+                  class="bg-mist hover:bg-forest hover:text-mist flex w-full cursor-pointer items-center gap-2 px-4 py-3 font-semibold tracking-wider uppercase transition-colors"
                 >
                   Status
                   @if ($orderColumn === "status")
@@ -436,7 +441,7 @@ new class extends Component {
               <th
                 class="bg-misty sticky top-0 z-10 px-4 py-3 text-center font-semibold tracking-wider uppercase select-none lg:z-20"
               >
-                Kelola
+                Manage
               </th>
             </tr>
           </thead>

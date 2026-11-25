@@ -45,12 +45,12 @@ final class SectionBuilder
             if (!empty($block['anchor'])) {
                 $title = '';
                 if ($type === 'heading') {
-                    $title = strip_tags(self::text($block['data']['text'] ?? '', $lang));
+                    $title = self::plainTitle(self::text($block['data']['text'] ?? '', $lang));
                 } elseif ($type === 'section_divider') {
-                    $title = strip_tags(self::text($block['data']['title'] ?? '', $lang));
+                    $title = self::plainTitle(self::text($block['data']['title'] ?? '', $lang));
                 }
                 if (empty($title) && !empty($block['data']['title'])) {
-                    $title = strip_tags(self::text($block['data']['title'], $lang));
+                    $title = self::plainTitle(self::text($block['data']['title'], $lang));
                 }
                 if (!empty(trim($title))) {
                     $toc[] = ['title' => trim($title), 'anchor' => $block['anchor']];
@@ -116,6 +116,17 @@ final class SectionBuilder
         }
 
         return null;
+    }
+
+    /**
+     * Judul daftar isi: tag dibuang, lalu entitas diuraikan (rilis 111). Teks heading tersimpan sebagai HTML yang sudah ter-escape
+     * (apostrof = "&#039;"); komponen daftar isi mencetaknya dengan {{ }} yang meng-escape sekali lagi, sehingga tanpa uraian ini
+     * "YSBH's" tampil sebagai "YSBH&#039;s". Urutannya penting: uraikan SESUDAH strip_tags, supaya "&lt;b&gt;" yang diketik
+     * pengguna tetap teks biasa (dicetak satu kali ter-escape) dan tidak menjadi tag.
+     */
+    private static function plainTitle(string $html): string
+    {
+        return html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
     /** Teks dari bidang yang bisa berupa string atau peta bahasa: bahasa diminta, lalu id, lalu elemen pertama. */

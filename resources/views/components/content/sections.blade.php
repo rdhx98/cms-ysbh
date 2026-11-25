@@ -2,7 +2,8 @@
   <x-content.sections> — MESIN RENDER seksi + daftar isi untuk halaman, artikel, snippet, dan KANVAS. Terjemahan dari mesin render
   page-preview (markup publik sama), dengan pengelompokan seksi di App\Content\SectionBuilder (diuji terhadap logika aslinya).
 
-  mode="public" : persis tampilan situs: animasi muncul bertahap per blok.
+  mode="public" : persis tampilan situs: tiap blok muncul (naik + memudar) saat masuk ke layar (rilis 116: terpicu gulir; keadaan tersembunyi
+                  sudah ada di HTML pertama, bukan dipasang Alpine belakangan seperti rilis sebelumnya yang membuat blok sempat terlihat lalu berkedip).
   mode="canvas" : untuk bingkai kanvas editor: tanpa animasi, tiap blok membawa data-block-id / data-block-type agar bisa dipilih,
                   dan seksi yang dibuka oleh pemisah seksi membawa ID pemisahnya.
 
@@ -27,6 +28,135 @@
   $tocPosition = $grouped['tocPosition'];
   $topBannerId = \App\Content\SectionBuilder::topBanner($sections, $blocks); // gambar w-screen sebagai blok pertama halaman, atau null
   $marginChoices = array_column(config('cms.design.margin_bottom', []), 'value'); // jarak bawah yang sah (rilis 32, lihat Spacing)
+@endphp
+
+@php
+  // Rilis 112: seksi dirender LEBIH DULU (ke penyangga) supaya seksi kosong bisa dibuang dan daftar isi tidak menautkan anchor yang hilang.
+  $hiddenAnchors = [];
+  $anyReveal = false;
+  ob_start();
+@endphp
+  @forelse ($sections as $section)
+    @php $sectionHasContent = $canvas; ob_start(); @endphp
+    <section
+      @if ($section['anchor'] !== '') id="{{ $section['anchor'] }}" @endif
+      @if ($canvas && $section['dividerId']) data-block-id="{{ $section['dividerId'] }}" data-block-type="section-divider" @endif
+      class="relative w-full {{ $section['bgClass'] }} {{ $section['textClass'] }} {{ $section['padding'] }}"
+    >
+      {{-- Rilis 107: hiasan latar (SVG sebaris, disaring SvgSanitizer). Diposisikan mutlak di dalam pembungkus pemotong seukuran seksi,
+           jadi tidak menambah tinggi seksi. Kosong bila SVG tidak terbaca. CSS kecilnya ikut dicetak di tiap hiasan (tanpa @once: aman untuk Octane, ganda tidak berbahaya). --}}
+      @if (! empty($section['ornament']))
+        @php $ornamentHtml = \App\Content\Blocks\SectionOrnament::html($section['ornament'], 'o' . $section['ornament']['media_id'] . 's' . $loop->index . '-'); @endphp
+        @if ($ornamentHtml !== '')
+          {!! \App\Content\Blocks\SectionOrnament::css() !!}
+          {!! $ornamentHtml !!}
+        @endif
+      @endif
+      {{-- max-w-7xl ada per blok (bukan per seksi) supaya blok bertanda w-screen bisa memenuhi layar --}}
+      <div class="flex w-full flex-col">
+        @foreach ($section['blocks'] as $index => $blockId)
+          @php
+            $block = $blocks[$blockId];
+            $type = str_replace('_', '-', (string) ($block['type'] ?? ''));
+            $componentName = 'blocks.render.' . $type;
+            $hasView = $type !== '' && view()->exists('components.' . $componentName);
+            // Rilis 116: blok Galeri yang animasinya per gambar aktif mengurus intro-nya sendiri; pembungkusnya tidak ikut beranimasi (tanpa animasi ganda).
+            $ownIntro = $type === 'gallery-builder' && \App\Content\Blocks\GalleryStyle::animation($block['data']['animate'] ?? null) !== 'none';
+            $reveal = ! $canvas && ! $ownIntro;
+            $anyReveal = $anyReveal || $reveal;
+            $isFullScreen = isset($block['data']['width']) && $block['data']['width'] === 'w-screen';
+            // Jarak bawah: blok yang rendernya mengurus margin sendiri (judul, paragraf, eyebrow, gambar, kartu) menghasilkan ''; lainnya dari data.margin_bottom
+            $spacing = \App\Content\Blocks\Spacing::wrapperClass($block, $marginChoices);
+            // Rata teks Judul (rilis 33): data.align, dicetak pembungkus karena Judul tidak punya <p>; kiri = tidak mencetak apa pun
+            $textAlign = \App\Content\Blocks\Align::wrapperClass($block);
+            // Jarak antar baris Judul (rilis 106): data.line_height, diwarisi renderer Judul; bawaan "sedang" (1.25)
+            $lineHeight = \App\Content\Blocks\LineHeight::wrapperClass($block);
+            // Padding blok (rilis 70): data.pad_x / data.pad_y dari daftar putih BoxPadding; kosong = tidak ada pembungkus tambahan
+            $boxPad = \App\Content\Blocks\BoxPadding::classes(is_array($block['data'] ?? null) ? $block['data'] : []);
+          @endphp
+
+          <div
+            @if ($isFullScreen) data-banner-block="true" @endif
+            @if ((string) $blockId === $topBannerId) data-top-banner="true" @endif
+            @if ($canvas) data-block-id="{{ $blockId }}" data-block-type="{{ $type }}" @endif
+            id="{{ ! empty($block['anchor']) ? $block['anchor'] : $blockId }}"
+            @if ($reveal) data-reveal @endif
+            class="{{ $reveal ? 'transition-all duration-700 ease-out opacity-0 translate-y-6 motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-none' : '' }} {{ $isFullScreen ? 'w-full px-0' : 'mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8' }} {{ $textAlign }} {{ $lineHeight }}"
+          >
+            {{-- Rilis 91: jarak bawah (blok non-OWN) dicetak pada pembungkus DALAM, bukan pada pembungkus ber-data-block-id; padding di dalamnya lagi. Margin anak langsung
+                 pembungkus (item flex = konteks format blok sendiri) tidak runtuh ke luar, jadi garis sorotan kanvas ikut membesar seperti pada Judul. --}}
+            @if ($spacing !== '')
+              <div class="{{ $spacing }}">
+            @endif
+            @if ($boxPad !== '')
+              <div class="{{ $boxPad }}">
+            @endif
+            @if ($hasView && $canvas)
+              {{-- Kanvas: tangkap keluaran; blok yang TIDAK mencetak apa pun (mis. FAQ tanpa pertanyaan) diberi penanda supaya tetap bisa dipilih --}}
+              @php ob_start(); @endphp
+              <x-dynamic-component
+                :component="$componentName"
+                :block="$block"
+                :data="$block['data'] ?? []"
+                :lang="$lang"
+                :all-content="$blocks"
+              />
+              @php $rendered = ob_get_clean(); @endphp
+              {!! $rendered !!}
+              @if (trim(preg_replace('/<!--.*?-->/s', '', $rendered)) === '')
+                <div class="my-2 rounded-lg border border-dashed border-gray-300 bg-white/60 p-4 text-center text-xs text-gray-500">
+                  Blok <b>{{ \App\Editor\BlockPalette::label($type) }}</b> masih kosong. Isi di panel kanan.
+                </div>
+              @endif
+            @elseif ($hasView)
+              @php ob_start(); @endphp
+              <x-dynamic-component
+                :component="$componentName"
+                :block="$block"
+                :data="$block['data'] ?? []"
+                :lang="$lang"
+                :all-content="$blocks"
+              />
+              @php
+                $rendered = ob_get_clean();
+                $sectionHasContent = $sectionHasContent || trim(preg_replace('/<!--.*?-->/s', '', $rendered)) !== '';
+              @endphp
+              {!! $rendered !!}
+            @elseif ($canvas)
+              <div class="my-2 rounded-lg border border-dashed border-gray-300 bg-white/60 p-4 text-center text-xs text-gray-500">
+                Blok <b>{{ $type ?: '(tanpa tipe)' }}</b> belum punya tampilan publik.
+              </div>
+            @endif
+            @if ($boxPad !== '')
+              </div>
+            @endif
+            @if ($spacing !== '')
+              </div>
+            @endif
+          </div>
+        @endforeach
+      </div>
+    </section>
+    @php $sectionHtml = ob_get_clean(); @endphp
+    @if ($sectionHasContent)
+      {!! $sectionHtml !!}
+    @else
+      {{-- Rilis 112: seksi yang SELURUH bloknya tidak mencetak apa pun (mis. Artikel Terbaru tanpa artikel) dibuang di situs publik, termasuk latar,
+           bantalan, dan hiasannya; tanpa ini tersisa pita kosong. Kanvas editor tidak pernah membuangnya. Anchor-nya dikeluarkan dari daftar isi. --}}
+      @php $hiddenAnchors[] = $section['anchor']; @endphp
+    @endif
+  @empty
+    @if ($canvas)
+      <div class="flex min-h-[40vh] items-center justify-center p-8 text-center text-sm text-gray-400">
+        Belum ada blok yang bisa ditampilkan.<br />Tambahkan blok dari panel kiri.
+      </div>
+    @endif
+  @endforelse
+@php
+  $sectionsHtml = ob_get_clean();
+  if ($hiddenAnchors !== []) {
+    $tocItems = array_values(array_filter($tocItems, fn ($item) => ! in_array($item['anchor'] ?? null, $hiddenAnchors, true)));
+  }
 @endphp
 
 <div class="bg-paper relative w-full">
@@ -100,107 +230,54 @@
     </div>
   @endif
 
-  @forelse ($sections as $section)
-    <section
-      @if ($section['anchor'] !== '') id="{{ $section['anchor'] }}" @endif
-      @if ($canvas && $section['dividerId']) data-block-id="{{ $section['dividerId'] }}" data-block-type="section-divider" @endif
-      class="relative w-full {{ $section['bgClass'] }} {{ $section['textClass'] }} {{ $section['padding'] }}"
-    >
-      {{-- Rilis 107: hiasan latar (SVG sebaris, disaring SvgSanitizer). Diposisikan mutlak di dalam pembungkus pemotong seukuran seksi,
-           jadi tidak menambah tinggi seksi. Kosong bila SVG tidak terbaca. CSS kecilnya ikut dicetak di tiap hiasan (tanpa @once: aman untuk Octane, ganda tidak berbahaya). --}}
-      @if (! empty($section['ornament']))
-        @php $ornamentHtml = \App\Content\Blocks\SectionOrnament::html($section['ornament'], 'o' . $section['ornament']['media_id'] . 's' . $loop->index . '-'); @endphp
-        @if ($ornamentHtml !== '')
-          {!! \App\Content\Blocks\SectionOrnament::css() !!}
-          {!! $ornamentHtml !!}
-        @endif
-      @endif
-      {{-- max-w-7xl ada per blok (bukan per seksi) supaya blok bertanda w-screen bisa memenuhi layar --}}
-      <div class="flex w-full flex-col">
-        @foreach ($section['blocks'] as $index => $blockId)
-          @php
-            $block = $blocks[$blockId];
-            $type = str_replace('_', '-', (string) ($block['type'] ?? ''));
-            $componentName = 'blocks.render.' . $type;
-            $hasView = $type !== '' && view()->exists('components.' . $componentName);
-            $delay = min($index * 150, 750);
-            $isFullScreen = isset($block['data']['width']) && $block['data']['width'] === 'w-screen';
-            // Jarak bawah: blok yang rendernya mengurus margin sendiri (judul, paragraf, eyebrow, gambar, kartu) menghasilkan ''; lainnya dari data.margin_bottom
-            $spacing = \App\Content\Blocks\Spacing::wrapperClass($block, $marginChoices);
-            // Rata teks Judul (rilis 33): data.align, dicetak pembungkus karena Judul tidak punya <p>; kiri = tidak mencetak apa pun
-            $textAlign = \App\Content\Blocks\Align::wrapperClass($block);
-            // Jarak antar baris Judul (rilis 106): data.line_height, diwarisi renderer Judul; bawaan "sedang" (1.25)
-            $lineHeight = \App\Content\Blocks\LineHeight::wrapperClass($block);
-            // Padding blok (rilis 70): data.pad_x / data.pad_y dari daftar putih BoxPadding; kosong = tidak ada pembungkus tambahan
-            $boxPad = \App\Content\Blocks\BoxPadding::classes(is_array($block['data'] ?? null) ? $block['data'] : []);
-          @endphp
+  {!! $sectionsHtml !!}
 
-          <div
-            @if ($isFullScreen) data-banner-block="true" @endif
-            @if ((string) $blockId === $topBannerId) data-top-banner="true" @endif
-            @if ($canvas) data-block-id="{{ $blockId }}" data-block-type="{{ $type }}" @endif
-            id="{{ ! empty($block['anchor']) ? $block['anchor'] : $blockId }}"
-            @unless ($canvas)
-              x-data="{ shown: false }"
-              x-init="setTimeout(() => (shown = true), 100)"
-              :class="shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'"
-              style="transition-delay: {{ $delay }}ms"
-            @endunless
-            class="{{ $canvas ? '' : 'transition-all duration-700 ease-out' }} {{ $isFullScreen ? 'w-full px-0' : 'mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8' }} {{ $textAlign }} {{ $lineHeight }}"
-          >
-            {{-- Rilis 91: jarak bawah (blok non-OWN) dicetak pada pembungkus DALAM, bukan pada pembungkus ber-data-block-id; padding di dalamnya lagi. Margin anak langsung
-                 pembungkus (item flex = konteks format blok sendiri) tidak runtuh ke luar, jadi garis sorotan kanvas ikut membesar seperti pada Judul. --}}
-            @if ($spacing !== '')
-              <div class="{{ $spacing }}">
-            @endif
-            @if ($boxPad !== '')
-              <div class="{{ $boxPad }}">
-            @endif
-            @if ($hasView && $canvas)
-              {{-- Kanvas: tangkap keluaran; blok yang TIDAK mencetak apa pun (mis. FAQ tanpa pertanyaan) diberi penanda supaya tetap bisa dipilih --}}
-              @php ob_start(); @endphp
-              <x-dynamic-component
-                :component="$componentName"
-                :block="$block"
-                :data="$block['data'] ?? []"
-                :lang="$lang"
-                :all-content="$blocks"
-              />
-              @php $rendered = ob_get_clean(); @endphp
-              {!! $rendered !!}
-              @if (trim(preg_replace('/<!--.*?-->/s', '', $rendered)) === '')
-                <div class="my-2 rounded-lg border border-dashed border-gray-300 bg-white/60 p-4 text-center text-xs text-gray-500">
-                  Blok <b>{{ \App\Editor\BlockPalette::label($type) }}</b> masih kosong. Isi di panel kanan.
-                </div>
-              @endif
-            @elseif ($hasView)
-              <x-dynamic-component
-                :component="$componentName"
-                :block="$block"
-                :data="$block['data'] ?? []"
-                :lang="$lang"
-                :all-content="$blocks"
-              />
-            @elseif ($canvas)
-              <div class="my-2 rounded-lg border border-dashed border-gray-300 bg-white/60 p-4 text-center text-xs text-gray-500">
-                Blok <b>{{ $type ?: '(tanpa tipe)' }}</b> belum punya tampilan publik.
-              </div>
-            @endif
-            @if ($boxPad !== '')
-              </div>
-            @endif
-            @if ($spacing !== '')
-              </div>
-            @endif
-          </div>
-        @endforeach
-      </div>
-    </section>
-  @empty
-    @if ($canvas)
-      <div class="flex min-h-[40vh] items-center justify-center p-8 text-center text-sm text-gray-400">
-        Belum ada blok yang bisa ditampilkan.<br />Tambahkan blok dari panel kiri.
-      </div>
-    @endif
-  @endforelse
+  @if ($anyReveal)
+    {{-- Rilis 116: intro terpicu gulir. Blok membawa kelas tersembunyi (opacity-0 translate-y-6) DARI HTML pertama dan atribut data-reveal. Skrip kecil ini
+         (tanpa Alpine, jadi tidak bergantung pada urutan pemuatan) membuka blok yang sudah di layar saat dimuat (berurutan, jeda 150 md, maks. 750 md)
+         dan sisanya saat masuk ke layar (zona pemicu dipersempit 12% dari bawah). "Kurangi gerakan" dan peramban tanpa IntersectionObserver: langsung tampil.
+         Tanpa JavaScript: <noscript> membuat semuanya tampil. Dipakai ulang setelah navigasi Livewire. --}}
+    <noscript><style>[data-reveal]{opacity:1!important;translate:none!important;transform:none!important}</style></noscript>
+    <script>
+      (function () {
+        if (!window.__ysbhReveal) {
+          window.__ysbhReveal = function () {
+            var els = [].slice.call(document.querySelectorAll('[data-reveal]'));
+            if (!els.length) return;
+            var show = function (el, delay) {
+              el.style.transitionDelay = delay + 'ms';
+              el.classList.remove('opacity-0', 'translate-y-6');
+              el.removeAttribute('data-reveal');
+            };
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+              els.forEach(function (el) { show(el, 0); });
+              return;
+            }
+            var vh = window.innerHeight || document.documentElement.clientHeight;
+            var first = [], rest = [];
+            els.forEach(function (el) {
+              var r = el.getBoundingClientRect();
+              (r.top < vh * 0.88 && r.bottom > 0 ? first : rest).push(el);
+            });
+            // setelah cetakan pertama (keadaan tersembunyi sempat tergambar), baru dibuka
+            requestAnimationFrame(function () {
+              setTimeout(function () {
+                first.forEach(function (el, i) { show(el, Math.min(i * 150, 750)); });
+              }, 80);
+            });
+            var io = new IntersectionObserver(function (entries) {
+              entries.forEach(function (e) {
+                if (!e.isIntersecting) return;
+                io.unobserve(e.target);
+                show(e.target, 0);
+              });
+            }, { rootMargin: '0px 0px -12% 0px' });
+            rest.forEach(function (el) { io.observe(el); });
+          };
+          document.addEventListener('livewire:navigated', function () { window.__ysbhReveal(); });
+        }
+        window.__ysbhReveal();
+      })();
+    </script>
+  @endif
 </div>

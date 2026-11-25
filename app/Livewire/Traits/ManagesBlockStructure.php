@@ -60,6 +60,13 @@ trait ManagesBlockStructure
             return;
         }
 
+        // Rilis 117: Pemisah Seksi di tingkat atas menggeser SELURUH seksinya (pemisah + blok di bawahnya sampai pemisah berikutnya).
+        if ($this->sectionSpan($id) !== null) {
+            $this->moveSection($id, $delta);
+
+            return;
+        }
+
         if ($parent = $this->structureParentOf($id)) {
             [$parentId, $zone] = $parent;
             $list = $this->content[$parentId]['data'][$zone];
@@ -198,6 +205,277 @@ trait ManagesBlockStructure
         $this->dispatch('block-added', id: $id);
     }
 
+    // ------------------------------------------------------------------ Pemisah Seksi sebagai pembungkus (rilis 117)
+    // Data tetap DATAR (blockOrder). "Seksi" = Pemisah Seksi + semua blok tingkat atas sesudahnya sampai pemisah berikutnya. Blok SEBELUM pemisah
+    // pertama adalah "Awal halaman": terkunci di atas (pemisah tidak bisa melewatinya), isinya tetap bisa diurutkan sendiri.
+    // Semua argumen datang dari browser: id harus pemisah di tingkat atas; yang lain diabaikan.
+
+    /** Salin seksi. $withBlocks=false: hanya pemisahnya (kosong). Salinan diletakkan tepat SESUDAH seksi asli; semua blok (dan anak-anaknya) berid baru. */
+    public function duplicateSection(string $id, bool $withBlocks = true): void
+    {
+        $span = $this->sectionSpan($id);
+        if ($span === null) {
+            return;
+        }
+        [$i, $j] = $span;
+        $order = array_values($this->blockOrder);
+        $ids = $withBlocks ? array_slice($order, $i, $j - $i) : [$id];
+
+        $taken = $this->structureAnchors();
+        $copies = [];
+        foreach ($ids as $x) {
+            if (!is_string($x) || !isset($this->content[$x])) {
+                continue;
+            }
+            $new = $this->cloneBlockTree($x);
+            foreach ($this->collectTreeIds($new) as $t) {
+                $this->structureUniqueAnchor($t, $taken);
+            }
+            $copies[] = $new;
+        }
+        array_splice($order, $j, 0, $copies);
+        $this->blockOrder = array_values($order);
+    }
+
+    /**
+     * Hapus seksi. $withBlocks=false (bawaan, paling aman): hanya pemisahnya; blok di bawahnya bergabung ke seksi di atasnya (atau ke
+     * "Awal halaman" bila ini pemisah pertama). true: pemisah + semua blok seksinya (beserta anak-anaknya).
+     */
+    public function removeSection(string $id, bool $withBlocks = false): void
+    {
+        $span = $this->sectionSpan($id);
+        if ($span === null) {
+            return;
+        }
+        [$i, $j] = $span;
+        $ids = $withBlocks ? array_slice(array_values($this->blockOrder), $i, $j - $i) : [$id];
+        foreach ($ids as $x) {
+            if (is_string($x)) {
+                $this->deleteBlockTree($x);
+            }
+        }
+    }
+
+    /** "Bungkus dalam seksi": Pemisah Seksi baru di paling atas halaman, menangkap semua blok "Awal halaman". Tanpa blok di sana: tidak berubah. */
+    public function wrapPageStart(): void
+    {
+        if ($this->sectionHeadCount() === 0) {
+            return;
+        }
+        $this->structureInsert(null, null, 'section-divider', 0);
+    }
+
+    /** "Mulai seksi dari blok ini": Pemisah Seksi baru tepat di atas blok "Awal halaman" ini; ia menangkap blok itu dan semua di bawahnya sampai pemisah pertama. */
+    public function startSectionAt(string $id): void
+    {
+        $at = array_search($id, array_values($this->blockOrder), true);
+        if ($at === false || !isset($this->content[$id]) || $this->sectionSpan($id) !== null || $at >= $this->sectionHeadCount()) {
+            return;
+        }
+        $this->structureInsert(null, null, 'section-divider', $at);
+    }
+
+    /** Banyaknya blok "Awal halaman" = indeks pemisah pertama (atau seluruh daftar bila tidak ada pemisah). */
+    private function sectionHeadCount(): int
+    {
+        $order = array_values($this->blockOrder);
+        foreach ($order as $k => $x) {
+            if (is_string($x) && $this->isSectionDivider($x)) {
+                return $k;
+            }
+        }
+
+        return count($order);
+    }
+
+    private function isSectionDivider(string $id): bool
+    {
+        return isset($this->content[$id]) && BlockPalette::canonical((string) ($this->content[$id]['type'] ?? '')) === 'section-divider';
+    }
+
+    /** [mulai, akhir) seksi di blockOrder untuk pemisah $id; null bila $id bukan pemisah di tingkat atas. @return array{0:int,1:int}|null */
+    private function sectionSpan(string $id): ?array
+    {
+        $order = array_values($this->blockOrder);
+        $i = array_search($id, $order, true);
+        if ($i === false || !$this->isSectionDivider($id)) {
+            return null;
+        }
+        $j = $i + 1;
+        while ($j < count($order) && !(is_string($order[$j]) && $this->isSectionDivider($order[$j]))) {
+            $j++;
+        }
+
+        return [$i, $j];
+    }
+
+    /** Naik/turun satu seksi: bertukar tempat dengan seksi tetangga. Pemisah pertama tidak bisa naik (di atasnya "Awal halaman" atau tepi halaman). */
+    private function moveSection(string $id, int $delta): void
+    {
+        [$i, $j] = $this->sectionSpan($id);
+        $order = array_values($this->blockOrder);
+        $n = count($order);
+
+        if ($delta < 0) {
+            $p = null;
+            for ($k = $i - 1; $k >= 0; $k--) {
+                if (is_string($order[$k]) && $this->isSectionDivider($order[$k])) {
+                    $p = $k;
+                    break;
+                }
+            }
+            if ($p === null) {
+                return;
+            }
+            $this->blockOrder = array_merge(array_slice($order, 0, $p), array_slice($order, $i, $j - $i), array_slice($order, $p, $i - $p), array_slice($order, $j));
+
+            return;
+        }
+
+        if ($j >= $n) {
+            return;
+        }
+        $k = $j + 1;
+        while ($k < $n && !(is_string($order[$k]) && $this->isSectionDivider($order[$k]))) {
+            $k++;
+        }
+        $this->blockOrder = array_merge(array_slice($order, 0, $i), array_slice($order, $j, $k - $j), array_slice($order, $i, $j - $i), array_slice($order, $k));
+    }
+
+    /**
+     * Batas seksi yang SAH sebagai tujuan seksi $id, dalam koordinat daftar tanpa seksi itu: indeks setiap pemisah lain, ditambah akhir daftar.
+     * "Awal halaman" tidak pernah dilewati: batas tidak pernah di atas pemisah pertama yang tersisa.
+     * @return array{0:list<int>,1:list<string>,2:int} [batas, daftar tanpa seksi, posisi sekarang]
+     */
+    private function sectionBounds(string $id): array
+    {
+        [$i, $j] = $this->sectionSpan($id);
+        $order = array_values($this->blockOrder);
+        $rest = array_merge(array_slice($order, 0, $i), array_slice($order, $j));
+        $bounds = [];
+        foreach ($rest as $k => $x) {
+            if (is_string($x) && $this->isSectionDivider($x)) {
+                $bounds[] = $k;
+            }
+        }
+        $bounds[] = count($rest);
+
+        return [$bounds, $rest, $i];
+    }
+
+    /** Pindahkan seluruh seksi ke batas $index (kosong = paling bawah). Hanya batas seksi yang sah; selain itu ditolak. */
+    private function moveSectionTo(string $id, ?int $index): bool
+    {
+        [$i, $j] = $this->sectionSpan($id);
+        [$bounds, $rest] = $this->sectionBounds($id);
+        $at = $index ?? count($rest);
+        if (!in_array($at, $bounds, true)) {
+            return false;
+        }
+        $seg = array_slice(array_values($this->blockOrder), $i, $j - $i);
+        array_splice($rest, $at, 0, $seg);
+        $this->blockOrder = array_values($rest);
+
+        return true;
+    }
+
+    /** Menu "Pindahkan ke…" untuk pemisah seksi: tiap batas seksi yang sah. @return list<array{parent:null,zone:null,index:int,label:string,current:bool}> */
+    private function sectionTargets(string $id): array
+    {
+        [$bounds, $rest, $here] = $this->sectionBounds($id);
+        $number = [];
+        $n = 0;
+        foreach (array_values($this->blockOrder) as $x) {
+            if (is_string($x) && $this->isSectionDivider($x)) {
+                $number[$x] = ++$n;
+            }
+        }
+        $out = [];
+        foreach ($bounds as $b) {
+            if ($b < count($rest)) {
+                $d = (string) $rest[$b];
+                $name = $this->sectionName($d);
+                $label = 'Sebelum seksi ' . $number[$d] . ($name !== '' ? ' · ' . $name : '');
+            } else {
+                $label = 'Paling bawah halaman';
+            }
+            $out[] = ['parent' => null, 'zone' => null, 'index' => $b, 'label' => $label, 'current' => $b === $here];
+        }
+
+        return $out;
+    }
+
+    /** Nama seksi untuk menu: judul pemisah, atau judul pertama di dalamnya; kosong bila tidak ada. */
+    private function sectionName(string $dividerId): string
+    {
+        $pick = function ($v): string {
+            if (is_string($v)) {
+                return trim(strip_tags($v));
+            }
+            if (is_array($v)) {
+                foreach (array_merge($this->activeLocales ?: [], array_keys($v)) as $l) {
+                    if (is_string($v[$l] ?? null) && trim(strip_tags($v[$l])) !== '') {
+                        return trim(strip_tags($v[$l]));
+                    }
+                }
+            }
+
+            return '';
+        };
+        $name = $pick($this->content[$dividerId]['data']['title'] ?? null);
+        if ($name === '') {
+            [$i, $j] = $this->sectionSpan($dividerId);
+            foreach (array_slice(array_values($this->blockOrder), $i + 1, $j - $i - 1) as $x) {
+                if (is_string($x) && BlockPalette::canonical((string) ($this->content[$x]['type'] ?? '')) === 'heading') {
+                    $name = $pick($this->content[$x]['data']['text'] ?? null);
+                    if ($name !== '') {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return mb_strlen($name) > 60 ? mb_substr($name, 0, 60) . '…' : $name;
+    }
+
+    /** Semua anchor tingkat-blok yang sudah dipakai (kunci = anchor). @return array<string,true> */
+    private function structureAnchors(): array
+    {
+        $out = [];
+        foreach ($this->content as $block) {
+            $a = is_array($block) ? ($block['anchor'] ?? '') : '';
+            if (is_string($a) && $a !== '') {
+                $out[$a] = true;
+            }
+        }
+
+        return $out;
+    }
+
+    /** Anchor salinan harus unik: yang sudah dipakai diberi akhiran "-2", "-3", ... (batas 64 huruf). */
+    private function structureUniqueAnchor(string $id, array &$taken): void
+    {
+        $a = $this->content[$id]['anchor'] ?? '';
+        if (!is_string($a) || $a === '') {
+            return;
+        }
+        if (!isset($taken[$a])) {
+            $taken[$a] = true;
+
+            return;
+        }
+        $base = preg_replace('/-\d+$/', '', $a) ?: $a;
+        for ($n = 2; $n < 1000; $n++) {
+            $c = substr($base, 0, 64 - strlen("-$n")) . "-$n";
+            if (!isset($taken[$c])) {
+                $taken[$c] = true;
+                $this->content[$id]['anchor'] = $c;
+
+                return;
+            }
+        }
+    }
+
     // ------------------------------------------------------------------ pindah lintas level (rilis 43)
 
     /**
@@ -217,6 +495,11 @@ trait ManagesBlockStructure
         }
         $type = BlockPalette::canonical((string) ($block['type'] ?? ''));
         $parentId = ($parentId === null || $parentId === '') ? null : $parentId;
+
+        // Rilis 117: pemisah seksi pindah bersama seluruh seksinya; $index = batas seksi (lihat moveSectionTo).
+        if ($parentId === null && $this->sectionSpan($id) !== null) {
+            return $this->moveSectionTo($id, $index);
+        }
 
         if ($parentId === null) {
             if (!BlockPalette::allowedAtRoot($type)) {
@@ -304,6 +587,9 @@ trait ManagesBlockStructure
         $here = $this->structureLocate($id);
         if (!is_array($block) || $here === null) {
             return [];
+        }
+        if ($this->sectionSpan($id) !== null) {
+            return $this->sectionTargets($id);
         }
         $type = BlockPalette::canonical((string) ($block['type'] ?? ''));
         $out = [];

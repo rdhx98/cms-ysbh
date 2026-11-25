@@ -249,15 +249,13 @@ return [
             ["label" => "capitalize", "value" => "capitalize"],
             ["label" => "normal", "value" => "normal-case"],
         ],
-        'site_background' => [
-          ['label'=>'Pure White','value' => '#FFFFFF'],
-          ['label'=>'Paper','value' => '#FBF7EA'],
-          ['label'=>'Dim Paper','value' => '#F3ECD6'],
+        "site_background" => [
+            ["label" => "Pure White", "value" => "#FFFFFF"],
+            ["label" => "Paper", "value" => "#FBF7EA"],
+            ["label" => "Dim Paper", "value" => "#F3ECD6"],
         ],
     ],
-    "lucidebak" => [
-        "activity",
-    ],
+    "lucidebak" => ["activity"],
     "lucide" => [
         "activity",
         "circle",
@@ -295,6 +293,7 @@ return [
         "map",
         "megaphone",
         "message-square",
+        "microscope",
         "mic",
         "moon",
         "package",
@@ -355,34 +354,34 @@ return [
     // Rute STATIS satu-segmen di routes/web.php landing. Halaman CMS ber-slug ini tidak akan pernah terbuka, jadi editor menolaknya.
     // Halaman CMS ber-slug ini adalah BERANDA bahasa itu: dilayani di "/" (en) atau "/id" (id). Biasanya SATU halaman dengan slug
     // "home" (en) dan "beranda" (id). Tautan internal ke halaman itu (mis. di pratinjau CMS) menuju jalur beranda.
-    'reserved_slugs' => [],
-    'home_slug' => [
-        'en' => 'home',
-        'id' => 'beranda',
+    "reserved_slugs" => [],
+    "home_slug" => [
+        "en" => "home",
+        "id" => "beranda",
     ],
 
     // Halaman CMS ber-slug ini menjadi kepala daftar artikel (/articles, /id/artikel); boleh dipakai walau alamatnya rute tetap.
-    'articles_index_slug' => [
-        'en' => 'articles',
-        'id' => 'artikel',
+    "articles_index_slug" => [
+        "en" => "articles",
+        "id" => "artikel",
     ],
 
     // R25
     "default_locale" => "en",
-  //  "public" => [
-  //      "base" => env("CMS_PUBLIC_URL", ""),   // https://ysbh.org
-  //      "page" => ["en" => "/{slug}", "id" => "/id/{slug}"],
-  //      "article" => ["en" => "/articles/{slug}", "id" => "/id/artikel/{slug}"],
-  //      "home" => ["en" => "/", "id" => "/id"],
-  //      "articles" => ["en" => "/articles", "id" => "/id/artikel"],
-  //      "cover" => "/storage/posts/{file}",
-  //  ],\
-  'public' => [
-    'base'    => env('CMS_PUBLIC_URL', ''),   // CMS: https://ysbh.org  |  landing: kosong
-    'page'    => ['en' => '/{slug}',          'id' => '/id/{slug}'],          // rilis 24: per bahasa (teks = semua bahasa)
-    'article' => ['en' => '/articles/{slug}', 'id' => '/id/artikel/{slug}'],
-    'home'    => ['en' => '/',                'id' => '/id'],
-    'articles'=> ['en' => '/articles',        'id' => '/id/artikel'],
-    'cover'   => '/storage/posts/{file}',   // nama berkas sampul artikel -> alamat gambar (blok Artikel Terbaru)
-  ],
+    //  "public" => [
+    //      "base" => env("CMS_PUBLIC_URL", ""),   // https://ysbh.org
+    //      "page" => ["en" => "/{slug}", "id" => "/id/{slug}"],
+    //      "article" => ["en" => "/articles/{slug}", "id" => "/id/artikel/{slug}"],
+    //      "home" => ["en" => "/", "id" => "/id"],
+    //      "articles" => ["en" => "/articles", "id" => "/id/artikel"],
+    //      "cover" => "/storage/posts/{file}",
+    //  ],\
+    "public" => [
+        "base" => env("CMS_PUBLIC_URL", ""), // CMS: https://ysbh.org  |  landing: kosong
+        "page" => ["en" => "/{slug}", "id" => "/id/{slug}"], // rilis 24: per bahasa (teks = semua bahasa)
+        "article" => ["en" => "/articles/{slug}", "id" => "/id/artikel/{slug}"],
+        "home" => ["en" => "/", "id" => "/id"],
+        "articles" => ["en" => "/articles", "id" => "/id/artikel"],
+        "cover" => "/storage/posts/{file}", // nama berkas sampul artikel -> alamat gambar (blok Artikel Terbaru)
+    ],
 ];

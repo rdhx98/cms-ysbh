@@ -7,7 +7,7 @@ use Livewire\Component;
 
 /**
  * Pengaturan pengganti bahasa (rilis 104): pil bahasa melayang (nyala/mati, letak, kapan tampil, gaya, layar kecil) dan pil bahasa di
- * header (bilah lengket desktop dan bilah bawah layar kecil). Tautan bahasa di footer selalu ada. Dipasang sebagai tab "Bahasa" di Pengaturan:
+ * header (bilah lengket desktop dan bilah bawah layar kecil), dan bahasa di akhir footer (rilis 112: nyala/mati, tautan teks atau pil). Dipasang sebagai tab "Bahasa" di Pengaturan:
  *
  *   <livewire:content.language-switch-editor lazy wire:key="language-switch-editor" />
  *
@@ -136,11 +136,11 @@ new class extends Component {
   <div>
     <h2 class="text-lg font-bold text-foresty">Pengganti bahasa</h2>
     <p class="text-xs text-gray-500">
-      Mempermudah pengunjung berpindah bahasa dari bagian halaman mana pun. Tautan bahasa di footer selalu ada. Hanya tampil bila situs punya dua bahasa atau lebih.
+      Mempermudah pengunjung berpindah bahasa dari bagian halaman mana pun. Hanya tampil bila situs punya dua bahasa atau lebih.
       @if ($stored)
         <span class="font-semibold text-emerald-700">Pengaturan dari CMS sedang dipakai.</span>
       @else
-        <span class="font-semibold text-amber-700">Belum pernah disimpan: memakai bawaan (pil melayang dan pil header nyala).</span>
+        <span class="font-semibold text-amber-700">Belum pernah disimpan: memakai bawaan (pil melayang, pil header, dan bahasa di footer nyala).</span>
       @endif
     </p>
   </div>
@@ -217,10 +217,31 @@ new class extends Component {
       </label>
     </div>
 
+    {{-- Bahasa di akhir footer (rilis 112) --}}
+    <div class="{{ $card }}" data-lang-footer-settings>
+      <span class="text-[10px] font-extrabold uppercase tracking-widest text-gray-400">Bahasa di akhir footer</span>
+      <label class="flex items-start gap-2 text-sm text-gray-700">
+        <input type="checkbox" wire:model.live="f.footer" class="mt-0.5 rounded border-gray-300">
+        <span>Tampilkan pengganti bahasa di baris paling bawah footer <span class="text-[11px] text-gray-400">(antara hak cipta dan slogan)</span></span>
+      </label>
+
+      @if ($f['footer'] ?? false)
+        <div wire:key="footer-options" class="flex flex-col gap-2 border-t border-gray-100 pt-4">
+          <span class="{{ $label }}">Gaya</span>
+          <div class="flex flex-wrap gap-2">
+            @foreach (LanguageSwitch::FOOTER_STYLES as $value => $name)
+              <label class="{{ $choice }}"><input type="radio" wire:model="f.footer_style" value="{{ $value }}" class="border-gray-300 text-foresty">{{ $name }}</label>
+            @endforeach
+          </div>
+          <p class="text-[11px] text-gray-400">Tautan teks: "Bahasa: <b>Bahasa Indonesia</b> · English" (bawaan). Pil: "ID | EN" dengan garis tipis putih dan bahasa aktif berwarna emas.</p>
+        </div>
+      @endif
+    </div>
+
     <div class="flex flex-wrap items-center gap-3">
       <button type="submit" wire:loading.attr="disabled" @disabled(! $ready) class="rounded-md bg-foresty px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-[#043b2c] disabled:opacity-50">Simpan pengaturan bahasa</button>
       @if ($stored)
-        <button type="button" wire:click="restoreDefaults" wire:confirm="Kembalikan ke bawaan? Pil bahasa melayang dan pil header akan menyala dengan letak dan gaya bawaan." class="rounded-md bg-gray-100 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200">Kembalikan ke bawaan</button>
+        <button type="button" wire:click="restoreDefaults" wire:confirm="Kembalikan ke bawaan? Pil bahasa melayang, pil header, dan bahasa di footer akan menyala dengan letak dan gaya bawaan." class="rounded-md bg-gray-100 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200">Kembalikan ke bawaan</button>
       @endif
     </div>
   </form>

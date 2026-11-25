@@ -245,7 +245,7 @@ final class PublicLookup
      * Rilis 104: pengaturan pengganti bahasa (pil melayang dan pil header), LanguageSwitch::resolve. Belum diatur / tabel belum ada / data rusak /
      * basis data bermasalah = bawaan (pil nyala). TIDAK PERNAH melempar galat.
      *
-     * @return array{floating:bool,position:string,appear:string,style:string,mobile:bool,header:bool}
+     * @return array{floating:bool,position:string,appear:string,style:string,mobile:bool,header:bool,footer:bool,footer_style:string}
      */
     public static function languageSwitch(): array
     {

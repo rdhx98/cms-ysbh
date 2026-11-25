@@ -15,6 +15,7 @@ return [
         "page" => ["create" => "Create Page", "edit" => "Change Page: :title"],
         "article" => ["create" => "Write Article", "edit" => "Correct Article: :title"],
         "snippet" => ["create" => "Make Snippet", "edit" => "Edit Snippet: :title"],
+        "announcement" => ["manage" => "Manage Announcement", "edit" => "Edit Announcement: :title"],
     ],
 
     "word" => "word",
@@ -72,6 +73,8 @@ return [
         "settings" => "Settings",
         "block" => "Blocks",
         "navigation" => "Navigation",
+        "announcements" => "Site Announcements",
+        "snippets" => "Snippets",
     ],
     "header" => [
         "dashboard" => "Dashboard",
@@ -141,7 +144,7 @@ return [
         "title" => "Page Title",
         "dates_created" => "Date & time created",
         "dates_updated" => "Date & time updated",
-        
+
         "table_title" => "Page Title",
         "table_path" => "Path",
         "table_dates" => "Date & Time Created",

@@ -4,7 +4,7 @@ namespace App\Content;
 
 /**
  * Pengganti bahasa yang mudah dijangkau (rilis 104): pil bahasa MELAYANG (menempel di tepi layar) dan pil bahasa di header (bilah lengket
- * desktop dan bilah bawah layar kecil), dengan pengaturan di CMS. Tautan bahasa di footer selalu ada (tanpa pengaturan). Murni: tanpa basis
+ * desktop dan bilah bawah layar kecil) dan bahasa di akhir footer (rilis 112: nyala/mati, tautan teks atau pil), dengan pengaturan di CMS. Murni: tanpa basis
  * data dan tanpa Laravel (diuji tanpa lab).
  *
  * Penyimpanan: tabel site_settings, kunci "lang_switch" (CMS menulis lewat LanguageSwitchSettings, landing membaca lewat
@@ -25,6 +25,9 @@ final class LanguageSwitch
 
     public const STYLES = ['glass' => 'Kaca buram', 'solid' => 'Solid (hijau)'];
 
+    /** Rilis 112: tampilan bahasa di akhir footer. 'links' = "Bahasa: Bahasa Indonesia · English" (bawaan, seperti rilis 104); 'pill' = pil ID | EN. */
+    public const FOOTER_STYLES = ['links' => 'Tautan teks', 'pill' => 'Pil'];
+
     /** Berapa piksel digulir sebelum pil melayang muncul (mode "scroll"). */
     public const SCROLL_AFTER = 320;
 
@@ -39,6 +42,7 @@ final class LanguageSwitch
         'glass' => 'bg-white/70 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-inset ring-forest/15 shadow-lg',
         'solid' => 'bg-forest shadow-lg ring-1 ring-white/20',
         'plain' => 'border border-forest',
+        'footer' => 'ring-1 ring-inset ring-white/30',
     ];
 
     /** Bagian bahasa: [aktif, tidak aktif]. */
@@ -46,12 +50,13 @@ final class LanguageSwitch
         'glass' => ['bg-forest text-forest-on', 'text-forest hover:bg-forest/10'],
         'solid' => ['bg-white text-forest', 'text-forest-on hover:bg-white/15'],
         'plain' => ['bg-forest text-forest-on', 'text-forest hover:bg-forest/10'],
+        'footer' => ['bg-aurum text-forest', 'text-white hover:bg-white/15'],
     ];
 
-    /** @return array{floating:bool,position:string,appear:string,style:string,mobile:bool,header:bool} */
+    /** @return array{floating:bool,position:string,appear:string,style:string,mobile:bool,header:bool,footer:bool,footer_style:string} */
     public static function defaults(): array
     {
-        return ['floating' => true, 'position' => 'bottom-right', 'appear' => 'scroll', 'style' => 'glass', 'mobile' => false, 'header' => true];
+        return ['floating' => true, 'position' => 'bottom-right', 'appear' => 'scroll', 'style' => 'glass', 'mobile' => false, 'header' => true, 'footer' => true, 'footer_style' => 'links'];
     }
 
     /** Dari JSON tersimpan (atau larik): bawaan, lalu hanya nilai yang sah menimpanya. Tidak pernah melempar galat. */
@@ -64,12 +69,12 @@ final class LanguageSwitch
         if (!is_array($raw)) {
             return $out;
         }
-        foreach (['floating', 'mobile', 'header'] as $k) {
+        foreach (['floating', 'mobile', 'header', 'footer'] as $k) {
             if (array_key_exists($k, $raw) && is_bool($raw[$k])) {
                 $out[$k] = $raw[$k];
             }
         }
-        foreach (['position' => self::POSITIONS, 'appear' => self::APPEARS, 'style' => self::STYLES] as $k => $allowed) {
+        foreach (['position' => self::POSITIONS, 'appear' => self::APPEARS, 'style' => self::STYLES, 'footer_style' => self::FOOTER_STYLES] as $k => $allowed) {
             if (isset($raw[$k]) && is_string($raw[$k]) && array_key_exists($raw[$k], $allowed)) {
                 $out[$k] = $raw[$k];
             }
@@ -89,7 +94,7 @@ final class LanguageSwitch
         $input = is_array($input) ? $input : [];
         $data = self::defaults();
         $errors = [];
-        foreach (['floating' => 'Pil melayang', 'mobile' => 'Pil melayang di layar kecil', 'header' => 'Pil di header'] as $k => $name) {
+        foreach (['floating' => 'Pil melayang', 'mobile' => 'Pil melayang di layar kecil', 'header' => 'Pil di header', 'footer' => 'Bahasa di footer'] as $k => $name) {
             if (!array_key_exists($k, $input)) {
                 continue;
             }
@@ -100,7 +105,7 @@ final class LanguageSwitch
                 $data[$k] = $b;
             }
         }
-        foreach (['position' => ['Letak', self::POSITIONS], 'appear' => ['Kapan tampil', self::APPEARS], 'style' => ['Gaya', self::STYLES]] as $k => [$name, $allowed]) {
+        foreach (['position' => ['Letak', self::POSITIONS], 'appear' => ['Kapan tampil', self::APPEARS], 'style' => ['Gaya', self::STYLES], 'footer_style' => ['Gaya bahasa di footer', self::FOOTER_STYLES]] as $k => [$name, $allowed]) {
             if (!array_key_exists($k, $input)) {
                 continue;
             }
@@ -142,7 +147,13 @@ final class LanguageSwitch
         return 'inline-flex items-center gap-0.5 rounded-full p-0.5 text-xs font-bold ' . self::SHELL['plain'];
     }
 
-    /** Kelas satu bagian bahasa. $variant: 'glass' | 'solid' | 'plain' (header). */
+    /** Kelas pembungkus pil bahasa di footer (garis tipis putih di atas latar hijau footer). */
+    public static function footerClasses(): string
+    {
+        return 'inline-flex items-center gap-0.5 rounded-full p-0.5 text-xs font-bold ' . self::SHELL['footer'];
+    }
+
+    /** Kelas satu bagian bahasa. $variant: 'glass' | 'solid' | 'plain' (header) | 'footer'. */
     public static function segmentClasses(string $variant, bool $active): string
     {
         $variant = isset(self::SEGMENT[$variant]) ? $variant : 'plain';
